@@ -1,0 +1,4 @@
+node .husky/version.js
+git add *.user.js
+git commit -m 'chore: up version'
+git push

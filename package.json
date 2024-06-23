@@ -1,9 +1,10 @@
 {
-  "name": "greasemonkey-template",
+  "name": "pennylane",
   "packageManager": "yarn@4.1.1",
   "type": "module",
   "scripts": {
-    "prepare": "husky"
+    "prepare": "husky",
+    "version": "node ./husky/version.js"
   },
   "dependencies": {
     "husky": "^9.0.11"
