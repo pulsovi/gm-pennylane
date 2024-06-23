@@ -1,3 +1,5 @@
+const $ = document.querySelector.bind(document);
+const $$ = (...args) => Array.from(document.querySelectorAll(...args));
 
 // get out of DOMCOntentLoaded : https://github.com/greasemonkey/greasemonkey/issues/1584#issuecomment-7513483
 setTimeout(init, 0);
@@ -53,3 +55,68 @@ function getCookies () {
       .reduce((cookies, [key, value]) => Object.assign(cookies, { [key.trim()]: value }), {});
 }
 window.apiRequest = apiRequest;
+
+setInterval(function initMergeInvoices () {
+  const button = Array.from(document.querySelectorAll('button'))
+    .find(b => b.textContent.includes('Chercher parmi les factures') || b.textContent === 'Voir plus de factures');
+  if (!button) return //console.log('initMergeInvoices', 'Bouton "Chercher parmi les factures" introuvable');
+  const div = button.closest('.mt-2');
+  if (div.childElementCount > 2) return //console.log('initMergeInvoices plus de 2 boutons en ligne', {div});
+  const mergeButton = div.insertBefore(document.createElement('div'), div.lastElementChild);
+  mergeButton.innerText = 'Fusionner les factures';
+  mergeButton.classList.add('btn-sm', 'w-100', 'btn-primary');
+  mergeButton.addEventListener('click', () => { mergeInvoices(); });
+
+  const addButton = div.insertBefore(document.createElement('div'), div.lastElementChild);
+  addButton.innerText = 'Ajouter par ID';
+  addButton.classList.add('btn-sm', 'w-100', 'btn-primary');
+  addButton.addEventListener('click', () => { addById(); });
+}, 200);
+
+async function addById () {
+  const id = prompt('ID du justificatif ?');
+  const guuid = await getGUUID(id);
+  const localId = (new URL(location.href)).searchParams.get('transaction_id');
+  await apiRequest(
+    `documents/${localId}/matching`,
+    { matching:{unmatch_ids:[], group_uuids:[guuid] } },
+    'PUT'
+  );
+}
+
+async function mergeInvoices () {
+  const button = Array.from(document.getElementsByTagName('button'))
+    .find(b => b.textContent.includes('Chercher parmi les factures'));
+  const component = button.closest('.px-2.py-3');
+  const items = getReactProps(component).panelTransaction.grouped_documents;
+  const invoices = items.filter(item => item.type === 'Invoice').map(invoice => invoice.id);
+  const response = await apiRequest(
+    'accountants/invoices/merge_files',
+    {invoice_ids: invoices}
+  );
+  console.log('mergeInvoices', {response});
+}
+
+async function getGUUID (documentId) {
+  const response = await apiRequest(`documents/${documentId}`, null, 'GET');
+  const data = await response.json();
+  console.log('getGUUID', {data});
+  return data.group_uuid;
+}
+
+function getReact (elem, up = 0) {
+  if (!elem) return null;
+  const keys = Object.getOwnPropertyNames(elem);
+  const fiberKey = keys.find(key => key.startsWith('__reactFiber'));
+
+  const fiber = elem[fiberKey];
+  let component = fiber.return;
+  for (let i = 0; i < up; ++i) component = component.return;
+  return component;
+}
+window.getReact = getReact;
+
+function getReactProps (elem, up = 0) {
+  return getReact(elem, up)?.memoizedProps;
+}
+window.getReactProps = getReactProps;
