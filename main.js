@@ -177,3 +177,20 @@ function parseHTML(html) {
     template.innerHTML = html;
     return template.content;
 }
+
+setInterval(() => {
+  const itemsStatuses = Array.from(document.querySelectorAll('div[data-intercom="invoices-list-status"]'));
+  itemsStatuses.forEach(async cell => {
+    if (cell.querySelector('.has-transaction-status')) return;
+    const id = getReactProps(cell, 2).original.id;
+    cell.firstElementChild.firstElementChild.insertBefore(
+      parseHTML('<span class="has-transaction-status"></span>'),
+      cell.firstElementChild.firstElementChild.firstChild
+    );
+    const statusElem = cell.querySelector('.has-transaction-status');
+    const data = await getDocument(id);
+    const hasTransaction = data.grouped_documents.some(elem => elem.type === 'Transaction');
+    console.log({data, hasTransaction, statusElem});
+    statusElem.textContent = hasTransaction ? '+ ' : '- ';
+  });
+}, 200);
