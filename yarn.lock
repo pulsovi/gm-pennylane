@@ -5,14 +5,6 @@ __metadata:
   version: 8
   cacheKey: 10c0
 
-"greasemonkey-template@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "greasemonkey-template@workspace:."
-  dependencies:
-    husky: "npm:^9.0.11"
-  languageName: unknown
-  linkType: soft
-
 "husky@npm:^9.0.11":
   version: 9.0.11
   resolution: "husky@npm:9.0.11"
@@ -21,3 +13,11 @@ __metadata:
   checksum: 10c0/2c787dcf74a837fc9a4fea7da907509d4bd9a289f4ea10ecc9d86279e4d4542b0f5f6443a619bccae19e265f2677172cc2b86aae5c932a35a330cc227d914605
   languageName: node
   linkType: hard
+
+"pennylane@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "pennylane@workspace:."
+  dependencies:
+    husky: "npm:^9.0.11"
+  languageName: unknown
+  linkType: soft

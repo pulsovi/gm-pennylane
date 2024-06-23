@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "prepare": "husky",
-    "version": "node ./husky/version.js"
+    "version": "node ./.husky/version"
   },
   "dependencies": {
     "husky": "^9.0.11"
