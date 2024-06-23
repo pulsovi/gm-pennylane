@@ -120,3 +120,60 @@ function getReactProps (elem, up = 0) {
   return getReact(elem, up)?.memoizedProps;
 }
 window.getReactProps = getReactProps;
+
+
+/** Add infos on Invoice full page display */
+setInterval(async () => {
+  const infos = Array.from(document.querySelectorAll('h4.heading-section-3.mr-2'))
+    .find(title => title.textContent === 'Informations');
+  if (!infos) return;
+  if (document.querySelector('#invoice-id')) return;
+  const {invoice} = getReact(infos, 32).memoizedProps;
+  const tagsContainer = infos.nextSibling;
+  tagsContainer.insertBefore(
+    parseHTML(`<div class="sc-iGgVNO clwwQL d-flex align-items-center gap-1"></div>`),
+    tagsContainer.firstChild
+  );
+  const idTag = tagsContainer.firstChild.appendChild(
+    parseHTML(
+      `<div id="invoice-id" class="d-inline-block bg-secondary-100 dihsuQ px-0_5">
+        #${invoice.id}
+      </div>`
+    )
+  );
+  const isValid =
+    (invoice.archived && invoice.invoice_number.startsWith('§'))
+    || (invoice.thirdparty?.id === 106519227 && invoice.invoice_number.startsWith('ID '))
+    || (await getDocument(invoice.id)).grouped_documents?.some(doc => doc.type === 'Transaction');
+  tagsContainer.firstChild.insertBefore(
+    parseHTML(
+      `<div id="is-valid-tag" class="d-inline-block bg-secondary-100 dihsuQ px-0_5">
+        ${isValid ? '✓' : 'x'}
+      </div>`
+    ),
+    tagsContainer.firstChild.firstChild
+  );
+}, 50);
+
+function findElem (selector, text) {
+  return Array.from(document.querySelectorAll(selector) ?? []).find(elem => elem.textContent === text);
+}
+
+async function getDocument (id) {
+  const response = await apiRequest(`documents/${id}`, null, 'GET');
+  return await response.json();
+}
+window.getDocument = getDocument;
+
+/**
+ * Parse an HTML string and return a DocumentFragment which can be inserted in the DOM as is
+ *
+ * @param {string} html The HTML string to parse
+ *
+ * @return {DocumentFragment} The parsed HTML fragment
+ */
+function parseHTML(html) {
+    const template = document.createElement('template');
+    template.innerHTML = html;
+    return template.content;
+}
