@@ -30,8 +30,10 @@ function last_7_days_filter () {
   location.replace(url);
 }
 
+let apiRequestWait = false;
 async function apiRequest (endpoint, data, method = 'POST') {
-  return await fetch(`https://app.pennylane.com/companies/21936866/${endpoint}`, {
+  if (apiRequestWait) await apiRequestWait;
+  const response = await fetch(`https://app.pennylane.com/companies/21936866/${endpoint}`, {
     method,
     headers: {
       "Content-Type": "application/json",
@@ -47,6 +49,12 @@ async function apiRequest (endpoint, data, method = 'POST') {
     },
     body: data ? JSON.stringify(data) : data,
   });
+  if (response.status === 429) {
+    console.log('apiRequest response status is not 200', {response});
+    apiRequestWait = new Promise(rs => setTimeout(rs, 1000));
+    return apiRequest(endpoint, data, method);
+  }
+  return response;
 }
 
 function getCookies () {
