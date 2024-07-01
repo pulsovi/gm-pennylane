@@ -18,6 +18,18 @@ Le numéro de #GUUID d'un #Document est rapporté par sa propriété `group_uuid
 
 ## API endpoints connus
 
+### Archiver un ou plusieurs documents
+
+```js
+apiRequest('documents/batch_archive', {
+  documents: [
+    document1.id,
+    ...
+  ],
+  unarchive: false,
+})
+```
+
 ### Réconcilier des documents
 
 En fait, il s'agit de fusionner des group_uuids (donc tous les #Document de chaque #GUUID listé) en excluant éventuellement certains #Document par leur ID
