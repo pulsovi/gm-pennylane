@@ -132,27 +132,26 @@ window.getReactProps = getReactProps;
 
 /** Add infos on Invoice full page display */
 setInterval(async () => {
+  const isCustomer = Boolean(findElem('button', 'Voir / Modifier le client'));
   const infos = Array.from(document.querySelectorAll('h4.heading-section-3.mr-2'))
     .find(title => title.textContent === 'Informations');
   if (!infos) return;
   if (document.querySelector('#invoice-id')) return;
   const {invoice} = getReact(infos, 32).memoizedProps;
+  console.log({invoice});
   const tagsContainer = infos.nextSibling;
   tagsContainer.insertBefore(
     parseHTML(`<div class="sc-iGgVNO clwwQL d-flex align-items-center gap-1"></div>`),
     tagsContainer.firstChild
   );
-  const idTag = tagsContainer.firstChild.appendChild(
+  tagsContainer.firstChild.appendChild(
     parseHTML(
       `<div id="invoice-id" class="d-inline-block bg-secondary-100 dihsuQ px-0_5">
         #${invoice.id}
       </div>`
     )
   );
-  const isValid =
-    (invoice.archived && invoice.invoice_number.startsWith('§'))
-    || (invoice.thirdparty?.id === 106519227 && invoice.invoice_number.startsWith('ID '))
-    || (await getDocument(invoice.id)).grouped_documents?.some(doc => doc.type === 'Transaction');
+  const isValid = await (isCustomer ? customerInvoiceIsValid : supplierInvoiceIsValid)(invoice);
   tagsContainer.firstChild.insertBefore(
     parseHTML(
       `<div id="is-valid-tag" class="d-inline-block bg-secondary-100 dihsuQ px-0_5">
@@ -186,19 +185,97 @@ function parseHTML(html) {
     return template.content;
 }
 
+async function supplierInvoiceIsValid (invoice) {
+  // Known orphan invoice
+  if (invoice.invoice_number?.startsWith('¤')) return true;
+
+  // Archived and replaced
+  if (invoice.archived && invoice.invoice_number?.startsWith('§')) return true;
+
+  // ID card
+  if (invoice.thirdparty?.id === 106519227 && invoice.invoice_number?.startsWith('ID ')) return true;
+
+  // Has transaction attached
+  if ((await getDocument(invoice.id)).grouped_documents?.some(doc => doc.type === 'Transaction'))
+    return true;
+
+  return false;
+}
+
+/** Add "has transaction" symbol on status column whith the invoices list */
 setInterval(() => {
+  const isSupplierInvoices = Boolean(findElem('h3', 'Factures fournisseurs'));
+  const isCustomerInvoices = Boolean(findElem('h3', 'Factures clients'));
+  if (!isCustomerInvoices && !isSupplierInvoices) return;
   const itemsStatuses = Array.from(document.querySelectorAll('div[data-intercom="invoices-list-status"]'));
   itemsStatuses.forEach(async cell => {
     if (cell.querySelector('.has-transaction-status')) return;
-    const id = getReactProps(cell, 2).original.id;
+    const invoice = getReactProps(cell, 2).original;
+    const isValid = await (isSupplierInvoices ? supplierInvoiceIsValid(invoice) : customerInvoiceIsValid(invoice));
+    if (cell.querySelector('.has-transaction-status')) return;
     cell.firstElementChild.firstElementChild.insertBefore(
-      parseHTML('<span class="has-transaction-status"></span>'),
+      parseHTML(`<span class="has-transaction-status">${isValid ? '✓&nbsp;' : 'x&nbsp;'}</span>`),
       cell.firstElementChild.firstElementChild.firstChild
     );
-    const statusElem = cell.querySelector('.has-transaction-status');
-    const data = await getDocument(id);
-    const hasTransaction = data.grouped_documents.some(elem => elem.type === 'Transaction');
-    console.log({data, hasTransaction, statusElem});
-    statusElem.textContent = hasTransaction ? '+ ' : '- ';
   });
 }, 200);
+
+async function customerInvoiceIsValid (invoice) {
+  // don manuel
+  if (invoice.thirdparty?.id === 103165930 && !invoice.date && !invoice.deadline) return true;
+
+  // piece id
+  if (invoice.thirdparty?.id === 113420582 && !invoice.date && !invoice.deadline && invoice.invoice_number?.startsWith('ID ')) return true;
+  return false;
+}
+
+/** Add "next invalid invoice" button on invoices list */
+let nextInvalid = null;
+setInterval(async () => {
+  const nextButton = $('div span+button+button:last-child');
+  if (!nextButton) return;
+  nextButton.parentElement.appendChild(parseHTML(
+    `<button type="button" class="sc-jlZhRR izKsrp justify-content-center btn btn-primary btn-sm">&gt;</button>`
+  ));
+  const nextInvalidButton = nextButton.nextElementSibling;
+  nextInvalidButton.addEventListener('click', nextInvalidInvoice);
+  if (nextInvalid) return;
+  const direction = getParam(location.href, 'direction');
+  const isValid = direction === 'customer' ? customerInvoiceIsValid : supplierInvoiceIsValid;
+  const current = getParam(location.href, 'id');
+  nextInvalid = findInvoice({direction}, async invoice => {
+    console.log(invoice?.id, {invoice});
+    return invoice.id != current && !(await isValid(invoice));
+  });
+}, 200);
+
+async function nextInvalidInvoice () {
+  console.log('nextInvalidInvoice');
+  const invoice = await nextInvalid;
+  if (invoice) {
+    console.log(invoice.id, {invoice});
+    const url = new URL(location.href);
+    url.searchParams.set('id', invoice.id);
+    location.replace(url.toString());
+  }
+}
+
+function getParam (url, paramName) {
+  return new URL(url).searchParams.get(paramName);
+}
+
+async function findInvoice (params, cb) {
+  const url = new URL(`http://a.a/accountants/invoices/list?page=1`);
+  Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
+  let page = 0, response, data, invoices;
+  do {
+    page += 1;
+    url.searchParams.set('page', page);
+    response = await apiRequest(url.toString().replace('http://a.a/', ''), null, 'GET');
+    data = await response.json();
+    invoices = data.invoices;
+    if (!invoices?.length) return null;
+    console.log('page', page, {response, data, invoices});
+    for (const invoice of invoices) if (await cb(invoice)) return invoice;
+  } while (page <= data.pagination.pages);
+}
