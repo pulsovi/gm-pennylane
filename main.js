@@ -185,14 +185,14 @@ function parseHTML(html) {
 }
 
 async function supplierInvoiceIsValid (invoice) {
+  // Archived and replaced
+  if (invoice.archived && invoice.invoice_number?.startsWith('§')) return true;
+
   // exclude 6288
   if (invoice.invoice_lines?.some(line => line.pnl_plan_item?.number == '6288')) return false;
 
   // Known orphan invoice
   if (invoice.invoice_number?.startsWith('¤')) return true;
-
-  // Archived and replaced
-  if (invoice.archived && invoice.invoice_number?.startsWith('§')) return true;
 
   // ID card
   if (invoice.thirdparty?.id === 106519227 && invoice.invoice_number?.startsWith('ID ')) return true;
@@ -253,7 +253,7 @@ async function loadInvoiceValidation () {
     .filter(([id, status]) => status.direction === direction)
     .map(([id, status]) => status.page)
   );
-  await findInvoice({direction, page: startPage}, async (invoice, page) => {
+  await findInvoice({direction, page: isNaN(startPage) ? 1 : startPage}, async (invoice, page) => {
     if (invoice.id == getParam(location.href, 'id')) return false;
     if (!(invoice.id in cache) || !cache[invoice.id]) {
       cache[invoice.id] = { page, direction, valid: await isValid(invoice) };
@@ -298,9 +298,8 @@ async function nextInvalidInvoice () {
     localStorage.setItem('invoicesValidation', JSON.stringify(cache));
     return nextInvalidInvoice();
   }
-  console.log(invoice.id, {invoice});
   const url = new URL(location.href);
-  url.searchParams.set('id', invoice.id);
+  url.searchParams.set('id', invalid[0]);
   location.replace(url.toString());
 }
 
