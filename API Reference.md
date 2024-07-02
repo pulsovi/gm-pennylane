@@ -23,11 +23,12 @@ Le numéro de #GUUID d'un #Document est rapporté par sa propriété `group_uuid
 ```js
 apiRequest('documents/batch_archive', {
   documents: [
-    document1.id,
+    { id: document1.id },
+    { id: document2.id },
     ...
   ],
   unarchive: false,
-})
+}, 'POST')
 ```
 
 ### Réconcilier des documents
