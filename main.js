@@ -330,3 +330,52 @@ async function findInvoice (params, cb) {
     url.searchParams.set('page', page);
   } while (page <= data.pagination.pages);
 }
+
+/** Add "Archive" button on bonded invoice in transaction pannel */
+setInterval(() => {
+  if (!findElem('h3', 'Transactions')) return;
+  $$('div>a+button>svg').map(svg => svg.closest('div')).forEach((buttonsBlock, id) => {
+    if (!buttonsBlock || buttonsBlock.children.length > 2) return;
+    buttonsBlock.insertBefore(
+      parseHTML(`<button id="archive-button-${id}">&nbsp;x&nbsp;</button>`),
+      buttonsBlock.firstElementChild
+    );
+    buttonsBlock.querySelector(`#archive-button-${id}`).addEventListener('click', async () => {
+      const invoice = await getInvoice(getReactProps(buttonsBlock, 4).invoiceId);
+      const replacement = prompt('ID du justificatif ?');
+      await updateInvoice(invoice.id, {
+        invoice_number: `§ ${replacement ? '#'+replacement+' - ' : ''}${invoice.invoice_number}`
+      });
+      await archiveDocument(invoice.id);
+      console.log('archive invoice', getReactProps(buttonsBlock, 4).invoiceId, {invoice});
+    });
+
+    detailsBlock = upElement(buttonsBlock, 3).children[1];
+    const invoice = getReactProps(detailsBlock, 11)?.invoice;
+    detailsBlock.firstChild.lastElementChild.appendChild(parseHTML(
+      `&nbsp;<span class="invoice-id d-inline-block bg-secondary-100 dihsuQ px-0_5">
+        #${invoice.id}
+      </span>`
+    ));
+  });
+}, 200);
+
+function upElement (elem, upCount) {
+  let retval = elem;
+  for (i = 0; i < upCount; ++i) retval = retval?.parentElement;
+  return retval;
+}
+
+async function getInvoice (id) {
+  const response = await apiRequest(`/accountants/invoices/${id}`, null, 'GET');
+  const data = await response.json();
+  return data.invoice;
+}
+
+async function updateInvoice (id, data) {
+  await apiRequest(`/accountants/invoices/${id}`, data, 'PUT');
+}
+
+async function archiveDocument (id, unarchive = false) {
+  await apiRequest('documents/batch_archive', { documents: [{id}], unarchive }, 'POST');
+}
