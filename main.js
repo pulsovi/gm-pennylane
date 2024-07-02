@@ -151,10 +151,11 @@ setInterval(async () => {
     )
   );
   const isValid = await (isCustomer ? customerInvoiceIsValid : supplierInvoiceIsValid)(invoice);
+  const reason = (isValid || isCustomer) ? '' : await supplierInvoiceInvalidReason(invoice);
   tagsContainer.firstChild.insertBefore(
     parseHTML(
       `<div id="is-valid-tag" class="d-inline-block bg-secondary-100 dihsuQ px-0_5">
-        ${isValid ? '✓' : 'x'}
+        ${isValid ? '✓' : 'x&nbsp;'+reason}
       </div>`
     ),
     tagsContainer.firstChild.firstChild
@@ -185,23 +186,30 @@ function parseHTML(html) {
 }
 
 async function supplierInvoiceIsValid (invoice) {
+  return !(await supplierInvoiceInvalidReason(invoice));
+}
+
+async function supplierInvoiceInvalidReason (invoice) {
   // Archived and replaced
-  if (invoice.archived && invoice.invoice_number?.startsWith('§')) return true;
+  if (invoice.archived && invoice.invoice_number?.startsWith('§')) return null;
 
   // exclude 6288
-  if (invoice.invoice_lines?.some(line => line.pnl_plan_item?.number == '6288')) return false;
+  if (invoice.invoice_lines?.some(line => line.pnl_plan_item?.number == '6288')) return 'compte tiers 6288';
 
   // Known orphan invoice
-  if (invoice.invoice_number?.startsWith('¤')) return true;
+  if (invoice.invoice_number?.startsWith('¤')) return null;
+
+  // Stripe fees invoice
+  if (invoice.thirdparty?.id === 115640202) return null;
 
   // ID card
-  if (invoice.thirdparty?.id === 106519227 && invoice.invoice_number?.startsWith('ID ')) return true;
+  if (invoice.thirdparty?.id === 106519227 && invoice.invoice_number?.startsWith('ID ')) return null;
 
   // Has transaction attached
   if ((await getDocument(invoice.id)).grouped_documents?.some(doc => doc.type === 'Transaction'))
-    return true;
+    return null;
 
-  return false;
+  return 'pas de transaction attachée';
 }
 
 /** Add "has transaction" symbol on status column whith the invoices list */
@@ -366,6 +374,10 @@ function upElement (elem, upCount) {
 }
 
 async function getInvoice (id) {
+  if (!id) {
+    console.error('Error: getInvoice() invalid id', {id});
+    return null;
+  }
   const response = await apiRequest(`/accountants/invoices/${id}`, null, 'GET');
   const data = await response.json();
   return data.invoice;
