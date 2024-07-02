@@ -185,6 +185,9 @@ function parseHTML(html) {
 }
 
 async function supplierInvoiceIsValid (invoice) {
+  // exclude 6288
+  if (invoice.invoice_lines?.some(line => line.pnl_plan_item?.number == '6288')) return false;
+
   // Known orphan invoice
   if (invoice.invoice_number?.startsWith('¤')) return true;
 
@@ -228,35 +231,83 @@ async function customerInvoiceIsValid (invoice) {
   return false;
 }
 
+let loadingInvoiceValidation = null;
 /** Add "next invalid invoice" button on invoices list */
-let nextInvalid = null;
 setInterval(async () => {
-  const nextButton = $('div span+button+button:last-child');
+  if (!findElem('h4', 'Informations')) return;
+  const nextButton = $('div>span+button+button:last-child');
   if (!nextButton) return;
-  nextButton.parentElement.appendChild(parseHTML(
-    `<button type="button" class="sc-jlZhRR izKsrp justify-content-center btn btn-primary btn-sm">&gt;</button>`
-  ));
-  const nextInvalidButton = nextButton.nextElementSibling;
+  nextButton.parentElement.insertBefore(parseHTML(
+    `<button type="button" class="sc-jlZhRR izKsrp justify-content-center btn btn-primary btn-sm">&nbsp;&gt;&nbsp;</button>`
+  ), nextButton.previousElementSibling);
+  const nextInvalidButton = nextButton.previousElementSibling.previousElementSibling;
   nextInvalidButton.addEventListener('click', nextInvalidInvoice);
-  if (nextInvalid) return;
+  loadingInvoiceValidation = loadInvoiceValidation();
+}, 200);
+
+async function loadInvoiceValidation () {
   const direction = getParam(location.href, 'direction');
   const isValid = direction === 'customer' ? customerInvoiceIsValid : supplierInvoiceIsValid;
-  const current = getParam(location.href, 'id');
-  nextInvalid = findInvoice({direction}, async invoice => {
-    console.log(invoice?.id, {invoice});
-    return invoice.id != current && !(await isValid(invoice));
+  const cache = JSON.parse(localStorage.getItem('invoicesValidation') ?? '{}');
+  const startPage = Math.max.apply(Math, Object.entries(cache)
+    .filter(([id, status]) => status.direction === direction)
+    .map(([id, status]) => status.page)
+  );
+  await findInvoice({direction, page: startPage}, async (invoice, page) => {
+    if (invoice.id == getParam(location.href, 'id')) return false;
+    if (!(invoice.id in cache) || !cache[invoice.id]) {
+      cache[invoice.id] = { page, direction, valid: await isValid(invoice) };
+      localStorage.setItem('invoicesValidation', JSON.stringify(cache));
+    }
+    return false;
   });
-}, 200);
+}
 
 async function nextInvalidInvoice () {
   console.log('nextInvalidInvoice');
-  const invoice = await nextInvalid;
-  if (invoice) {
-    console.log(invoice.id, {invoice});
-    const url = new URL(location.href);
-    url.searchParams.set('id', invoice.id);
-    location.replace(url.toString());
+  let cache = JSON.parse(localStorage.getItem('invoicesValidation') ?? '{}');
+  let invalid = getRandomArrayItem(Object.entries(cache).filter(([id, status]) => !status.valid));
+  if (!invalid) {
+    await loadingInvoiceValidation;
+    cache = JSON.parse(localStorage.getItem('invoicesValidation') ?? '{}');
+    invalid = getRandomArrayItem(Object.entries(cache).filter(([id, status]) => !status.valid));
   }
+  if (!invalid) {
+    if (!confirm('Toutes les factures semblent être valides. Revérifier tout ?')) return;
+    localStorage.setItem('invoicesValidation', '{}');
+    await Promise.race([
+      loadInvoiceValidation(),
+      new Promise(async rs => {
+        while (!invalid) {
+          await new Promise(to => setTimeout(to, 2000));
+          cache = JSON.parse(localStorage.getItem('invoicesValidation') ?? '{}');
+          invalid = getRandomArrayItem(Object.entries(cache).filter(([id, status]) => !status.valid));
+        }
+        rs();
+      }),
+    ]);
+  }
+  if (!invalid) {
+    alert('Toutes les factures sont valides selon les critères actuels.');
+    return;
+  }
+  const direction = getParam(location.href, 'direction');
+  const isValid = direction === 'customer' ? customerInvoiceIsValid : supplierInvoiceIsValid;
+  if (await isValid(await getInvoice(invalid[0]))) {
+    cache[invalid[0]].valid = true;
+    localStorage.setItem('invoicesValidation', JSON.stringify(cache));
+    return nextInvalidInvoice();
+  }
+  console.log(invoice.id, {invoice});
+  const url = new URL(location.href);
+  url.searchParams.set('id', invoice.id);
+  location.replace(url.toString());
+}
+
+function getRandomArrayItem (array) {
+  if (!array.length) return null;
+  const index = Math.floor(Math.random() * array.length);
+  return array[index];
 }
 
 function getParam (url, paramName) {
@@ -265,16 +316,17 @@ function getParam (url, paramName) {
 
 async function findInvoice (params, cb) {
   const url = new URL(`http://a.a/accountants/invoices/list?page=1`);
+  url.searchParams.set('page', '1');
   Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
-  let page = 0, response, data, invoices;
+  let page = parseInt(url.searchParams.get('page')), response, data, invoices;
   do {
-    page += 1;
-    url.searchParams.set('page', page);
     response = await apiRequest(url.toString().replace('http://a.a/', ''), null, 'GET');
     data = await response.json();
     invoices = data.invoices;
     if (!invoices?.length) return null;
     console.log('page', page, {response, data, invoices});
-    for (const invoice of invoices) if (await cb(invoice)) return invoice;
+    for (const invoice of invoices) if (await cb(invoice, page)) return invoice;
+    page += 1;
+    url.searchParams.set('page', page);
   } while (page <= data.pagination.pages);
 }
