@@ -64,20 +64,19 @@ function getCookies () {
 }
 window.apiRequest = apiRequest;
 
-setInterval(function initMergeInvoices () {
+/** Add 'add by ID' button on transaction reconciliation tab */
+setInterval(function () {
   const button = Array.from(document.querySelectorAll('button'))
     .find(b => b.textContent.includes('Chercher parmi les factures') || b.textContent === 'Voir plus de factures');
-  if (!button) return //console.log('initMergeInvoices', 'Bouton "Chercher parmi les factures" introuvable');
+  if (!button) return;
   const div = button.closest('.mt-2');
-  if (div.childElementCount > 2) return //console.log('initMergeInvoices plus de 2 boutons en ligne', {div});
-  const mergeButton = div.insertBefore(document.createElement('div'), div.lastElementChild);
-  mergeButton.innerText = 'Fusionner les factures';
-  mergeButton.classList.add('btn-sm', 'w-100', 'btn-primary');
-  mergeButton.addEventListener('click', () => { mergeInvoices(); });
+  if (div.childElementCount > 2) return;
 
-  const addButton = div.insertBefore(document.createElement('div'), div.lastElementChild);
-  addButton.innerText = 'Ajouter par ID';
-  addButton.classList.add('btn-sm', 'w-100', 'btn-primary');
+  div.insertBefore(
+    parseHTML('<div class="btn-sm w-100 btn-primary" style="cursor: pointer;">Ajouter par ID</div>'),
+    div.lastElementChild
+  );
+  const addButton = div.lastElementChild.previousElementSibling;
   addButton.addEventListener('click', () => { addById(); });
 }, 200);
 
