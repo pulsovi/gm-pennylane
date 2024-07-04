@@ -200,6 +200,8 @@ async function supplierInvoiceIsValid (invoice) {
 }
 
 async function supplierInvoiceInvalidReason (invoice) {
+  if (!invoice) console.log('supplierInvoiceInvalidReason', {invoice});
+
   // Archived and replaced
   if (invoice.archived && invoice.invoice_number?.startsWith('§')) return null;
 
@@ -212,6 +214,20 @@ async function supplierInvoiceInvalidReason (invoice) {
     const line = ledgerEvents.find(event => event.planItem.number === '6571');
     if (!line) return 'écriture "6571" manquante';
     if (!line.label) return 'nom du bénéficiaire manquant dans l\'écriture "6571"';
+  }
+
+  // Ecarts de conversion de devise
+  if (invoice.currency !== 'EUR') {
+    const ledgerEvents = await getLedgerEvents(invoice.id);
+    const diffLine = ledgerEvents.find(line => line.planItem.number === '4716001');
+    console.log({diffLine});
+    if (diffLine) {
+      if (parseFloat(diffLine.amount) < 0)
+        return 'Les écarts de conversions de devises doivent utiliser le compte 477';
+      else
+        return 'Les écarts de conversions de devises doivent utiliser le compte 476';
+    }
+    console.log({ledgerEvents});
   }
 
   // Known orphan invoice
