@@ -292,7 +292,7 @@ setInterval(async () => {
 }, 200);
 
 async function loadInvoiceValidation () {
-  const direction = getParam(location.href, 'direction');
+  const direction = getParam(location.href, 'direction') ?? 'supplier';
   const isValid = direction === 'customer' ? customerInvoiceIsValid : supplierInvoiceIsValid;
   const cache = JSON.parse(localStorage.getItem('invoicesValidation') ?? '{}');
   const startPage = Math.max.apply(Math, Object.entries(cache)
@@ -363,15 +363,19 @@ function getParam (url, paramName) {
 
 async function findInvoice (params, cb) {
   const url = new URL(`http://a.a/accountants/invoices/list?page=1`);
-  url.searchParams.set('page', '1');
   Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
-  let page = parseInt(url.searchParams.get('page')), response, data, invoices;
+  let page = parseInt(url.searchParams.get('page'));
+  if (isNaN(page)) {
+    console.error('findInvoice page is NaN', {params, url, page});
+    page = 1;
+  }
+  let response, data, invoices;
   do {
     response = await apiRequest(url.toString().replace('http://a.a/', ''), null, 'GET');
     data = await response.json();
     invoices = data.invoices;
     if (!invoices?.length) return null;
-    console.log('page', page, {response, data, invoices});
+    console.log('findInvoice page', {page, response, data, invoices});
     for (const invoice of invoices) if (await cb(invoice, page)) return invoice;
     page += 1;
     url.searchParams.set('page', page);
