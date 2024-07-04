@@ -251,6 +251,10 @@ setInterval(async () => {
   const nextInvalidButton = nextButton.previousElementSibling.previousElementSibling;
   nextInvalidButton.addEventListener('click', nextInvalidInvoice);
   loadingInvoiceValidation = loadInvoiceValidation();
+  document.addEventListener('click', function cb () {
+    nextInvalidInvoice();
+    document.removeEventListener('click', cb);
+  });
 }, 200);
 
 async function loadInvoiceValidation () {
@@ -308,7 +312,9 @@ async function nextInvalidInvoice () {
   }
   const url = new URL(location.href);
   url.searchParams.set('id', invalid[0]);
-  location.replace(url.toString());
+  //location.replace(url.toString());
+  //open(url.toString(), '_blank');
+  document.body.appendChild(parseHTML(`<div class="open_tab" data-url="${escape(url.toString())}" style="display: none;"></div>`));
 }
 
 function getRandomArrayItem (array) {
