@@ -206,6 +206,14 @@ async function supplierInvoiceInvalidReason (invoice) {
   // exclude 6288
   if (invoice.invoice_lines?.some(line => line.pnl_plan_item?.number == '6288')) return 'compte tiers 6288';
 
+  // Aides octroyées sans label
+  if (invoice.thirdparty?.id === 106438171) {
+    const ledgerEvents = await getLedgerEvents(invoice.id);
+    const line = ledgerEvents.find(event => event.planItem.number === '6571');
+    if (!line) return 'écriture "6571" manquante';
+    if (!line.label) return 'nom du bénéficiaire manquant dans l\'écriture "6571"';
+  }
+
   // Known orphan invoice
   if (invoice.invoice_number?.startsWith('¤')) return null;
 
@@ -406,3 +414,15 @@ async function updateInvoice (id, data) {
 async function archiveDocument (id, unarchive = false) {
   await apiRequest('documents/batch_archive', { documents: [{id}], unarchive }, 'POST');
 }
+
+async function getLedgerEvents (documentId) {
+  const documents = (await getDocument(documentId))?.grouped_documents ?? [];
+  const documentsIds = documents.map(document => document.id);
+  const events = await Promise.all(documentsIds.map(async id => {
+    const response = await apiRequest(`accountants/operations/${id}/ledger_events`, null, 'GET');
+    return await response.json();
+  }));
+  return [].concat(...events);
+}
+
+window.getLedgerEvents = getLedgerEvents;
