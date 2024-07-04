@@ -344,11 +344,8 @@ async function nextInvalidInvoice () {
     localStorage.setItem('invoicesValidation', JSON.stringify(cache));
     return nextInvalidInvoice();
   }
-  const url = new URL(location.href);
-  url.searchParams.set('id', invalid[0]);
-  //location.replace(url.toString());
-  //open(url.toString(), '_blank');
-  document.body.appendChild(parseHTML(`<div class="open_tab" data-url="${escape(url.toString())}" style="display: none;"></div>`));
+  const url = location.href.replace(/accountants.*$/, `documents/${invalid[0]}.html`);
+  document.body.appendChild(parseHTML(`<div class="open_tab" data-url="${escape(url)}" style="display: none;"></div>`));
 }
 
 function getRandomArrayItem (array) {
