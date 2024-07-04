@@ -135,9 +135,18 @@ setInterval(async () => {
   const infos = Array.from(document.querySelectorAll('h4.heading-section-3.mr-2'))
     .find(title => title.textContent === 'Informations');
   if (!infos) return;
-  if (document.querySelector('#invoice-id')) return;
+
   const {invoice} = getReact(infos, 32).memoizedProps;
+  if ($('#invoice-id')) {
+    const isValidTag = $('#is-valid-tag');
+    if (isValidTag && isValidTag.invoice !== invoice) {
+      console.log('isValidTag desynchonized');
+      isValidTag.parentElement.remove();
+    }
+    return;
+  }
   console.log({invoice});
+
   const tagsContainer = infos.nextSibling;
   tagsContainer.insertBefore(
     parseHTML(`<div class="sc-iGgVNO clwwQL d-flex align-items-center gap-1"></div>`),
@@ -160,6 +169,7 @@ setInterval(async () => {
     ),
     tagsContainer.firstChild.firstChild
   );
+  $('#is-valid-tag').invoice = invoice;
 }, 50);
 
 function findElem (selector, text) {
