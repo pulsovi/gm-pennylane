@@ -84,3 +84,9 @@ On peut se contenter de n'envoyer que les propriétés à modifier. Les proprié
 ```js
 apiRequest('accountants/invoices/list?page=3', null, 'GET');
 ```
+
+### Récupérer les écritures relatives à une transaction
+
+```js
+apiRequest(`accountants/operations/${transactionId}/ledger_events`, null, 'GET');
+```
