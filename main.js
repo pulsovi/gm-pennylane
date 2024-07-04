@@ -227,6 +227,7 @@ async function supplierInvoiceInvalidReason (invoice) {
       else
         return 'Les écarts de conversions de devises doivent utiliser le compte 476';
     }
+
     console.log({ledgerEvents});
   }
 
@@ -240,13 +241,18 @@ async function supplierInvoiceInvalidReason (invoice) {
   if (invoice.thirdparty?.id === 106519227 && invoice.invoice_number?.startsWith('ID ')) return null;
 
   // Has transaction attached
-  if ((await getDocument(invoice.id)).grouped_documents?.some(doc => doc.type === 'Transaction'))
-    return null;
+  const groupedDocuments = (await getDocument(invoice.id)).grouped_documents;
+  if (!groupedDocuments?.some(doc => doc.type === 'Transaction'))
+    return 'pas de transaction attachée';
 
-  return 'pas de transaction attachée';
+  const ledgerEvents = await getLedgerEvents(invoice.id);
+  if (ledgerEvents.find(line => line.planItem.number === '6288'))
+    return 'Une ligne d\'écriture comporte le numéro de compte 6288';
+
+  return null;
 }
 
-/** Add "has transaction" symbol on status column whith the invoices list */
+/** Add "has transaction" symbol on status column whith the invoices list *
 setInterval(() => {
   const isSupplierInvoices = Boolean(findElem('h3', 'Factures fournisseurs'));
   const isCustomerInvoices = Boolean(findElem('h3', 'Factures clients'));
@@ -264,6 +270,7 @@ setInterval(() => {
   });
 }, 200);
 
+/** Test whether the given invoice is valid */
 async function customerInvoiceIsValid (invoice) {
   // don manuel
   if (invoice.thirdparty?.id === 103165930 && !invoice.date && !invoice.deadline) return true;
@@ -314,6 +321,7 @@ async function nextInvalidInvoice () {
   let cache = JSON.parse(localStorage.getItem('invoicesValidation') ?? '{}');
   let invalid = getRandomArrayItem(Object.entries(cache).filter(([id, status]) => !status.valid));
   if (!invalid) {
+    ('unable to find invalid invoice in the cache, await end invoices scanning');
     await loadingInvoiceValidation;
     cache = JSON.parse(localStorage.getItem('invoicesValidation') ?? '{}');
     invalid = getRandomArrayItem(Object.entries(cache).filter(([id, status]) => !status.valid));
@@ -337,10 +345,18 @@ async function nextInvalidInvoice () {
     alert('Toutes les factures sont valides selon les critères actuels.');
     return;
   }
-  const direction = getParam(location.href, 'direction');
+  const [id] = invalid;
+  const direction = (await getDocument(invalid)).direction;
   const isValid = direction === 'customer' ? customerInvoiceIsValid : supplierInvoiceIsValid;
-  if (await isValid(await getInvoice(invalid[0]))) {
-    cache[invalid[0]].valid = true;
+  const invoice = await getInvoice(id);
+  if (!invoice) {
+    // document passé en GED
+    delete cache[id];
+    localStorage.setItem('invoicesValidation', JSON.stringify(cache));
+    return nextInvalidInvoice();
+  }
+  if (await isValid(invoice)) {
+    cache[id].valid = true;
     localStorage.setItem('invoicesValidation', JSON.stringify(cache));
     return nextInvalidInvoice();
   }
