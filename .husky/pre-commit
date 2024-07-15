@@ -1,1 +1,2 @@
+yarn build
 node .husky/pre-commit.js

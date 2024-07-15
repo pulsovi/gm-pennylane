@@ -3,10 +3,18 @@
   "packageManager": "yarn@4.1.1",
   "type": "module",
   "scripts": {
+    "build": "pkgroll",
     "prepare": "husky",
-    "version": "node ./.husky/version"
+    "version": "bash ./.husky/version"
   },
   "dependencies": {
     "husky": "^9.0.11"
-  }
+  },
+  "devDependencies": {
+    "pkgroll": "^2.1.1"
+  },
+  "exports": [
+    "./dist/eval.cjs",
+    "./dist/main.cjs"
+  ]
 }

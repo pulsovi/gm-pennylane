@@ -90,3 +90,15 @@ apiRequest('accountants/invoices/list?page=3', null, 'GET');
 ```js
 apiRequest(`accountants/operations/${transactionId}/ledger_events`, null, 'GET');
 ```
+
+### Récupérer les détails d'une transaction
+
+```js
+apiRequest(`accountants/wip/transactions/${transactionId}`, null, 'GET');
+```
+
+### Regénérer les écriture d'une transaction
+
+```js
+apiRequest(`https://app.pennylane.com/companies/21936866/documents/${documentId}/settle`, null, 'POST');
+```

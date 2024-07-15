@@ -105,10 +105,9 @@ async function mergeInvoices () {
 }
 
 async function getGUUID (documentId) {
-  const response = await apiRequest(`documents/${documentId}`, null, 'GET');
-  const data = await response.json();
-  console.log('getGUUID', {data});
-  return data.group_uuid;
+  const doc = await getDocument(documentId);
+  console.log('getGUUID', {doc});
+  return doc.group_uuid;
 }
 
 function getReact (elem, up = 0) {
@@ -175,8 +174,17 @@ setInterval(async () => {
 function findElem (selector, text) {
   return Array.from(document.querySelectorAll(selector) ?? []).find(elem => elem.textContent === text);
 }
+window.findElem = findElem;
 
 async function getDocument (id) {
+  if (!id) {
+    console.log('getDocument', {id});
+    throw new Error('Cannot get document without ID');
+  }
+  if ('object' === typeof id) {
+    if ('grouped_documents' in id) return id;
+    id = id.id;
+  }
   const response = await apiRequest(`documents/${id}`, null, 'GET');
   return await response.json();
 }
@@ -202,23 +210,34 @@ async function supplierInvoiceIsValid (invoice) {
 async function supplierInvoiceInvalidReason (invoice) {
   if (!invoice) console.log('supplierInvoiceInvalidReason', {invoice});
 
+  const invoiceDocument = await getDocument(invoice);
+  if (invoice.id == getParam(location.href, 'id'))
+    console.log('supplierInvoiceInvalidReason', { invoice, invoiceDocument });
+
+  const transactions = invoiceDocument.grouped_documents.filter(doc => doc.type === 'Transaction');
+  if (transactions.length && transactions.every(transaction => transaction.date.startsWith('2024')))
+    return null;
+
   // Archived and replaced
-  if (invoice.archived && invoice.invoice_number?.startsWith('§')) return null;
+  if (invoice.archived && invoice.invoice_number?.startsWith('§ #')) return null;
 
   // exclude 6288
   if (invoice.invoice_lines?.some(line => line.pnl_plan_item?.number == '6288')) return 'compte tiers 6288';
 
+  // Known orphan invoice
+  if (invoice.invoice_number?.startsWith('¤')) return null;
+
   // Aides octroyées sans label
-  if (invoice.thirdparty?.id === 106438171) {
-    const ledgerEvents = await getLedgerEvents(invoice.id);
-    const line = ledgerEvents.find(event => event.planItem.number === '6571');
-    if (!line) return 'écriture "6571" manquante';
-    if (!line.label) return 'nom du bénéficiaire manquant dans l\'écriture "6571"';
+  let ledgerEvents = null;
+  if ([106438171, 114270419].includes(invoice.thirdparty?.id)) {
+    ledgerEvents = ledgerEvents ?? await getLedgerEvents(invoice.id);
+    const lines = ledgerEvents.filter(event => ['6571', '6571002'].includes(event.planItem.number));
+    if (!lines.length) return 'écriture "6571" manquante';
   }
 
   // Ecarts de conversion de devise
   if (invoice.currency !== 'EUR') {
-    const ledgerEvents = await getLedgerEvents(invoice.id);
+    ledgerEvents = ledgerEvents ?? await getLedgerEvents(invoice.id);
     const diffLine = ledgerEvents.find(line => line.planItem.number === '4716001');
     console.log({diffLine});
     if (diffLine) {
@@ -231,9 +250,6 @@ async function supplierInvoiceInvalidReason (invoice) {
     console.log({ledgerEvents});
   }
 
-  // Known orphan invoice
-  if (invoice.invoice_number?.startsWith('¤')) return null;
-
   // Stripe fees invoice
   if (invoice.thirdparty?.id === 115640202) return null;
 
@@ -245,9 +261,10 @@ async function supplierInvoiceInvalidReason (invoice) {
   if (!groupedDocuments?.some(doc => doc.type === 'Transaction'))
     return 'pas de transaction attachée';
 
-  const ledgerEvents = await getLedgerEvents(invoice.id);
-  if (ledgerEvents.find(line => line.planItem.number === '6288'))
-    return 'Une ligne d\'écriture comporte le numéro de compte 6288';
+  ledgerEvents = ledgerEvents ?? await getLedgerEvents(invoice.id);
+
+  if (ledgerEvents.find(line => line.planItem.number === '4716001'))
+    return "Une ligne d'écriture utilise un compte d'attente 4716001";
 
   return null;
 }
@@ -321,7 +338,7 @@ async function nextInvalidInvoice () {
   let cache = JSON.parse(localStorage.getItem('invoicesValidation') ?? '{}');
   let invalid = getRandomArrayItem(Object.entries(cache).filter(([id, status]) => !status.valid));
   if (!invalid) {
-    ('unable to find invalid invoice in the cache, await end invoices scanning');
+    alert('unable to find invalid invoice in the cache, await end invoices scanning');
     await loadingInvoiceValidation;
     cache = JSON.parse(localStorage.getItem('invoicesValidation') ?? '{}');
     invalid = getRandomArrayItem(Object.entries(cache).filter(([id, status]) => !status.valid));
@@ -358,8 +375,11 @@ async function nextInvalidInvoice () {
   if (await isValid(invoice)) {
     cache[id].valid = true;
     localStorage.setItem('invoicesValidation', JSON.stringify(cache));
-    return nextInvalidInvoice();
+    setTimeout(nextInvalidInvoice, 0);
+    return;
   }
+  if (direction === 'customer')
+    console.log({ invoice, isValid, message: await supplierInvoiceInvalidReason(invoice) });
   const url = location.href.replace(/accountants.*$/, `documents/${invalid[0]}.html`);
   document.body.appendChild(parseHTML(`<div class="open_tab" data-url="${escape(url)}" style="display: none;"></div>`));
 }
@@ -448,9 +468,10 @@ async function archiveDocument (id, unarchive = false) {
   await apiRequest('documents/batch_archive', { documents: [{id}], unarchive }, 'POST');
 }
 
-async function getLedgerEvents (documentId) {
-  const documents = (await getDocument(documentId))?.grouped_documents ?? [];
-  const documentsIds = documents.map(document => document.id);
+async function getLedgerEvents (itemOrId) {
+  const item = typeof itemOrId === 'number' ? await getDocument(itemOrId) : itemOrId;
+  const documents = (item)?.grouped_documents ?? [];
+  const documentsIds = documents.map(doc => doc.id);
   const events = await Promise.all(documentsIds.map(async id => {
     const response = await apiRequest(`accountants/operations/${id}/ledger_events`, null, 'GET');
     return await response.json();
@@ -459,3 +480,239 @@ async function getLedgerEvents (documentId) {
 }
 
 window.getLedgerEvents = getLedgerEvents;
+
+/** Open next invalid transaction */
+/**
+ * Dans la page des transactions, utiliser le code suivant pour afficher une transaction :
+getReactProps($('tbody tr'),5).extra.openSidePanel(transactionId);
+ */
+
+/** Add validation state on transaction panel */
+setInterval(async () => {
+  if (!findElem('h3', 'Transactions')) return;                     // Not in transactions panel
+  if (!$('.paragraph-body-m+.heading-page.mt-1')) return;          // Has no transaction open
+  const tagsContainer = parentElement(findElem('button', 'Chercher parmi les factures'), 4)
+    ?.children[1]?.firstElementChild;
+
+  if ($('.tag-is-valid')) return;
+  if (!tagsContainer && $('.headband-is-valid')) return;
+
+  const transaction = getReactProps($('.paragraph-body-m+.heading-page.mt-1'), 9).transaction;
+
+  tagsContainer?.appendChild(parseHTML(`
+    <div class="tag-is-valid sc-aYaIB kSlEke d-inline-block overflow-visible px-0_5 sc-iMTngq haHjuB" role="status">
+      <div class="sc-iGgVNO clwwQL d-flex justify-content-evenly align-items-center">
+        <span class="text-truncate text-nowrap">⟳</span>
+      </div>
+    </div>
+  `));
+  findElem('span', 'Attention !')?.nextElementSibling.classList.add('headband-is-valid');
+  if (!$('.headband-is-valid'))
+    $('.paragraph-body-m.text-primary-900.text-truncate')?.classList.add('headband-is-valid');
+
+  if (!$('.headband-is-valid') && !$('.tag-is-valid')) return;
+  console.log({transaction});
+
+  const invalidMessage = await getTransactionInvalidMessage(transaction);
+
+  if (invalidMessage && $('.headband-is-valid')) {
+    $('.headband-is-valid').textContent = invalidMessage;
+  }
+
+  const tag = $('.tag-is-valid span');
+  if (tag) {
+    if (invalidMessage) {
+      tag.textContent = '✗ ' + invalidMessage;
+      $('.tag-is-valid').classList.add('bg-warning-300', 'text-warning-800');
+    } else {
+      tag.textContent = '✓';
+    }
+  }
+}, 200);
+
+async function getTransactionInvalidMessage (transaction) {
+  const transactionDocument = ('grouped_documents' in transaction) ? transaction
+    : await getDocument(transaction.id);
+  const groupedDocuments = transactionDocument.grouped_documents;
+
+  // justificatif demandé
+  if (transactionDocument.is_waiting_details) return null;
+
+  // N'afficher que les transaction avant 2024
+  if (transactionDocument.date.startsWith('2024')) return null;
+
+  const ledgerEvents = await getLedgerEvents(transactionDocument);
+
+  if (transaction.id == getParam(location.href, 'transaction_id'))
+    console.log('getTransactionInvalidMessage', {transaction, transactionDocument, groupedDocuments, ledgerEvents});
+
+  //if (groupedDocuments.length < 2) return 'justificatif manquant';
+
+  if (ledgerEvents.find(line => line.planItem.number === '6288'))
+    return 'Une ligne d\'écriture comporte le numéro de compte 6288';
+
+  // balance déséquilibrée
+  const third = ledgerEvents.find(line => line.planItem.number.startsWith('40'))?.planItem?.number;
+  if (third) {
+    const balance = ledgerEvents.reduce((sum, line) => {
+      return sum + (line.planItem.number == third ? parseFloat(line.amount) : 0);
+    }, 0);
+    if (balance !== 0) return 'Balance déséquilibrée.';
+  }
+
+  // Aides octroyées sans label
+  if(ledgerEvents.some(line => line.planItem.number.startsWith('6571') && !line.label))
+    return 'nom du bénéficiaire manquant dans l\'écriture "6571"';
+
+  if (ledgerEvents.some(line => line.planItem.number.startsWith('445')))
+    return 'Une écriture comporte un compte de TVA';
+
+  if (ledgerEvents.some(line => line.planItem.number.startsWith('41')))
+    return 'Une écriture comporte un compte d\'attente';
+
+  return null;
+}
+
+function parentElement (child, steps = 1) {
+  let parent = child;
+  for (let i = 0; i < steps; ++i) parent = parent?.parentElement;
+  return parent;
+}
+window.parentElement = parentElement;
+
+(() => {
+  const to = setInterval(loadInvalidTransactions, 200);
+  const cache = JSON.parse(localStorage.getItem('transactionValidation') ?? '{}');
+  let loading = null;
+
+  function loadInvalidTransactions () {
+    if (!findElem('h3', 'Transactions')) return;
+    clearInterval(to);
+    cache.page = cache.page ?? 1;
+    loading = loadTransactionsValidation();
+    document.addEventListener('click', nextInvalidTransaction);
+  }
+
+  async function loadTransactionsValidation () {
+    await findTransaction({page:cache.page}, async (transaction, page) => {
+      const message = await getTransactionInvalidMessage(transaction);
+      const valid = !message;
+      cache[transaction.id] = { valid, page, id: transaction.id, message };
+      cache.page = page;
+      localStorage.setItem('transactionValidation', JSON.stringify(cache));
+    });
+  }
+
+  async function nextInvalidTransaction () {
+    document.removeEventListener('click', nextInvalidTransaction);
+    console.log('nextInvalidTransaction');
+    const current = getParam(location.href, 'transaction_id');
+    let transaction = Object.values(cache)
+      .filter(status => status.id != current)
+      .find(status => status.valid === false);
+    console.log(transaction && jsonClone(transaction));
+    if (!transaction) {
+      alert('impossible de trouver une transaction invalide dans le cache, attente de la fin du scan');
+      await loading;
+      transaction = Object.values(cache)
+        .filter(status => status.id != current)
+        .find(status => status.valid === false);
+      console.log(transaction && jsonClone(transaction));
+    }
+    if (!transaction) {
+      if (!confirm('toutes les transactions semblent valides. Revérifier depuis le début ?')) return;
+      cache.page = 1;
+      await Promise.race([
+        loadTransactionsValidation(),
+        new Promise(async rs => {
+          while (!transaction) {
+            await new Promise(end => setTimeout(end, 2000));
+            transaction = Object.values(cache)
+              .filter(status => status.id != current)
+              .find(status => status.valid === false);
+          }
+          rs();
+        }),
+      ]);
+      console.log(transaction && jsonClone(transaction));
+    }
+    if (!transaction) {
+      alert('toutes les transactions sont valides selon les paramètres actuels');
+      return;
+    }
+    let transactionDocument = await getDocument(transaction.id);
+    let invalidMessage = await getTransactionInvalidMessage(transactionDocument);
+    if (invalidMessage?.includes('écriture')) {
+      const data = {oldMessage: invalidMessage};
+      transactionDocument = await reloadLedgerEvents(transaction.id);
+      invalidMessage = await getTransactionInvalidMessage(transactionDocument);
+      console.log('reload ledger events', {...data, invalidMessage});
+    }
+    if (!invalidMessage) {
+      console.log('transaction is valid', {transaction:jsonClone(transaction), transactionDocument, invalidMessage});
+      cache[transaction.id].valid = true;
+      localStorage.setItem('transactionValidation', JSON.stringify(cache));
+      setTimeout(nextInvalidTransaction, 0);
+      return;
+    }
+    console.log('nextInvalidTransaction', invalidMessage, { transaction });
+    openDocument(transaction.id, {
+      period_start: getParam(location.href, 'period_start'),
+      period_end: getParam(location.href, 'period_end'),
+    });
+  }
+})();
+
+function jsonClone (obj) {
+  try {
+    return JSON.parse(JSON.stringify(obj));
+  } catch (e) {
+    console.log('unable to jsonClone this object', obj);
+    console.log(e);
+    return obj;
+  }
+}
+
+async function findTransaction (params, cb) {
+  const url = new URL(`http://a.a/accountants/wip/transactions`);
+  Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
+  let page = parseInt(url.searchParams.get('page'));
+  if (isNaN(page)) {
+    console.error('findTransaction page is NaN', {params, url, page});
+    page = 1;
+  }
+  let response, data, transactions;
+  do {
+    response = await apiRequest(url.toString().replace('http://a.a/', ''), null, 'GET');
+    data = await response.json();
+    transactions = data.transactions;
+    if (!transactions?.length) return null;
+    console.log('findTransaction page', {page, response, data, transactions});
+    for (const transaction of transactions) if (await cb(transaction, page)) return transaction;
+    page += 1;
+    url.searchParams.set('page', page);
+  } while (page <= data.pagination.pages);
+}
+
+function openDocument (documentId, params = {}) {
+  const url = new URL(location.href.replace(/accountants.*$/, `documents/${documentId}.html`));
+  Object.entries(params).forEach(([key, value]) => { url.searchParams.set(key, value); });
+  openTab(url.toString());
+}
+
+function openTab (url) {
+  document.body.appendChild(
+    parseHTML(`<div class="open_tab" data-url="${escape(url)}" style="display: none;"></div>`)
+  );
+}
+
+async function getTransaction (id) {
+  const response = await apiRequest(`accountants/wip/transactions/${id}`, null, 'GET');
+  return await response.json();
+
+}
+
+async function reloadLedgerEvents (id) {
+  const response = await apiRequest(`documents/${id}/settle`);
+  return await response.json();
+}
