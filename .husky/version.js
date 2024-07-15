@@ -4,7 +4,7 @@ import fs from 'node:fs';
 
 const files = await fs.promises.readdir('.');
 const meta = files.find(filename => filename.endsWith('.meta.js'))
-const header = await fs.promises.readFile(meta);
+const header = await fs.promises.readFile(meta, 'utf8');
 const lines = header.split('\n');
 const versionIndex = lines.findIndex(line => line.startsWith('// @version '));
 const oldVersion = lines[versionIndex].slice('// @version').trim();
