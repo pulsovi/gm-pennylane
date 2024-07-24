@@ -75,6 +75,9 @@ class SupplierInvoice extends Invoice {
       return 'OK';
     }
 
+    // Pas de tiers
+    if (!invoice.thirdparty_id && !invoice.thirdparty) return 'Ajouter un fournisseur';
+
     // exclude 6288
     if (invoice.invoice_lines?.some(line => line.pnl_plan_item?.number == '6288'))
       return 'compte tiers 6288';
