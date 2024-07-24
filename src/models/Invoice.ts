@@ -52,7 +52,6 @@ class SupplierInvoice extends Invoice {
     if (!invoice) console.log('SupplierInvoice.loadValidMessage', {invoice});
 
     const invoiceDocument = await this.getDocument();
-    const current = Number(getParam(location.href, 'id'));
     if (invoice.id === current)
       console.log('SupplierInvoice.loadValidMessage', { invoice, invoiceDocument });
 
@@ -63,6 +62,9 @@ class SupplierInvoice extends Invoice {
       if (invoice.id == current) console.log('transactions 2024');
       return 'OK';
     }
+
+    if (invoice.thirdparty && !invoice.thirdparty.country)
+      return 'Fournisseur inconnu : Choisir un autre fournisseur ou ajouter le pays de celui-ci';
 
     // Archived
     if (invoice.archived) {
