@@ -19,7 +19,13 @@ declare interface ListParams {
   direction?: string;
 }
 
-declare type InvoiceList= List<'invoices', RawInvoice>;
+declare type InvoiceList= List<'invoices', MinRawInvoice>;
+declare type MinRawInvoice = Exclude<RawInvoice, 'thirdparty'> & {
+  thirdparty?: {
+    id: number;
+    name: string;
+  };
+};
 declare type InvoiceListParams = ListParams;
 declare interface RawInvoice {
   amount: `${number}`;
@@ -243,15 +249,6 @@ declare interface RawLedgerEvent {
 }
 
 declare interface RawDocument {
-  id: number;
-  /** pour une transaction : justificatif demandé */
-  is_waiting_details: boolean;
-
-  /** la date au format iso 2024-12-31 */
-  date: string;
-
-  /** documents liés à celui-ci */
-  grouped_documents: GroupedDocument[];
 
   account_id: number;
   accounting_type: boolean;
@@ -271,6 +268,9 @@ declare interface RawDocument {
   created_at: string;
   currency: string;
   currency_amount: `${number}`;
+
+  /** la date au format iso 2024-12-31 */
+  date: string;
   draft: boolean;
   email_from: null;
   external_id: string;
@@ -279,6 +279,13 @@ declare interface RawDocument {
   gross_amount: `${number}`;
   group_uuid: string;
   grouped_at: null;
+
+  /** documents liés à celui-ci */
+  grouped_documents: GroupedDocument[];
+  id: number;
+
+  /** pour une transaction : justificatif demandé */
+  is_waiting_details: boolean;
   journal_id: number;
   label: string;
   method: string;
@@ -291,8 +298,7 @@ declare interface RawDocument {
   readonly: boolean;
   reversal_origin_id: null;
   score: null;
-  scored_invoices: {
-    };
+  scored_invoices: {};
   source: string;
   status: string;
   thirdparty_id: null;
