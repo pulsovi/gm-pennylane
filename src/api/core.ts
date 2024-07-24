@@ -28,6 +28,11 @@ export async function apiRequest (endpoint, data, method = 'POST') {
     return apiRequest(endpoint, data, method);
   }
 
+  if (response.status === 404) {
+    console.log('API Request: page introuvable', { endpoint, data, method });
+    return null;
+  }
+
   if (response.status !== 200) {
     console.log('apiRequest response status is not 200', {response});
     throw new Error('todo : améliorer le message ci-dessus');

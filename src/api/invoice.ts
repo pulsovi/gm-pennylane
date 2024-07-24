@@ -3,9 +3,10 @@ import { jsonClone } from '../_';
 import { apiRequest } from './core.js';
 import { InvoiceList, InvoiceListParams, RawInvoice } from './types.js';
 
-export async function getInvoice (id: number): Promise<RawInvoice> {
+export async function getInvoice (id: number): Promise<RawInvoice|null> {
   if (!id) throw new Error(`Error: getInvoice() invalid id: ${id}`);
   const response = await apiRequest(`accountants/invoices/${id}`, null, 'GET');
+  if (!response) return null;
   const data = await response.json();
   return data.invoice;
 }
