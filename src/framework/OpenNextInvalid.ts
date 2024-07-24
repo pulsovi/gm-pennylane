@@ -10,13 +10,14 @@ export interface Status {
 
 const events = ['click', 'keyup'];
 export default abstract class OpenNextInvalid extends Service {
-  protected cache: Record<number, Status>;
-  private next: () => void;
-  private loading: Promise<void> | null = null;
-  protected invalid?: Status;
-  protected readonly storageKey: string;
-  protected readonly idParamName: string;
   private current: number;
+  private loading: Promise<void> | null = null;
+  private next: (interactionAllowed: boolean) => void;
+  protected cache: Record<number, Status>;
+  protected invalid?: Status;
+  protected launched = false;
+  protected readonly idParamName: string;
+  protected readonly storageKey: string;
 
   abstract loadValidations (): Promise<void>;
   abstract openInvalid (status: Status): Promise<boolean>;
@@ -24,8 +25,8 @@ export default abstract class OpenNextInvalid extends Service {
   async init () {
     console.log(this.constructor.name, 'init');
     this.loading = this.loadValidations().then(() => { this.loading = null; });
-    this.next = () => setTimeout(() => this.openNext(), 0);
-    this.attachEvents();
+    this.next = (interactionAllowed: boolean) => setTimeout((interactionAllowed) => this.openNext(), 0);
+    if (!this.launched) this.attachEvents();
   }
 
   loadCache () {
@@ -94,7 +95,7 @@ export default abstract class OpenNextInvalid extends Service {
     const success = await this.openInvalid(status);
     if (!success) {
       delete this.invalid;
-      setTimeout(this.next, 0);
+      this.next(interactionAllowed);
     }
   }
 

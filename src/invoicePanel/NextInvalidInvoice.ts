@@ -84,6 +84,8 @@ export default class NextInvalidInvoice extends OpenNextInvalid {
     ), nextButton.previousElementSibling);
     $('.open-next-invalid-btn')!.addEventListener('click', event => {
       event.stopPropagation();
+      this.launched = true;
+      this.detachEvents();
       this.openNext(true);
     });
   }
