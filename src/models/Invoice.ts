@@ -56,7 +56,9 @@ class SupplierInvoice extends Invoice {
     if (invoice.id === current)
       console.log('SupplierInvoice.loadValidMessage', { invoice, invoiceDocument });
 
-    const transactions = invoiceDocument.grouped_documents.filter(doc => doc.type === 'Transaction');
+    // Transaction 2024 => OK
+    const groupedDocuments = await this.getGroupedDocuments();
+    const transactions = groupedDocuments.filter(doc => doc.type === 'Transaction');
     if (transactions.length && transactions.every(transaction => transaction.date.startsWith('2024'))) {
       if (invoice.id == current) console.log('transactions 2024');
       return 'OK';
@@ -114,9 +116,7 @@ class SupplierInvoice extends Invoice {
     if (invoice.thirdparty?.id === 106519227 && invoice.invoice_number?.startsWith('ID ')) return 'OK';
 
     // Has transaction attached
-    const groupedDocuments = invoiceDocument.grouped_documents;
-    if (!groupedDocuments?.some(doc => doc.type === 'Transaction'))
-      return 'pas de transaction attachée';
+    if (!transactions.length) return 'pas de transaction attachée';
 
     return 'OK';
   }

@@ -1,11 +1,12 @@
-import type { RawDocument, RawLedgerEvent } from '../api/types.d.ts';
+import type { GroupedDocument, RawDocument, RawLedgerEvent } from '../api/types.d.ts';
 import { archiveDocument, getDocument, reloadLedgerEvents } from '../api/document.js';
-import { getLedgerEvents } from '../api/operation.js';
+import { getGroupedDocuments, getLedgerEvents } from '../api/operation.js';
 
 export default class Document {
   public readonly type: 'transaction' | 'invoice';
   public readonly id: number;
   protected document: RawDocument | Promise<RawDocument>;
+  protected groupedDocuments: GroupedDocument[] | Promise<GroupedDocument[]>;
   protected ledgerEvents: RawLedgerEvent[] | Promise<RawLedgerEvent[]>;
 
   constructor ({ id }: { id: number }) {
@@ -42,5 +43,13 @@ export default class Document {
 
   async archive (unarchive = false) {
     return await archiveDocument(this.id, unarchive);
+  }
+
+  async getGroupedDocuments () {
+    if (!this.groupedDocuments) {
+      const doc = this.groupedDocuments = getGroupedDocuments(this.id);
+      this.groupedDocuments = await doc;
+    }
+    return this.groupedDocuments;
   }
 }
