@@ -5,11 +5,11 @@ import ValidableDocument from './ValidableDocument.js';
 
 export default abstract class Invoice extends ValidableDocument {
   public readonly type = 'invoice';
-  public invoice: RawInvoice;
+  public invoice: RawInvoice | Promise<RawInvoice>;
 
   protected constructor (invoice: RawInvoice) {
     super(invoice);
-    this.invoice = invoice;
+    this.getInvoice();
   }
 
   static from (invoice: RawInvoice) {
@@ -17,9 +17,9 @@ export default abstract class Invoice extends ValidableDocument {
     return new CustomerInvoice(invoice);
   }
 
-  static async load (id) {
+  static async load (id: number) {
     const invoice = await getInvoice(id);
-    if (!invoice.id) {
+    if (!invoice?.id) {
       console.log('Invoice.load: cannot load this invoice', {id, invoice});
       return null;
     }
@@ -29,15 +29,26 @@ export default abstract class Invoice extends ValidableDocument {
   async update (data: Partial<RawInvoiceUpdate>) {
     return await updateInvoice(this.id, data);
   }
+
+  async getInvoice () {
+    if (!this.invoice) {
+      this.invoice = getInvoice(this.id).then(response => {
+        if (!response) throw new Error('Impossible de charger la facture');
+        return response;
+      });
+    }
+    return this.invoice;
+  }
 }
-window.Invoice = Invoice;
+Object.assign(window, {Invoice});
 
 class SupplierInvoice extends Invoice {
   public readonly direction = 'supplier';
 
   async loadValidMessage () {
-    const invoice = this.invoice;
+    const current = Number(getParam(location.href, 'id'));
 
+    const invoice = await this.getInvoice();
     if (!invoice) console.log('SupplierInvoice.loadValidMessage', {invoice});
 
     const invoiceDocument = await this.getDocument();
@@ -72,7 +83,7 @@ class SupplierInvoice extends Invoice {
 
     // Aides octroyées avec date
     if ([106438171, 114270419].includes(invoice.thirdparty?.id ?? 0)) {
-      if (this.invoice.date || this.invoice.deadline) return 'Les dates doivent être vides';
+      if (invoice.date || invoice.deadline) return 'Les dates doivent être vides';
     }
 
     /* Aides octroyées sans label

@@ -24,12 +24,11 @@ export default class InvoiceDisplayInfos extends Service {
         return events;
       }, []);
 
-    if (this.invoice?.invoice !== invoice || ledgerEvents.some((event, id) => this.events[id] !== event)) {
+    if ((await this.invoice?.getInvoice()) !== invoice || ledgerEvents.some((event, id) => this.events[id] !== event)) {
       const logData = { oldInvoice: this.invoice, oldEvents: this.events };
       this.invoice = Invoice.from(invoice);
       this.events = ledgerEvents;
       console.log(this.constructor.name, 'desynchronisé', { ...logData, ...this });
-      await sleep(1000);
       return false;
     }
 
