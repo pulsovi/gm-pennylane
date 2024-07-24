@@ -1,4 +1,4 @@
-import { $, jsonClone, parseHTML, waitElem } from "../_";
+import { $, jsonClone, parseHTML, waitElem, waitFunc } from "../_";
 import { findInvoice } from "../api/invoice";
 import OpenNextInvalid, { Status } from "../framework/OpenNextInvalid";
 import Invoice from "../models/Invoice";
@@ -24,6 +24,8 @@ export default class NextInvalidInvoice extends OpenNextInvalid {
     }
     await super.init();
     this.addButton();
+    await waitFunc(() => !$('.open-next-invalid-btn'));
+    setTimeout(() => this.init(), 0);
   }
 
   async loadValidations () {
@@ -43,6 +45,7 @@ export default class NextInvalidInvoice extends OpenNextInvalid {
   async openInvalid (status: Status) {
     let invoice = await Invoice.load(status.id);
     if (!invoice) {
+      // probablement une facture supprimée
       console.log('NextInvalidInvoice', { status, invoice });
       delete this.cache[status.id];
       this.saveCache();
