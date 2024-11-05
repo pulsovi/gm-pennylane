@@ -1,4 +1,4 @@
-export function jsonClone (obj) {
+export function jsonClone <T = any>(obj: T): T {
   try {
     return JSON.parse(JSON.stringify(obj));
   } catch (error) {
