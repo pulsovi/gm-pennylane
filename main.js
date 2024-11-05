@@ -464,10 +464,6 @@ async function updateInvoice (id, data) {
   await apiRequest(`/accountants/invoices/${id}`, data, 'PUT');
 }
 
-async function archiveDocument (id, unarchive = false) {
-  await apiRequest('documents/batch_archive', { documents: [{id}], unarchive }, 'POST');
-}
-
 async function getLedgerEvents (itemOrId) {
   const item = typeof itemOrId === 'number' ? await getDocument(itemOrId) : itemOrId;
   const documents = (item)?.grouped_documents ?? [];

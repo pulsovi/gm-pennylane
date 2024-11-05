@@ -3,9 +3,8 @@ import type { RawDocument } from './types.d.js'
 
 export async function getDocument (id): Promise<RawDocument> {
   const response = await apiRequest(`documents/${id}`, null, 'GET');
-  return await response.json();
+  return await response?.json();
 }
-window.getDocument = getDocument;
 
 interface MatchingOptions {
   id: number;
@@ -28,10 +27,12 @@ export async function reloadLedgerEvents (id): Promise<RawDocument> {
   return data;
 }
 
-export async function archiveDocument (id: number, unarchive = false) {
+/**
+ * @return {Promise<number>} The number of modified documents
+ */
+export async function archiveDocument (id: number, unarchive = false): Promise<number> {
   const body = { documents: [{id}], unarchive };
   const response = await apiRequest('documents/batch_archive', body, 'POST');
-  const responseData = await response.json();
-  console.log('api.archiveDocument', { id, unarchive, body, responseData });
+  const responseData = await response?.json();
   return responseData;
 }
