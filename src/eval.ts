@@ -5,6 +5,7 @@ import NextInvalidInvoice from './invoicePanel/NextInvalidInvoice.js';
 import InvoiceDisplayInfos from './invoicePanel/DisplayInfos.js';
 import ArchiveGroupedDocument from './transactionPanel/ArchiveGroupedDocument.js';
 import NextInvalidTransaction from './transactionPanel/NextInvalidTransaction.js';
+import FixTab from './invoicePanel/fixTab.js';
 
 last7DaysFilter();
 TransactionValidMessage.start();
@@ -13,6 +14,7 @@ NextInvalidInvoice.start();
 NextInvalidTransaction.start();
 InvoiceDisplayInfos.start();
 ArchiveGroupedDocument.start();
+FixTab.start();
 
 /*
 async function mergeInvoices () {
