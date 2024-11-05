@@ -6,17 +6,36 @@ import Invoice from "../models/Invoice";
 /** Add infos on Invoice full page display */
 export default class InvoiceDisplayInfos extends Service {
   private invoice: Invoice;
-  private events?: any;
+  private state: Record<string, unknown> = {};
+  protected static instance: InvoiceDisplayInfos
+
+  static getInstance (): InvoiceDisplayInfos {
+    return this.instance;
+  }
+
   async init () {
     await waitElem('h4', 'Ventilation');
+    console.log('GreaseMonkey - Pennylane', 'Invoice panel');
     while (await waitFunc(async () => !await this.isSync())) {
       await this.loadMessage();
     }
   }
 
+  reload () {
+    this.state = {};
+  }
+
   async isSync () {
     const infos = await waitElem('h4.heading-section-3.mr-2', 'Informations');
     const {invoice} = getReact(infos, 32).memoizedProps;
+
+    if (this.state.invoice !== invoice) {
+      this.state.lastInvoice = this.state.invoice;
+      this.state.invoice = invoice;
+      this.invoice = Invoice.from(invoice);
+      console.log(this.constructor.name, 'désynchronisé', { ...this.state });
+      return false;
+    }
 
     const ledgerEvents = $$<HTMLFormElement>('form[name^=DocumentEntries-]')
       .reduce<LedgerEvent[]>((events, form) => {
@@ -24,11 +43,10 @@ export default class InvoiceDisplayInfos extends Service {
         return events;
       }, []);
 
-    if ((await this.invoice?.getInvoice()) !== invoice || ledgerEvents.some((event, id) => this.events[id] !== event)) {
-      const logData = { oldInvoice: this.invoice, oldEvents: this.events };
-      this.invoice = Invoice.from(invoice);
-      this.events = ledgerEvents;
-      console.log(this.constructor.name, 'desynchronisé', { ...logData, ...this });
+    if (ledgerEvents.some((event, id) => this.state.events?.[id] !== event)) {
+      this.state.lastEvents = ledgerEvents;
+      this.state.events = ledgerEvents;
+      console.log(this.constructor.name, 'desynchronisé', { ...this.state });
       return false;
     }
 
