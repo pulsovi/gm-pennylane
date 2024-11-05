@@ -1,61 +1,69 @@
-import { $, waitElem, parentElement, findElem, getReactProps, parseHTML } from '../_';
+import { $, waitElem, findElem, getReactProps, parseHTML, waitFunc, $$, getParam } from '../_';
+import { LedgerEvent } from '../api/types.js';
+import Service from '../framework/service.js';
 import Transaction from '../models/Transaction.js';
 
 /** Add validation message on transaction panel */
-export default class ValidMessage {
-  private static instance : ValidMessage;
+export default class ValidMessage extends Service {
   private transaction: Transaction;
+  private events: LedgerEvent[] = [];
   private message: string = '⟳';
-
-  private constructor () {
-    console.log('ValidMessage', this);
-    this.init();
-  }
-
-  static start () {
-    if (ValidMessage.instance) return;
-    ValidMessage.instance = new ValidMessage();
-  }
 
   async init () {
     await waitElem('h3', 'Transactions');                    // Transactions panel
     await waitElem('.paragraph-body-m+.heading-page.mt-1')   // transaction detail panel
-    this.displayTag();
+    while (await waitFunc(async () => !await this.isSync())) {
+      await this.loadMessage();
+    }
+  }
+
+  async loadMessage () {
+    console.log(this.constructor.name, 'loadMessage', this);
+    this.message = '⟳';
     this.displayHeadband();
 
     const rawTransaction = getReactProps($('.paragraph-body-m+.heading-page.mt-1'), 9).transaction;
     this.transaction = new Transaction(rawTransaction);
     this.message = await this.transaction.getValidMessage();
     this.message = `${(await this.transaction.isValid()) ? '✓' : '✗'} ${this.message}`;
-    this.displayTag();
     this.displayHeadband();
   }
 
-  async displayTag () {
-    const anchor = await waitElem('button', 'Chercher parmi les factures');
-    const tagsContainer = parentElement(anchor, 4)?.children[1]?.firstElementChild;
-    if (!tagsContainer) throw new Error('Le bouton "Chercher parmi les factures est trouvé, mais pas le "tagsContainer"');
+  async isSync () {
+    const ledgerEvents = $$<HTMLFormElement>('form[name^=DocumentEntries-]')
+      .reduce<LedgerEvent[]>((events, form) => {
+        const formEvents = getReactProps(form.parentElement ,3)?.initialValues.ledgerEvents;
+        return [...events, ...formEvents];
+      }, []);
 
-    const tag = $('.tag-is-valid span');
-    if (tag) {
-      tag.textContent = this.message;
-    } else {
-      tagsContainer.appendChild(parseHTML(`
-        <div class="tag-is-valid sc-aYaIB kSlEke d-inline-block overflow-visible px-0_5 sc-iMTngq haHjuB" role="status">
-          <div class="sc-iGgVNO clwwQL d-flex justify-content-evenly align-items-center">
-            <span class="text-truncate text-nowrap">${this.message}</span>
-          </div>
-        </div>
-      `));
+    if (ledgerEvents.some((event, id) => this.events[id] !== event)) {
+      const logData = { oldEvents: this.events };
+      this.events = ledgerEvents;
+      console.log(this.constructor.name, 'desynchronisé', { ...logData, ...this });
+      return false;
     }
-    if (!await this.transaction.isValid())
-      $('.tag-is-valid')?.classList.add('bg-warning-300', 'text-warning-800');
+
+    const current = Number(getParam(location.href, 'transaction_id'));
+    if (current && current !== this.transaction?.id) {
+      console.log(this.constructor.name, 'transaction desynchronisée', { current, ...this });
+      return false;
+    }
+
+    return true;
   }
 
   async displayHeadband () {
     findElem('span', 'Attention !')?.nextElementSibling?.classList.add('headband-is-valid');
+
     if (!$('.headband-is-valid'))
       $('.paragraph-body-m.text-primary-900.text-truncate')?.classList.add('headband-is-valid');
+
+    if (!$('.headband-is-valid')) {
+      const detailTab = $('aside div');
+      detailTab?.insertBefore(parseHTML(`
+        <div><div class="headband-is-valid"></div></div>
+      `), detailTab.firstChild);
+    }
 
     const headband = $('.headband-is-valid');
     if (!headband) return;
