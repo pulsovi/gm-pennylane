@@ -1,0 +1,26 @@
+import { $, getReactProps, waitElem } from "../_";
+import Service from "../framework/service";
+import Invoice from "../models/Invoice";
+import InvoiceDisplayInfos from "./DisplayInfos";
+
+export default class AllowChangeArchivedInvoiceNumber extends Service {
+  async init () {
+    await waitElem('h4', 'Ventilation');
+    document.addEventListener('keyup', async (event: KeyboardEvent) => {
+      if (event.code !== 'KeyS' || !event.ctrlKey) return;
+
+      const invoiceNumberField = $<HTMLInputElement>('input[name=invoice_number]');
+      if (event.target !== invoiceNumberField || !invoiceNumberField) return;
+
+      const rawInvoice = getReactProps(invoiceNumberField, 27).initialValues;
+      if (!rawInvoice.archived) return;
+
+      const invoice = Invoice.from(rawInvoice);
+      await invoice.unarchive();
+      await invoice.update({ invoice_number: invoiceNumberField.value });
+      await invoice.archive();
+
+      InvoiceDisplayInfos.getInstance().reload();
+    });
+  }
+}
