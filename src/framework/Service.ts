@@ -11,5 +11,9 @@ export default class Service {
     this.instance = new this();
   }
 
+  public static getInstance () {
+    return this.instance;
+  }
+
   init (): void | Promise<void> {};
 }
