@@ -6,13 +6,14 @@ export interface Status {
   valid: boolean;
   message: string;
   page: number;
+  updatedAt: number;
 }
 
-const events = ['click', 'keyup'];
 export default abstract class OpenNextInvalid extends Service {
   private current: number;
   private loading: Promise<void> | null = null;
-  private next: (interactionAllowed: boolean) => void;
+  private next: (interactionAllowed?: boolean|Event) => void;
+  protected events = ['click', 'keyup'];
   protected cache: Record<number, Status>;
   protected invalid?: Status;
   protected launched = false;
@@ -25,7 +26,7 @@ export default abstract class OpenNextInvalid extends Service {
   async init () {
     console.log(this.constructor.name, 'init');
     this.loading = this.loadValidations().then(() => { this.loading = null; });
-    this.next = (interactionAllowed: boolean) => setTimeout((interactionAllowed) => this.openNext(), 0);
+    this.next = (interactionAllowed?: boolean|Event) => setTimeout(() => this.openNext(interactionAllowed ===  true), 0);
     if (!this.launched) this.attachEvents();
   }
 
@@ -38,11 +39,11 @@ export default abstract class OpenNextInvalid extends Service {
   }
 
   attachEvents () {
-    events.forEach(event => { document.addEventListener(event, this.next); });
+    this.events.forEach(event => { document.addEventListener(event, this.next); });
   }
 
   detachEvents () {
-    events.forEach(event => { document.removeEventListener(event, this.next); });
+    this.events.forEach(event => { document.removeEventListener(event, this.next); });
   }
 
   getCurrent () {
@@ -50,6 +51,7 @@ export default abstract class OpenNextInvalid extends Service {
   }
 
   async openNext (interactionAllowed = false) {
+    this.launched = true;
     this.detachEvents();
     console.log(this.constructor.name, 'openNext');
     this.current = this.getCurrent();
