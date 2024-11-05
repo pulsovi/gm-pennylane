@@ -1,5 +1,4 @@
-import { $, findElem, getParam, getRandomArrayItem, jsonClone, parseHTML, waitElem } from "../_";
-import { sleep } from "../_/time";
+import { $, findElem, jsonClone, parseHTML, waitElem, waitFunc } from "../_";
 import { findTransaction } from "../api/transaction";
 import OpenNextInvalid, { Status } from "../framework/OpenNextInvalid";
 import Transaction from "../models/Transaction";
@@ -13,17 +12,33 @@ export default class NextInvalidTransaction extends OpenNextInvalid {
   async init () {
     await waitElem('h3', 'Transactions');                    // Transactions panel
     super.init();
-    this.addButton();
+    while(await waitFunc(() => findElem('div', 'Détails') && !$('.open-next-invalid-btn')))
+      this.addButton();
   }
 
   async loadValidations () {
     this.loadCache();
+
+    // Load last pages
     this.parameters.page = Math.max(1, ...Object.values(this.cache).map(status => status.page));
     await findTransaction(async (rawTransaction, params) => {
       const page = params.page;
       const transaction = new Transaction(rawTransaction);
-      this.setItemStatus({ ...await transaction.getStatus(), page });
-      return false;
+      const transactionStatus = await transaction.getStatus();
+      this.setItemStatus({ ...transactionStatus, page, updatedAt: Date.now() });
+      return !transactionStatus.valid;
+    }, this.parameters);
+
+    // update oldest items
+    if (!Object.keys(this.cache).length) return;
+    const oldest = Object.values(this.cache).reduce((a, b) => a.updatedAt < b.updatedAt ? a : b);
+    this.parameters.page = oldest.page;
+    await findTransaction(async (rawTransaction, params) => {
+      const page = params.page;
+      const transaction = new Transaction(rawTransaction);
+      const transactionStatus = await transaction.getStatus();
+      this.setItemStatus({ ...transactionStatus, page, updatedAt: Date.now() });
+      return !transactionStatus.valid;
     }, this.parameters);
   }
 
@@ -50,9 +65,11 @@ export default class NextInvalidTransaction extends OpenNextInvalid {
   addButton () {
     const nextButton = findElem('div', 'Détails')?.querySelector('button+button:last-child');
     if (!nextButton) return;
+    this.loadCache();
+    const number = Object.values(this.cache).filter(status => !status.valid).length;
     const className = nextButton.className;
     nextButton.parentElement?.insertBefore(parseHTML(
-      `<button type="button" class="${className} open-next-invalid-btn">&nbsp;&gt;&nbsp;</button>`
+      `<button type="button" class="${className} open-next-invalid-btn">&nbsp;&gt;&nbsp;${number}</button>`
     ), nextButton.previousElementSibling);
     $('.open-next-invalid-btn')!.addEventListener('click', event => {
       event.stopPropagation();
