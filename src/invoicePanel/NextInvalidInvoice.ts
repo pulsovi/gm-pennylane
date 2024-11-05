@@ -10,6 +10,12 @@ export default class NextInvalidInvoice extends OpenNextInvalid {
   private parameters = { direction: 'customer', page: 1 };
 
   async init () {
+    await this.start();
+    this.keepActive();
+    await super.init();
+  }
+
+  async start () {
     await waitElem('h4', 'Ventilation');
     const directionButton = await Promise.race([
       waitElem('button', 'Client'),
@@ -22,10 +28,13 @@ export default class NextInvalidInvoice extends OpenNextInvalid {
       this.storageKey ='supplierInvoiceValidation';
       this.parameters.direction = 'supplier';
     }
-    await super.init();
     this.addButton();
+  }
+
+  async keepActive () {
+    await this.start();
     await waitFunc(() => !$('.open-next-invalid-btn'));
-    setTimeout(() => this.init(), 0);
+    setTimeout(() => this.keepActive(), 0);
   }
 
   async loadValidations () {
@@ -53,8 +62,9 @@ export default class NextInvalidInvoice extends OpenNextInvalid {
       return false;
     }
     if (status.message.includes('6288')) {
+      const rawInvoice = await invoice.getInvoice();
       await invoice.update({invoice_lines_attributes:[{
-        ...invoice.invoice.invoice_lines[0],
+        ...rawInvoice.invoice_lines[0],
         pnl_plan_item_id: null,
         pnl_plan_item: null,
       }]});
