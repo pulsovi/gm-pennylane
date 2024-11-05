@@ -208,9 +208,10 @@ declare interface InvoiceLine {
   vat_rate: string;
 }
 
-declare type TransactionList= List<'transactions', RawTransaction>;
+declare type TransactionList= List<'transactions', RawTransactionMin>;
 declare type TransactionListParams = ListParams;
-declare interface RawTransaction {
+/** Liste des propriétés vérifiée. Pour plus de détails, récupérer le "document" */
+declare interface RawTransactionMin {
   id: number;
 
   /** Compte bancaire associé */
@@ -240,16 +241,7 @@ declare interface ReducedGroupedDocument {
   type: 'Transaction' | 'Invoice';
 }
 
-declare interface RawLedgerEvent {
-  amount: `${number}`;
-  label: string | null;
-  planItem: {
-    number: `${number}`;
-  }
-}
-
 declare interface RawDocument {
-
   account_id: number;
   accounting_type: boolean;
   amount: `${number}`;
@@ -308,7 +300,7 @@ declare interface RawDocument {
   url: string;
 }
 
-declare interface GroupedDocument extends Exclude<RawDocument, 'grouped_documents'> {
+declare interface GroupedDocument extends Omit<RawDocument, 'grouped_documents'> {
   id: number;
 
   /** Bank account details */
@@ -323,7 +315,7 @@ declare interface GroupedDocument extends Exclude<RawDocument, 'grouped_document
       id: number;
       label: string;
     };
-  ledgerEvents: LedgerEvent[];
+  ledgerEvents?: LedgerEvent[];
   ledgerEventsCount: number;
   pending: boolean;
   preview_status: null;
@@ -382,6 +374,7 @@ declare interface BankAccount {
 }
 
 declare interface LedgerEvent {
+  amount: `${number}`;
   balance: `${number}`;
   company_id: number;
   /** Date ISO string such '2024-05-17T03:24:55.928153Z' */
@@ -416,4 +409,11 @@ interface PlanItem  {
 
 declare type RawInvoiceUpdate = Exclude<RawInvoice, 'invoice_lines'> & {
   invoice_lines_attributes: InvoiceLine[];
+}
+
+declare interface DocumentStatus {
+  has_file: boolean;
+  preview_status:"ok";
+  preview_urls: string[];
+  embeddable_in_browser: boolean;
 }

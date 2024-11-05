@@ -1,11 +1,14 @@
 import { jsonClone } from '../_';
 
 import { apiRequest } from './core.js';
-import { RawTransaction, TransactionList, TransactionListParams } from './types.js';
+import { RawTransactionMin, TransactionList, TransactionListParams } from './types.js';
 
-export async function getTransaction (id: number): Promise<RawTransaction> {
+/**
+ * @return {Promise<RawTransactionMin>}    Type vérifié
+ */
+export async function getTransaction (id: number): Promise<RawTransactionMin> {
   const response = await apiRequest(`accountants/wip/transactions/${id}`, null, 'GET');
-  return await response.json();
+  return await response?.json();
 }
 
 async function getTransactionsList (params: TransactionListParams = {}): Promise<TransactionList> {
@@ -16,7 +19,7 @@ async function getTransactionsList (params: TransactionListParams = {}): Promise
 }
 
 export async function findTransaction (
-  cb: (transaction: RawTransaction, params: TransactionListParams & { page: number }) => boolean | Promise<boolean>,
+  cb: (transaction: RawTransactionMin, params: TransactionListParams & { page: number }) => boolean | Promise<boolean>,
   params: TransactionListParams = {}
 ) {
   if (('page' in params) && !Number.isInteger(params.page)) {
