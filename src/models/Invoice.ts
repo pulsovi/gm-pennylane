@@ -115,9 +115,9 @@ class SupplierInvoice extends Invoice {
       console.log({ledgerEvents, diffLine});
       if (diffLine) {
         if (parseFloat(diffLine.amount) < 0)
-          return 'Les écarts de conversions de devises doivent utiliser le compte 477';
+          return 'Les écarts de conversions de devises doivent utiliser le compte 756';
         else
-          return 'Les écarts de conversions de devises doivent utiliser le compte 476';
+          return 'Les écarts de conversions de devises doivent utiliser le compte 656';
       }
     }
 

@@ -61,11 +61,11 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  return result;\n" +
 "}\n" +
 "\n" +
-"function $(selector) {\n" +
-"  return document.querySelector(selector);\n" +
+"function $(selector, root = document) {\n" +
+"  return root.querySelector(selector);\n" +
 "}\n" +
-"function $$(selector) {\n" +
-"  return Array.from(document.querySelectorAll(selector));\n" +
+"function $$(selector, root = document) {\n" +
+"  return Array.from(root.querySelectorAll(selector));\n" +
 "}\n" +
 "async function waitElem(selector, content) {\n" +
 "  return await waitFunc(() => findElem(selector, content) ?? false);\n" +
@@ -73,14 +73,12 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "function findElem(selector, content) {\n" +
 "  return $$(selector).find((el) => !content || el.textContent === content) ?? null;\n" +
 "}\n" +
-"window.findElem = findElem;\n" +
 "function parentElement(child, steps = 1) {\n" +
 "  let parent = child;\n" +
 "  for (let i = 0; i < steps; ++i)\n" +
 "    parent = parent?.parentElement;\n" +
 "  return parent;\n" +
 "}\n" +
-"window.parentElement = parentElement;\n" +
 "function upElement(elem, upCount) {\n" +
 "  let retval = elem;\n" +
 "  for (let i = 0; i < upCount; ++i)\n" +
@@ -92,6 +90,15 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  template.innerHTML = html;\n" +
 "  return template.content;\n" +
 "}\n" +
+"Object.assign(window, { gm: {\n" +
+"  $$,\n" +
+"  $,\n" +
+"  findElem,\n" +
+"  parentElement,\n" +
+"  parseHTML,\n" +
+"  upElement,\n" +
+"  waitElem\n" +
+"} });\n" +
 "\n" +
 "function jsonClone(obj) {\n" +
 "  try {\n" +
@@ -126,6 +133,24 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  return new URL(url).searchParams.get(paramName);\n" +
 "}\n" +
 "\n" +
+"class Service {\n" +
+"  static instance;\n" +
+"  constructor() {\n" +
+"    this.init();\n" +
+"  }\n" +
+"  static start() {\n" +
+"    console.log(this.name, \"start\");\n" +
+"    if (this.instance)\n" +
+"      return;\n" +
+"    this.instance = new this();\n" +
+"  }\n" +
+"  static getInstance() {\n" +
+"    return this.instance;\n" +
+"  }\n" +
+"  init() {\n" +
+"  }\n" +
+"}\n" +
+"\n" +
 "let apiRequestWait = null;\n" +
 "async function apiRequest(endpoint, data, method = \"POST\") {\n" +
 "  if (apiRequestWait)\n" +
@@ -152,6 +177,10 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    });\n" +
 "    return apiRequest(endpoint, data, method);\n" +
 "  }\n" +
+"  if (response.status === 404) {\n" +
+"    console.log(\"API Request: page introuvable\", { endpoint, data, method });\n" +
+"    return null;\n" +
+"  }\n" +
 "  if (response.status !== 200) {\n" +
 "    console.log(\"apiRequest response status is not 200\", { response });\n" +
 "    throw new Error(\"todo : am\\xE9liorer le message ci-dessus\");\n" +
@@ -166,9 +195,8 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "\n" +
 "async function getDocument(id) {\n" +
 "  const response = await apiRequest(`documents/${id}`, null, \"GET\");\n" +
-"  return await response.json();\n" +
+"  return await response?.json();\n" +
 "}\n" +
-"window.getDocument = getDocument;\n" +
 "async function documentMatching(options) {\n" +
 "  const group_uuids = Array.isArray(options.groups) ? options.groups : [options.groups];\n" +
 "  await apiRequest(\n" +
@@ -186,51 +214,75 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "async function archiveDocument(id, unarchive = false) {\n" +
 "  const body = { documents: [{ id }], unarchive };\n" +
 "  const response = await apiRequest(\"documents/batch_archive\", body, \"POST\");\n" +
-"  const responseData = await response.json();\n" +
-"  console.log(\"api.archiveDocument\", { id, unarchive, body, responseData });\n" +
+"  const responseData = await response?.json();\n" +
 "  return responseData;\n" +
 "}\n" +
 "\n" +
 "async function getLedgerEvents(id) {\n" +
-"  const response = await apiRequest(`accountants/operations/${id}/ledger_events`, null, \"GET\");\n" +
+"  const response = await apiRequest(`accountants/operations/${id}/ledger_events?per_page=-1`, null, \"GET\");\n" +
 "  return await response.json();\n" +
 "}\n" +
-"window.getLedgerEvents = getLedgerEvents;\n" +
+"Object.assign(window, { getLedgerEvents });\n" +
+"async function getGroupedDocuments(id) {\n" +
+"  const response = await apiRequest(`accountants/operations/${id}/grouped_documents?per_page=-1`, null, \"GET\");\n" +
+"  return await response.json();\n" +
+"}\n" +
 "\n" +
 "class Document {\n" +
 "  type;\n" +
 "  id;\n" +
 "  document;\n" +
+"  groupedDocuments;\n" +
 "  ledgerEvents;\n" +
 "  constructor({ id }) {\n" +
 "    this.id = id;\n" +
 "  }\n" +
 "  async getDocument() {\n" +
 "    if (!this.document) {\n" +
-"      const doc = this.document = getDocument(this.id);\n" +
-"      this.document = await doc;\n" +
+"      this.document = getDocument(this.id);\n" +
+"      this.document = await this.document;\n" +
 "    }\n" +
-"    return this.document;\n" +
+"    return await this.document;\n" +
 "  }\n" +
 "  async getLedgerEvents() {\n" +
 "    if (!this.ledgerEvents) {\n" +
-"      const events = this.ledgerEvents = this._loadLedgerEvents();\n" +
-"      this.ledgerEvents = await events;\n" +
+"      this.ledgerEvents = this._loadLedgerEvents();\n" +
 "    }\n" +
-"    return this.ledgerEvents;\n" +
+"    return await this.ledgerEvents;\n" +
 "  }\n" +
 "  async _loadLedgerEvents() {\n" +
-"    const document = await this.getDocument();\n" +
-"    const events = await Promise.all(document.grouped_documents.map(({ id }) => getLedgerEvents(id)));\n" +
-"    return [].concat(...events);\n" +
+"    const groupedDocuments = await this.getGroupedDocuments();\n" +
+"    const events = await Promise.all(groupedDocuments.map(\n" +
+"      (doc) => getLedgerEvents(doc.id)\n" +
+"    ));\n" +
+"    this.ledgerEvents = [].concat(...events);\n" +
+"    return this.ledgerEvents;\n" +
 "  }\n" +
 "  async reloadLedgerEvents() {\n" +
+"    delete this.ledgerEvents;\n" +
 "    this.document = reloadLedgerEvents(this.id);\n" +
 "    this.document = await this.document;\n" +
 "    return this.document;\n" +
 "  }\n" +
 "  async archive(unarchive = false) {\n" +
 "    return await archiveDocument(this.id, unarchive);\n" +
+"  }\n" +
+"  async unarchive() {\n" +
+"    return await this.archive(true);\n" +
+"  }\n" +
+"  async getGroupedDocuments() {\n" +
+"    if (!this.groupedDocuments)\n" +
+"      this.groupedDocuments = this._loadGroupedDocuments();\n" +
+"    return await this.groupedDocuments;\n" +
+"  }\n" +
+"  async _loadGroupedDocuments() {\n" +
+"    const otherDocuments = await getGroupedDocuments(this.id);\n" +
+"    const mainDocument = await this.getDocument();\n" +
+"    this.groupedDocuments = [\n" +
+"      ...otherDocuments,\n" +
+"      mainDocument.grouped_documents.find((doc) => doc.id === this.id)\n" +
+"    ];\n" +
+"    return this.groupedDocuments;\n" +
 "  }\n" +
 "}\n" +
 "\n" +
@@ -266,40 +318,62 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "}\n" +
 "\n" +
 "class Transaction extends ValidableDocument {\n" +
-"  transaction;\n" +
+"  transactionMin;\n" +
 "  constructor(transactionOrId) {\n" +
 "    const id = \"number\" === typeof transactionOrId ? transactionOrId : transactionOrId.id;\n" +
 "    super({ id });\n" +
 "    if (\"object\" === typeof transactionOrId)\n" +
-"      this.transaction = transactionOrId;\n" +
+"      this.transactionMin = transactionOrId;\n" +
 "  }\n" +
 "  async loadValidMessage() {\n" +
-"    if (this.id === Number(getParam(location.href, \"transaction_id\")))\n" +
+"    const isCurrent = this.id === Number(getParam(location.href, \"transaction_id\"));\n" +
+"    if (isCurrent)\n" +
 "      console.log(\"Transaction getValidMessage\", this);\n" +
 "    const doc = await this.getDocument();\n" +
-"    if (doc.is_waiting_details)\n" +
-"      return \"OK\";\n" +
-"    if (doc.date.startsWith(\"2024\"))\n" +
+"    if (doc.label.toUpperCase().startsWith(\"VIR \") && !doc.label.includes(\" DE: STRIPE MOTIF: STRIPE REF: STRIPE-\")) {\n" +
+"      return \"Virement re\\xE7u sans justificatif\";\n" +
+"    }\n" +
+"    if (doc.archived)\n" +
 "      return \"OK\";\n" +
 "    const ledgerEvents = await this.getLedgerEvents();\n" +
-"    if (ledgerEvents.find((line) => line.planItem.number === \"6288\"))\n" +
-"      return \"Une ligne d'\\xE9criture comporte le num\\xE9ro de compte 6288\";\n" +
-"    const third = ledgerEvents.find((line) => line.planItem.number.startsWith(\"40\"))?.planItem?.number;\n" +
-"    if (third) {\n" +
-"      const balance = ledgerEvents.reduce((sum, line) => {\n" +
-"        return sum + (line.planItem.number == third ? parseFloat(line.amount) : 0);\n" +
-"      }, 0);\n" +
-"      if (balance !== 0)\n" +
-"        return \"Balance d\\xE9s\\xE9quilibr\\xE9e.\";\n" +
-"    }\n" +
 "    if (ledgerEvents.some((line) => line.planItem.number.startsWith(\"6571\") && !line.label))\n" +
 "      return `nom du b\\xE9n\\xE9ficiaire manquant dans l'\\xE9criture \"6571\"`;\n" +
 "    if (ledgerEvents.some((line) => line.planItem.number.startsWith(\"445\")))\n" +
 "      return \"Une \\xE9criture comporte un compte de TVA\";\n" +
-"    if (ledgerEvents.find((line) => line.planItem.number === \"4716001\"))\n" +
-"      return \"Une ligne d'\\xE9criture utilise un compte d'attente 4716001\";\n" +
-"    if (ledgerEvents.some((line) => line.planItem.number.startsWith(\"41\")))\n" +
-"      return \"Une \\xE9criture comporte un compte d'attente\";\n" +
+"    const recent = Date.now() - new Date(doc.date).getTime() < 864e5 * 30;\n" +
+"    if (!recent && ledgerEvents.some((line) => line.planItem.number.startsWith(\"512\") && !line.reconciliation_id))\n" +
+"      return \"Cette transaction n'est pas rattach\\xE9e \\xE0 un rapprochement bancaire\";\n" +
+"    if (!doc.is_waiting_details || isCurrent) {\n" +
+"      if (ledgerEvents.find((line) => line.planItem.number === \"6288\"))\n" +
+"        return \"Une ligne d'\\xE9criture comporte le num\\xE9ro de compte 6288\";\n" +
+"      if (ledgerEvents.find((line) => line.planItem.number === \"4716001\"))\n" +
+"        return \"Une ligne d'\\xE9criture utilise un compte d'attente 4716001\";\n" +
+"      if (ledgerEvents.some((line) => line.planItem.number.startsWith(\"41\")))\n" +
+"        return \"Une \\xE9criture comporte un compte d'attente\";\n" +
+"      const third = ledgerEvents.find((line) => line.planItem.number.startsWith(\"40\"))?.planItem?.number;\n" +
+"      if (third) {\n" +
+"        const thirdEvents = ledgerEvents.filter((line) => line.planItem.number === third);\n" +
+"        const balance = thirdEvents.reduce((sum, line) => sum + parseFloat(line.amount), 0);\n" +
+"        if (this.id === Number(getParam(location.href, \"transaction_id\")))\n" +
+"          console.log(this.constructor.name, \"loadValidMessage: Balance\", Math.abs(balance) > 1e-3 ? \"d\\xE9s\\xE9quilibr\\xE9e\" : \"OK\", { third, thirdEvents, balance, ledgerEvents, [this.constructor.name]: this });\n" +
+"        if (Math.abs(balance) > 1e-3) {\n" +
+"          return `Balance d\\xE9s\\xE9quilibr\\xE9e: ${balance}`;\n" +
+"        }\n" +
+"      }\n" +
+"      if (Math.abs(parseFloat(doc.currency_amount)) < 100)\n" +
+"        return \"OK\";\n" +
+"      const attachmentOptional = Math.abs(parseFloat(doc.currency_amount)) < 100 || [\n" +
+"        \"REMISE CHEQUE \",\n" +
+"        \"VIR RECU \",\n" +
+"        \"VIR INST RE \",\n" +
+"        \"VIR INSTANTANE RECU DE: \"\n" +
+"      ].some((label) => doc.label.startsWith(label));\n" +
+"      const attachmentRequired = doc.attachment_required && !doc.attachment_lost && (!attachmentOptional || isCurrent);\n" +
+"      const groupedDocuments = await this.getGroupedDocuments();\n" +
+"      const hasAttachment = groupedDocuments.length > 1;\n" +
+"      if (attachmentRequired && !hasAttachment)\n" +
+"        return \"Justificatif manquant\";\n" +
+"    }\n" +
 "    return \"OK\";\n" +
 "  }\n" +
 "  /** Add item to this transaction's group */\n" +
@@ -310,55 +384,55 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  }\n" +
 "}\n" +
 "\n" +
-"class ValidMessage {\n" +
-"  static instance;\n" +
+"class ValidMessage extends Service {\n" +
 "  transaction;\n" +
+"  events = [];\n" +
 "  message = \"\\u27F3\";\n" +
-"  constructor() {\n" +
-"    console.log(\"ValidMessage\", this);\n" +
-"    this.init();\n" +
-"  }\n" +
-"  static start() {\n" +
-"    if (ValidMessage.instance)\n" +
-"      return;\n" +
-"    ValidMessage.instance = new ValidMessage();\n" +
-"  }\n" +
 "  async init() {\n" +
 "    await waitElem(\"h3\", \"Transactions\");\n" +
 "    await waitElem(\".paragraph-body-m+.heading-page.mt-1\");\n" +
-"    this.displayTag();\n" +
+"    while (await waitFunc(async () => !await this.isSync())) {\n" +
+"      await this.loadMessage();\n" +
+"    }\n" +
+"  }\n" +
+"  async loadMessage() {\n" +
+"    console.log(this.constructor.name, \"loadMessage\", this);\n" +
+"    this.message = \"\\u27F3\";\n" +
 "    this.displayHeadband();\n" +
 "    const rawTransaction = getReactProps($(\".paragraph-body-m+.heading-page.mt-1\"), 9).transaction;\n" +
 "    this.transaction = new Transaction(rawTransaction);\n" +
 "    this.message = await this.transaction.getValidMessage();\n" +
 "    this.message = `${await this.transaction.isValid() ? \"\\u2713\" : \"\\u2717\"} ${this.message}`;\n" +
-"    this.displayTag();\n" +
 "    this.displayHeadband();\n" +
 "  }\n" +
-"  async displayTag() {\n" +
-"    const anchor = await waitElem(\"button\", \"Chercher parmi les factures\");\n" +
-"    const tagsContainer = parentElement(anchor, 4)?.children[1]?.firstElementChild;\n" +
-"    if (!tagsContainer)\n" +
-"      throw new Error('Le bouton \"Chercher parmi les factures est trouv\\xE9, mais pas le \"tagsContainer\"');\n" +
-"    const tag = $(\".tag-is-valid span\");\n" +
-"    if (tag) {\n" +
-"      tag.textContent = this.message;\n" +
-"    } else {\n" +
-"      tagsContainer.appendChild(parseHTML(`\n" +
-"        <div class=\"tag-is-valid sc-aYaIB kSlEke d-inline-block overflow-visible px-0_5 sc-iMTngq haHjuB\" role=\"status\">\n" +
-"          <div class=\"sc-iGgVNO clwwQL d-flex justify-content-evenly align-items-center\">\n" +
-"            <span class=\"text-truncate text-nowrap\">${this.message}</span>\n" +
-"          </div>\n" +
-"        </div>\n" +
-"      `));\n" +
+"  async isSync() {\n" +
+"    const ledgerEvents = $$(\"form[name^=DocumentEntries-]\").reduce((events, form) => {\n" +
+"      const formEvents = getReactProps(form.parentElement, 3)?.initialValues.ledgerEvents;\n" +
+"      return [...events, ...formEvents];\n" +
+"    }, []);\n" +
+"    if (ledgerEvents.some((event, id) => this.events[id] !== event)) {\n" +
+"      const logData = { oldEvents: this.events };\n" +
+"      this.events = ledgerEvents;\n" +
+"      console.log(this.constructor.name, \"desynchronis\\xE9\", { ...logData, ...this });\n" +
+"      return false;\n" +
 "    }\n" +
-"    if (!await this.transaction.isValid())\n" +
-"      $(\".tag-is-valid\")?.classList.add(\"bg-warning-300\", \"text-warning-800\");\n" +
+"    const current = Number(getParam(location.href, \"transaction_id\"));\n" +
+"    if (current && current !== this.transaction?.id) {\n" +
+"      console.log(this.constructor.name, \"transaction desynchronis\\xE9e\", { current, ...this });\n" +
+"      return false;\n" +
+"    }\n" +
+"    return true;\n" +
 "  }\n" +
 "  async displayHeadband() {\n" +
 "    findElem(\"span\", \"Attention\\xA0!\")?.nextElementSibling?.classList.add(\"headband-is-valid\");\n" +
 "    if (!$(\".headband-is-valid\"))\n" +
 "      $(\".paragraph-body-m.text-primary-900.text-truncate\")?.classList.add(\"headband-is-valid\");\n" +
+"    if (!$(\".headband-is-valid\")) {\n" +
+"      const detailTab = $(\"aside div\");\n" +
+"      detailTab?.insertBefore(parseHTML(`\n" +
+"        <div><div class=\"headband-is-valid\"></div></div>\n" +
+"      `), detailTab.firstChild);\n" +
+"    }\n" +
 "    const headband = $(\".headband-is-valid\");\n" +
 "    if (!headband)\n" +
 "      return;\n" +
@@ -368,7 +442,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "\n" +
 "async function getTransaction(id) {\n" +
 "  const response = await apiRequest(`accountants/wip/transactions/${id}`, null, \"GET\");\n" +
-"  return await response.json();\n" +
+"  return await response?.json();\n" +
 "}\n" +
 "async function getTransactionsList(params = {}) {\n" +
 "  const searchParams = new URLSearchParams(params);\n" +
@@ -396,21 +470,6 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    parameters = Object.assign(jsonClone(parameters), { page: parameters.page + 1 });\n" +
 "  } while (parameters.page <= data.pagination.pages);\n" +
 "  return null;\n" +
-"}\n" +
-"\n" +
-"class Service {\n" +
-"  static instance;\n" +
-"  constructor() {\n" +
-"    this.init();\n" +
-"  }\n" +
-"  static start() {\n" +
-"    console.log(this.name, \"start\");\n" +
-"    if (this.instance)\n" +
-"      return;\n" +
-"    this.instance = new this();\n" +
-"  }\n" +
-"  init() {\n" +
-"  }\n" +
 "}\n" +
 "\n" +
 "class TransactionAddByIdButton extends Service {\n" +
@@ -456,24 +515,23 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  if (!id)\n" +
 "    throw new Error(`Error: getInvoice() invalid id: ${id}`);\n" +
 "  const response = await apiRequest(`accountants/invoices/${id}`, null, \"GET\");\n" +
+"  if (!response)\n" +
+"    return null;\n" +
 "  const data = await response.json();\n" +
 "  return data.invoice;\n" +
 "}\n" +
 "async function updateInvoice(id, data) {\n" +
 "  const response = await apiRequest(`/accountants/invoices/${id}`, { invoice: data }, \"PUT\");\n" +
-"  const responseData = await response.json();\n" +
-"  console.log(\"api.updateInvoice\", { id, data, responseData });\n" +
+"  const responseData = await response?.json();\n" +
 "  return responseData;\n" +
 "}\n" +
-"window.updateInvoice = updateInvoice;\n" +
 "async function getInvoicesList(params = {}) {\n" +
 "  const searchParams = new URLSearchParams(params);\n" +
 "  if (!searchParams.has(\"filter\"))\n" +
 "    searchParams.set(\"filter\", \"[]\");\n" +
-"  console.log(\"getInvoicesList\", { params, searchParams }, searchParams.toString());\n" +
 "  const url = `accountants/invoices/list?${searchParams.toString()}`;\n" +
 "  const response = await apiRequest(url, null, \"GET\");\n" +
-"  return await response.json();\n" +
+"  return await response?.json();\n" +
 "}\n" +
 "async function findInvoice(cb, params = {}) {\n" +
 "  if (\"page\" in params && !Number.isInteger(params.page)) {\n" +
@@ -492,26 +550,28 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    for (const invoice of invoices)\n" +
 "      if (await cb(invoice, parameters))\n" +
 "        return invoice;\n" +
-"    parameters = Object.assign(jsonClone(parameters), { page: parameters.page + 1 });\n" +
+"    parameters = Object.assign(jsonClone(parameters), { page: parameters.page ?? 0 + 1 });\n" +
 "  } while (true);\n" +
 "}\n" +
 "\n" +
-"const events = [\"click\", \"keyup\"];\n" +
 "class OpenNextInvalid extends Service {\n" +
-"  cache;\n" +
-"  next;\n" +
-"  loading = null;\n" +
-"  invalid;\n" +
-"  storageKey;\n" +
-"  idParamName;\n" +
 "  current;\n" +
+"  loading = null;\n" +
+"  next;\n" +
+"  events = [\"click\", \"keyup\"];\n" +
+"  cache;\n" +
+"  invalid;\n" +
+"  launched = false;\n" +
+"  idParamName;\n" +
+"  storageKey;\n" +
 "  async init() {\n" +
 "    console.log(this.constructor.name, \"init\");\n" +
 "    this.loading = this.loadValidations().then(() => {\n" +
 "      this.loading = null;\n" +
 "    });\n" +
-"    this.next = () => setTimeout(() => this.openNext(), 0);\n" +
-"    this.attachEvents();\n" +
+"    this.next = (interactionAllowed) => setTimeout(() => this.openNext(interactionAllowed === true), 0);\n" +
+"    if (!this.launched)\n" +
+"      this.attachEvents();\n" +
 "  }\n" +
 "  loadCache() {\n" +
 "    this.cache = JSON.parse(localStorage.getItem(this.storageKey) ?? \"{}\");\n" +
@@ -520,12 +580,12 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    localStorage.setItem(this.storageKey, JSON.stringify(this.cache));\n" +
 "  }\n" +
 "  attachEvents() {\n" +
-"    events.forEach((event) => {\n" +
+"    this.events.forEach((event) => {\n" +
 "      document.addEventListener(event, this.next);\n" +
 "    });\n" +
 "  }\n" +
 "  detachEvents() {\n" +
-"    events.forEach((event) => {\n" +
+"    this.events.forEach((event) => {\n" +
 "      document.removeEventListener(event, this.next);\n" +
 "    });\n" +
 "  }\n" +
@@ -533,6 +593,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    return this.current = Number(getParam(location.href, this.idParamName));\n" +
 "  }\n" +
 "  async openNext(interactionAllowed = false) {\n" +
+"    this.launched = true;\n" +
 "    this.detachEvents();\n" +
 "    console.log(this.constructor.name, \"openNext\");\n" +
 "    this.current = this.getCurrent();\n" +
@@ -581,7 +642,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    const success = await this.openInvalid(status);\n" +
 "    if (!success) {\n" +
 "      delete this.invalid;\n" +
-"      setTimeout(this.next, 0);\n" +
+"      this.next(interactionAllowed);\n" +
 "    }\n" +
 "  }\n" +
 "  setItemStatus(status) {\n" +
@@ -595,10 +656,6 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "class Invoice extends ValidableDocument {\n" +
 "  type = \"invoice\";\n" +
 "  invoice;\n" +
-"  constructor(invoice) {\n" +
-"    super(invoice);\n" +
-"    this.invoice = invoice;\n" +
-"  }\n" +
 "  static from(invoice) {\n" +
 "    if (invoice.direction === \"supplier\")\n" +
 "      return new SupplierInvoice(invoice);\n" +
@@ -606,7 +663,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  }\n" +
 "  static async load(id) {\n" +
 "    const invoice = await getInvoice(id);\n" +
-"    if (!invoice.id) {\n" +
+"    if (!invoice?.id) {\n" +
 "      console.log(\"Invoice.load: cannot load this invoice\", { id, invoice });\n" +
 "      return null;\n" +
 "    }\n" +
@@ -615,27 +672,46 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  async update(data) {\n" +
 "    return await updateInvoice(this.id, data);\n" +
 "  }\n" +
+"  async getInvoice() {\n" +
+"    if (!this.invoice) {\n" +
+"      this.invoice = getInvoice(this.id).then((response) => {\n" +
+"        if (!response)\n" +
+"          throw new Error(\"Impossible de charger la facture\");\n" +
+"        return response;\n" +
+"      });\n" +
+"    }\n" +
+"    return this.invoice;\n" +
+"  }\n" +
 "}\n" +
-"window.Invoice = Invoice;\n" +
+"Object.assign(window, { Invoice });\n" +
 "class SupplierInvoice extends Invoice {\n" +
 "  direction = \"supplier\";\n" +
 "  async loadValidMessage() {\n" +
-"    const invoice = this.invoice;\n" +
+"    const current = Number(getParam(location.href, \"id\"));\n" +
+"    const invoice = await this.getInvoice();\n" +
 "    if (!invoice)\n" +
 "      console.log(\"SupplierInvoice.loadValidMessage\", { invoice });\n" +
 "    const invoiceDocument = await this.getDocument();\n" +
-"    const current = Number(getParam(location.href, \"id\"));\n" +
 "    if (invoice.id === current)\n" +
 "      console.log(\"SupplierInvoice.loadValidMessage\", { invoice, invoiceDocument });\n" +
-"    const transactions = invoiceDocument.grouped_documents.filter((doc) => doc.type === \"Transaction\");\n" +
-"    if (transactions.length && transactions.every((transaction) => transaction.date.startsWith(\"2024\"))) {\n" +
+"    const groupedDocuments = await this.getGroupedDocuments();\n" +
+"    const transactions = groupedDocuments.filter((doc) => doc.type === \"Transaction\");\n" +
+"    const currentYear = 2024;\n" +
+"    if (transactions.length && transactions.every((transaction) => parseInt(transaction.date.slice(0, 4)) < currentYear)) {\n" +
 "      if (invoice.id == current)\n" +
-"        console.log(\"transactions 2024\");\n" +
+"        console.log(this.constructor.name, \"loadValidMessage\", \"ann\\xE9e pass\\xE9e\");\n" +
 "      return \"OK\";\n" +
 "    }\n" +
 "    if (invoice.archived) {\n" +
+"      const allowed = [\"\\xA7 #\", \"\\xA7 CARTE ETRANGERE\", \"\\xA4 TRANSACTION INTROUVABLE\"];\n" +
+"      if (!allowed.some((allowedItem) => invoice.invoice_number.startsWith(allowedItem)))\n" +
+"        return `Le num\\xE9ro de facture d'une facture archiv\\xE9e doit commencer par une de ces possibilit\\xE9s : ${allowed.map((it) => `\"${it}\"`).join(\", \")}`;\n" +
 "      return \"OK\";\n" +
 "    }\n" +
+"    if (invoice.thirdparty && !invoice.thirdparty.country)\n" +
+"      return \"Fournisseur inconnu : Choisir un autre fournisseur ou ajouter le pays de celui-ci\";\n" +
+"    if (!invoice.thirdparty_id && !invoice.thirdparty)\n" +
+"      return \"Ajouter un fournisseur\";\n" +
 "    if (invoice.invoice_lines?.some((line) => line.pnl_plan_item?.number == \"6288\"))\n" +
 "      return \"compte tiers 6288\";\n" +
 "    if (invoice.invoice_number?.startsWith(\"\\xA4\")) {\n" +
@@ -643,27 +719,34 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "        console.log(\"\\xA4\");\n" +
 "      return \"OK\";\n" +
 "    }\n" +
-"    if ([106438171, 114270419].includes(invoice.thirdparty?.id ?? 0)) {\n" +
-"      if (this.invoice.date || this.invoice.deadline)\n" +
+"    if ([106438171, 114270419, 106519227].includes(invoice.thirdparty?.id ?? 0)) {\n" +
+"      if (invoice.date || invoice.deadline)\n" +
 "        return \"Les dates doivent \\xEAtre vides\";\n" +
 "    }\n" +
+"    if (invoice.thirdparty?.name === \"AIDES OCTROY\\xC9ES\" && invoice.thirdparty.id !== 106438171)\n" +
+"      return `Il ne doit y avoir qu'un seul compte \"AIDES OCTROY\\xC9ES\", et ce n'est pas le bon...`;\n" +
+"    if (invoice.thirdparty?.name === \"PIECE ID\" && invoice.thirdparty.id !== 106519227)\n" +
+"      return `Il ne doit y avoir qu'un seul compte \"PIECE ID\", et ce n'est pas le bon...`;\n" +
 "    if (invoice.currency !== \"EUR\") {\n" +
 "      const ledgerEvents = await this.getLedgerEvents();\n" +
 "      const diffLine = ledgerEvents.find((line) => line.planItem.number === \"4716001\");\n" +
 "      console.log({ ledgerEvents, diffLine });\n" +
 "      if (diffLine) {\n" +
 "        if (parseFloat(diffLine.amount) < 0)\n" +
-"          return \"Les \\xE9carts de conversions de devises doivent utiliser le compte 477\";\n" +
+"          return \"Les \\xE9carts de conversions de devises doivent utiliser le compte 756\";\n" +
 "        else\n" +
-"          return \"Les \\xE9carts de conversions de devises doivent utiliser le compte 476\";\n" +
+"          return \"Les \\xE9carts de conversions de devises doivent utiliser le compte 656\";\n" +
 "      }\n" +
 "    }\n" +
 "    if (invoice.thirdparty?.id === 115640202)\n" +
 "      return \"OK\";\n" +
-"    if (invoice.thirdparty?.id === 106519227 && invoice.invoice_number?.startsWith(\"ID \"))\n" +
-"      return \"OK\";\n" +
-"    const groupedDocuments = invoiceDocument.grouped_documents;\n" +
-"    if (!groupedDocuments?.some((doc) => doc.type === \"Transaction\"))\n" +
+"    if (invoice.thirdparty?.id === 106519227) {\n" +
+"      if (invoice.invoice_number?.startsWith(\"ID \"))\n" +
+"        return \"OK\";\n" +
+"      else\n" +
+"        return `Le \"Num\\xE9ro de facture\" des pi\\xE8ces d'identit\\xE9 commence obligatoirement par \"ID \"`;\n" +
+"    }\n" +
+"    if (!transactions.length)\n" +
 "      return \"pas de transaction attach\\xE9e\";\n" +
 "    return \"OK\";\n" +
 "  }\n" +
@@ -671,22 +754,38 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "class CustomerInvoice extends Invoice {\n" +
 "  direction = \"customer\";\n" +
 "  async loadValidMessage() {\n" +
-"    if (!this.invoice.thirdparty)\n" +
-"      return 'choisir un \"client\"';\n" +
-"    if (this.invoice.date || this.invoice.deadline)\n" +
-"      return \"les dates doivent \\xEAtre vides\";\n" +
-"    if (this.invoice.thirdparty.id === 103165930)\n" +
+"    const invoice = await this.getInvoice();\n" +
+"    console.log(this.constructor.name, \"loadValidMessage\", { invoice });\n" +
+"    if (invoice.archived) {\n" +
+"      const allowed = [\"\\xA7 #\", \"\\xA7 ESPECES\", \"\\xA4 TRANSACTION INTROUVABLE\"];\n" +
+"      if (!allowed.some((allowedItem) => invoice.invoice_number.startsWith(allowedItem)))\n" +
+"        return `Le num\\xE9ro de facture d'une facture archiv\\xE9e doit commencer par une de ces possibilit\\xE9s : ${allowed.map((it) => `\"${it}\"`).join(\", \")}`;\n" +
 "      return \"OK\";\n" +
-"    if (this.invoice.thirdparty.id === 113420582) {\n" +
-"      if (!this.invoice.invoice_number?.startsWith(\"ID \"))\n" +
+"    }\n" +
+"    if (!invoice.thirdparty)\n" +
+"      return 'choisir un \"client\"';\n" +
+"    if (invoice.date || invoice.deadline)\n" +
+"      return \"les dates doivent \\xEAtre vides\";\n" +
+"    if (invoice.thirdparty.id === 113420582) {\n" +
+"      if (!invoice.invoice_number?.startsWith(\"ID \"))\n" +
 "        return 'le champ \"Num\\xE9ro de facture\" doit commencer par \"ID NOM_DE_LA_PERSONNE\"';\n" +
 "      return \"OK\";\n" +
 "    }\n" +
-"    return 'les seuls clients autoris\\xE9s sont \"PIECE ID\" et \"DON MANUEL\"';\n" +
+"    if (![113420582, 103165930].includes(invoice.thirdparty.id))\n" +
+"      return 'les seuls clients autoris\\xE9s sont \"PIECE ID\" et \"DON MANUEL\"';\n" +
+"    const invoiceDocument = await this.getDocument();\n" +
+"    const groupedDocuments = invoiceDocument.grouped_documents;\n" +
+"    if (!groupedDocuments?.some((doc) => doc.type === \"Transaction\") && !invoice.invoice_number.startsWith(\"\\xA4 \"))\n" +
+"      return \"pas de transaction attach\\xE9e\";\n" +
+"    return \"OK\";\n" +
 "  }\n" +
 "}\n" +
 "\n" +
+"let openInTabLaunched = false;\n" +
 "function openInTab(url) {\n" +
+"  if (openInTabLaunched)\n" +
+"    console.error(\"openInTab already launched\");\n" +
+"  openInTabLaunched = true;\n" +
 "  document.body.appendChild(\n" +
 "    parseHTML(`<div class=\"open_tab\" data-url=\"${escape(url)}\" style=\"display: none;\"></div>`)\n" +
 "  );\n" +
@@ -702,6 +801,11 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  idParamName = \"id\";\n" +
 "  parameters = { direction: \"customer\", page: 1 };\n" +
 "  async init() {\n" +
+"    await this.start();\n" +
+"    this.keepActive();\n" +
+"    await super.init();\n" +
+"  }\n" +
+"  async start() {\n" +
 "    await waitElem(\"h4\", \"Ventilation\");\n" +
 "    const directionButton = await Promise.race([\n" +
 "      waitElem(\"button\", \"Client\"),\n" +
@@ -714,8 +818,12 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      this.storageKey = \"supplierInvoiceValidation\";\n" +
 "      this.parameters.direction = \"supplier\";\n" +
 "    }\n" +
-"    await super.init();\n" +
 "    this.addButton();\n" +
+"  }\n" +
+"  async keepActive() {\n" +
+"    await this.start();\n" +
+"    await waitFunc(() => !$(\".open-next-invalid-btn\"));\n" +
+"    setTimeout(() => this.keepActive(), 0);\n" +
 "  }\n" +
 "  async loadValidations() {\n" +
 "    this.loadCache();\n" +
@@ -740,8 +848,9 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      return false;\n" +
 "    }\n" +
 "    if (status.message.includes(\"6288\")) {\n" +
+"      const rawInvoice = await invoice.getInvoice();\n" +
 "      await invoice.update({ invoice_lines_attributes: [{\n" +
-"        ...invoice.invoice.invoice_lines[0],\n" +
+"        ...rawInvoice.invoice_lines[0],\n" +
 "        pnl_plan_item_id: null,\n" +
 "        pnl_plan_item: null\n" +
 "      }] });\n" +
@@ -774,6 +883,8 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    ), nextButton.previousElementSibling);\n" +
 "    $(\".open-next-invalid-btn\").addEventListener(\"click\", (event) => {\n" +
 "      event.stopPropagation();\n" +
+"      this.launched = true;\n" +
+"      this.detachEvents();\n" +
 "      this.openNext(true);\n" +
 "    });\n" +
 "  }\n" +
@@ -781,26 +892,39 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "\n" +
 "class InvoiceDisplayInfos extends Service {\n" +
 "  invoice;\n" +
-"  events;\n" +
+"  state = {};\n" +
+"  static instance;\n" +
+"  static getInstance() {\n" +
+"    return this.instance;\n" +
+"  }\n" +
 "  async init() {\n" +
 "    await waitElem(\"h4\", \"Ventilation\");\n" +
+"    console.log(\"GreaseMonkey - Pennylane\", \"Invoice panel\");\n" +
 "    while (await waitFunc(async () => !await this.isSync())) {\n" +
 "      await this.loadMessage();\n" +
 "    }\n" +
 "  }\n" +
+"  reload() {\n" +
+"    this.state = {};\n" +
+"  }\n" +
 "  async isSync() {\n" +
 "    const infos = await waitElem(\"h4.heading-section-3.mr-2\", \"Informations\");\n" +
 "    const { invoice } = getReact(infos, 32).memoizedProps;\n" +
+"    if (this.state.invoice !== invoice) {\n" +
+"      this.state.lastInvoice = this.state.invoice;\n" +
+"      this.state.invoice = invoice;\n" +
+"      this.invoice = Invoice.from(invoice);\n" +
+"      console.log(this.constructor.name, \"d\\xE9synchronis\\xE9\", { ...this.state });\n" +
+"      return false;\n" +
+"    }\n" +
 "    const ledgerEvents = $$(\"form[name^=DocumentEntries-]\").reduce((events, form) => {\n" +
 "      events.concat(getReactProps(form.parentElement, 3)?.initialValues.ledgerEvents);\n" +
 "      return events;\n" +
 "    }, []);\n" +
-"    if (this.invoice?.invoice !== invoice || ledgerEvents.some((event, id) => this.events[id] !== event)) {\n" +
-"      const logData = { oldInvoice: this.invoice, oldEvents: this.events };\n" +
-"      this.invoice = Invoice.from(invoice);\n" +
-"      this.events = ledgerEvents;\n" +
-"      console.log(this.constructor.name, \"desynchronis\\xE9\", { ...logData, ...this });\n" +
-"      await sleep(1e3);\n" +
+"    if (ledgerEvents.some((event, id) => this.state.events?.[id] !== event)) {\n" +
+"      this.state.lastEvents = ledgerEvents;\n" +
+"      this.state.events = ledgerEvents;\n" +
+"      console.log(this.constructor.name, \"desynchronis\\xE9\", { ...this.state });\n" +
 "      return false;\n" +
 "    }\n" +
 "    return true;\n" +
@@ -878,7 +1002,8 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  async init() {\n" +
 "    await waitElem(\"h3\", \"Transactions\");\n" +
 "    super.init();\n" +
-"    this.addButton();\n" +
+"    while (await waitFunc(() => findElem(\"div\", \"D\\xE9tails\") && !$(\".open-next-invalid-btn\")))\n" +
+"      this.addButton();\n" +
 "  }\n" +
 "  async loadValidations() {\n" +
 "    this.loadCache();\n" +
@@ -886,8 +1011,20 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    await findTransaction(async (rawTransaction, params) => {\n" +
 "      const page = params.page;\n" +
 "      const transaction = new Transaction(rawTransaction);\n" +
-"      this.setItemStatus({ ...await transaction.getStatus(), page });\n" +
-"      return false;\n" +
+"      const transactionStatus = await transaction.getStatus();\n" +
+"      this.setItemStatus({ ...transactionStatus, page, updatedAt: Date.now() });\n" +
+"      return !transactionStatus.valid;\n" +
+"    }, this.parameters);\n" +
+"    if (!Object.keys(this.cache).length)\n" +
+"      return;\n" +
+"    const oldest = Object.values(this.cache).reduce((a, b) => a.updatedAt < b.updatedAt ? a : b);\n" +
+"    this.parameters.page = oldest.page;\n" +
+"    await findTransaction(async (rawTransaction, params) => {\n" +
+"      const page = params.page;\n" +
+"      const transaction = new Transaction(rawTransaction);\n" +
+"      const transactionStatus = await transaction.getStatus();\n" +
+"      this.setItemStatus({ ...transactionStatus, page, updatedAt: Date.now() });\n" +
+"      return !transactionStatus.valid;\n" +
 "    }, this.parameters);\n" +
 "  }\n" +
 "  async openInvalid(status) {\n" +
@@ -913,13 +1050,51 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    const nextButton = findElem(\"div\", \"D\\xE9tails\")?.querySelector(\"button+button:last-child\");\n" +
 "    if (!nextButton)\n" +
 "      return;\n" +
+"    this.loadCache();\n" +
+"    const number = Object.values(this.cache).filter((status) => !status.valid).length;\n" +
 "    const className = nextButton.className;\n" +
 "    nextButton.parentElement?.insertBefore(parseHTML(\n" +
-"      `<button type=\"button\" class=\"${className} open-next-invalid-btn\">&nbsp;&gt;&nbsp;</button>`\n" +
+"      `<button type=\"button\" class=\"${className} open-next-invalid-btn\">&nbsp;&gt;&nbsp;${number}</button>`\n" +
 "    ), nextButton.previousElementSibling);\n" +
 "    $(\".open-next-invalid-btn\").addEventListener(\"click\", (event) => {\n" +
 "      event.stopPropagation();\n" +
+"      this.launched = true;\n" +
+"      this.detachEvents();\n" +
 "      this.openNext(true);\n" +
+"    });\n" +
+"  }\n" +
+"}\n" +
+"\n" +
+"class FixTab extends Service {\n" +
+"  async init() {\n" +
+"    await waitElem(\"h4\", \"Ventilation\");\n" +
+"    document.addEventListener(\"keydown\", (event) => {\n" +
+"      if (event.code === \"Tab\" && event.shiftKey && event.srcElement === $(\"input[name=currency_amount]\")) {\n" +
+"        event.preventDefault();\n" +
+"        event.stopPropagation();\n" +
+"        $(\"input[name=date]\")?.focus();\n" +
+"      }\n" +
+"    });\n" +
+"  }\n" +
+"}\n" +
+"\n" +
+"class AllowChangeArchivedInvoiceNumber extends Service {\n" +
+"  async init() {\n" +
+"    await waitElem(\"h4\", \"Ventilation\");\n" +
+"    document.addEventListener(\"keyup\", async (event) => {\n" +
+"      if (event.code !== \"KeyS\" || !event.ctrlKey)\n" +
+"        return;\n" +
+"      const invoiceNumberField = $(\"input[name=invoice_number]\");\n" +
+"      if (event.target !== invoiceNumberField || !invoiceNumberField)\n" +
+"        return;\n" +
+"      const rawInvoice = getReactProps(invoiceNumberField, 27).initialValues;\n" +
+"      if (!rawInvoice.archived)\n" +
+"        return;\n" +
+"      const invoice = Invoice.from(rawInvoice);\n" +
+"      await invoice.unarchive();\n" +
+"      await invoice.update({ invoice_number: invoiceNumberField.value });\n" +
+"      await invoice.archive();\n" +
+"      InvoiceDisplayInfos.getInstance().reload();\n" +
 "    });\n" +
 "  }\n" +
 "}\n" +
@@ -931,6 +1106,8 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "NextInvalidTransaction.start();\n" +
 "InvoiceDisplayInfos.start();\n" +
 "ArchiveGroupedDocument.start();\n" +
+"FixTab.start();\n" +
+"AllowChangeArchivedInvoiceNumber.start();\n" +
 ""
 +"})();";
 try {
