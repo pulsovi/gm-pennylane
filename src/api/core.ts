@@ -1,7 +1,8 @@
 import { sleep } from "../_";
 
 let apiRequestWait: Promise<void> | null = null;
-export async function apiRequest (endpoint, data, method = 'POST') {
+
+export async function apiRequest (endpoint: string, data: Record<string, unknown> | null, method = 'POST') {
   if (apiRequestWait) await apiRequestWait;
   const response = await fetch(`https://app.pennylane.com/companies/21936866/${endpoint}`, {
     method,
@@ -35,12 +36,11 @@ export async function apiRequest (endpoint, data, method = 'POST') {
 
   if (response.status !== 200) {
     console.log('apiRequest response status is not 200', {response});
-    throw new Error('todo : améliorer le message ci-dessus');
+    throw new Error('Todo : améliorer le message ci-dessus');
   }
 
   return response;
 }
-window.apiRequest = apiRequest;
 
 function getCookies (): URLSearchParams;
 function getCookies (key: string): string;
@@ -49,3 +49,5 @@ function getCookies (key?: string) {
   if (key) return allCookies.get(key);
   return allCookies;
 }
+
+Object.assign(window, {apiRequest});
