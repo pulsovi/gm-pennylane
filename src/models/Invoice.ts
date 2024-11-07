@@ -1,5 +1,4 @@
 import { getParam } from '../_';
-import { archiveDocument } from '../api/document.js';
 import { getInvoice, updateInvoice } from '../api/invoice.js';
 import { RawInvoice, RawInvoiceUpdate } from '../api/types.js';
 import ValidableDocument from './ValidableDocument.js';
@@ -65,7 +64,7 @@ class SupplierInvoice extends Invoice {
 
     // Archived
     if (invoice.archived) {
-      const allowed = ['§ #', '§ CARTE ETRANGERE', '¤ TRANSACTION INTROUVABLE'];
+      const allowed = ['§ #', '¤ CARTE ETRANGERE', '¤ TRANSACTION INTROUVABLE'];
       if (!allowed.some(allowedItem => invoice.invoice_number.startsWith(allowedItem)))
         return `Le numéro de facture d'une facture archivée doit commencer par une de ces possibilités : ${allowed.map(it => `"${it}"`).join(', ')}`;
       return 'OK';
