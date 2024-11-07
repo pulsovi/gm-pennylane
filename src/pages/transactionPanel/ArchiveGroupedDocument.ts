@@ -1,8 +1,6 @@
-import { $$, getReact, getReactProps, parseHTML, upElement, waitElem, waitFunc } from "../_";
-import { archiveDocument } from "../api/document";
-import { getInvoice, updateInvoice } from "../api/invoice";
-import Service from "../framework/service";
-import Invoice from "../models/Invoice";
+import { $$, getReactProps, parseHTML, upElement, waitElem, waitFunc } from "../../_";
+import Service from "../../framework/service";
+import Invoice from "../../models/Invoice";
 
 /** Add "Archive" button on bonded invoice in transaction pannel */
 export default class ArchiveGroupedDocument extends Service {

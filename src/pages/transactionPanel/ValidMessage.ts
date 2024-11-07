@@ -1,7 +1,7 @@
-import { $, waitElem, findElem, getReactProps, parseHTML, waitFunc, $$, getParam } from '../_';
-import { LedgerEvent } from '../api/types.js';
-import Service from '../framework/service.js';
-import Transaction from '../models/Transaction.js';
+import { $, waitElem, findElem, getReactProps, parseHTML, waitFunc, $$, getParam } from '../../_';
+import { LedgerEvent } from '../../api/types.js';
+import Service from '../../framework/service.js';
+import Transaction from '../../models/Transaction.js';
 
 /** Add validation message on transaction panel */
 export default class ValidMessage extends Service {

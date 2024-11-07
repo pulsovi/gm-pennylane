@@ -1,8 +1,8 @@
-import { $, findElem, jsonClone, parseHTML, waitElem, waitFunc } from "../_";
-import { findTransaction } from "../api/transaction";
-import OpenNextInvalid, { Status } from "../framework/OpenNextInvalid";
-import Transaction from "../models/Transaction";
-import { openDocument } from "../navigation/openDocument";
+import { $, findElem, jsonClone, parseHTML, waitElem, waitFunc } from "../../_";
+import { findTransaction } from "../../api/transaction";
+import OpenNextInvalid, { Status } from "../../framework/OpenNextInvalid";
+import Transaction from "../../models/Transaction";
+import { openDocument } from "../../navigation/openDocument";
 
 export default class NextInvalidTransaction extends OpenNextInvalid {
   protected readonly storageKey = 'transactionValidation';

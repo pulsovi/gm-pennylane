@@ -1,12 +1,12 @@
 import { last7DaysFilter } from './filters/last7DaysFilter.js';
-import TransactionValidMessage from './transactionPanel/ValidMessage.js';
-import TransactionAddByIdButton from './transactionPanel/AddByIdButton.js';
-import NextInvalidInvoice from './invoicePanel/NextInvalidInvoice.js';
-import InvoiceDisplayInfos from './invoicePanel/DisplayInfos.js';
-import ArchiveGroupedDocument from './transactionPanel/ArchiveGroupedDocument.js';
-import NextInvalidTransaction from './transactionPanel/NextInvalidTransaction.js';
-import FixTab from './invoicePanel/fixTab.js';
-import AllowChangeArchivedInvoiceNumber from './invoicePanel/AllowChangeArchivedInvoiceNumber.js';
+import TransactionValidMessage from './pages/transactionPanel/ValidMessage.js';
+import TransactionAddByIdButton from './pages/transactionPanel/AddByIdButton.js';
+import NextInvalidInvoice from './pages/invoicePanel/NextInvalidInvoice.js';
+import InvoiceDisplayInfos from './pages/invoicePanel/DisplayInfos.js';
+import ArchiveGroupedDocument from './pages/transactionPanel/ArchiveGroupedDocument.js';
+import NextInvalidTransaction from './pages/transactionPanel/NextInvalidTransaction.js';
+import FixTab from './pages/invoicePanel/fixTab.js';
+import AllowChangeArchivedInvoiceNumber from './pages/invoicePanel/AllowChangeArchivedInvoiceNumber.js';
 
 last7DaysFilter();
 TransactionValidMessage.start();

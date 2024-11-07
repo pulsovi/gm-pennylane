@@ -1,8 +1,8 @@
-import { $, jsonClone, parseHTML, waitElem, waitFunc } from "../_";
-import { findInvoice } from "../api/invoice";
-import OpenNextInvalid, { Status } from "../framework/OpenNextInvalid";
-import Invoice from "../models/Invoice";
-import { openDocument } from "../navigation/openDocument";
+import { $, jsonClone, parseHTML, waitElem, waitFunc } from "../../_";
+import { findInvoice } from "../../api/invoice";
+import OpenNextInvalid, { Status } from "../../framework/OpenNextInvalid";
+import Invoice from "../../models/Invoice";
+import { openDocument } from "../../navigation/openDocument";
 
 export default class NextInvalidInvoice extends OpenNextInvalid {
   protected storageKey: string;

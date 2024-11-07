@@ -1,7 +1,7 @@
-import { $, $$, findElem, getReact, getReactProps, parseHTML, sleep, upElement, waitElem, waitFunc } from "../_";
-import { LedgerEvent } from "../api/types";
-import Service from "../framework/service";
-import Invoice from "../models/Invoice";
+import { $, $$, findElem, getReact, getReactProps, parseHTML, sleep, upElement, waitElem, waitFunc } from "../../_";
+import { LedgerEvent } from "../../api/types";
+import Service from "../../framework/service";
+import Invoice from "../../models/Invoice";
 
 /** Add infos on Invoice full page display */
 export default class InvoiceDisplayInfos extends Service {

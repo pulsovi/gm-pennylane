@@ -1,5 +1,5 @@
-import { $, waitElem } from "../_";
-import Service from "../framework/service";
+import { $, waitElem } from "../../_";
+import Service from "../../framework/service";
 
 export default class FixTab extends Service {
   async init () {
