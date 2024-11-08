@@ -1,6 +1,8 @@
 import { waitFunc } from './time.js';
 
-export function $ <T extends Element>(selector: string, root: ParentNode = document) {
+export function $ <T extends Element>(selector: string, root?: ParentNode | null): T | null;
+export function $ <T extends Element>(selector: string, root: ParentNode | null = document) {
+  if (root === null) root = document;
   return root.querySelector<T>(selector);
 }
 
@@ -8,8 +10,12 @@ export function $$ <T extends Element>(selector: string, root: ParentNode = docu
   return Array.from(root.querySelectorAll<T>(selector));
 }
 
-export async function waitElem <T extends Element>(selector: string, content?: string) {
-  return await waitFunc(() => findElem(selector, content) ?? false);
+export async function waitElem <T extends Element>(selector: string, content?: string): Promise<T>;
+export async function waitElem <T extends Element>(selector: string, content: string, timeout: number): Promise<T | null>;
+export async function waitElem <T extends Element>(selector: string, content?: string, timeout = 0) {
+  const result = await waitFunc(() => findElem<T>(selector, content) ?? false, timeout);
+  if (result === false) return null;
+  return result;
 }
 
 export function findElem <T extends Element>(selector: string, content?: string) {

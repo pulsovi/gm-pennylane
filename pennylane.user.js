@@ -50,11 +50,14 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "async function sleep(ms) {\n" +
 "  await new Promise((rs) => setTimeout(rs, ms));\n" +
 "}\n" +
-"async function waitFunc(cb) {\n" +
+"async function waitFunc(cb, timeout = 0) {\n" +
+"  const out = timeout ? Date.now() + timeout : 0;\n" +
 "  let result = cb();\n" +
 "  if (result instanceof Promise)\n" +
 "    result = await result;\n" +
 "  while (result === false) {\n" +
+"    if (out && Date.now() > out)\n" +
+"      return false;\n" +
 "    await sleep(200);\n" +
 "    result = await cb();\n" +
 "  }\n" +
@@ -62,13 +65,18 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "}\n" +
 "\n" +
 "function $(selector, root = document) {\n" +
+"  if (root === null)\n" +
+"    root = document;\n" +
 "  return root.querySelector(selector);\n" +
 "}\n" +
 "function $$(selector, root = document) {\n" +
 "  return Array.from(root.querySelectorAll(selector));\n" +
 "}\n" +
-"async function waitElem(selector, content) {\n" +
-"  return await waitFunc(() => findElem(selector, content) ?? false);\n" +
+"async function waitElem(selector, content, timeout = 0) {\n" +
+"  const result = await waitFunc(() => findElem(selector, content) ?? false, timeout);\n" +
+"  if (result === false)\n" +
+"    return null;\n" +
+"  return result;\n" +
 "}\n" +
 "function findElem(selector, content) {\n" +
 "  return $$(selector).find((el) => !content || el.textContent === content) ?? null;\n" +
@@ -133,7 +141,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  return new URL(url).searchParams.get(paramName);\n" +
 "}\n" +
 "\n" +
-"class Service {\n" +
+"let Service$1 = class Service {\n" +
 "  static instance;\n" +
 "  constructor() {\n" +
 "    this.init();\n" +
@@ -149,7 +157,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  }\n" +
 "  init() {\n" +
 "  }\n" +
-"}\n" +
+"};\n" +
 "\n" +
 "let apiRequestWait = null;\n" +
 "async function apiRequest(endpoint, data, method = \"POST\") {\n" +
@@ -183,15 +191,15 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  }\n" +
 "  if (response.status !== 200) {\n" +
 "    console.log(\"apiRequest response status is not 200\", { response });\n" +
-"    throw new Error(\"todo : am\\xE9liorer le message ci-dessus\");\n" +
+"    throw new Error(\"Todo : am\\xE9liorer le message ci-dessus\");\n" +
 "  }\n" +
 "  return response;\n" +
 "}\n" +
-"window.apiRequest = apiRequest;\n" +
 "function getCookies(key) {\n" +
 "  const allCookies = new URLSearchParams(document.cookie.split(\";\").map((c) => c.trim()).join(\"&\"));\n" +
 "  return allCookies.get(key);\n" +
 "}\n" +
+"Object.assign(window, { apiRequest });\n" +
 "\n" +
 "async function getDocument(id) {\n" +
 "  const response = await apiRequest(`documents/${id}`, null, \"GET\");\n" +
@@ -384,7 +392,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  }\n" +
 "}\n" +
 "\n" +
-"class ValidMessage extends Service {\n" +
+"class ValidMessage extends Service$1 {\n" +
 "  transaction;\n" +
 "  events = [];\n" +
 "  message = \"\\u27F3\";\n" +
@@ -472,7 +480,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  return null;\n" +
 "}\n" +
 "\n" +
-"class TransactionAddByIdButton extends Service {\n" +
+"class TransactionAddByIdButton extends Service$1 {\n" +
 "  transaction;\n" +
 "  async init() {\n" +
 "    if ($(\".add-by-id-btn\"))\n" +
@@ -550,11 +558,11 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    for (const invoice of invoices)\n" +
 "      if (await cb(invoice, parameters))\n" +
 "        return invoice;\n" +
-"    parameters = Object.assign(jsonClone(parameters), { page: parameters.page ?? 0 + 1 });\n" +
+"    parameters = Object.assign(jsonClone(parameters), { page: (parameters.page ?? 0) + 1 });\n" +
 "  } while (true);\n" +
 "}\n" +
 "\n" +
-"class OpenNextInvalid extends Service {\n" +
+"class OpenNextInvalid extends Service$1 {\n" +
 "  current;\n" +
 "  loading = null;\n" +
 "  next;\n" +
@@ -569,7 +577,10 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    this.loading = this.loadValidations().then(() => {\n" +
 "      this.loading = null;\n" +
 "    });\n" +
-"    this.next = (interactionAllowed) => setTimeout(() => this.openNext(interactionAllowed === true), 0);\n" +
+"    this.next = (interactionAllowed) => setTimeout(\n" +
+"      () => this.openNext(interactionAllowed === true),\n" +
+"      0\n" +
+"    );\n" +
 "    if (!this.launched)\n" +
 "      this.attachEvents();\n" +
 "  }\n" +
@@ -703,7 +714,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      return \"OK\";\n" +
 "    }\n" +
 "    if (invoice.archived) {\n" +
-"      const allowed = [\"\\xA7 #\", \"\\xA7 CARTE ETRANGERE\", \"\\xA4 TRANSACTION INTROUVABLE\"];\n" +
+"      const allowed = [\"\\xA7 #\", \"\\xA4 CARTE ETRANGERE\", \"\\xA4 TRANSACTION INTROUVABLE\"];\n" +
 "      if (!allowed.some((allowedItem) => invoice.invoice_number.startsWith(allowedItem)))\n" +
 "        return `Le num\\xE9ro de facture d'une facture archiv\\xE9e doit commencer par une de ces possibilit\\xE9s : ${allowed.map((it) => `\"${it}\"`).join(\", \")}`;\n" +
 "      return \"OK\";\n" +
@@ -834,8 +845,10 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    await findInvoice(async (rawInvoice, params) => {\n" +
 "      const page = params.page;\n" +
 "      const invoice = Invoice.from(rawInvoice);\n" +
-"      this.setItemStatus({ ...await invoice.getStatus(), page });\n" +
+"      const status = await invoice.getStatus();\n" +
+"      this.setItemStatus({ ...status, page, updatedAt: Date.now() });\n" +
 "      return false;\n" +
+"      //!status.valid;\n" +
 "    }, this.parameters);\n" +
 "  }\n" +
 "  async openInvalid(status) {\n" +
@@ -890,7 +903,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  }\n" +
 "}\n" +
 "\n" +
-"class InvoiceDisplayInfos extends Service {\n" +
+"class InvoiceDisplayInfos extends Service$1 {\n" +
 "  invoice;\n" +
 "  state = {};\n" +
 "  static instance;\n" +
@@ -901,6 +914,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    await waitElem(\"h4\", \"Ventilation\");\n" +
 "    console.log(\"GreaseMonkey - Pennylane\", \"Invoice panel\");\n" +
 "    while (await waitFunc(async () => !await this.isSync())) {\n" +
+"      await this.setMessage(\"\\u27F3\");\n" +
 "      await this.loadMessage();\n" +
 "    }\n" +
 "  }\n" +
@@ -944,17 +958,20 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  }\n" +
 "  async loadMessage() {\n" +
 "    console.log(\"load message\", this);\n" +
+"    const { message, valid } = await this.invoice.getStatus();\n" +
+"    this.setMessage(valid ? \"\\u2713\" : \"\\u2717 \" + message);\n" +
+"  }\n" +
+"  async setMessage(message) {\n" +
 "    if (!$(\"#is-valid-tag\"))\n" +
 "      await this.createTagContainer();\n" +
 "    const tag = $(\"#is-valid-tag\");\n" +
 "    if (!tag)\n" +
 "      throw new Error('tag \"is-valid-tag\" introuvable');\n" +
-"    const { message, valid } = await this.invoice.getStatus();\n" +
-"    tag.textContent = valid ? \"\\u2713\" : \"\\u2717 \" + message;\n" +
+"    tag.textContent = message;\n" +
 "  }\n" +
 "}\n" +
 "\n" +
-"class ArchiveGroupedDocument extends Service {\n" +
+"class ArchiveGroupedDocument extends Service$1 {\n" +
 "  async init() {\n" +
 "    await waitElem(\"h3\", \"Transactions\");\n" +
 "    while (await waitFunc(\n" +
@@ -1065,7 +1082,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  }\n" +
 "}\n" +
 "\n" +
-"class FixTab extends Service {\n" +
+"class FixTab extends Service$1 {\n" +
 "  async init() {\n" +
 "    await waitElem(\"h4\", \"Ventilation\");\n" +
 "    document.addEventListener(\"keydown\", (event) => {\n" +
@@ -1075,6 +1092,24 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "        $(\"input[name=date]\")?.focus();\n" +
 "      }\n" +
 "    });\n" +
+"  }\n" +
+"}\n" +
+"\n" +
+"class Service {\n" +
+"  static instance;\n" +
+"  constructor() {\n" +
+"    this.init();\n" +
+"  }\n" +
+"  static start() {\n" +
+"    console.log(this.name, \"start\");\n" +
+"    if (this.instance)\n" +
+"      return;\n" +
+"    this.instance = new this();\n" +
+"  }\n" +
+"  static getInstance() {\n" +
+"    return this.instance;\n" +
+"  }\n" +
+"  init() {\n" +
 "  }\n" +
 "}\n" +
 "\n" +
@@ -1099,6 +1134,56 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  }\n" +
 "}\n" +
 "\n" +
+"class TransactionPanelHotkeys extends Service {\n" +
+"  async init() {\n" +
+"    document.addEventListener(\"keydown\", (event) => this.handleKeydown(event));\n" +
+"  }\n" +
+"  async handleKeydown(event) {\n" +
+"    if (!findElem(\"h3\", \"Transactions\"))\n" +
+"      return;\n" +
+"    if (event.altKey) {\n" +
+"      switch (event.code) {\n" +
+"        case \"KeyE\":\n" +
+"          return this.filterClick(\"Montant\", event);\n" +
+"        case \"KeyD\":\n" +
+"          return this.filterClick(\"Date\", event);\n" +
+"      }\n" +
+"    } else\n" +
+"      switch (event.code) {\n" +
+"        case \"NumpadEnter\":\n" +
+"        case \"Enter\":\n" +
+"          return this.manageEnter(event);\n" +
+"      }\n" +
+"  }\n" +
+"  async filterClick(label, event) {\n" +
+"    event.preventDefault();\n" +
+"    const filterButton = $$(\"div.dropdown button\").find((button) => getReactProps(button, 1).label === label);\n" +
+"    if (!filterButton)\n" +
+"      console.log(`bouton \"${label}\" introuvable`);\n" +
+"    if (event.shiftKey) {\n" +
+"      $(\"div[aria-label=Effacer]\", filterButton)?.click();\n" +
+"      return;\n" +
+"    }\n" +
+"    filterButton?.click();\n" +
+"    const inputField = await waitElem(`input[aria-label=${label}]`, \"\", 2e3);\n" +
+"    if (!inputField)\n" +
+"      console.log(`champ \"input[aria-label=${label}]\" introuvable`);\n" +
+"    inputField?.focus();\n" +
+"  }\n" +
+"  async manageEnter(event) {\n" +
+"    if (event.srcElement instanceof HTMLInputElement && event.srcElement.getAttribute(\"aria-label\") === \"Date\") {\n" +
+"      if (/\\d\\d\\/\\d\\d\\/\\d\\d\\d\\d - __\\/__\\/____/u.test(event.srcElement.value)) {\n" +
+"        const date = event.srcElement.value.slice(0, 10);\n" +
+"        event.srcElement.value = `${date} - ${date}`;\n" +
+"        getReactProps(event.srcElement).onChange({ target: event.srcElement });\n" +
+"        const validButton = $('button[data-tracking-action=\"Transactions Page - Date Filter click\"]');\n" +
+"        await waitFunc(() => !validButton?.disabled);\n" +
+"      }\n" +
+"      return $('button[data-tracking-action=\"Transactions Page - Date Filter click\"]')?.click();\n" +
+"    }\n" +
+"  }\n" +
+"}\n" +
+"\n" +
 "last7DaysFilter();\n" +
 "ValidMessage.start();\n" +
 "TransactionAddByIdButton.start();\n" +
@@ -1108,6 +1193,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "ArchiveGroupedDocument.start();\n" +
 "FixTab.start();\n" +
 "AllowChangeArchivedInvoiceNumber.start();\n" +
+"TransactionPanelHotkeys.start();\n" +
 ""
 +"})();";
 try {

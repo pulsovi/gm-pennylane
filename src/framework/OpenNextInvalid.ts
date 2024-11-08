@@ -26,7 +26,9 @@ export default abstract class OpenNextInvalid extends Service {
   async init () {
     console.log(this.constructor.name, 'init');
     this.loading = this.loadValidations().then(() => { this.loading = null; });
-    this.next = (interactionAllowed?: boolean|Event) => setTimeout(() => this.openNext(interactionAllowed ===  true), 0);
+    this.next = (interactionAllowed?: boolean|Event) => setTimeout(
+      () => this.openNext(interactionAllowed ===  true), 0
+    );
     if (!this.launched) this.attachEvents();
   }
 
