@@ -44,6 +44,6 @@ export async function findInvoice (
     if (!invoices?.length) return null;
     console.log('findInvoice page', {parameters, data, invoices});
     for (const invoice of invoices) if (await cb(invoice, parameters)) return invoice;
-    parameters = Object.assign(jsonClone(parameters), { page: parameters.page ?? 0 + 1 });
+    parameters = Object.assign(jsonClone(parameters), { page: (parameters.page ?? 0) + 1 });
   } while (true);
 }
