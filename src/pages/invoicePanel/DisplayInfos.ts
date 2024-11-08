@@ -17,6 +17,7 @@ export default class InvoiceDisplayInfos extends Service {
     await waitElem('h4', 'Ventilation');
     console.log('GreaseMonkey - Pennylane', 'Invoice panel');
     while (await waitFunc(async () => !await this.isSync())) {
+      await this.setMessage('⟳');
       await this.loadMessage();
     }
   }
@@ -68,10 +69,14 @@ export default class InvoiceDisplayInfos extends Service {
 
   async loadMessage () {
     console.log('load message', this);
+    const {message, valid} = await this.invoice.getStatus();
+    this.setMessage(valid ? '✓' : '✗ '+message);
+  }
+
+  async setMessage (message: string) {
     if (!$('#is-valid-tag')) await this.createTagContainer();
     const tag = $('#is-valid-tag');
     if (!tag) throw new Error('tag "is-valid-tag" introuvable');
-    const {message, valid} = await this.invoice.getStatus();
-    tag.textContent = valid ? '✓' : '✗ '+message;
+    tag.textContent = message;
   }
 }
