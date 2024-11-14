@@ -719,10 +719,10 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "        return `Le num\\xE9ro de facture d'une facture archiv\\xE9e doit commencer par une de ces possibilit\\xE9s : ${allowed.map((it) => `\"${it}\"`).join(\", \")}`;\n" +
 "      return \"OK\";\n" +
 "    }\n" +
-"    if (invoice.thirdparty && !invoice.thirdparty.country)\n" +
-"      return \"Fournisseur inconnu : Choisir un autre fournisseur ou ajouter le pays de celui-ci\";\n" +
 "    if (!invoice.thirdparty_id && !invoice.thirdparty)\n" +
 "      return \"Ajouter un fournisseur\";\n" +
+"    if (invoice.thirdparty && !invoice.thirdparty.country)\n" +
+"      return \"Fournisseur inconnu : Choisir un autre fournisseur ou ajouter le pays de celui-ci\";\n" +
 "    if (invoice.invoice_lines?.some((line) => line.pnl_plan_item?.number == \"6288\"))\n" +
 "      return \"compte tiers 6288\";\n" +
 "    if (invoice.invoice_number?.startsWith(\"\\xA4\")) {\n" +

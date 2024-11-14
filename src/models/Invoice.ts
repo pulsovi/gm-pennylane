@@ -70,11 +70,12 @@ class SupplierInvoice extends Invoice {
       return 'OK';
     }
 
+    // Pas de tiers
+    if (!invoice.thirdparty_id && !invoice.thirdparty) return 'Ajouter un fournisseur';
+
     if (invoice.thirdparty && !invoice.thirdparty.country)
       return 'Fournisseur inconnu : Choisir un autre fournisseur ou ajouter le pays de celui-ci';
 
-    // Pas de tiers
-    if (!invoice.thirdparty_id && !invoice.thirdparty) return 'Ajouter un fournisseur';
 
     // exclude 6288
     if (invoice.invoice_lines?.some(line => line.pnl_plan_item?.number == '6288'))
