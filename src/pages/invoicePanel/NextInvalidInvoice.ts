@@ -44,10 +44,11 @@ export default class NextInvalidInvoice extends OpenNextInvalid {
       console.log(this.constructor.name, this);
     }
     await findInvoice(async (rawInvoice, params) => {
-      const page = params.page;
+      const page = params.page!;
       const invoice = Invoice.from(rawInvoice);
-      this.setItemStatus({ ...await invoice.getStatus(), page });
-      return false;
+      const status = await invoice.getStatus();
+      this.setItemStatus({ ...status, page, updatedAt: Date.now() });
+      return false;//!status.valid;
     }, this.parameters);
   }
 
