@@ -132,6 +132,8 @@ class SupplierInvoice extends Invoice {
     // Has transaction attached
     if (!transactions.length) return 'pas de transaction attachée';
 
+    if (!invoice.date) return 'la date de facture est vide';
+
     return 'OK';
   }
 }

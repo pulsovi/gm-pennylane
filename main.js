@@ -394,27 +394,6 @@ function getParam (url, paramName) {
   return new URL(url).searchParams.get(paramName);
 }
 
-async function findInvoice (params, cb) {
-  const url = new URL(`http://a.a/accountants/invoices/list?page=1`);
-  Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
-  let page = parseInt(url.searchParams.get('page'));
-  if (isNaN(page)) {
-    console.error('findInvoice page is NaN', {params, url, page});
-    page = 1;
-  }
-  let response, data, invoices;
-  do {
-    response = await apiRequest(url.toString().replace('http://a.a/', ''), null, 'GET');
-    data = await response.json();
-    invoices = data.invoices;
-    if (!invoices?.length) return null;
-    console.log('findInvoice page', {page, response, data, invoices});
-    for (const invoice of invoices) if (await cb(invoice, page)) return invoice;
-    page += 1;
-    url.searchParams.set('page', page);
-  } while (page <= data.pagination.pages);
-}
-
 /** Add "Archive" button on bonded invoice in transaction pannel */
 setInterval(() => {
   if (!findElem('h3', 'Transactions')) return;

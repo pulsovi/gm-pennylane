@@ -759,6 +759,8 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    }\n" +
 "    if (!transactions.length)\n" +
 "      return \"pas de transaction attach\\xE9e\";\n" +
+"    if (!invoice.date)\n" +
+"      return \"la date de facture est vide\";\n" +
 "    return \"OK\";\n" +
 "  }\n" +
 "}\n" +
