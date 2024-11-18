@@ -1,6 +1,7 @@
-import type { GroupedDocument, LedgerEvent, RawDocument, RawLedgerEvent } from '../api/types.d.ts';
+import type { GroupedDocument, LedgerEvent, RawDocument, RawLedgerEvent, RawThirdparty } from '../api/types.d.ts';
 import { archiveDocument, getDocument, reloadLedgerEvents } from '../api/document.js';
 import { getGroupedDocuments, getLedgerEvents } from '../api/operation.js';
+import { getThirdparty } from '../api/thirdparties.ts';
 
 export default class Document {
   public readonly type: 'transaction' | 'invoice';
@@ -8,6 +9,7 @@ export default class Document {
   protected document: RawDocument | Promise<RawDocument>;
   protected groupedDocuments: GroupedDocument[] | Promise<GroupedDocument[]>;
   protected ledgerEvents?: LedgerEvent[] | Promise<LedgerEvent[]>;
+  protected thirdparty?: Promise<[direction: 'supplier'|'customer', thirdparty: RawThirdparty]>;
 
   constructor ({ id }: { id: number }) {
     this.id = id;
@@ -66,5 +68,16 @@ export default class Document {
       mainDocument.grouped_documents.find(doc => doc.id === this.id)!
     ];
     return this.groupedDocuments;
+  }
+
+  async getThirdparty () {
+    if (!this.thirdparty)
+      this.thirdparty = this._getThirdparty();
+    return (await this.thirdparty)[1];
+  }
+
+  private async _getThirdparty () {
+    const doc = await this.getDocument();
+    return await getThirdparty(doc.thirdparty_id);
   }
 }

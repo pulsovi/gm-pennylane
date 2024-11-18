@@ -1,6 +1,6 @@
 import { getParam } from '../_';
 import { getInvoice, updateInvoice } from '../api/invoice.js';
-import { RawInvoice, RawInvoiceUpdate } from '../api/types.js';
+import { RawInvoice, RawInvoiceUpdate, RawThirdparty } from '../api/types.js';
 import ValidableDocument from './ValidableDocument.js';
 
 export default abstract class Invoice extends ValidableDocument {
@@ -73,8 +73,10 @@ class SupplierInvoice extends Invoice {
     // Pas de tiers
     if (!invoice.thirdparty_id && !invoice.thirdparty) return 'Ajouter un fournisseur';
 
-    if (invoice.thirdparty && !invoice.thirdparty.country)
-      return 'Fournisseur inconnu : Choisir un autre fournisseur ou ajouter le pays de celui-ci';
+    // Pas de compte de charge associé
+    const thirdparty = await this.getThirdparty();
+    if (!thirdparty.thirdparty_invoice_line_rules?.[0]?.pnl_plan_item)
+      return 'Fournisseur inconnu : Chaque fournisseur doit être associé avec un compte de charge or celui-ci n\'en a pas. Choisir un autre fournisseur ou envoyer cette page à David ;).';
 
 
     // exclude 6288
@@ -131,7 +133,7 @@ class SupplierInvoice extends Invoice {
     }
 
     // Has transaction attached
-    if (!transactions.length) return 'pas de transaction attachée';
+    if (!transactions.length) return 'pas de transaction attachée - Si la transaction est introuvable, mettre le texte "¤ TRANSACTION INTROUVABLE" au début du numéro de facture';
 
     if (!invoice.date) return 'la date de facture est vide';
 
@@ -157,7 +159,7 @@ class CustomerInvoice extends Invoice {
     if (!invoice.thirdparty) return 'choisir un "client"';
 
     // Les dates doivent toujours être vides
-    if (invoice.date || invoice.deadline) return 'les dates doivent être vides';
+    if (invoice.date || invoice.deadline) return 'les dates des pièces orientées client doivent toujours être vides';
 
     // piece id
     if (invoice.thirdparty.id === 113420582) {
@@ -175,9 +177,9 @@ class CustomerInvoice extends Invoice {
     const groupedDocuments = invoiceDocument.grouped_documents;
     if (
       !groupedDocuments?.some(doc => doc.type === 'Transaction')
-      && !invoice.invoice_number.startsWith('¤ ')
+      && !invoice.invoice_number.startsWith('¤ TRANSACTION INTROUVABLE')
     )
-      return 'pas de transaction attachée';
+      return 'pas de transaction attachée - Si la transaction est introuvable, mettre le texte "¤ TRANSACTION INTROUVABLE" au début du numéro de facture';
 
     return 'OK';
   }

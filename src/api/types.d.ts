@@ -417,3 +417,47 @@ declare interface DocumentStatus {
   preview_urls: string[];
   embeddable_in_browser: boolean;
 }
+
+declare interface RawThirdparty {
+  id:number;
+  company_id:number;
+  disable_pending_vat:boolean;
+  emails:string[];
+  country_alpha2:string;
+  force_pending_vat:boolean;
+  iban:string;
+  invoices_auto_generated:boolean;
+  invoices_auto_validated:boolean;
+  name:string;
+  notes:string;
+  search_terms:string[];
+  supplier_payment_method:null;
+  vat_number:string;
+  supplier_due_date_delay:null;
+  supplier_due_date_rule:string;
+  address:string;
+  city:string;
+  postal_code:string;
+  admin_city_code:null;
+  activity_nomenclature:string;
+  establishment_no:null;
+  notes_comment:null;
+  plan_item:{
+    id:number;
+    number:string;
+  };
+  thirdparty_invoice_line_rules:{
+    pnl_plan_item:{
+      id:number;
+      enabled:true;
+      label:string;
+      number:string;
+    };
+    vat_rate:string;
+  }[];
+  tags:[];
+  thirdparty_visibility_rules:{
+    id:number;
+    visible_on:string;
+  }[];
+}

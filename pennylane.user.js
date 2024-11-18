@@ -236,12 +236,19 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  return await response.json();\n" +
 "}\n" +
 "\n" +
+"async function getThirdparty(id) {\n" +
+"  const response = await apiRequest(`thirdparties/${id}`, null, \"GET\");\n" +
+"  const json = await response?.json();\n" +
+"  return Object.entries(json)[0];\n" +
+"}\n" +
+"\n" +
 "class Document {\n" +
 "  type;\n" +
 "  id;\n" +
 "  document;\n" +
 "  groupedDocuments;\n" +
 "  ledgerEvents;\n" +
+"  thirdparty;\n" +
 "  constructor({ id }) {\n" +
 "    this.id = id;\n" +
 "  }\n" +
@@ -291,6 +298,15 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      mainDocument.grouped_documents.find((doc) => doc.id === this.id)\n" +
 "    ];\n" +
 "    return this.groupedDocuments;\n" +
+"  }\n" +
+"  async getThirdparty() {\n" +
+"    if (!this.thirdparty)\n" +
+"      this.thirdparty = this._getThirdparty();\n" +
+"    return (await this.thirdparty)[1];\n" +
+"  }\n" +
+"  async _getThirdparty() {\n" +
+"    const doc = await this.getDocument();\n" +
+"    return await getThirdparty(doc.thirdparty_id);\n" +
 "  }\n" +
 "}\n" +
 "\n" +
@@ -721,8 +737,9 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    }\n" +
 "    if (!invoice.thirdparty_id && !invoice.thirdparty)\n" +
 "      return \"Ajouter un fournisseur\";\n" +
-"    if (invoice.thirdparty && !invoice.thirdparty.country)\n" +
-"      return \"Fournisseur inconnu : Choisir un autre fournisseur ou ajouter le pays de celui-ci\";\n" +
+"    const thirdparty = await this.getThirdparty();\n" +
+"    if (!thirdparty.thirdparty_invoice_line_rules?.[0]?.pnl_plan_item)\n" +
+"      return \"Fournisseur inconnu : Chaque fournisseur doit \\xEAtre associ\\xE9 avec un compte de charge or celui-ci n'en a pas. Choisir un autre fournisseur ou envoyer cette page \\xE0 David ;).\";\n" +
 "    if (invoice.invoice_lines?.some((line) => line.pnl_plan_item?.number == \"6288\"))\n" +
 "      return \"compte tiers 6288\";\n" +
 "    if (invoice.invoice_number?.startsWith(\"\\xA4\")) {\n" +
@@ -758,7 +775,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "        return `Le \"Num\\xE9ro de facture\" des pi\\xE8ces d'identit\\xE9 commence obligatoirement par \"ID \"`;\n" +
 "    }\n" +
 "    if (!transactions.length)\n" +
-"      return \"pas de transaction attach\\xE9e\";\n" +
+"      return 'pas de transaction attach\\xE9e - Si la transaction est introuvable, mettre le texte \"\\xA4 TRANSACTION INTROUVABLE\" au d\\xE9but du num\\xE9ro de facture';\n" +
 "    if (!invoice.date)\n" +
 "      return \"la date de facture est vide\";\n" +
 "    return \"OK\";\n" +
@@ -778,7 +795,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    if (!invoice.thirdparty)\n" +
 "      return 'choisir un \"client\"';\n" +
 "    if (invoice.date || invoice.deadline)\n" +
-"      return \"les dates doivent \\xEAtre vides\";\n" +
+"      return \"les dates des pi\\xE8ces orient\\xE9es client doivent toujours \\xEAtre vides\";\n" +
 "    if (invoice.thirdparty.id === 113420582) {\n" +
 "      if (!invoice.invoice_number?.startsWith(\"ID \"))\n" +
 "        return 'le champ \"Num\\xE9ro de facture\" doit commencer par \"ID NOM_DE_LA_PERSONNE\"';\n" +
@@ -788,8 +805,8 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      return 'les seuls clients autoris\\xE9s sont \"PIECE ID\" et \"DON MANUEL\"';\n" +
 "    const invoiceDocument = await this.getDocument();\n" +
 "    const groupedDocuments = invoiceDocument.grouped_documents;\n" +
-"    if (!groupedDocuments?.some((doc) => doc.type === \"Transaction\") && !invoice.invoice_number.startsWith(\"\\xA4 \"))\n" +
-"      return \"pas de transaction attach\\xE9e\";\n" +
+"    if (!groupedDocuments?.some((doc) => doc.type === \"Transaction\") && !invoice.invoice_number.startsWith(\"\\xA4 TRANSACTION INTROUVABLE\"))\n" +
+"      return 'pas de transaction attach\\xE9e - Si la transaction est introuvable, mettre le texte \"\\xA4 TRANSACTION INTROUVABLE\" au d\\xE9but du num\\xE9ro de facture';\n" +
 "    return \"OK\";\n" +
 "  }\n" +
 "}\n" +
