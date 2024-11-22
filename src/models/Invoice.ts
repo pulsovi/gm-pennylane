@@ -99,7 +99,19 @@ class SupplierInvoice extends Invoice {
 
     // Aides octroyées ou piece d'indentité avec date
     if ([106438171, 114270419, 106519227].includes(invoice.thirdparty?.id ?? 0)) {
-      if (invoice.date || invoice.deadline) return 'Les dates doivent être vides';
+      if (invoice.date || invoice.deadline) return `<a
+          title="Cliquer ici pour plus d'informations"
+          href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Date%20de%20facture"
+        >Les dates doivent être vides ⓘ</a>`;
+    }
+    if (!invoice.date) {
+      const emptyDateAllowed = ['CHQ'];
+      if (!emptyDateAllowed.some(item => invoice.invoice_number?.startsWith(item)))
+        return `<a
+          title="Cliquer ici pour plus d'informations"
+          href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Date%20de%20facture"
+        >Date de facture vide ⓘ</a><ul style="margin:0;padding:0.8em;">${emptyDateAllowed.map(it => `<li>${it}</li>`).join('')}</ul>`;
+      return 'OK';
     }
 
     // Aides octroyées avec mauvais ID
@@ -143,7 +155,6 @@ class SupplierInvoice extends Invoice {
     // Has transaction attached
     if (!transactions.length) return 'pas de transaction attachée - Si la transaction est introuvable, mettre le texte "¤ TRANSACTION INTROUVABLE" au début du numéro de facture';
 
-    if (!invoice.date) return 'la date de facture est vide';
 
     return 'OK';
   }
