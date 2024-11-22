@@ -68,7 +68,7 @@ export default class ValidMessage extends Service {
     const headband = $('.headband-is-valid');
     if (!headband) return;
 
-    headband.textContent = this.message;
+    headband.innerHTML = this.message;
   }
 }
 

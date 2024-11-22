@@ -77,6 +77,6 @@ export default class InvoiceDisplayInfos extends Service {
     if (!$('#is-valid-tag')) await this.createTagContainer();
     const tag = $('#is-valid-tag');
     if (!tag) throw new Error('tag "is-valid-tag" introuvable');
-    tag.textContent = message;
+    tag.innerHTML = message;
   }
 }
