@@ -122,17 +122,17 @@ class SupplierInvoice extends Invoice {
     if (invoice.thirdparty?.name === "PIECE ID" && invoice.thirdparty.id !== 106519227)
       return 'Il ne doit y avoir qu\'un seul compte "PIECE ID", et ce n\'est pas le bon...';
 
-    /* Aides octroyées sans label
-    if ([106438171, 114270419].includes(invoice.thirdparty?.id)) {
-      ledgerEvents = ledgerEvents ?? await getLedgerEvents(invoice.id);
+    const ledgerEvents = await this.getLedgerEvents();
+    /* Aides octroyées sans label */
+    if (
+      [106438171, 114270419].includes(invoice.thirdparty?.id!)
+    ) {
       const lines = ledgerEvents.filter(event => ['6571', '6571002'].includes(event.planItem.number));
-      if (!lines.length) return 'écriture "6571" manquante';
+      if (!lines.length) return 'écriture "6571" manquante - envoyer la page à David.'; // (c\'est la ligne d\'écriture de l\'octroi d\'aide,).';
     }
-    */
 
     // Ecarts de conversion de devise
     if (invoice.currency !== 'EUR') {
-      const ledgerEvents = await this.getLedgerEvents();
       const diffLine = ledgerEvents.find(line => line.planItem.number === '4716001');
       console.log({ledgerEvents, diffLine});
       if (diffLine) {
