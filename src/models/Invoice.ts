@@ -64,9 +64,17 @@ class SupplierInvoice extends Invoice {
 
     // Archived
     if (invoice.archived) {
-      const allowed = ['§ #', '¤ CARTE ETRANGERE', '¤ TRANSACTION INTROUVABLE'];
-      if (!allowed.some(allowedItem => invoice.invoice_number.startsWith(allowedItem)))
-        return `Le numéro de facture d'une facture archivée doit commencer par une de ces possibilités : ${allowed.map(it => `"${it}"`).join(', ')}`;
+      const allowed = ['§ #', '¤ PIECE ETRANGERE', '¤ TRANSACTION INTROUVABLE'];
+      if (
+        //legacy :
+        !invoice.invoice_number.startsWith('¤ CARTE ETRANGERE') &&
+
+        !allowed.some(allowedItem => invoice.invoice_number.startsWith(allowedItem))
+      )
+        return `<a
+          title="Le numéro de facture d'une facture archivée doit commencer par une de ces possibilités. Cliquer ici pour plus d'informations."
+          href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Facture%20archiv%C3%A9e"
+        >Facture archivée sans référence ⓘ</a><ul style="margin:0;padding:0.8em;">${allowed.map(it => `<li>${it}</li>`).join('')}</ul>`;
       return 'OK';
     }
 
@@ -149,9 +157,17 @@ class CustomerInvoice extends Invoice {
     console.log(this.constructor.name, 'loadValidMessage', { invoice });
     // Archived
     if (invoice.archived) {
-      const allowed = ['§ #', '§ ESPECES', '¤ TRANSACTION INTROUVABLE'];
-      if (!allowed.some(allowedItem => invoice.invoice_number.startsWith(allowedItem)))
-        return `Le numéro de facture d'une facture archivée doit commencer par une de ces possibilités : ${allowed.map(it => `"${it}"`).join(', ')}`;
+      const allowed = ['§ #', '¤ TRANSACTION INTROUVABLE'];
+      if (
+        //legacy
+        !invoice.invoice_number.startsWith('§ ESPECES') &&
+
+        !allowed.some(allowedItem => invoice.invoice_number.startsWith(allowedItem))
+      )
+        return `<a
+          title="Le numéro de facture d'une facture archivée doit commencer par une de ces possibilités. Cliquer ici pour plus d'informations."
+          href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Facture%20archiv%C3%A9e"
+        >Facture archivée sans référence ⓘ</a><ul style="margin:0;padding:0.8em;">${allowed.map(it => `<li>${it}</li>`).join('')}</ul>`;
       return 'OK';
     }
 
