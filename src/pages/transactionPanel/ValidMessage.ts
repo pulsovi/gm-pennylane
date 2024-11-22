@@ -68,7 +68,12 @@ export default class ValidMessage extends Service {
     const headband = $('.headband-is-valid');
     if (!headband) return;
 
-    headband.innerHTML = this.message;
+    headband.innerHTML = `${this.getTransactionId()}${this.message}`;
+  }
+
+  getTransactionId () {
+    if (!this.transaction?.id) return '';
+    return `<span class="transaction-id d-inline-block bg-secondary-100 dihsuQ px-0_5">#${this.transaction.id}</span> `;
   }
 }
 
