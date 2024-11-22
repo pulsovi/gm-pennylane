@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name     Pennylane
-// @version  0.1.8
+// @version  0.1.9
 // @grant    unsafeWindow
 // @grant    GM.openInTab
 // @match    https://app.pennylane.com/companies/*
@@ -460,7 +460,12 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    const headband = $(\".headband-is-valid\");\n" +
 "    if (!headband)\n" +
 "      return;\n" +
-"    headband.textContent = this.message;\n" +
+"    headband.innerHTML = `${this.getTransactionId()}${this.message}`;\n" +
+"  }\n" +
+"  getTransactionId() {\n" +
+"    if (!this.transaction?.id)\n" +
+"      return \"\";\n" +
+"    return `<span class=\"transaction-id d-inline-block bg-secondary-100 dihsuQ px-0_5\">#${this.transaction.id}</span> `;\n" +
 "  }\n" +
 "}\n" +
 "\n" +
@@ -730,9 +735,15 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      return \"OK\";\n" +
 "    }\n" +
 "    if (invoice.archived) {\n" +
-"      const allowed = [\"\\xA7 #\", \"\\xA4 CARTE ETRANGERE\", \"\\xA4 TRANSACTION INTROUVABLE\"];\n" +
-"      if (!allowed.some((allowedItem) => invoice.invoice_number.startsWith(allowedItem)))\n" +
-"        return `Le num\\xE9ro de facture d'une facture archiv\\xE9e doit commencer par une de ces possibilit\\xE9s : ${allowed.map((it) => `\"${it}\"`).join(\", \")}`;\n" +
+"      const allowed = [\"\\xA7 #\", \"\\xA4 PIECE ETRANGERE\", \"\\xA4 TRANSACTION INTROUVABLE\"];\n" +
+"      if (\n" +
+"        //legacy :\n" +
+"        !invoice.invoice_number.startsWith(\"\\xA4 CARTE ETRANGERE\") && !allowed.some((allowedItem) => invoice.invoice_number.startsWith(allowedItem))\n" +
+"      )\n" +
+"        return `<a\n" +
+"          title=\"Le num\\xE9ro de facture d'une facture archiv\\xE9e doit commencer par une de ces possibilit\\xE9s. Cliquer ici pour plus d'informations.\"\n" +
+"          href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Facture%20archiv%C3%A9e\"\n" +
+"        >Facture archiv\\xE9e sans r\\xE9f\\xE9rence \\u24D8</a><ul style=\"margin:0;padding:0.8em;\">${allowed.map((it) => `<li>${it}</li>`).join(\"\")}</ul>`;\n" +
 "      return \"OK\";\n" +
 "    }\n" +
 "    if (!invoice.thirdparty_id && !invoice.thirdparty)\n" +
@@ -749,14 +760,31 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    }\n" +
 "    if ([106438171, 114270419, 106519227].includes(invoice.thirdparty?.id ?? 0)) {\n" +
 "      if (invoice.date || invoice.deadline)\n" +
-"        return \"Les dates doivent \\xEAtre vides\";\n" +
+"        return `<a\n" +
+"          title=\"Cliquer ici pour plus d'informations\"\n" +
+"          href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Date%20de%20facture\"\n" +
+"        >Les dates doivent \\xEAtre vides \\u24D8</a>`;\n" +
+"    }\n" +
+"    if (!invoice.date) {\n" +
+"      const emptyDateAllowed = [\"CHQ\"];\n" +
+"      if (!emptyDateAllowed.some((item) => invoice.invoice_number?.startsWith(item)))\n" +
+"        return `<a\n" +
+"          title=\"Cliquer ici pour plus d'informations\"\n" +
+"          href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Date%20de%20facture\"\n" +
+"        >Date de facture vide \\u24D8</a><ul style=\"margin:0;padding:0.8em;\">${emptyDateAllowed.map((it) => `<li>${it}</li>`).join(\"\")}</ul>`;\n" +
+"      return \"OK\";\n" +
 "    }\n" +
 "    if (invoice.thirdparty?.name === \"AIDES OCTROY\\xC9ES\" && invoice.thirdparty.id !== 106438171)\n" +
 "      return `Il ne doit y avoir qu'un seul compte \"AIDES OCTROY\\xC9ES\", et ce n'est pas le bon...`;\n" +
 "    if (invoice.thirdparty?.name === \"PIECE ID\" && invoice.thirdparty.id !== 106519227)\n" +
 "      return `Il ne doit y avoir qu'un seul compte \"PIECE ID\", et ce n'est pas le bon...`;\n" +
+"    const ledgerEvents = await this.getLedgerEvents();\n" +
+"    if ([106438171, 114270419].includes(invoice.thirdparty?.id)) {\n" +
+"      const lines = ledgerEvents.filter((event) => [\"6571\", \"6571002\"].includes(event.planItem.number));\n" +
+"      if (!lines.length)\n" +
+"        return '\\xE9criture \"6571\" manquante - envoyer la page \\xE0 David.';\n" +
+"    }\n" +
 "    if (invoice.currency !== \"EUR\") {\n" +
-"      const ledgerEvents = await this.getLedgerEvents();\n" +
 "      const diffLine = ledgerEvents.find((line) => line.planItem.number === \"4716001\");\n" +
 "      console.log({ ledgerEvents, diffLine });\n" +
 "      if (diffLine) {\n" +
@@ -776,8 +804,6 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    }\n" +
 "    if (!transactions.length)\n" +
 "      return 'pas de transaction attach\\xE9e - Si la transaction est introuvable, mettre le texte \"\\xA4 TRANSACTION INTROUVABLE\" au d\\xE9but du num\\xE9ro de facture';\n" +
-"    if (!invoice.date)\n" +
-"      return \"la date de facture est vide\";\n" +
 "    return \"OK\";\n" +
 "  }\n" +
 "}\n" +
@@ -787,9 +813,15 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    const invoice = await this.getInvoice();\n" +
 "    console.log(this.constructor.name, \"loadValidMessage\", { invoice });\n" +
 "    if (invoice.archived) {\n" +
-"      const allowed = [\"\\xA7 #\", \"\\xA7 ESPECES\", \"\\xA4 TRANSACTION INTROUVABLE\"];\n" +
-"      if (!allowed.some((allowedItem) => invoice.invoice_number.startsWith(allowedItem)))\n" +
-"        return `Le num\\xE9ro de facture d'une facture archiv\\xE9e doit commencer par une de ces possibilit\\xE9s : ${allowed.map((it) => `\"${it}\"`).join(\", \")}`;\n" +
+"      const allowed = [\"\\xA7 #\", \"\\xA4 TRANSACTION INTROUVABLE\"];\n" +
+"      if (\n" +
+"        //legacy\n" +
+"        !invoice.invoice_number.startsWith(\"\\xA7 ESPECES\") && !allowed.some((allowedItem) => invoice.invoice_number.startsWith(allowedItem))\n" +
+"      )\n" +
+"        return `<a\n" +
+"          title=\"Le num\\xE9ro de facture d'une facture archiv\\xE9e doit commencer par une de ces possibilit\\xE9s. Cliquer ici pour plus d'informations.\"\n" +
+"          href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Facture%20archiv%C3%A9e\"\n" +
+"        >Facture archiv\\xE9e sans r\\xE9f\\xE9rence \\u24D8</a><ul style=\"margin:0;padding:0.8em;\">${allowed.map((it) => `<li>${it}</li>`).join(\"\")}</ul>`;\n" +
 "      return \"OK\";\n" +
 "    }\n" +
 "    if (!invoice.thirdparty)\n" +
@@ -986,7 +1018,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    const tag = $(\"#is-valid-tag\");\n" +
 "    if (!tag)\n" +
 "      throw new Error('tag \"is-valid-tag\" introuvable');\n" +
-"    tag.textContent = message;\n" +
+"    tag.innerHTML = message;\n" +
 "  }\n" +
 "}\n" +
 "\n" +

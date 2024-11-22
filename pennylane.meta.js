@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name     Pennylane
-// @version  0.1.8
+// @version  0.1.9
 // @grant    unsafeWindow
 // @grant    GM.openInTab
 // @match    https://app.pennylane.com/companies/*
