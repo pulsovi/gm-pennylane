@@ -53,11 +53,6 @@ export default class ValidMessage extends Service {
   }
 
   async displayHeadband () {
-    findElem('span', 'Attention !')?.nextElementSibling?.classList.add('headband-is-valid');
-
-    if (!$('.headband-is-valid'))
-      $('.paragraph-body-m.text-primary-900.text-truncate')?.classList.add('headband-is-valid');
-
     if (!$('.headband-is-valid')) {
       const detailTab = $('aside div');
       detailTab?.insertBefore(parseHTML(`

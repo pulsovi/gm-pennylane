@@ -443,9 +443,6 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    return true;\n" +
 "  }\n" +
 "  async displayHeadband() {\n" +
-"    findElem(\"span\", \"Attention\\xA0!\")?.nextElementSibling?.classList.add(\"headband-is-valid\");\n" +
-"    if (!$(\".headband-is-valid\"))\n" +
-"      $(\".paragraph-body-m.text-primary-900.text-truncate\")?.classList.add(\"headband-is-valid\");\n" +
 "    if (!$(\".headband-is-valid\")) {\n" +
 "      const detailTab = $(\"aside div\");\n" +
 "      detailTab?.insertBefore(parseHTML(`\n" +
