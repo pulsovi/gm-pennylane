@@ -34,3 +34,13 @@ async function mergeInvoices () {
   console.log('mergeInvoices', {response});
 }
 */
+
+declare global {
+  interface Window {
+    GM_Pennylane_Version: string;
+  }
+}
+
+Object.assign(window, { GM_Pennylane_Version:
+/** version **/'0.1.9'
+});

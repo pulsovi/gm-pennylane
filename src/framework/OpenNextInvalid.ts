@@ -1,111 +1,184 @@
-import { getParam, getRandomArrayItem, sleep } from "../_";
+import { $, getParam, getRandomArrayItem, parseHTML, sleep } from "../_";
+import { openDocument } from "../navigation/openDocument";
+import Autostarter, { type AutostarterParent } from "./Autostarter";
+import Cache from "./Cache";
 import Service from "./service";
+import Tooltip from "./Tooltip";
 
-export interface Status {
+export interface RawStatus {
   id: number;
   valid: boolean;
   message: string;
-  page: number;
-  updatedAt: number;
+  createdAt: number;
+};
+
+interface Status extends RawStatus {
+  fetchedAt: number;
 }
 
-export default abstract class OpenNextInvalid extends Service {
-  private current: number;
-  private loading: Promise<void> | null = null;
-  private next: (interactionAllowed?: boolean|Event) => void;
-  protected events = ['click', 'keyup'];
-  protected cache: Record<number, Status>;
-  protected invalid?: Status;
-  protected launched = false;
-  protected readonly idParamName: string;
-  protected readonly storageKey: string;
+export default abstract class OpenNextInvalid extends Service implements AutostarterParent {
+  public abstract readonly id: string;
+  public readonly container = document.createElement('div');
+  public cache: Cache<Status>;
 
-  abstract loadValidations (): Promise<void>;
-  abstract openInvalid (status: Status): Promise<boolean>;
+  private autostart: Autostarter;
+  private current: number;
+  private invalidGenerator: AsyncGenerator<Status>;
+
+  protected abstract readonly idParamName: string;
+  protected abstract readonly storageKey: string;
 
   async init () {
     console.log(this.constructor.name, 'init');
-    this.loading = this.loadValidations().then(() => { this.loading = null; });
-    this.next = (interactionAllowed?: boolean|Event) => setTimeout(
-      () => this.openNext(interactionAllowed ===  true), 0
-    );
-    if (!this.launched) this.attachEvents();
+
+    this.start = this.start.bind(this);
+    this.current = Number(getParam(location.href, this.idParamName));
+    this.cache = new Cache(this.storageKey);
+
+    this.appendOpenNextButton();
+    this.autostart = new Autostarter(this);
+
+    this.invalidGenerator = this.loadInvalid();
+    this.firstLoading();
   }
 
-  loadCache () {
-    this.cache = JSON.parse(localStorage.getItem(this.storageKey) ?? '{}');
+  /**
+   * Start action
+   *
+   * `this` keyword is bounded at constructor
+   */
+  start (interactionAllowed?: boolean|Event) {
+    this.autostart.stop();
+    setTimeout(() => this.openNext(interactionAllowed ===  true), 0);
   }
 
-  saveCache () {
-    localStorage.setItem(this.storageKey, JSON.stringify(this.cache));
+  /**
+   * Append the button for open next to the DOM
+   */
+  private appendOpenNextButton () {
+    const className = 'sc-jwIPbr kzNmya bxhmjB justify-content-center btn btn-primary btn-sm';
+    this.container.appendChild(parseHTML(
+      `<button type="button" class="${className} open-next-invalid-btn">&nbsp;&gt;&nbsp;</button>`
+    ));
+    const button = $<HTMLButtonElement>(`.open-next-invalid-btn`, this.container)!;
+
+    button.addEventListener('click', this.start.bind(this, true));
+    Tooltip.make({ target: button, text: 'Ouvrir le prochain élément invalide' });
+    this.cache.on('saved', () => {
+      const number = this.cache.filter({ valid: false }).length;
+      button.innerHTML = `&nbsp;&gt;&nbsp;${number}`;
+    });
   }
 
-  attachEvents () {
-    this.events.forEach(event => { document.addEventListener(event, this.next); });
+  /**
+   * Create next invalid generator
+   */
+  private async *loadInvalid (): AsyncGenerator<Status, undefined, void> {
+    // verifier le cache
+    let cached = this.cache.find({ valid: false });
+    while (cached) {
+      const status = await this.updateStatus(cached.id);
+      if (status?.valid === false) yield status;
+      cached = this.cache.find({ valid: false });
+    }
+
+    // verifier les entrées non encore chargées
+    const from = this.cache.reduce(
+      (acc, status) => Math.max(status.createdAt, acc),
+    0);
+    const news = this.walk({
+      filter: JSON.stringify([{ field: 'created_at', operator: 'gteq', value: new Date(from).toISOString() }]),
+      sort: '+created_at',
+    });
+    let newItem = (await news.next()).value;
+    while (newItem) {
+      const status = await this.updateStatus(newItem);
+      if (status?.valid === false) yield status;
+      newItem = (await news.next()).value;
+    }
+
+    // verifier les plus anciennes entrées
+    const olds = this.walk({ sort: '+created_at' });
+    let oldItem = (await olds.next()).value;
+    while (oldItem) {
+      // all next values already tested at "news" step
+      if (oldItem.createdAt >= from) return;
+
+      const status = await this.updateStatus(oldItem);
+      if (status?.valid === false) yield status;
+      oldItem = (await news.next()).value;
+    }
   }
 
-  detachEvents () {
-    this.events.forEach(event => { document.removeEventListener(event, this.next); });
+  /**
+   * Update status of an item given by its ID
+   */
+  private async updateStatus (id: number | RawStatus, value?: RawStatus|null): Promise<Status|null> {
+    if ('number' !== typeof id) {
+      value = id;
+      id = value.id;
+    }
+    if (!value) value = await this.getStatus(id);
+    if (!value) {
+      this.cache.delete({id});
+      return null;
+    }
+    const status = Object.assign(value, { fetchedAt: Date.now() });
+    this.cache.updateItem({ id }, status);
+    return status;
   }
 
-  getCurrent () {
-    return this.current = Number(getParam(location.href, this.idParamName));
-  }
+  /**
+   * Get the status of an item
+   */
+  protected abstract getStatus (id: number): Promise<RawStatus|null>;
+
+  /**
+   * Walk through all items matching given search params
+   */
+  protected abstract walk (params: Record<string, string|number>): AsyncGenerator<RawStatus, undefined, void>;
 
   async openNext (interactionAllowed = false) {
-    this.launched = true;
-    this.detachEvents();
     console.log(this.constructor.name, 'openNext');
-    this.current = this.getCurrent();
 
-    let status = getRandomArrayItem(Object.values(this.cache).filter(status =>
-      'number' !== typeof status
-      && status.id !== this.current
-      && status.valid === false
-    ));
-    if (!status) status = this.invalid;
-    if (!status && this.loading) {
-      if (interactionAllowed) {
-        alert(this.constructor.name + ': impossible de trouver un élément invalide dans le cache, attente de la fin du scan');
-      } else {
-        console.log(this.constructor.name + ': impossible de trouver un élément invalide dans le cache, attente de la fin du scan', this);
-      }
-      await new Promise<void>(async rs => {
-        while(this.loading && !this.invalid) await sleep(300);
-        rs();
-      });
-      status = this.invalid;
-    }
-    if (!status) {
-      if (!interactionAllowed) {
-        console.log(this.constructor.name + ': tous les éléments semblent valides.');
-        return;
-      }
-      if (!confirm(this.constructor.name + ': tous les éléments semblent valides. Revérifier depuis le début ?')) return;
-      this.cache = {};
-      this.saveCache();
-      this.loading = this.loadValidations().then(() => { this.loading = null; });
-      await new Promise<void>(async rs => {
-        while(this.loading instanceof Promise && !this.invalid) await sleep(300);
-        rs();
-      });
-      status = this.invalid;
-    }
+    let status = (await this.invalidGenerator.next()).value;
     if (!status) {
       alert(this.constructor.name + ': tous les éléments sont valides selon les paramétres actuels');
       return;
     }
     console.log(this.constructor.name, 'next found :', { current: this.current, status });
-    const success = await this.openInvalid(status);
-    if (!success) {
-      delete this.invalid;
-      this.next(interactionAllowed);
-    }
+    await openDocument(status.id);
   }
 
-  setItemStatus (status: Status) {
-    if (!status.valid && status.id !== this.getCurrent()) this.invalid = status;
-    this.cache[status.id] = status
-    this.saveCache();
+  private async firstLoading () {
+    const storageKey = `${this.storageKey}-state`;
+    const currentVersion = window.GM_Pennylane_Version;
+    const state = JSON.parse(localStorage.getItem(storageKey) ?? '{}');
+
+    if (state.version !== currentVersion) {
+      // clear cache
+      this.cache.clear();
+      state.version = currentVersion;
+      state.loaded = false;
+      localStorage.setItem(storageKey, JSON.stringify(state));
+    }
+
+    if (state.loaded) return;
+
+    // load all
+    const from = this.cache.reduce((acc, status) => Math.max(status.createdAt, acc), 0);
+    const news = this.walk({
+      filter: JSON.stringify([{ field: 'created_at', operator: 'gteq', value: new Date(from).toISOString() }]),
+      sort: '+created_at',
+    });
+    let newItem = (await news.next()).value;
+    while (newItem) {
+      await this.updateStatus(newItem);
+      newItem = (await news.next()).value;
+    }
+
+    // save loaded status
+    state.loaded = true;
+    localStorage.setItem(storageKey, JSON.stringify(state));
   }
 }

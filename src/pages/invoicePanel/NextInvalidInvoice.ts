@@ -1,106 +1,55 @@
-import { $, jsonClone, parseHTML, waitElem, waitFunc } from "../../_";
-import { findInvoice } from "../../api/invoice";
-import OpenNextInvalid, { Status } from "../../framework/OpenNextInvalid";
+import { $, findElem, jsonClone, waitElem, waitFunc } from "../../_";
+import { getInvoicesList } from "../../api/invoice";
+import { InvoiceList } from "../../api/types";
+import OpenNextInvalid, { RawStatus as Status } from "../../framework/OpenNextInvalid";
 import Invoice from "../../models/Invoice";
-import { openDocument } from "../../navigation/openDocument";
 
 export default class NextInvalidInvoice extends OpenNextInvalid {
-  protected storageKey: string;
+  public id = 'next-invalid-invoice';
+  protected storageKey = 'InvoiceValidation';
   protected readonly idParamName = 'id';
-  private parameters = { direction: 'customer', page: 1 };
 
   async init () {
-    await this.start();
-    this.keepActive();
+    await this.appendContainer();
+
+    // Wait for appending button in the right page before init auto open service
     await super.init();
   }
 
-  async start () {
-    await waitElem('h4', 'Ventilation');
-    const directionButton = await Promise.race([
-      waitElem('button', 'Client'),
-      waitElem('button', 'Fournisseur'),
-    ]);
-    if (directionButton.textContent?.includes('Client')) {
-      this.storageKey = 'customerInvoiceValidation';
-      this.parameters.direction = 'customer';
-    } else {
-      this.storageKey ='supplierInvoiceValidation';
-      this.parameters.direction = 'supplier';
+  protected async *walk (
+    params: Record<string, string | number>
+  ): AsyncGenerator<Status, undefined, void> {
+    if (('page' in params) && !Number.isInteger(params.page)) {
+      console.log(this.constructor.name, 'walk', { params });
+      throw new Error('The "page" parameter must be a valid integer number');
     }
-    this.addButton();
+
+    let parameters = jsonClone(params);
+    parameters.page = parameters.page ?? 1;
+
+    let data: InvoiceList | null = null;
+    do {
+      data = await getInvoicesList(parameters);
+      const invoices = data.invoices;
+      if (!invoices?.length) return;
+      for (const invoice of invoices) yield Invoice.from(invoice).getStatus();
+      parameters = Object.assign(jsonClone(parameters), { page: Number(parameters.page ?? 0) + 1 });
+    } while (true);
   }
 
-  async keepActive () {
-    await this.start();
-    await waitFunc(() => !$('.open-next-invalid-btn'));
-    setTimeout(() => this.keepActive(), 0);
-  }
+  async getStatus (id: number): Promise<Status|null> {
+    const invoice = await Invoice.load(id);
 
-  async loadValidations () {
-    this.loadCache();
-    this.parameters.page = Math.max(1, ...Object.values(this.cache).map(status => status.page));
-    if (isNaN(this.parameters.page)) {
-      console.log(this.constructor.name, this);
-    }
-    await findInvoice(async (rawInvoice, params) => {
-      const page = params.page!;
-      const invoice = Invoice.from(rawInvoice);
-      const status = await invoice.getStatus();
-      this.setItemStatus({ ...status, page, updatedAt: Date.now() });
-      return false;//!status.valid;
-    }, this.parameters);
-  }
+    if (!invoice) return null; // probablement une facture supprimée
 
-  async openInvalid (status: Status) {
-    let invoice = await Invoice.load(status.id);
-    if (!invoice) {
-      // probablement une facture supprimée
-      console.log('NextInvalidInvoice', { status, invoice });
-      delete this.cache[status.id];
-      this.saveCache();
-      console.log(this.constructor.name, `openInvalid: invoice ${status.id} is deleted`);
-      return false;
-    }
-    if (status.message.includes('6288')) {
-      const rawInvoice = await invoice.getInvoice();
-      await invoice.update({invoice_lines_attributes:[{
-        ...rawInvoice.invoice_lines[0],
-        pnl_plan_item_id: null,
-        pnl_plan_item: null,
-      }]});
-      invoice = await Invoice.load(status.id);
-      if (!invoice) throw new Error(this.constructor.name + ': La facture a disparu ?!');
-    }
-    if (await invoice.isValid()) {
-      console.log(this.constructor.name, 'openInvalid: invoice is valid', {invoice, status});
-
-      this.cache[invoice.id] = Object.assign(
-        jsonClone(this.cache[invoice.id]),
-        await invoice.getStatus()
-      );
-      this.saveCache();
-      return false;
-    }
-    openDocument(status.id);
-    return true;
+    return await invoice.getStatus();
   }
 
   /** Add "next invalid invoice" button on invoices list */
-  addButton () {
-    this.loadCache();
-    const number = Object.values(this.cache).filter(status => !status.valid).length;
-    const nextButton = $('div>span+button+button:last-child');
-    if (!nextButton) return;
-    const className = nextButton.className;
-    nextButton.parentElement?.insertBefore(parseHTML(
-      `<button type="button" class="${className} open-next-invalid-btn">&nbsp;&gt;&nbsp;${number}</button>`
-    ), nextButton.previousElementSibling);
-    $('.open-next-invalid-btn')!.addEventListener('click', event => {
-      event.stopPropagation();
-      this.launched = true;
-      this.detachEvents();
-      this.openNext(true);
-    });
+  private async appendContainer () {
+    const ref = await waitElem('h4', 'Ventilation');
+    const nextButton = await waitElem('div>span+button+button:last-child');
+    nextButton.parentElement?.insertBefore(this.container, nextButton.previousElementSibling);
+    waitFunc(() => findElem('h4', 'Ventilation') !== ref).then(() => this.appendContainer());
   }
 }

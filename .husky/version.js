@@ -13,3 +13,10 @@ const newVersion = oldVersion.split('.')
   .reverse().join('.');
 lines[versionIndex] = lines[versionIndex].replace(oldVersion, newVersion);
 await fs.promises.writeFile(meta, lines.join('\n'), 'utf8');
+
+const browser = await fs.promises.readFile('./src/eval.ts', 'utf8');
+await fs.promises.writeFile(
+  './src/eval.ts',
+  browser.replace(/(?<=^\/\*\* version \*\*\/).*/um, `'${newVersion}'`),
+  'utf8'
+);

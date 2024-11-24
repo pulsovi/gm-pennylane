@@ -17,7 +17,7 @@ export async function updateInvoice (id: number, data: Partial<RawInvoice>): Pro
   return responseData;
 }
 
-async function getInvoicesList (params: InvoiceListParams = {}): Promise<InvoiceList> {
+export async function getInvoicesList (params: InvoiceListParams = {}): Promise<InvoiceList> {
   const searchParams = new URLSearchParams(params as Record<string, string>);
   if (!searchParams.has('filter')) searchParams.set('filter', '[]');
   const url = `accountants/invoices/list?${searchParams.toString()}`;

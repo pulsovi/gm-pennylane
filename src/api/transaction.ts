@@ -11,7 +11,7 @@ export async function getTransaction (id: number): Promise<RawTransactionMin> {
   return await response?.json();
 }
 
-async function getTransactionsList (params: TransactionListParams = {}): Promise<TransactionList> {
+export async function getTransactionsList (params: TransactionListParams = {}): Promise<TransactionList> {
   const searchParams = new URLSearchParams(params);
   const url = `accountants/wip/transactions?${searchParams.toString()}`;
   const response = await apiRequest(url, null, 'GET');
