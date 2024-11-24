@@ -75,11 +75,10 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
    */
   private async *loadInvalid (): AsyncGenerator<Status, undefined, void> {
     // verifier le cache
-    let cached = this.cache.find({ valid: false });
-    while (cached) {
-      const status = await this.updateStatus(cached.id);
+    let cached = this.cache.filter({ valid: false });
+    for (const cachedItem of cached) {
+      const status = await this.updateStatus(cachedItem.id);
       if (status?.valid === false) yield status;
-      cached = this.cache.find({ valid: false });
     }
 
     // verifier les entrées non encore chargées
