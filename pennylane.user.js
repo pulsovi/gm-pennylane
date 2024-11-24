@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name     Pennylane
-// @version  0.1.9
+// @version  0.1.10
 // @grant    unsafeWindow
 // @grant    GM.openInTab
 // @match    https://app.pennylane.com/companies/*
@@ -38,13 +38,6 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  url.searchParams.set(\"filter\", JSON.stringify(filter));\n" +
 "  url.searchParams.delete(\"date\");\n" +
 "  location.replace(url);\n" +
-"}\n" +
-"\n" +
-"function getRandomArrayItem(array) {\n" +
-"  if (!array.length)\n" +
-"    return null;\n" +
-"  const index = Math.floor(Math.random() * array.length);\n" +
-"  return array[index];\n" +
 "}\n" +
 "\n" +
 "async function sleep(ms) {\n" +
@@ -332,7 +325,9 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    const id = this.id;\n" +
 "    const valid = await this.isValid();\n" +
 "    const message = await this.getValidMessage();\n" +
-"    return { id, valid, message };\n" +
+"    const doc = await this.getDocument();\n" +
+"    const createdAt = new Date(doc.created_at).getTime();\n" +
+"    return { id, valid, message, createdAt };\n" +
 "  }\n" +
 "  async reloadLedgerEvents() {\n" +
 "    this.valid = null;\n" +
@@ -479,27 +474,6 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  const response = await apiRequest(url, null, \"GET\");\n" +
 "  return await response.json();\n" +
 "}\n" +
-"async function findTransaction(cb, params = {}) {\n" +
-"  if (\"page\" in params && !Number.isInteger(params.page)) {\n" +
-"    console.log(\"findTransaction\", { params });\n" +
-"    throw new Error('The \"page\" parameter must be a valid integer number');\n" +
-"  }\n" +
-"  let parameters = jsonClone(params);\n" +
-"  parameters.page = parameters.page ?? 1;\n" +
-"  let data = null;\n" +
-"  do {\n" +
-"    data = await getTransactionsList(parameters);\n" +
-"    const transactions = data.transactions;\n" +
-"    if (!transactions?.length)\n" +
-"      return null;\n" +
-"    console.log(\"findTransaction page\", { parameters, data, transactions });\n" +
-"    for (const transaction of transactions)\n" +
-"      if (await cb(transaction, parameters))\n" +
-"        return transaction;\n" +
-"    parameters = Object.assign(jsonClone(parameters), { page: parameters.page + 1 });\n" +
-"  } while (parameters.page <= data.pagination.pages);\n" +
-"  return null;\n" +
-"}\n" +
 "\n" +
 "class TransactionAddByIdButton extends Service$1 {\n" +
 "  transaction;\n" +
@@ -562,126 +536,453 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  const response = await apiRequest(url, null, \"GET\");\n" +
 "  return await response?.json();\n" +
 "}\n" +
-"async function findInvoice(cb, params = {}) {\n" +
-"  if (\"page\" in params && !Number.isInteger(params.page)) {\n" +
-"    console.log(\"findInvoice\", { cb, params });\n" +
-"    throw new Error('The \"page\" parameter must be a valid integer number');\n" +
+"\n" +
+"let openInTabLaunched = false;\n" +
+"function openInTab(url) {\n" +
+"  if (openInTabLaunched)\n" +
+"    console.error(\"openInTab already launched\");\n" +
+"  openInTabLaunched = true;\n" +
+"  document.body.appendChild(\n" +
+"    parseHTML(`<div class=\"open_tab\" data-url=\"${escape(url)}\" style=\"display: none;\"></div>`)\n" +
+"  );\n" +
+"}\n" +
+"\n" +
+"function openDocument(documentId) {\n" +
+"  const url = new URL(location.href.replace(/accountants.*$/, `documents/${documentId}.html`));\n" +
+"  openInTab(url.toString());\n" +
+"}\n" +
+"\n" +
+"function uniquid(length = 20) {\n" +
+"  const chars = \"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789\";\n" +
+"  let id = \"\";\n" +
+"  for (let i = 0; i < length; i++) {\n" +
+"    id += chars.charAt(Math.floor(Math.random() * chars.length));\n" +
 "  }\n" +
-"  let parameters = jsonClone(params);\n" +
-"  parameters.page = parameters.page ?? 1;\n" +
-"  let data = null;\n" +
-"  do {\n" +
-"    data = await getInvoicesList(parameters);\n" +
-"    const invoices = data.invoices;\n" +
-"    if (!invoices?.length)\n" +
-"      return null;\n" +
-"    console.log(\"findInvoice page\", { parameters, data, invoices });\n" +
-"    for (const invoice of invoices)\n" +
-"      if (await cb(invoice, parameters))\n" +
-"        return invoice;\n" +
-"    parameters = Object.assign(jsonClone(parameters), { page: (parameters.page ?? 0) + 1 });\n" +
-"  } while (true);\n" +
+"  return id;\n" +
+"}\n" +
+"\n" +
+"class Tooltip {\n" +
+"  id = `T${uniquid()}`;\n" +
+"  target;\n" +
+"  constructor({ target }) {\n" +
+"    this.target = target;\n" +
+"    this.createContainer();\n" +
+"    setInterval(() => {\n" +
+"      this.setPos();\n" +
+"    }, 200);\n" +
+"  }\n" +
+"  static make({ target, text }) {\n" +
+"    const tooltip = new Tooltip({ target });\n" +
+"    if (text)\n" +
+"      tooltip.setText(text);\n" +
+"    return tooltip;\n" +
+"  }\n" +
+"  /**\n" +
+"   * Create the tooltip DOM and append it to the page\n" +
+"   */\n" +
+"  createContainer() {\n" +
+"    document.body.appendChild(parseHTML(`<div\n" +
+"      style=\"display: none; position: absolute; inset: 0px auto auto 0px;\"\n" +
+"      role=\"tooltip\"\n" +
+"      x-placement=\"bottom\"\n" +
+"      class=\"sc-ghWlax esvpOe fade show tooltip bs-tooltip-bottom\"\n" +
+"      id=\"${this.id}\"\n" +
+"      data-popper-reference-hidden=\"false\"\n" +
+"      data-popper-escaped=\"false\"\n" +
+"      data-popper-placement=\"bottom\"\n" +
+"    >\n" +
+"      <div class=\"arrow\" style=\"position: absolute; left: 0px; transform: translate(33.5px);\"></div>\n" +
+"      <div class=\"tooltip-inner\"></div>\n" +
+"    </div>`));\n" +
+"    this.target.setAttribute(\"aria-labelledby\", this.id);\n" +
+"    this.target.addEventListener(\"mouseenter\", () => {\n" +
+"      $(`#${this.id}`).style.display = \"unset\";\n" +
+"    });\n" +
+"    this.target.addEventListener(\"mouseleave\", () => {\n" +
+"      $(`#${this.id}`).style.display = \"none\";\n" +
+"    });\n" +
+"  }\n" +
+"  /**\n" +
+"   * Set the text for the tooltip\n" +
+"   */\n" +
+"  setText(text, html = false) {\n" +
+"    const inner = $(`#${this.id} .tooltip-inner`);\n" +
+"    if (!inner)\n" +
+"      throw new Error(\"Unable to find tooltip container\");\n" +
+"    if (html) {\n" +
+"      inner.innerHTML = text;\n" +
+"    } else {\n" +
+"      inner.innerText = text;\n" +
+"    }\n" +
+"  }\n" +
+"  /**\n" +
+"   * Move the tooltip at good position to point visually the target\n" +
+"   */\n" +
+"  setPos() {\n" +
+"    const tooltip = $(`#${this.id}`);\n" +
+"    const arrow = $(\".arrow\", tooltip);\n" +
+"    if (tooltip.style.display === \"none\")\n" +
+"      return;\n" +
+"    const targetRect = this.target.getBoundingClientRect();\n" +
+"    const tooltipRect = tooltip.getBoundingClientRect();\n" +
+"    const arrowRect = arrow.getBoundingClientRect();\n" +
+"    const targetWidth = targetRect.right - targetRect.left;\n" +
+"    const tooltipWidth = tooltipRect.right - tooltipRect.left;\n" +
+"    const arrowWidth = arrowRect.right - arrowRect.left;\n" +
+"    const arrowTransform = `translate(${Math.round(10 * (tooltipWidth / 2 - arrowWidth / 2)) / 10}px)`;\n" +
+"    if (arrow.style.transform !== arrowTransform) {\n" +
+"      arrow.style.transform = arrowTransform;\n" +
+"    }\n" +
+"    const tooltipTransform = `translate(${Math.round(10 * (targetRect.left + targetWidth / 2 - tooltipWidth / 2)) / 10}px, ${Math.round(10 * targetRect.bottom) / 10}px)`;\n" +
+"    if (tooltip.style.transform !== tooltipTransform) {\n" +
+"      tooltip.style.transform = tooltipTransform;\n" +
+"    }\n" +
+"  }\n" +
+"}\n" +
+"\n" +
+"class Autostarter {\n" +
+"  parent;\n" +
+"  eventList = [\"click\", \"keyup\"];\n" +
+"  stopped = false;\n" +
+"  constructor(parent) {\n" +
+"    this.parent = parent;\n" +
+"    this.start = this.start.bind(this);\n" +
+"    this.init();\n" +
+"  }\n" +
+"  /**\n" +
+"   * Async init routines\n" +
+"   */\n" +
+"  async init() {\n" +
+"    this.attachEvents();\n" +
+"    this.appendDisableButton();\n" +
+"  }\n" +
+"  /**\n" +
+"   * Attach interaction events to the browser page\n" +
+"   */\n" +
+"  attachEvents() {\n" +
+"    this.eventList.forEach((event) => {\n" +
+"      document.addEventListener(event, this.start);\n" +
+"    });\n" +
+"  }\n" +
+"  /**\n" +
+"   * Detach interaction events from the browser\n" +
+"   */\n" +
+"  detachEvents() {\n" +
+"    this.eventList.forEach((event) => {\n" +
+"      document.removeEventListener(event, this.start);\n" +
+"    });\n" +
+"  }\n" +
+"  /**\n" +
+"   * Add button for enabling / disabling this autostart behavior\n" +
+"   */\n" +
+"  appendDisableButton() {\n" +
+"    const buttonId = `${this.parent.id}-autostart-enable-disable`;\n" +
+"    this.parent.container.appendChild(parseHTML(`<button\n" +
+"      type=\"button\"\n" +
+"      class=\"sc-jwIPbr bxhmjB kzNmya justify-content-center btn btn-primary btn-sm\"\n" +
+"      id=\"${buttonId}\"\n" +
+"      style=\"font-family: initial;\"\n" +
+"    ></button>`));\n" +
+"    const button = $(`#${buttonId}`, this.parent.container);\n" +
+"    const tooltip = Tooltip.make({ target: button });\n" +
+"    button.addEventListener(\"click\", () => {\n" +
+"      this.setConfig({ enabled: !this.getConfig().enabled });\n" +
+"    });\n" +
+"    let lastVal = null;\n" +
+"    setInterval(() => {\n" +
+"      const { enabled } = this.getConfig();\n" +
+"      if (enabled === lastVal)\n" +
+"        return;\n" +
+"      lastVal = enabled;\n" +
+"      if (enabled) {\n" +
+"        button.innerText = \"\\u23F9\";\n" +
+"        tooltip.setText(\"Stopper l'ouverture automatique\");\n" +
+"      } else {\n" +
+"        button.innerText = \"\\u23F5\";\n" +
+"        tooltip.setText(\"Activer l'ouverture automatique\");\n" +
+"      }\n" +
+"    }, 200);\n" +
+"    console.log(this.constructor.name, this, { button, tooltip });\n" +
+"  }\n" +
+"  /**\n" +
+"   * Callback for autostart events\n" +
+"   *\n" +
+"   * `this` keyword is bounded at constructor\n" +
+"   */\n" +
+"  start() {\n" +
+"    if (this.getConfig().enabled && !this.stopped)\n" +
+"      this.parent.start();\n" +
+"  }\n" +
+"  /**\n" +
+"   * Stop all watchers\n" +
+"   */\n" +
+"  stop() {\n" +
+"    this.detachEvents();\n" +
+"  }\n" +
+"  /**\n" +
+"   * Load config from localStorage\n" +
+"   */\n" +
+"  getConfig() {\n" +
+"    const defaults = { enabled: true };\n" +
+"    return Object.assign(\n" +
+"      defaults,\n" +
+"      JSON.parse(localStorage.getItem(`${this.parent.id}-autostart`) ?? \"{}\")\n" +
+"    );\n" +
+"  }\n" +
+"  /**\n" +
+"   * Set properties to this config and save it to localStorage\n" +
+"   */\n" +
+"  setConfig(settings = {}) {\n" +
+"    localStorage.setItem(\n" +
+"      `${this.parent.id}-autostart`,\n" +
+"      JSON.stringify(Object.assign(this.getConfig(), settings))\n" +
+"    );\n" +
+"  }\n" +
+"}\n" +
+"\n" +
+"class EventEmitter {\n" +
+"  events = {};\n" +
+"  // Abonner une fonction à un événement\n" +
+"  on(event, listener) {\n" +
+"    if (!this.events[event]) {\n" +
+"      this.events[event] = [];\n" +
+"    }\n" +
+"    this.events[event].push(listener);\n" +
+"  }\n" +
+"  // Désabonner une fonction d'un événement\n" +
+"  off(event, listener) {\n" +
+"    if (!this.events[event])\n" +
+"      return;\n" +
+"    this.events[event] = this.events[event].filter((l) => l !== listener);\n" +
+"  }\n" +
+"  // Déclencher un événement avec des données\n" +
+"  emit(event, data) {\n" +
+"    if (!this.events[event])\n" +
+"      return;\n" +
+"    this.events[event].forEach((listener) => listener(data));\n" +
+"  }\n" +
+"}\n" +
+"\n" +
+"class Cache extends EventEmitter {\n" +
+"  storageKey;\n" +
+"  data;\n" +
+"  constructor(key) {\n" +
+"    super();\n" +
+"    this.storageKey = key;\n" +
+"    this.load();\n" +
+"    console.log(\"new Cache\", this);\n" +
+"  }\n" +
+"  /**\n" +
+"   * Load data from localStorage\n" +
+"   */\n" +
+"  load() {\n" +
+"    this.data = JSON.parse(localStorage.getItem(this.storageKey) ?? \"[]\");\n" +
+"    if (!Array.isArray(this.data))\n" +
+"      this.data = [];\n" +
+"    this.emit(\"loadend\", this.data);\n" +
+"  }\n" +
+"  /**\n" +
+"   * Save data to localStorage\n" +
+"   */\n" +
+"  save() {\n" +
+"    localStorage.setItem(this.storageKey, JSON.stringify(this.data));\n" +
+"    this.emit(\"saved\", this.data);\n" +
+"  }\n" +
+"  /**\n" +
+"   * Returns the cached elements that match the condition specified\n" +
+"   */\n" +
+"  filter(match) {\n" +
+"    return this.data.filter(\n" +
+"      (item) => Object.entries(match).every(\n" +
+"        ([key, value]) => item[key] === value\n" +
+"      )\n" +
+"    );\n" +
+"  }\n" +
+"  /**\n" +
+"   * Returns the first cached element that match condition, and undefined\n" +
+"   * otherwise.\n" +
+"   */\n" +
+"  find(match) {\n" +
+"    return this.data.find(\n" +
+"      (item) => Object.entries(match).every(\n" +
+"        ([key, value]) => item[key] === value\n" +
+"      )\n" +
+"    );\n" +
+"  }\n" +
+"  /**\n" +
+"   * delete one item\n" +
+"   */\n" +
+"  delete(match) {\n" +
+"    const found = this.find(match);\n" +
+"    if (!found)\n" +
+"      return;\n" +
+"    this.data.splice(this.data.indexOf(found), 1);\n" +
+"    this.emit(\"delete\", { old: found });\n" +
+"    this.save();\n" +
+"  }\n" +
+"  /**\n" +
+"   * clear all data\n" +
+"   */\n" +
+"  clear() {\n" +
+"    this.data.length = 0;\n" +
+"    this.save();\n" +
+"    this.emit(\"clear\", this.data);\n" +
+"  }\n" +
+"  /**\n" +
+"   * Update one item\n" +
+"   */\n" +
+"  updateItem(match, value) {\n" +
+"    const item = this.find(match);\n" +
+"    if (item) {\n" +
+"      this.data.splice(this.data.indexOf(item), 1, value);\n" +
+"      this.emit(\"update\", { old: item, new: value });\n" +
+"    } else {\n" +
+"      this.data.push(value);\n" +
+"      this.emit(\"add\", { new: value });\n" +
+"    }\n" +
+"    this.save();\n" +
+"    return value;\n" +
+"  }\n" +
+"  /**\n" +
+"   * Calls the specified callback function for all the elements in an array.\n" +
+"   * The return value of the callback function is the accumulated result,\n" +
+"   * and is provided as an argument in the next call to the callback function.\n" +
+"   */\n" +
+"  reduce(cb, startingValue) {\n" +
+"    return this.data.reduce(cb, startingValue);\n" +
+"  }\n" +
 "}\n" +
 "\n" +
 "class OpenNextInvalid extends Service$1 {\n" +
-"  current;\n" +
-"  loading = null;\n" +
-"  next;\n" +
-"  events = [\"click\", \"keyup\"];\n" +
+"  container = document.createElement(\"div\");\n" +
 "  cache;\n" +
-"  invalid;\n" +
-"  launched = false;\n" +
-"  idParamName;\n" +
-"  storageKey;\n" +
+"  autostart;\n" +
+"  current;\n" +
+"  invalidGenerator;\n" +
 "  async init() {\n" +
 "    console.log(this.constructor.name, \"init\");\n" +
-"    this.loading = this.loadValidations().then(() => {\n" +
-"      this.loading = null;\n" +
+"    this.start = this.start.bind(this);\n" +
+"    this.current = Number(getParam(location.href, this.idParamName));\n" +
+"    this.cache = new Cache(this.storageKey);\n" +
+"    this.appendOpenNextButton();\n" +
+"    this.autostart = new Autostarter(this);\n" +
+"    this.invalidGenerator = this.loadInvalid();\n" +
+"    this.firstLoading();\n" +
+"  }\n" +
+"  /**\n" +
+"   * Start action\n" +
+"   *\n" +
+"   * `this` keyword is bounded at constructor\n" +
+"   */\n" +
+"  start(interactionAllowed) {\n" +
+"    this.autostart.stop();\n" +
+"    setTimeout(() => this.openNext(interactionAllowed === true), 0);\n" +
+"  }\n" +
+"  /**\n" +
+"   * Append the button for open next to the DOM\n" +
+"   */\n" +
+"  appendOpenNextButton() {\n" +
+"    const className = \"sc-jwIPbr kzNmya bxhmjB justify-content-center btn btn-primary btn-sm\";\n" +
+"    this.container.appendChild(parseHTML(\n" +
+"      `<button type=\"button\" class=\"${className} open-next-invalid-btn\">&nbsp;&gt;&nbsp;</button>`\n" +
+"    ));\n" +
+"    const button = $(`.open-next-invalid-btn`, this.container);\n" +
+"    button.addEventListener(\"click\", this.start.bind(this, true));\n" +
+"    Tooltip.make({ target: button, text: \"Ouvrir le prochain \\xE9l\\xE9ment invalide\" });\n" +
+"    this.cache.on(\"saved\", () => {\n" +
+"      const number = this.cache.filter({ valid: false }).length;\n" +
+"      button.innerHTML = `&nbsp;&gt;&nbsp;${number}`;\n" +
 "    });\n" +
-"    this.next = (interactionAllowed) => setTimeout(\n" +
-"      () => this.openNext(interactionAllowed === true),\n" +
+"  }\n" +
+"  /**\n" +
+"   * Create next invalid generator\n" +
+"   */\n" +
+"  async *loadInvalid() {\n" +
+"    let cached = this.cache.find({ valid: false });\n" +
+"    while (cached) {\n" +
+"      const status = await this.updateStatus(cached.id);\n" +
+"      if (status?.valid === false)\n" +
+"        yield status;\n" +
+"      cached = this.cache.find({ valid: false });\n" +
+"    }\n" +
+"    const from = this.cache.reduce(\n" +
+"      (acc, status) => Math.max(status.createdAt, acc),\n" +
 "      0\n" +
 "    );\n" +
-"    if (!this.launched)\n" +
-"      this.attachEvents();\n" +
-"  }\n" +
-"  loadCache() {\n" +
-"    this.cache = JSON.parse(localStorage.getItem(this.storageKey) ?? \"{}\");\n" +
-"  }\n" +
-"  saveCache() {\n" +
-"    localStorage.setItem(this.storageKey, JSON.stringify(this.cache));\n" +
-"  }\n" +
-"  attachEvents() {\n" +
-"    this.events.forEach((event) => {\n" +
-"      document.addEventListener(event, this.next);\n" +
+"    const news = this.walk({\n" +
+"      filter: JSON.stringify([{ field: \"created_at\", operator: \"gteq\", value: new Date(from).toISOString() }]),\n" +
+"      sort: \"+created_at\"\n" +
 "    });\n" +
+"    let newItem = (await news.next()).value;\n" +
+"    while (newItem) {\n" +
+"      const status = await this.updateStatus(newItem);\n" +
+"      if (status?.valid === false)\n" +
+"        yield status;\n" +
+"      newItem = (await news.next()).value;\n" +
+"    }\n" +
+"    const olds = this.walk({ sort: \"+created_at\" });\n" +
+"    let oldItem = (await olds.next()).value;\n" +
+"    while (oldItem) {\n" +
+"      if (oldItem.createdAt >= from)\n" +
+"        return;\n" +
+"      const status = await this.updateStatus(oldItem);\n" +
+"      if (status?.valid === false)\n" +
+"        yield status;\n" +
+"      oldItem = (await news.next()).value;\n" +
+"    }\n" +
 "  }\n" +
-"  detachEvents() {\n" +
-"    this.events.forEach((event) => {\n" +
-"      document.removeEventListener(event, this.next);\n" +
-"    });\n" +
-"  }\n" +
-"  getCurrent() {\n" +
-"    return this.current = Number(getParam(location.href, this.idParamName));\n" +
+"  /**\n" +
+"   * Update status of an item given by its ID\n" +
+"   */\n" +
+"  async updateStatus(id, value) {\n" +
+"    if (\"number\" !== typeof id) {\n" +
+"      value = id;\n" +
+"      id = value.id;\n" +
+"    }\n" +
+"    if (!value)\n" +
+"      value = await this.getStatus(id);\n" +
+"    if (!value) {\n" +
+"      this.cache.delete({ id });\n" +
+"      return null;\n" +
+"    }\n" +
+"    const status = Object.assign(value, { fetchedAt: Date.now() });\n" +
+"    this.cache.updateItem({ id }, status);\n" +
+"    return status;\n" +
 "  }\n" +
 "  async openNext(interactionAllowed = false) {\n" +
-"    this.launched = true;\n" +
-"    this.detachEvents();\n" +
 "    console.log(this.constructor.name, \"openNext\");\n" +
-"    this.current = this.getCurrent();\n" +
-"    let status = getRandomArrayItem(Object.values(this.cache).filter(\n" +
-"      (status2) => \"number\" !== typeof status2 && status2.id !== this.current && status2.valid === false\n" +
-"    ));\n" +
-"    if (!status)\n" +
-"      status = this.invalid;\n" +
-"    if (!status && this.loading) {\n" +
-"      if (interactionAllowed) {\n" +
-"        alert(this.constructor.name + \": impossible de trouver un \\xE9l\\xE9ment invalide dans le cache, attente de la fin du scan\");\n" +
-"      } else {\n" +
-"        console.log(this.constructor.name + \": impossible de trouver un \\xE9l\\xE9ment invalide dans le cache, attente de la fin du scan\", this);\n" +
-"      }\n" +
-"      await new Promise(async (rs) => {\n" +
-"        while (this.loading && !this.invalid)\n" +
-"          await sleep(300);\n" +
-"        rs();\n" +
-"      });\n" +
-"      status = this.invalid;\n" +
-"    }\n" +
-"    if (!status) {\n" +
-"      if (!interactionAllowed) {\n" +
-"        console.log(this.constructor.name + \": tous les \\xE9l\\xE9ments semblent valides.\");\n" +
-"        return;\n" +
-"      }\n" +
-"      if (!confirm(this.constructor.name + \": tous les \\xE9l\\xE9ments semblent valides. Rev\\xE9rifier depuis le d\\xE9but ?\"))\n" +
-"        return;\n" +
-"      this.cache = {};\n" +
-"      this.saveCache();\n" +
-"      this.loading = this.loadValidations().then(() => {\n" +
-"        this.loading = null;\n" +
-"      });\n" +
-"      await new Promise(async (rs) => {\n" +
-"        while (this.loading instanceof Promise && !this.invalid)\n" +
-"          await sleep(300);\n" +
-"        rs();\n" +
-"      });\n" +
-"      status = this.invalid;\n" +
-"    }\n" +
+"    let status = (await this.invalidGenerator.next()).value;\n" +
 "    if (!status) {\n" +
 "      alert(this.constructor.name + \": tous les \\xE9l\\xE9ments sont valides selon les param\\xE9tres actuels\");\n" +
 "      return;\n" +
 "    }\n" +
 "    console.log(this.constructor.name, \"next found :\", { current: this.current, status });\n" +
-"    const success = await this.openInvalid(status);\n" +
-"    if (!success) {\n" +
-"      delete this.invalid;\n" +
-"      this.next(interactionAllowed);\n" +
-"    }\n" +
+"    await openDocument(status.id);\n" +
 "  }\n" +
-"  setItemStatus(status) {\n" +
-"    if (!status.valid && status.id !== this.getCurrent())\n" +
-"      this.invalid = status;\n" +
-"    this.cache[status.id] = status;\n" +
-"    this.saveCache();\n" +
+"  async firstLoading() {\n" +
+"    const storageKey = `${this.storageKey}-state`;\n" +
+"    const currentVersion = window.GM_Pennylane_Version;\n" +
+"    const state = JSON.parse(localStorage.getItem(storageKey) ?? \"{}\");\n" +
+"    if (state.version !== currentVersion) {\n" +
+"      this.cache.clear();\n" +
+"      state.version = currentVersion;\n" +
+"      state.loaded = false;\n" +
+"      localStorage.setItem(storageKey, JSON.stringify(state));\n" +
+"    }\n" +
+"    if (state.loaded)\n" +
+"      return;\n" +
+"    const from = this.cache.reduce((acc, status) => Math.max(status.createdAt, acc), 0);\n" +
+"    const news = this.walk({\n" +
+"      filter: JSON.stringify([{ field: \"created_at\", operator: \"gteq\", value: new Date(from).toISOString() }]),\n" +
+"      sort: \"+created_at\"\n" +
+"    });\n" +
+"    let newItem = (await news.next()).value;\n" +
+"    while (newItem) {\n" +
+"      await this.updateStatus(newItem);\n" +
+"      newItem = (await news.next()).value;\n" +
+"    }\n" +
+"    state.loaded = true;\n" +
+"    localStorage.setItem(storageKey, JSON.stringify(state));\n" +
 "  }\n" +
 "}\n" +
 "\n" +
@@ -764,8 +1065,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "          title=\"Cliquer ici pour plus d'informations\"\n" +
 "          href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Date%20de%20facture\"\n" +
 "        >Les dates doivent \\xEAtre vides \\u24D8</a>`;\n" +
-"    }\n" +
-"    if (!invoice.date) {\n" +
+"    } else if (!invoice.date) {\n" +
 "      const emptyDateAllowed = [\"CHQ\"];\n" +
 "      if (!emptyDateAllowed.some((item) => invoice.invoice_number?.startsWith(item)))\n" +
 "        return `<a\n" +
@@ -843,114 +1143,44 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  }\n" +
 "}\n" +
 "\n" +
-"let openInTabLaunched = false;\n" +
-"function openInTab(url) {\n" +
-"  if (openInTabLaunched)\n" +
-"    console.error(\"openInTab already launched\");\n" +
-"  openInTabLaunched = true;\n" +
-"  document.body.appendChild(\n" +
-"    parseHTML(`<div class=\"open_tab\" data-url=\"${escape(url)}\" style=\"display: none;\"></div>`)\n" +
-"  );\n" +
-"}\n" +
-"\n" +
-"function openDocument(documentId) {\n" +
-"  const url = new URL(location.href.replace(/accountants.*$/, `documents/${documentId}.html`));\n" +
-"  openInTab(url.toString());\n" +
-"}\n" +
-"\n" +
 "class NextInvalidInvoice extends OpenNextInvalid {\n" +
-"  storageKey;\n" +
+"  id = \"next-invalid-invoice\";\n" +
+"  storageKey = \"InvoiceValidation\";\n" +
 "  idParamName = \"id\";\n" +
-"  parameters = { direction: \"customer\", page: 1 };\n" +
 "  async init() {\n" +
-"    await this.start();\n" +
-"    this.keepActive();\n" +
+"    await this.appendContainer();\n" +
 "    await super.init();\n" +
 "  }\n" +
-"  async start() {\n" +
-"    await waitElem(\"h4\", \"Ventilation\");\n" +
-"    const directionButton = await Promise.race([\n" +
-"      waitElem(\"button\", \"Client\"),\n" +
-"      waitElem(\"button\", \"Fournisseur\")\n" +
-"    ]);\n" +
-"    if (directionButton.textContent?.includes(\"Client\")) {\n" +
-"      this.storageKey = \"customerInvoiceValidation\";\n" +
-"      this.parameters.direction = \"customer\";\n" +
-"    } else {\n" +
-"      this.storageKey = \"supplierInvoiceValidation\";\n" +
-"      this.parameters.direction = \"supplier\";\n" +
+"  async *walk(params) {\n" +
+"    if (\"page\" in params && !Number.isInteger(params.page)) {\n" +
+"      console.log(this.constructor.name, \"walk\", { params });\n" +
+"      throw new Error('The \"page\" parameter must be a valid integer number');\n" +
 "    }\n" +
-"    this.addButton();\n" +
+"    let parameters = jsonClone(params);\n" +
+"    parameters.page = parameters.page ?? 1;\n" +
+"    let data = null;\n" +
+"    do {\n" +
+"      data = await getInvoicesList(parameters);\n" +
+"      const invoices = data.invoices;\n" +
+"      if (!invoices?.length)\n" +
+"        return;\n" +
+"      for (const invoice of invoices)\n" +
+"        yield Invoice.from(invoice).getStatus();\n" +
+"      parameters = Object.assign(jsonClone(parameters), { page: Number(parameters.page ?? 0) + 1 });\n" +
+"    } while (true);\n" +
 "  }\n" +
-"  async keepActive() {\n" +
-"    await this.start();\n" +
-"    await waitFunc(() => !$(\".open-next-invalid-btn\"));\n" +
-"    setTimeout(() => this.keepActive(), 0);\n" +
-"  }\n" +
-"  async loadValidations() {\n" +
-"    this.loadCache();\n" +
-"    this.parameters.page = Math.max(1, ...Object.values(this.cache).map((status) => status.page));\n" +
-"    if (isNaN(this.parameters.page)) {\n" +
-"      console.log(this.constructor.name, this);\n" +
-"    }\n" +
-"    await findInvoice(async (rawInvoice, params) => {\n" +
-"      const page = params.page;\n" +
-"      const invoice = Invoice.from(rawInvoice);\n" +
-"      const status = await invoice.getStatus();\n" +
-"      this.setItemStatus({ ...status, page, updatedAt: Date.now() });\n" +
-"      return false;\n" +
-"      //!status.valid;\n" +
-"    }, this.parameters);\n" +
-"  }\n" +
-"  async openInvalid(status) {\n" +
-"    let invoice = await Invoice.load(status.id);\n" +
-"    if (!invoice) {\n" +
-"      console.log(\"NextInvalidInvoice\", { status, invoice });\n" +
-"      delete this.cache[status.id];\n" +
-"      this.saveCache();\n" +
-"      console.log(this.constructor.name, `openInvalid: invoice ${status.id} is deleted`);\n" +
-"      return false;\n" +
-"    }\n" +
-"    if (status.message.includes(\"6288\")) {\n" +
-"      const rawInvoice = await invoice.getInvoice();\n" +
-"      await invoice.update({ invoice_lines_attributes: [{\n" +
-"        ...rawInvoice.invoice_lines[0],\n" +
-"        pnl_plan_item_id: null,\n" +
-"        pnl_plan_item: null\n" +
-"      }] });\n" +
-"      invoice = await Invoice.load(status.id);\n" +
-"      if (!invoice)\n" +
-"        throw new Error(this.constructor.name + \": La facture a disparu ?!\");\n" +
-"    }\n" +
-"    if (await invoice.isValid()) {\n" +
-"      console.log(this.constructor.name, \"openInvalid: invoice is valid\", { invoice, status });\n" +
-"      this.cache[invoice.id] = Object.assign(\n" +
-"        jsonClone(this.cache[invoice.id]),\n" +
-"        await invoice.getStatus()\n" +
-"      );\n" +
-"      this.saveCache();\n" +
-"      return false;\n" +
-"    }\n" +
-"    openDocument(status.id);\n" +
-"    return true;\n" +
+"  async getStatus(id) {\n" +
+"    const invoice = await Invoice.load(id);\n" +
+"    if (!invoice)\n" +
+"      return null;\n" +
+"    return await invoice.getStatus();\n" +
 "  }\n" +
 "  /** Add \"next invalid invoice\" button on invoices list */\n" +
-"  addButton() {\n" +
-"    this.loadCache();\n" +
-"    const number = Object.values(this.cache).filter((status) => !status.valid).length;\n" +
-"    const nextButton = $(\"div>span+button+button:last-child\");\n" +
-"    if (!nextButton)\n" +
-"      return;\n" +
-"    const className = nextButton.className;\n" +
-"    nextButton.parentElement?.insertBefore(parseHTML(\n" +
-"      `<button type=\"button\" class=\"${className} open-next-invalid-btn\">&nbsp;&gt;&nbsp;${number}</button>`\n" +
-"    ), nextButton.previousElementSibling);\n" +
-"    $(\".open-next-invalid-btn\").addEventListener(\"click\", (event) => {\n" +
-"      event.stopPropagation();\n" +
-"      this.launched = true;\n" +
-"      this.detachEvents();\n" +
-"      this.openNext(true);\n" +
-"    });\n" +
+"  async appendContainer() {\n" +
+"    const ref = await waitElem(\"h4\", \"Ventilation\");\n" +
+"    const nextButton = await waitElem(\"div>span+button+button:last-child\");\n" +
+"    nextButton.parentElement?.insertBefore(this.container, nextButton.previousElementSibling);\n" +
+"    waitFunc(() => findElem(\"h4\", \"Ventilation\") !== ref).then(() => this.appendContainer());\n" +
 "  }\n" +
 "}\n" +
 "\n" +
@@ -1064,72 +1294,42 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "}\n" +
 "\n" +
 "class NextInvalidTransaction extends OpenNextInvalid {\n" +
+"  id = \"next-invalid-transaction\";\n" +
 "  storageKey = \"transactionValidation\";\n" +
 "  idParamName = \"transaction_id\";\n" +
-"  parameters = { page: 1 };\n" +
 "  async init() {\n" +
-"    await waitElem(\"h3\", \"Transactions\");\n" +
-"    super.init();\n" +
-"    while (await waitFunc(() => findElem(\"div\", \"D\\xE9tails\") && !$(\".open-next-invalid-btn\")))\n" +
-"      this.addButton();\n" +
+"    await this.appendContainer();\n" +
+"    await super.init();\n" +
 "  }\n" +
-"  async loadValidations() {\n" +
-"    this.loadCache();\n" +
-"    this.parameters.page = Math.max(1, ...Object.values(this.cache).map((status) => status.page));\n" +
-"    await findTransaction(async (rawTransaction, params) => {\n" +
-"      const page = params.page;\n" +
-"      const transaction = new Transaction(rawTransaction);\n" +
-"      const transactionStatus = await transaction.getStatus();\n" +
-"      this.setItemStatus({ ...transactionStatus, page, updatedAt: Date.now() });\n" +
-"      return !transactionStatus.valid;\n" +
-"    }, this.parameters);\n" +
-"    if (!Object.keys(this.cache).length)\n" +
-"      return;\n" +
-"    const oldest = Object.values(this.cache).reduce((a, b) => a.updatedAt < b.updatedAt ? a : b);\n" +
-"    this.parameters.page = oldest.page;\n" +
-"    await findTransaction(async (rawTransaction, params) => {\n" +
-"      const page = params.page;\n" +
-"      const transaction = new Transaction(rawTransaction);\n" +
-"      const transactionStatus = await transaction.getStatus();\n" +
-"      this.setItemStatus({ ...transactionStatus, page, updatedAt: Date.now() });\n" +
-"      return !transactionStatus.valid;\n" +
-"    }, this.parameters);\n" +
-"  }\n" +
-"  async openInvalid(status) {\n" +
-"    const transaction = new Transaction(status.id);\n" +
-"    const message = await transaction.getValidMessage();\n" +
-"    if (message?.includes(\"\\xE9criture\")) {\n" +
-"      const data = { oldMessage: message };\n" +
-"      await transaction.reloadLedgerEvents();\n" +
-"      console.log(\"reload ledger events\", { ...data, message });\n" +
+"  async *walk(params) {\n" +
+"    if (\"page\" in params && !Number.isInteger(params.page)) {\n" +
+"      console.log(this.constructor.name, \"walk\", { params });\n" +
+"      throw new Error('The \"page\" parameter must be a valid integer number');\n" +
 "    }\n" +
-"    if (await transaction.isValid()) {\n" +
-"      console.log(\"transaction is valid\", { status, transaction, message });\n" +
-"      this.cache[status.id] = Object.assign(jsonClone(status), { valid: true });\n" +
-"      this.saveCache();\n" +
-"      return false;\n" +
-"    }\n" +
-"    console.log(\"nextInvalidTransaction\", message, { status });\n" +
-"    openDocument(status.id);\n" +
-"    return true;\n" +
+"    let parameters = jsonClone(params);\n" +
+"    parameters.page = parameters.page ?? 1;\n" +
+"    let data = null;\n" +
+"    do {\n" +
+"      data = await getTransactionsList(parameters);\n" +
+"      const transactions = data.transactions;\n" +
+"      if (!transactions?.length)\n" +
+"        return;\n" +
+"      for (const transaction of transactions)\n" +
+"        yield new Transaction(transaction).getStatus();\n" +
+"      parameters = Object.assign(jsonClone(parameters), { page: Number(parameters.page ?? 0) + 1 });\n" +
+"    } while (true);\n" +
 "  }\n" +
-"  /** Add \"next invalid transaction\" button on invoices list */\n" +
-"  addButton() {\n" +
-"    const nextButton = findElem(\"div\", \"D\\xE9tails\")?.querySelector(\"button+button:last-child\");\n" +
-"    if (!nextButton)\n" +
-"      return;\n" +
-"    this.loadCache();\n" +
-"    const number = Object.values(this.cache).filter((status) => !status.valid).length;\n" +
-"    const className = nextButton.className;\n" +
-"    nextButton.parentElement?.insertBefore(parseHTML(\n" +
-"      `<button type=\"button\" class=\"${className} open-next-invalid-btn\">&nbsp;&gt;&nbsp;${number}</button>`\n" +
-"    ), nextButton.previousElementSibling);\n" +
-"    $(\".open-next-invalid-btn\").addEventListener(\"click\", (event) => {\n" +
-"      event.stopPropagation();\n" +
-"      this.launched = true;\n" +
-"      this.detachEvents();\n" +
-"      this.openNext(true);\n" +
-"    });\n" +
+"  async getStatus(id) {\n" +
+"    const transaction = new Transaction(id);\n" +
+"    return await transaction.getStatus();\n" +
+"  }\n" +
+"  /** Add \"next invalid transaction\" button on transactions list */\n" +
+"  async appendContainer() {\n" +
+"    const nextButton = await waitFunc(\n" +
+"      () => findElem(\"div\", \"D\\xE9tails\")?.querySelector(\"button+button:last-child\") ?? false\n" +
+"    );\n" +
+"    nextButton.parentElement?.insertBefore(this.container, nextButton.previousElementSibling);\n" +
+"    waitFunc(() => findElem(\"div\", \"D\\xE9tails\")?.querySelector(\"button+button:last-child\") !== nextButton).then(() => this.appendContainer());\n" +
 "  }\n" +
 "}\n" +
 "\n" +
@@ -1245,6 +1445,12 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "FixTab.start();\n" +
 "AllowChangeArchivedInvoiceNumber.start();\n" +
 "TransactionPanelHotkeys.start();\n" +
+"Object.assign(window, {\n" +
+"  GM_Pennylane_Version: (\n" +
+"    /** version **/\n" +
+"    \"0.1.10\"\n" +
+"  )\n" +
+"});\n" +
 ""
 +"})();";
 try {

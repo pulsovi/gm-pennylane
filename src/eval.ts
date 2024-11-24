@@ -42,5 +42,5 @@ declare global {
 }
 
 Object.assign(window, { GM_Pennylane_Version:
-/** version **/'0.1.9'
+/** version **/'0.1.10'
 });
