@@ -14,6 +14,7 @@ export interface RawStatus {
 
 interface Status extends RawStatus {
   fetchedAt: number;
+  ignored?: boolean;
 }
 
 export default abstract class OpenNextInvalid extends Service implements AutostarterParent {
@@ -36,6 +37,7 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
     this.cache = new Cache(this.storageKey);
 
     this.appendOpenNextButton();
+    this.allowIgnoring();
     this.autostart = new Autostarter(this);
 
     this.invalidGenerator = this.loadInvalid();
@@ -122,7 +124,8 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
       this.cache.delete({id});
       return null;
     }
-    const status = Object.assign(value, { fetchedAt: Date.now() });
+    const oldStatus = this.cache.find({id}) ?? {};
+    const status = Object.assign({}, oldStatus, value, { fetchedAt: Date.now() });
     this.cache.updateItem({ id }, status);
     return status;
   }
@@ -141,12 +144,16 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
     console.log(this.constructor.name, 'openNext');
 
     let status = (await this.invalidGenerator.next()).value;
-    if (!status) {
+    while (status.id === this.current || status.ignored) {
+      console.log({status, current: this.current, class: this});
+      status = (await this.invalidGenerator.next()).value;
+    }
+    if (!status && interactionAllowed) {
       alert(this.constructor.name + ': tous les éléments sont valides selon les paramétres actuels');
       return;
     }
-    console.log(this.constructor.name, 'next found :', { current: this.current, status });
-    await openDocument(status.id);
+    console.log(this.constructor.name, 'next found :', { current: this.current, status, class: this });
+    openDocument(status.id);
   }
 
   private async firstLoading () {
@@ -179,5 +186,26 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
     // save loaded status
     state.loaded = true;
     localStorage.setItem(storageKey, JSON.stringify(state));
+  }
+
+  private allowIgnoring () {
+    const className = 'sc-jwIPbr kzNmya bxhmjB justify-content-center btn btn-primary btn-sm';
+    this.container.appendChild(parseHTML(
+      `<button type="button" class="${className} ignore-item">x</button>`
+    ));
+    const button = $<HTMLButtonElement>(`.ignore-item`, this.container)!;
+    Tooltip.make({ target: button, text: 'Ignorer cet élément, ne plus afficher' });
+    button.addEventListener('click', () => {
+      const status = this.cache.find({ id: this.current });
+      if (!status) return;
+      this.cache.updateItem({ id: this.current }, Object.assign(status, { ignored: !status.ignored }));
+    });
+    setInterval(() => {
+      this.cache.load();
+      const ignored = Boolean(this.cache.find({ id: this.current })?.ignored);
+      const background = ignored ? 'var(--red)' : '';
+      if (button.style.backgroundColor !== background)
+        button.style.backgroundColor = background;
+    });
   }
 }

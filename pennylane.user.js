@@ -862,6 +862,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    this.current = Number(getParam(location.href, this.idParamName));\n" +
 "    this.cache = new Cache(this.storageKey);\n" +
 "    this.appendOpenNextButton();\n" +
+"    this.allowIgnoring();\n" +
 "    this.autostart = new Autostarter(this);\n" +
 "    this.invalidGenerator = this.loadInvalid();\n" +
 "    this.firstLoading();\n" +
@@ -895,12 +896,11 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "   * Create next invalid generator\n" +
 "   */\n" +
 "  async *loadInvalid() {\n" +
-"    let cached = this.cache.find({ valid: false });\n" +
-"    while (cached) {\n" +
-"      const status = await this.updateStatus(cached.id);\n" +
+"    let cached = this.cache.filter({ valid: false });\n" +
+"    for (const cachedItem of cached) {\n" +
+"      const status = await this.updateStatus(cachedItem.id);\n" +
 "      if (status?.valid === false)\n" +
 "        yield status;\n" +
-"      cached = this.cache.find({ valid: false });\n" +
 "    }\n" +
 "    const from = this.cache.reduce(\n" +
 "      (acc, status) => Math.max(status.createdAt, acc),\n" +
@@ -942,19 +942,24 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      this.cache.delete({ id });\n" +
 "      return null;\n" +
 "    }\n" +
-"    const status = Object.assign(value, { fetchedAt: Date.now() });\n" +
+"    const oldStatus = this.cache.find({ id }) ?? {};\n" +
+"    const status = Object.assign({}, oldStatus, value, { fetchedAt: Date.now() });\n" +
 "    this.cache.updateItem({ id }, status);\n" +
 "    return status;\n" +
 "  }\n" +
 "  async openNext(interactionAllowed = false) {\n" +
 "    console.log(this.constructor.name, \"openNext\");\n" +
 "    let status = (await this.invalidGenerator.next()).value;\n" +
-"    if (!status) {\n" +
+"    while (status.id === this.current || status.ignored) {\n" +
+"      console.log({ status, current: this.current, class: this });\n" +
+"      status = (await this.invalidGenerator.next()).value;\n" +
+"    }\n" +
+"    if (!status && interactionAllowed) {\n" +
 "      alert(this.constructor.name + \": tous les \\xE9l\\xE9ments sont valides selon les param\\xE9tres actuels\");\n" +
 "      return;\n" +
 "    }\n" +
-"    console.log(this.constructor.name, \"next found :\", { current: this.current, status });\n" +
-"    await openDocument(status.id);\n" +
+"    console.log(this.constructor.name, \"next found :\", { current: this.current, status, class: this });\n" +
+"    openDocument(status.id);\n" +
 "  }\n" +
 "  async firstLoading() {\n" +
 "    const storageKey = `${this.storageKey}-state`;\n" +
@@ -980,6 +985,27 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    }\n" +
 "    state.loaded = true;\n" +
 "    localStorage.setItem(storageKey, JSON.stringify(state));\n" +
+"  }\n" +
+"  allowIgnoring() {\n" +
+"    const className = \"sc-jwIPbr kzNmya bxhmjB justify-content-center btn btn-primary btn-sm\";\n" +
+"    this.container.appendChild(parseHTML(\n" +
+"      `<button type=\"button\" class=\"${className} ignore-item\">x</button>`\n" +
+"    ));\n" +
+"    const button = $(`.ignore-item`, this.container);\n" +
+"    Tooltip.make({ target: button, text: \"Ignorer cet \\xE9l\\xE9ment, ne plus afficher\" });\n" +
+"    button.addEventListener(\"click\", () => {\n" +
+"      const status = this.cache.find({ id: this.current });\n" +
+"      if (!status)\n" +
+"        return;\n" +
+"      this.cache.updateItem({ id: this.current }, Object.assign(status, { ignored: !status.ignored }));\n" +
+"    });\n" +
+"    setInterval(() => {\n" +
+"      this.cache.load();\n" +
+"      const ignored = Boolean(this.cache.find({ id: this.current })?.ignored);\n" +
+"      const background = ignored ? \"var(--red)\" : \"\";\n" +
+"      if (button.style.backgroundColor !== background)\n" +
+"        button.style.backgroundColor = background;\n" +
+"    });\n" +
 "  }\n" +
 "}\n" +
 "\n" +
