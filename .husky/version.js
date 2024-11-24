@@ -17,6 +17,6 @@ await fs.promises.writeFile(meta, lines.join('\n'), 'utf8');
 const browser = await fs.promises.readFile('./src/eval.ts', 'utf8');
 await fs.promises.writeFile(
   './src/eval.ts',
-  browser.replace(/(?<=^\/\*\* version \*\*\/).*/um, `'${newVersion}'`),
+  browser.replace(/(?<=^\/\*\* version \*\*\/).*/um, `'${newVersion.split(' ').pop()}'`),
   'utf8'
 );
