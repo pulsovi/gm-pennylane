@@ -103,8 +103,7 @@ class SupplierInvoice extends Invoice {
           title="Cliquer ici pour plus d'informations"
           href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Date%20de%20facture"
         >Les dates doivent être vides ⓘ</a>`;
-    }
-    if (!invoice.date) {
+    } else if (!invoice.date) {
       const emptyDateAllowed = ['CHQ'];
       if (!emptyDateAllowed.some(item => invoice.invoice_number?.startsWith(item)))
         return `<a
