@@ -55,4 +55,4 @@ Object.assign(window, { gm: {
   parseHTML,
   upElement,
   waitElem,
-}})
+}});

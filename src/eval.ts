@@ -9,6 +9,7 @@ import FixTab from './pages/invoicePanel/fixTab.js';
 import AllowChangeArchivedInvoiceNumber from './pages/invoicePanel/AllowChangeArchivedInvoiceNumber.js';
 import TransactionPanelHotkeys from './pages/transactionPanel/Hotkeys.js';
 import EntryBlocInfos from './pages/EntryBlocInfos.js';
+import AddInvoiceIdColumn from './pages/invoiceList/AddInvoiceIdColumn.js';
 
 last7DaysFilter();
 TransactionValidMessage.start();
@@ -21,6 +22,7 @@ FixTab.start();
 AllowChangeArchivedInvoiceNumber.start();
 TransactionPanelHotkeys.start();
 EntryBlocInfos.start();
+AddInvoiceIdColumn.start();
 
 /*
 async function mergeInvoices () {
