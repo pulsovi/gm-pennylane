@@ -294,7 +294,7 @@ declare interface RawDocument {
   source: string;
   status: string;
   thirdparty_id: null;
-  type: string;
+  type: 'Invoice' | 'Transaction';
   /** Date ISO string such '2024-05-17T03:24:55.928153Z' */
   updated_at: string;
   url: string;

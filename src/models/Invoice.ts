@@ -84,7 +84,7 @@ class SupplierInvoice extends Invoice {
     // Pas de compte de charge associé
     const thirdparty = await this.getThirdparty();
     if (!thirdparty.thirdparty_invoice_line_rules?.[0]?.pnl_plan_item)
-      return 'Fournisseur inconnu : Chaque fournisseur doit être associé avec un compte de charge or celui-ci n\'en a pas. Choisir un autre fournisseur ou envoyer cette page à David ;).';
+      return 'Fournisseur inconnu : Chaque fournisseur doit être associé avec un compte de charge or celui-ci n\'en a pas.<br/>-&gt;Choisir un autre fournisseur ou envoyer cette page à David ;).';
 
 
     // exclude 6288
@@ -122,13 +122,6 @@ class SupplierInvoice extends Invoice {
       return 'Il ne doit y avoir qu\'un seul compte "PIECE ID", et ce n\'est pas le bon...';
 
     const ledgerEvents = await this.getLedgerEvents();
-    /* Aides octroyées sans label */
-    if (
-      [106438171, 114270419].includes(invoice.thirdparty?.id!)
-    ) {
-      const lines = ledgerEvents.filter(event => ['6571', '6571002'].includes(event.planItem.number));
-      if (!lines.length) return 'écriture "6571" manquante - envoyer la page à David.'; // (c\'est la ligne d\'écriture de l\'octroi d\'aide,).';
-    }
 
     // Ecarts de conversion de devise
     if (invoice.currency !== 'EUR') {

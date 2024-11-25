@@ -9,7 +9,7 @@ export default class Document {
   protected document: RawDocument | Promise<RawDocument>;
   protected groupedDocuments: GroupedDocument[] | Promise<GroupedDocument[]>;
   protected ledgerEvents?: LedgerEvent[] | Promise<LedgerEvent[]>;
-  protected thirdparty?: Promise<[direction: 'supplier'|'customer', thirdparty: RawThirdparty]>;
+  protected thirdparty?: Promise<{direction: string; thirdparty: RawThirdparty}>;
 
   constructor ({ id }: { id: number }) {
     this.id = id;
@@ -70,10 +70,10 @@ export default class Document {
     return this.groupedDocuments;
   }
 
-  async getThirdparty () {
+  async getThirdparty (): Promise<RawThirdparty> {
     if (!this.thirdparty)
       this.thirdparty = this._getThirdparty();
-    return (await this.thirdparty)[1];
+    return (await this.thirdparty).thirdparty;
   }
 
   private async _getThirdparty () {

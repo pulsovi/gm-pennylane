@@ -232,7 +232,8 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "async function getThirdparty(id) {\n" +
 "  const response = await apiRequest(`thirdparties/${id}`, null, \"GET\");\n" +
 "  const json = await response?.json();\n" +
-"  return Object.entries(json)[0];\n" +
+"  const [direction, thirdparty] = Object.entries(json)[0];\n" +
+"  return { direction, thirdparty };\n" +
 "}\n" +
 "\n" +
 "class Document {\n" +
@@ -295,7 +296,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  async getThirdparty() {\n" +
 "    if (!this.thirdparty)\n" +
 "      this.thirdparty = this._getThirdparty();\n" +
-"    return (await this.thirdparty)[1];\n" +
+"    return (await this.thirdparty).thirdparty;\n" +
 "  }\n" +
 "  async _getThirdparty() {\n" +
 "    const doc = await this.getDocument();\n" +
@@ -355,8 +356,21 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    if (doc.archived)\n" +
 "      return \"OK\";\n" +
 "    const ledgerEvents = await this.getLedgerEvents();\n" +
-"    if (ledgerEvents.some((line) => line.planItem.number.startsWith(\"6571\") && !line.label))\n" +
-"      return `nom du b\\xE9n\\xE9ficiaire manquant dans l'\\xE9criture \"6571\"`;\n" +
+"    if (ledgerEvents.some((line) => line.planItem.number.startsWith(\"6571\"))) {\n" +
+"      if (ledgerEvents.some((line) => line.planItem.number.startsWith(\"6571\") && !line.label)) {\n" +
+"        return `nom du b\\xE9n\\xE9ficiaire manquant dans l'\\xE9criture \"6571\"`;\n" +
+"      }\n" +
+"    } else {\n" +
+"      const groupedDocuments = await this.getGroupedDocuments();\n" +
+"      for (const doc2 of groupedDocuments) {\n" +
+"        if (doc2.type !== \"Invoice\")\n" +
+"          continue;\n" +
+"        const thirdparty = await new Document(doc2).getThirdparty();\n" +
+"        if ([106438171, 114270419].includes(thirdparty.id)) {\n" +
+"          return 'contrepartie \"6571\" manquante<br/>-&gt; envoyer la page \\xE0 David.';\n" +
+"        }\n" +
+"      }\n" +
+"    }\n" +
 "    if (ledgerEvents.some((line) => line.planItem.number.startsWith(\"445\")))\n" +
 "      return \"Une \\xE9criture comporte un compte de TVA\";\n" +
 "    const recent = Date.now() - new Date(doc.date).getTime() < 864e5 * 30;\n" +
@@ -1074,7 +1088,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      return \"Ajouter un fournisseur\";\n" +
 "    const thirdparty = await this.getThirdparty();\n" +
 "    if (!thirdparty.thirdparty_invoice_line_rules?.[0]?.pnl_plan_item)\n" +
-"      return \"Fournisseur inconnu : Chaque fournisseur doit \\xEAtre associ\\xE9 avec un compte de charge or celui-ci n'en a pas. Choisir un autre fournisseur ou envoyer cette page \\xE0 David ;).\";\n" +
+"      return \"Fournisseur inconnu : Chaque fournisseur doit \\xEAtre associ\\xE9 avec un compte de charge or celui-ci n'en a pas.<br/>-&gt;Choisir un autre fournisseur ou envoyer cette page \\xE0 David ;).\";\n" +
 "    if (invoice.invoice_lines?.some((line) => line.pnl_plan_item?.number == \"6288\"))\n" +
 "      return \"compte tiers 6288\";\n" +
 "    if (invoice.invoice_number?.startsWith(\"\\xA4\")) {\n" +
@@ -1102,11 +1116,6 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    if (invoice.thirdparty?.name === \"PIECE ID\" && invoice.thirdparty.id !== 106519227)\n" +
 "      return `Il ne doit y avoir qu'un seul compte \"PIECE ID\", et ce n'est pas le bon...`;\n" +
 "    const ledgerEvents = await this.getLedgerEvents();\n" +
-"    if ([106438171, 114270419].includes(invoice.thirdparty?.id)) {\n" +
-"      const lines = ledgerEvents.filter((event) => [\"6571\", \"6571002\"].includes(event.planItem.number));\n" +
-"      if (!lines.length)\n" +
-"        return '\\xE9criture \"6571\" manquante - envoyer la page \\xE0 David.';\n" +
-"    }\n" +
 "    if (invoice.currency !== \"EUR\") {\n" +
 "      const diffLine = ledgerEvents.find((line) => line.planItem.number === \"4716001\");\n" +
 "      console.log({ ledgerEvents, diffLine });\n" +
@@ -1458,6 +1467,40 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  }\n" +
 "}\n" +
 "\n" +
+"class EntryBlocInfos extends Service$1 {\n" +
+"  docList = /* @__PURE__ */ new WeakSet();\n" +
+"  async init() {\n" +
+"    setInterval(() => {\n" +
+"      this.findBlocs();\n" +
+"    }, 200);\n" +
+"  }\n" +
+"  /**\n" +
+"   * Search for all entry bloc in the page\n" +
+"   */\n" +
+"  findBlocs() {\n" +
+"    const docs = $$(`form[name^=\"DocumentEntries-\"]`);\n" +
+"    docs.forEach((doc) => {\n" +
+"      if (this.docList.has(doc))\n" +
+"        return;\n" +
+"      this.docList.add(doc);\n" +
+"      this.fill(doc);\n" +
+"    });\n" +
+"  }\n" +
+"  /**\n" +
+"   * Add infos on an entry bloc\n" +
+"   */\n" +
+"  fill(form) {\n" +
+"    const id = form.getAttribute(\"name\")?.split(\"-\").pop();\n" +
+"    const header = $(\"header\", form);\n" +
+"    if (!header)\n" +
+"      return;\n" +
+"    const className = header.firstElementChild?.className ?? \"\";\n" +
+"    header.insertBefore(parseHTML(`<div class=\"${className}\">\n" +
+"            <span class=\"d-inline-block bg-secondary-100 dihsuQ px-0_5\">#${id}</span>\n" +
+"        </div>`), $(\".border-bottom\", header));\n" +
+"  }\n" +
+"}\n" +
+"\n" +
 "last7DaysFilter();\n" +
 "ValidMessage.start();\n" +
 "TransactionAddByIdButton.start();\n" +
@@ -1468,6 +1511,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "FixTab.start();\n" +
 "AllowChangeArchivedInvoiceNumber.start();\n" +
 "TransactionPanelHotkeys.start();\n" +
+"EntryBlocInfos.start();\n" +
 "Object.assign(window, {\n" +
 "  GM_Pennylane_Version: (\n" +
 "    /** version **/\n" +

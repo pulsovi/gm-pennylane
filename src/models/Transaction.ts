@@ -4,6 +4,7 @@ import { getParam } from '../_';
 import { documentMatching } from '../api/document.ts';
 import ValidableDocument from './ValidableDocument.ts';
 import { getTransaction } from '../api/transaction.ts';
+import Document from './Document.ts';
 
 export default class Transaction extends ValidableDocument {
   protected transactionMin: RawTransactionMin;
@@ -33,12 +34,27 @@ export default class Transaction extends ValidableDocument {
     // Transaction archivée
     if (doc.archived) return 'OK';
 
+
     const ledgerEvents = await this.getLedgerEvents();
 
-    // Aides octroyées sans label
-    if(ledgerEvents.some(line => line.planItem.number.startsWith('6571') && !line.label))
-      return 'nom du bénéficiaire manquant dans l\'écriture "6571"';
+    if(ledgerEvents.some(line => line.planItem.number.startsWith('6571'))) {
+      if (ledgerEvents.some(line => line.planItem.number.startsWith('6571') && !line.label)) {
+        // Aides octroyées sans label
+        return 'nom du bénéficiaire manquant dans l\'écriture "6571"';
+      }
+    } else {
+      const groupedDocuments = await this.getGroupedDocuments();
+      for (const doc of groupedDocuments) {
+        if (doc.type !== 'Invoice') continue;
+        const thirdparty = await new Document(doc).getThirdparty();
+        if ([106438171, 114270419].includes(thirdparty.id)) {
+          // Aides octroyées sans compte d'aide
+          return 'contrepartie "6571" manquante<br/>-&gt; envoyer la page à David.';
+        }
+      }
+    }
 
+    // Les associations ne gèrent pas la TVA
     if (ledgerEvents.some(line => line.planItem.number.startsWith('445')))
       return 'Une écriture comporte un compte de TVA';
 
