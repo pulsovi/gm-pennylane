@@ -35,11 +35,14 @@ export default class ArchiveGroupedDocument extends Service {
         alert('Impossible de trouver la facture #'+id);
         return;
       }
-      const replacement = prompt('ID du justificatif ?');
+      const invoiceDoc = await invoice?.getInvoice();
+      const docs = await invoice.getGroupedDocuments();
+      const transactions = docs.filter(doc => doc.type === 'Transaction').map(doc => `#${doc.id}`);
       await invoice.update({
-        invoice_number: `§ ${replacement ? '#'+replacement+' - ' : ''}${invoice.invoice.invoice_number}`
+        invoice_number: `§ ${transactions.join(' - ')} - ${invoiceDoc.invoice_number}`
       });
       await invoice.archive();
+      buttonsBlock.closest('.card')?.remove();
       console.log(`archive invoice #${id}`, {invoice});
     });
 
