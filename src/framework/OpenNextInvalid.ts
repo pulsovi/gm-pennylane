@@ -151,16 +151,23 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
     console.log(this.constructor.name, 'openNext');
 
     let status = (await this.invalidGenerator.next()).value;
-    while (status.id === this.current || status.ignored) {
+    while (status?.id === this.current || status?.ignored) {
       console.log({status, current: this.current, class: this});
       status = (await this.invalidGenerator.next()).value;
     }
-    if (!status && interactionAllowed) {
-      alert(this.constructor.name + ': tous les éléments sont valides selon les paramétres actuels');
+    if (status) {
+      console.log(this.constructor.name, 'next found :', { current: this.current, status, class: this });
+      openDocument(status.id);
       return;
     }
-    console.log(this.constructor.name, 'next found :', { current: this.current, status, class: this });
-    openDocument(status.id);
+    if (
+      interactionAllowed &&
+      confirm(this.constructor.name + ': tous les éléments sont valides selon les paramétres actuels. Revérifier tout depuis le début ?')
+    ) {
+      this.cache.clear();
+      this.invalidGenerator = this.loadInvalid();
+      return this.openNext(interactionAllowed);
+    }
   }
 
   private async firstLoading () {
