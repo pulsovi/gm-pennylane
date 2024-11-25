@@ -66,10 +66,17 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
 
     button.addEventListener('click', this.start.bind(this, true));
     Tooltip.make({ target: button, text: 'Ouvrir le prochain élément invalide' });
+
     this.cache.on('saved', () => {
       const number = this.cache.filter({ valid: false }).length;
       button.innerHTML = `&nbsp;&gt;&nbsp;${number}`;
     });
+
+    setInterval(() => {
+      this.cache.load();
+      const number = this.cache.filter({ valid: false }).length;
+      button.innerHTML = `&nbsp;&gt;&nbsp;${number}`;
+    }, 3000);
   }
 
   /**
