@@ -8,6 +8,7 @@ import NextInvalidTransaction from './pages/transactionPanel/NextInvalidTransact
 import FixTab from './pages/invoicePanel/fixTab.js';
 import AllowChangeArchivedInvoiceNumber from './pages/invoicePanel/AllowChangeArchivedInvoiceNumber.js';
 import TransactionPanelHotkeys from './pages/transactionPanel/Hotkeys.js';
+import EntryBlocInfos from './pages/EntryBlocInfos.js';
 
 last7DaysFilter();
 TransactionValidMessage.start();
@@ -19,6 +20,7 @@ ArchiveGroupedDocument.start();
 FixTab.start();
 AllowChangeArchivedInvoiceNumber.start();
 TransactionPanelHotkeys.start();
+EntryBlocInfos.start();
 
 /*
 async function mergeInvoices () {
