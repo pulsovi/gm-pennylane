@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name     Pennylane
-// @version  0.1.10
+// @version  0.1.11
 // @grant    unsafeWindow
 // @grant    GM.openInTab
 // @match    https://app.pennylane.com/companies/*
@@ -905,6 +905,11 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      const number = this.cache.filter({ valid: false }).length;\n" +
 "      button.innerHTML = `&nbsp;&gt;&nbsp;${number}`;\n" +
 "    });\n" +
+"    setInterval(() => {\n" +
+"      this.cache.load();\n" +
+"      const number = this.cache.filter({ valid: false }).length;\n" +
+"      button.innerHTML = `&nbsp;&gt;&nbsp;${number}`;\n" +
+"    }, 3e3);\n" +
 "  }\n" +
 "  /**\n" +
 "   * Create next invalid generator\n" +
@@ -964,16 +969,20 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  async openNext(interactionAllowed = false) {\n" +
 "    console.log(this.constructor.name, \"openNext\");\n" +
 "    let status = (await this.invalidGenerator.next()).value;\n" +
-"    while (status.id === this.current || status.ignored) {\n" +
+"    while (status?.id === this.current || status?.ignored) {\n" +
 "      console.log({ status, current: this.current, class: this });\n" +
 "      status = (await this.invalidGenerator.next()).value;\n" +
 "    }\n" +
-"    if (!status && interactionAllowed) {\n" +
-"      alert(this.constructor.name + \": tous les \\xE9l\\xE9ments sont valides selon les param\\xE9tres actuels\");\n" +
+"    if (status) {\n" +
+"      console.log(this.constructor.name, \"next found :\", { current: this.current, status, class: this });\n" +
+"      openDocument(status.id);\n" +
 "      return;\n" +
 "    }\n" +
-"    console.log(this.constructor.name, \"next found :\", { current: this.current, status, class: this });\n" +
-"    openDocument(status.id);\n" +
+"    if (interactionAllowed && confirm(this.constructor.name + \": tous les \\xE9l\\xE9ments sont valides selon les param\\xE9tres actuels. Rev\\xE9rifier tout depuis le d\\xE9but ?\")) {\n" +
+"      this.cache.clear();\n" +
+"      this.invalidGenerator = this.loadInvalid();\n" +
+"      return this.openNext(interactionAllowed);\n" +
+"    }\n" +
 "  }\n" +
 "  async firstLoading() {\n" +
 "    const storageKey = `${this.storageKey}-state`;\n" +
@@ -1310,11 +1319,14 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "        alert(\"Impossible de trouver la facture #\" + id);\n" +
 "        return;\n" +
 "      }\n" +
-"      const replacement = prompt(\"ID du justificatif ?\");\n" +
+"      const invoiceDoc = await invoice?.getInvoice();\n" +
+"      const docs = await invoice.getGroupedDocuments();\n" +
+"      const transactions = docs.filter((doc) => doc.type === \"Transaction\").map((doc) => `#${doc.id}`);\n" +
 "      await invoice.update({\n" +
-"        invoice_number: `\\xA7 ${replacement ? \"#\" + replacement + \" - \" : \"\"}${invoice.invoice.invoice_number}`\n" +
+"        invoice_number: `\\xA7 ${transactions.join(\" - \")} - ${invoiceDoc.invoice_number}`\n" +
 "      });\n" +
 "      await invoice.archive();\n" +
+"      buttonsBlock.closest(\".card\")?.remove();\n" +
 "      console.log(`archive invoice #${id}`, { invoice });\n" +
 "    });\n" +
 "    upElement(buttonsBlock, 3).querySelector(\".flex-grow-1 .d-block:last-child\")?.appendChild(\n" +
@@ -1501,6 +1513,44 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  }\n" +
 "}\n" +
 "\n" +
+"class AddInvoiceIdColumn extends Service$1 {\n" +
+"  name = this.constructor.name;\n" +
+"  async init() {\n" +
+"    const anchor = await waitElem(\".tiny-caption\", \"Statut\");\n" +
+"    const to = setTimeout(() => this.fill(anchor), 1e3);\n" +
+"    await waitFunc(() => findElem(\".tiny-caption\", \"Statut\") !== anchor);\n" +
+"    clearTimeout(to);\n" +
+"    this.init();\n" +
+"  }\n" +
+"  fill(anchor) {\n" +
+"    const table = anchor.closest(\"table\");\n" +
+"    console.log(this.constructor.name, \"fill\", table);\n" +
+"    const headRow = $(\"thead tr\", table);\n" +
+"    $(\"th.id-column\", headRow)?.remove();\n" +
+"    headRow?.insertBefore(parseHTML(`<th class=\"id-column th-element border-top-0 border-bottom-0 box-shadow-bottom-secondary-200 align-middle p-1 text-secondary-700 font-size-075 text-nowrap is-pinned\">\n" +
+"      <div class=\"sc-ivxoEo dLrrKG d-flex flex-row sc-eSclpK dSYLCv\">\n" +
+"        <span class=\"tiny-caption font-weight-bold\">ID</span>\n" +
+"      </div>\n" +
+"    </th>`), $(\"th+th\", headRow));\n" +
+"    const bodyRows = $$(\"tbody tr\", table);\n" +
+"    console.log(this.constructor.name, { bodyRows });\n" +
+"    bodyRows.forEach((row) => {\n" +
+"      const id = getReactProps(row, 1).data.id;\n" +
+"      $(\".id-column\", row)?.remove();\n" +
+"      row.insertBefore(\n" +
+"        parseHTML(`<td style=\"cursor: auto;\" class=\"id-column px-1 py-0_5 align-middle border-top-0 box-shadow-bottom-secondary-100\">\n" +
+"          <span class=\"d-inline-block bg-secondary-100 dihsuQ px-0_5\">#${id}</span>\n" +
+"        </td>`),\n" +
+"        $(\"td+td\", row)\n" +
+"      );\n" +
+"      $(\".id-column\", row)?.addEventListener(\"click\", (e) => {\n" +
+"        e.preventDefault();\n" +
+"        e.stopPropagation();\n" +
+"      });\n" +
+"    });\n" +
+"  }\n" +
+"}\n" +
+"\n" +
 "last7DaysFilter();\n" +
 "ValidMessage.start();\n" +
 "TransactionAddByIdButton.start();\n" +
@@ -1512,10 +1562,11 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "AllowChangeArchivedInvoiceNumber.start();\n" +
 "TransactionPanelHotkeys.start();\n" +
 "EntryBlocInfos.start();\n" +
+"AddInvoiceIdColumn.start();\n" +
 "Object.assign(window, {\n" +
 "  GM_Pennylane_Version: (\n" +
 "    /** version **/\n" +
-"    \"0.1.10\"\n" +
+"    \"0.1.11\"\n" +
 "  )\n" +
 "});\n" +
 ""
