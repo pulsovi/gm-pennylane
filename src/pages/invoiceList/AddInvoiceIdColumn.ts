@@ -5,6 +5,9 @@ export default class AddInvoiceIdColumn extends Service {
   protected readonly name = this.constructor.name;
 
   async init () {
+    await Promise.race([
+      waitElem('h3', 'Factures fournisseurs'),
+    ]);
     const anchor = await waitElem('.tiny-caption', 'Statut');
     const to = setTimeout(() => this.fill(anchor), 1000);
     await waitFunc(() => findElem('.tiny-caption', 'Statut') !== anchor);

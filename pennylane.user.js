@@ -1516,6 +1516,9 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "class AddInvoiceIdColumn extends Service$1 {\n" +
 "  name = this.constructor.name;\n" +
 "  async init() {\n" +
+"    await Promise.race([\n" +
+"      waitElem(\"h3\", \"Factures fournisseurs\")\n" +
+"    ]);\n" +
 "    const anchor = await waitElem(\".tiny-caption\", \"Statut\");\n" +
 "    const to = setTimeout(() => this.fill(anchor), 1e3);\n" +
 "    await waitFunc(() => findElem(\".tiny-caption\", \"Statut\") !== anchor);\n" +
