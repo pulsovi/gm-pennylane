@@ -1,5 +1,6 @@
 import { $, parseHTML, waitElem } from "../_";
 import Tooltip from "./Tooltip";
+import CacheRecord from './CacheRecord';
 
 export interface AutostarterParent {
   container: ParentNode;
@@ -16,11 +17,17 @@ interface AutostarterConfig {
  */
 export default class Autostarter {
   private readonly parent: AutostarterParent;
+  private readonly config: CacheRecord<AutostarterConfig>;
   private readonly eventList = ['click', 'keyup'];
+
+  /**
+   * @property stopped Flag moved to true by the stop() method
+   */
   private stopped = false;
 
   public constructor (parent: AutostarterParent) {
     this.parent = parent;
+    this.config = new CacheRecord<AutostarterConfig>(`${this.parent.id}-autostart`, { enabled: true });
     this.start = this.start.bind(this);
     this.init();
   }
@@ -66,14 +73,16 @@ export default class Autostarter {
     const tooltip = Tooltip.make({target: button});
 
     button.addEventListener('click', () => {
-      this.setConfig({ enabled: !this.getConfig().enabled });
+      this.config.set('enabled', oldValue => !oldValue);
     });
 
     let lastVal: boolean|null = null;
-    setInterval(() => {
-      const { enabled } = this.getConfig();
+    const setText = () => {
+      const enabled = this.config.get('enabled');
+
       if (enabled === lastVal) return;
       lastVal = enabled;
+
       if (enabled) {
         button.innerText = '⏹';
         tooltip.setText('Stopper l\'ouverture automatique');
@@ -81,7 +90,9 @@ export default class Autostarter {
         button.innerText = '⏵';
         tooltip.setText('Activer l\'ouverture automatique');
       }
-    }, 200);
+    };
+    setText();
+    this.config.on('change', setText);
 
     console.log(this.constructor.name, this, { button, tooltip });
   }
@@ -92,34 +103,14 @@ export default class Autostarter {
    * `this` keyword is bounded at constructor
    */
   private start () {
-    if (this.getConfig().enabled && !this.stopped) this.parent.start();
+    if (this.config.get('enabled') && !this.stopped) this.parent.start();
   }
 
   /**
    * Stop all watchers
    */
   public stop () {
+    this.stopped = true;
     this.detachEvents();
-  }
-
-  /**
-   * Load config from localStorage
-   */
-  private getConfig (): AutostarterConfig {
-    const defaults: AutostarterConfig = { enabled: true };
-    return Object.assign(
-      defaults,
-      JSON.parse(localStorage.getItem(`${this.parent.id}-autostart`) ?? '{}')
-    );
-  }
-
-  /**
-   * Set properties to this config and save it to localStorage
-   */
-  private setConfig (settings: Partial<AutostarterConfig> = {}) {
-    localStorage.setItem(
-      `${this.parent.id}-autostart`,
-      JSON.stringify(Object.assign(this.getConfig(), settings))
-    );
   }
 }
