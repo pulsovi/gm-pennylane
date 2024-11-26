@@ -1,7 +1,7 @@
 import { $, getParam, getRandomArrayItem, parseHTML, sleep } from "../_";
 import { openDocument } from "../navigation/openDocument";
 import Autostarter, { type AutostarterParent } from "./Autostarter";
-import Cache from "./Cache";
+import CacheList from "./CacheList";
 import Service from "./service";
 import Tooltip from "./Tooltip";
 
@@ -20,7 +20,7 @@ interface Status extends RawStatus {
 export default abstract class OpenNextInvalid extends Service implements AutostarterParent {
   public abstract readonly id: string;
   public readonly container = document.createElement('div');
-  public cache: Cache<Status>;
+  public cache: CacheList<Status>;
 
   private autostart: Autostarter;
   private current: number;
@@ -34,7 +34,7 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
 
     this.start = this.start.bind(this);
     this.current = Number(getParam(location.href, this.idParamName));
-    this.cache = new Cache(this.storageKey);
+    this.cache = new CacheList(this.storageKey);
 
     this.appendOpenNextButton();
     this.allowIgnoring();
@@ -58,25 +58,20 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
    * Append the button for open next to the DOM
    */
   private appendOpenNextButton () {
+    const number = this.cache.filter({ valid: false }).length;
     const className = 'sc-jwIPbr kzNmya bxhmjB justify-content-center btn btn-primary btn-sm';
     this.container.appendChild(parseHTML(
-      `<button type="button" class="${className} open-next-invalid-btn">&nbsp;&gt;&nbsp;</button>`
+      `<button type="button" class="${className} open-next-invalid-btn">&nbsp;&gt;&nbsp;${number}</button>`
     ));
     const button = $<HTMLButtonElement>(`.open-next-invalid-btn`, this.container)!;
 
     button.addEventListener('click', this.start.bind(this, true));
     Tooltip.make({ target: button, text: 'Ouvrir le prochain élément invalide' });
 
-    this.cache.on('saved', () => {
+    this.cache.on('change', () => {
       const number = this.cache.filter({ valid: false }).length;
       button.innerHTML = `&nbsp;&gt;&nbsp;${number}`;
     });
-
-    setInterval(() => {
-      this.cache.load();
-      const number = this.cache.filter({ valid: false }).length;
-      button.innerHTML = `&nbsp;&gt;&nbsp;${number}`;
-    }, 3000);
   }
 
   /**
@@ -206,23 +201,27 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
   }
 
   private allowIgnoring () {
+    const ignored = Boolean(this.cache.find({ id: this.current })?.ignored);
     const className = 'sc-jwIPbr kzNmya bxhmjB justify-content-center btn btn-primary btn-sm';
-    this.container.appendChild(parseHTML(
-      `<button type="button" class="${className} ignore-item">x</button>`
-    ));
+
+    this.container.appendChild(parseHTML(`<button
+      type="button"
+      class="${className} ignore-item"
+      ${ignored ? 'style="background-color: var(--red);"' : ''}
+    >x</button>`));
     const button = $<HTMLButtonElement>(`.ignore-item`, this.container)!;
     Tooltip.make({ target: button, text: 'Ignorer cet élément, ne plus afficher' });
+
     button.addEventListener('click', () => {
       const status = this.cache.find({ id: this.current });
       if (!status) return;
       this.cache.updateItem({ id: this.current }, Object.assign(status, { ignored: !status.ignored }));
     });
-    setInterval(() => {
-      this.cache.load();
+
+    this.cache.on('change', () => {
       const ignored = Boolean(this.cache.find({ id: this.current })?.ignored);
       const background = ignored ? 'var(--red)' : '';
-      if (button.style.backgroundColor !== background)
-        button.style.backgroundColor = background;
+      if (button.style.backgroundColor !== background) button.style.backgroundColor = background;
     });
   }
 }

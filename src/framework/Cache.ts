@@ -1,98 +1,68 @@
 import EventEmitter from "./EventEmitter";
 
-export default class Cache<T extends object> extends EventEmitter {
+export default abstract class Cache<T> extends EventEmitter {
   public readonly storageKey: string;
-  private data: T[];
 
-  public constructor (key: string) {
+  protected data: T;
+
+  public constructor (key: string, initialValue: T) {
     super();
     this.storageKey = key;
+    this.data = initialValue;
     this.load();
     console.log('new Cache', this);
+    this.follow();
+  }
+
+  /**
+   * Valid and sanitize data from storage
+   * throw an Error to reject a value
+   */
+  protected abstract parse (value: string|null): T;
+
+  /**
+   * stringify data for storage
+   */
+  protected stringify (value: T): string {
+    return JSON.stringify(value);
   }
 
   /**
    * Load data from localStorage
    */
   public load () {
-    this.data = JSON.parse(localStorage.getItem(this.storageKey) ?? '[]');
-    if (!Array.isArray(this.data)) this.data = [];
-    this.emit('loadend', this.data);
+    try {
+      this.data = this.parse(localStorage.getItem(this.storageKey));
+      this.emit('loadend', this);
+    } catch (_error) { /* Reject data and overrid it at next save() */ }
   }
 
   /**
    * Save data to localStorage
    */
-  public save () {
-    localStorage.setItem(this.storageKey, JSON.stringify(this.data));
-    this.emit('saved', this.data);
-  }
-
-  /**
-   * Returns the cached elements that match the condition specified
-   */
-  public filter (match: Partial<T>) {
-    return this.data.filter(
-      item => Object.entries(match).every(
-        ([key, value]) => item[key] === value
-      )
-    );
-  }
-
-  /**
-   * Returns the first cached element that match condition, and undefined
-   * otherwise.
-   */
-  public find (match: Partial<T>) {
-    return this.data.find(
-      item => Object.entries(match).every(
-        ([key, value]) => item[key] === value
-      )
-    );
-  }
-
-  /**
-   * delete one item
-   */
-  public delete (match: Partial<T>) {
-    const found = this.find(match);
-    if (!found) return;
-    this.data.splice(this.data.indexOf(found), 1);
-    this.emit('delete', { old: found });
-    this.save();
-  }
-
-  /**
-   * clear all data
-   */
-  public clear () {
-    this.data.length = 0;
-    this.save();
-    this.emit('clear', this.data);
-  }
-
-  /**
-   * Update one item
-   */
-  public updateItem (match: Partial<T>, value: T) {
-    const item = this.find(match);
-    if (item) {
-      this.data.splice(this.data.indexOf(item), 1, value);
-      this.emit('update', { old: item, new: value });
-    } else {
-      this.data.push(value);
-      this.emit('add', { new: value });
+  public save (data?: T) {
+    if (data) {
+      this.parse(this.stringify(data)); // validate value: throws if invalid
+      this.data = data;
     }
-    this.save();
-    return value;
+    localStorage.setItem(this.storageKey, this.stringify(this.data));
+    this.emit('saved', this);
   }
 
   /**
-   * Calls the specified callback function for all the elements in an array.
-   * The return value of the callback function is the accumulated result,
-   * and is provided as an argument in the next call to the callback function.
+   * Follow storage change from other Browser pages
    */
-  public reduce <R extends unknown>(cb: (acc: R, item: T) => R, startingValue: R): R {
-    return this.data.reduce(cb, startingValue);
+  private follow () {
+    window.addEventListener('storage', event => {
+      if (event.storageArea !== localStorage || event.key !== this.storageKey) return;
+      try {
+        console.log('update cache');
+        this.data = this.parse(event.newValue);
+        this.emit('change', this);
+      } catch (error) {
+        console.log(this.constructor.name, 'storage event error', { error, value: event.newValue });
+        /* Reject data and overrid it at next save() */
+      }
+    });
   }
 }
