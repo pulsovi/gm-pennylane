@@ -15,5 +15,6 @@ export default class FixTab extends Service {
         $<HTMLInputElement>('input[name=date]')?.focus();
       }
     });
+    $<HTMLInputElement>('input[name="invoice_number"]')?.focus()
   }
 }

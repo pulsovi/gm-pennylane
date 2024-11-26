@@ -140,12 +140,12 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    this.init();\n" +
 "  }\n" +
 "  static start() {\n" +
-"    console.log(this.name, \"start\");\n" +
-"    if (this.instance)\n" +
-"      return;\n" +
-"    this.instance = new this();\n" +
+"    console.log(this.name, \"start\", this);\n" +
+"    this.getInstance();\n" +
 "  }\n" +
 "  static getInstance() {\n" +
+"    if (!this.instance)\n" +
+"      this.instance = new this();\n" +
 "    return this.instance;\n" +
 "  }\n" +
 "  init() {\n" +
@@ -350,7 +350,11 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    if (isCurrent)\n" +
 "      console.log(\"Transaction getValidMessage\", this);\n" +
 "    const doc = await this.getDocument();\n" +
-"    if (doc.label.toUpperCase().startsWith(\"VIR \") && !doc.label.includes(\" DE: STRIPE MOTIF: STRIPE REF: STRIPE-\")) {\n" +
+"    const groupedDocuments = await this.getGroupedDocuments();\n" +
+"    if (doc.label.toUpperCase().startsWith(\"VIR \") && ![\n" +
+"      \" DE: STRIPE MOTIF: STRIPE REF: STRIPE-\",\n" +
+"      \" DE: STRIPE MOTIF: ALLODONS REF: \"\n" +
+"    ].some((label) => doc.label.includes(label)) && groupedDocuments.length < 2) {\n" +
 "      return \"Virement re\\xE7u sans justificatif\";\n" +
 "    }\n" +
 "    if (doc.archived)\n" +
@@ -361,7 +365,6 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "        return `nom du b\\xE9n\\xE9ficiaire manquant dans l'\\xE9criture \"6571\"`;\n" +
 "      }\n" +
 "    } else {\n" +
-"      const groupedDocuments = await this.getGroupedDocuments();\n" +
 "      for (const doc2 of groupedDocuments) {\n" +
 "        if (doc2.type !== \"Invoice\")\n" +
 "          continue;\n" +
@@ -396,14 +399,18 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      if (Math.abs(parseFloat(doc.currency_amount)) < 100)\n" +
 "        return \"OK\";\n" +
 "      const attachmentOptional = Math.abs(parseFloat(doc.currency_amount)) < 100 || [\n" +
+"        \" DE: STRIPE MOTIF: ALLODONS REF: \"\n" +
+"      ].some((label) => doc.label.includes(label)) || [\n" +
 "        \"REMISE CHEQUE \",\n" +
 "        \"VIR RECU \",\n" +
 "        \"VIR INST RE \",\n" +
 "        \"VIR INSTANTANE RECU DE: \"\n" +
 "      ].some((label) => doc.label.startsWith(label));\n" +
 "      const attachmentRequired = doc.attachment_required && !doc.attachment_lost && (!attachmentOptional || isCurrent);\n" +
-"      const groupedDocuments = await this.getGroupedDocuments();\n" +
-"      const hasAttachment = groupedDocuments.length > 1;\n" +
+"      const groupedDocuments2 = await this.getGroupedDocuments();\n" +
+"      const hasAttachment = groupedDocuments2.length > 1;\n" +
+"      if (isCurrent)\n" +
+"        console.log(this.constructor.name, { attachmentOptional, attachmentRequired, groupedDocuments: groupedDocuments2, hasAttachment });\n" +
 "      if (attachmentRequired && !hasAttachment)\n" +
 "        return \"Justificatif manquant\";\n" +
 "    }\n" +
@@ -925,8 +932,9 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      (acc, status) => Math.max(status.createdAt, acc),\n" +
 "      0\n" +
 "    );\n" +
+"    const filter = from ? [{ field: \"created_at\", operator: \"gteq\", value: new Date(from).toISOString() }] : [];\n" +
 "    const news = this.walk({\n" +
-"      filter: JSON.stringify([{ field: \"created_at\", operator: \"gteq\", value: new Date(from).toISOString() }]),\n" +
+"      filter: JSON.stringify(filter),\n" +
 "      sort: \"+created_at\"\n" +
 "    });\n" +
 "    let newItem = (await news.next()).value;\n" +
@@ -1082,7 +1090,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      return \"OK\";\n" +
 "    }\n" +
 "    if (invoice.archived) {\n" +
-"      const allowed = [\"\\xA7 #\", \"\\xA4 PIECE ETRANGERE\", \"\\xA4 TRANSACTION INTROUVABLE\"];\n" +
+"      const allowed = [\"\\xA7 #\", \"\\xA4 PIECE ETRANGERE\", \"\\xA4 TRANSACTION INTROUVABLE\", \"CHQ D\\xC9CHIR\\xC9\"];\n" +
 "      if (\n" +
 "        //legacy :\n" +
 "        !invoice.invoice_number.startsWith(\"\\xA4 CARTE ETRANGERE\") && !allowed.some((allowedItem) => invoice.invoice_number.startsWith(allowedItem))\n" +
@@ -1228,11 +1236,15 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "class InvoiceDisplayInfos extends Service$1 {\n" +
 "  invoice;\n" +
 "  state = {};\n" +
+"  step;\n" +
 "  static instance;\n" +
 "  static getInstance() {\n" +
+"    if (!this.instance)\n" +
+"      this.instance = new this();\n" +
 "    return this.instance;\n" +
 "  }\n" +
 "  async init() {\n" +
+"    this.step = \"waitElem('h4', 'Ventilation')\";\n" +
 "    await waitElem(\"h4\", \"Ventilation\");\n" +
 "    console.log(\"GreaseMonkey - Pennylane\", \"Invoice panel\");\n" +
 "    while (await waitFunc(async () => !await this.isSync())) {\n" +
@@ -1244,6 +1256,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    this.state = {};\n" +
 "  }\n" +
 "  async isSync() {\n" +
+"    this.step = \"waitElem('h4.heading-section-3.mr-2', 'Informations')\";\n" +
 "    const infos = await waitElem(\"h4.heading-section-3.mr-2\", \"Informations\");\n" +
 "    const { invoice } = getReact(infos, 32).memoizedProps;\n" +
 "    if (this.state.invoice !== invoice) {\n" +
@@ -1387,6 +1400,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "        $(\"input[name=date]\")?.focus();\n" +
 "      }\n" +
 "    });\n" +
+"    $('input[name=\"invoice_number\"]')?.focus();\n" +
 "  }\n" +
 "}\n" +
 "\n" +
@@ -1396,12 +1410,12 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    this.init();\n" +
 "  }\n" +
 "  static start() {\n" +
-"    console.log(this.name, \"start\");\n" +
-"    if (this.instance)\n" +
-"      return;\n" +
-"    this.instance = new this();\n" +
+"    console.log(this.name, \"start\", this);\n" +
+"    this.getInstance();\n" +
 "  }\n" +
 "  static getInstance() {\n" +
+"    if (!this.instance)\n" +
+"      this.instance = new this();\n" +
 "    return this.instance;\n" +
 "  }\n" +
 "  init() {\n" +
