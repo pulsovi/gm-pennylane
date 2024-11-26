@@ -9,5 +9,5 @@ export function openTabService () {
     console.log('GM_openInTab', {elem, url});
     GM.openInTab(url, { active: false, insert: true });
     elem.remove();
-  });
+  }, 200);
 }
