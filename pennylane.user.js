@@ -18,7 +18,7 @@ function openTabService() {
     console.log("GM_openInTab", { elem, url });
     GM.openInTab(url, { active: false, insert: true });
     elem.remove();
-  });
+  }, 200);
 }
 
 const code = ";(function IIFE() {" + "'use strict';\n" +
@@ -658,12 +658,125 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  }\n" +
 "}\n" +
 "\n" +
+"class EventEmitter {\n" +
+"  events = {};\n" +
+"  // Abonner une fonction à un événement\n" +
+"  on(event, listener) {\n" +
+"    if (!this.events[event]) {\n" +
+"      this.events[event] = [];\n" +
+"    }\n" +
+"    this.events[event].push(listener);\n" +
+"  }\n" +
+"  // Désabonner une fonction d'un événement\n" +
+"  off(event, listener) {\n" +
+"    if (!this.events[event])\n" +
+"      return;\n" +
+"    this.events[event] = this.events[event].filter((l) => l !== listener);\n" +
+"  }\n" +
+"  // Déclencher un événement avec des données\n" +
+"  emit(event, data) {\n" +
+"    if (!this.events[event])\n" +
+"      return;\n" +
+"    this.events[event].forEach((listener) => listener(data));\n" +
+"  }\n" +
+"}\n" +
+"\n" +
+"class Cache extends EventEmitter {\n" +
+"  storageKey;\n" +
+"  data;\n" +
+"  constructor(key, initialValue) {\n" +
+"    super();\n" +
+"    this.storageKey = key;\n" +
+"    this.data = initialValue;\n" +
+"    this.load();\n" +
+"    console.log(\"new Cache\", this);\n" +
+"    this.follow();\n" +
+"  }\n" +
+"  /**\n" +
+"   * stringify data for storage\n" +
+"   */\n" +
+"  stringify(value) {\n" +
+"    return JSON.stringify(value);\n" +
+"  }\n" +
+"  /**\n" +
+"   * Load data from localStorage\n" +
+"   */\n" +
+"  load() {\n" +
+"    try {\n" +
+"      this.data = this.parse(localStorage.getItem(this.storageKey));\n" +
+"      this.emit(\"loadend\", this);\n" +
+"    } catch (_error) {\n" +
+"    }\n" +
+"  }\n" +
+"  /**\n" +
+"   * Save data to localStorage\n" +
+"   */\n" +
+"  save(data) {\n" +
+"    if (data) {\n" +
+"      this.parse(this.stringify(data));\n" +
+"      this.data = data;\n" +
+"    }\n" +
+"    localStorage.setItem(this.storageKey, this.stringify(this.data));\n" +
+"    this.emit(\"saved\", this);\n" +
+"  }\n" +
+"  /**\n" +
+"   * Follow storage change from other Browser pages\n" +
+"   */\n" +
+"  follow() {\n" +
+"    window.addEventListener(\"storage\", (event) => {\n" +
+"      if (event.storageArea !== localStorage || event.key !== this.storageKey)\n" +
+"        return;\n" +
+"      try {\n" +
+"        console.log(\"update cache\");\n" +
+"        this.data = this.parse(event.newValue);\n" +
+"        this.emit(\"change\", this);\n" +
+"      } catch (error) {\n" +
+"        console.log(this.constructor.name, \"storage event error\", { error, value: event.newValue });\n" +
+"      }\n" +
+"    });\n" +
+"  }\n" +
+"}\n" +
+"\n" +
+"class CacheRecord extends Cache {\n" +
+"  parse(data) {\n" +
+"    const value = JSON.parse(data);\n" +
+"    if (!value || typeof value !== \"object\")\n" +
+"      throw new Error(\"The given value does not parse as an Object.\");\n" +
+"    return value;\n" +
+"  }\n" +
+"  /**\n" +
+"   * Returns the value of the specified key\n" +
+"   */\n" +
+"  get(key) {\n" +
+"    return this.data[key];\n" +
+"  }\n" +
+"  /**\n" +
+"   * Update one item\n" +
+"   *\n" +
+"   * @return Old value\n" +
+"   */\n" +
+"  set(key, valueOrCb) {\n" +
+"    const oldValue = this.get(key);\n" +
+"    const newValue = valueOrCb instanceof Function ? valueOrCb(oldValue) : valueOrCb;\n" +
+"    this.data[key] = newValue;\n" +
+"    this.emit(\"update\", { oldValue, newValue });\n" +
+"    this.save();\n" +
+"    this.emit(\"change\", this);\n" +
+"    return oldValue;\n" +
+"  }\n" +
+"}\n" +
+"\n" +
 "class Autostarter {\n" +
 "  parent;\n" +
+"  config;\n" +
 "  eventList = [\"click\", \"keyup\"];\n" +
+"  /**\n" +
+"   * @property stopped Flag moved to true by the stop() method\n" +
+"   */\n" +
 "  stopped = false;\n" +
 "  constructor(parent) {\n" +
 "    this.parent = parent;\n" +
+"    this.config = new CacheRecord(`${this.parent.id}-autostart`, { enabled: true });\n" +
 "    this.start = this.start.bind(this);\n" +
 "    this.init();\n" +
 "  }\n" +
@@ -704,11 +817,11 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    const button = $(`#${buttonId}`, this.parent.container);\n" +
 "    const tooltip = Tooltip.make({ target: button });\n" +
 "    button.addEventListener(\"click\", () => {\n" +
-"      this.setConfig({ enabled: !this.getConfig().enabled });\n" +
+"      this.config.set(\"enabled\", (oldValue) => !oldValue);\n" +
 "    });\n" +
 "    let lastVal = null;\n" +
-"    setInterval(() => {\n" +
-"      const { enabled } = this.getConfig();\n" +
+"    const setText = () => {\n" +
+"      const enabled = this.config.get(\"enabled\");\n" +
 "      if (enabled === lastVal)\n" +
 "        return;\n" +
 "      lastVal = enabled;\n" +
@@ -719,7 +832,9 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "        button.innerText = \"\\u23F5\";\n" +
 "        tooltip.setText(\"Activer l'ouverture automatique\");\n" +
 "      }\n" +
-"    }, 200);\n" +
+"    };\n" +
+"    setText();\n" +
+"    this.config.on(\"change\", setText);\n" +
 "    console.log(this.constructor.name, this, { button, tooltip });\n" +
 "  }\n" +
 "  /**\n" +
@@ -728,83 +843,27 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "   * `this` keyword is bounded at constructor\n" +
 "   */\n" +
 "  start() {\n" +
-"    if (this.getConfig().enabled && !this.stopped)\n" +
+"    if (this.config.get(\"enabled\") && !this.stopped)\n" +
 "      this.parent.start();\n" +
 "  }\n" +
 "  /**\n" +
 "   * Stop all watchers\n" +
 "   */\n" +
 "  stop() {\n" +
+"    this.stopped = true;\n" +
 "    this.detachEvents();\n" +
 "  }\n" +
-"  /**\n" +
-"   * Load config from localStorage\n" +
-"   */\n" +
-"  getConfig() {\n" +
-"    const defaults = { enabled: true };\n" +
-"    return Object.assign(\n" +
-"      defaults,\n" +
-"      JSON.parse(localStorage.getItem(`${this.parent.id}-autostart`) ?? \"{}\")\n" +
-"    );\n" +
-"  }\n" +
-"  /**\n" +
-"   * Set properties to this config and save it to localStorage\n" +
-"   */\n" +
-"  setConfig(settings = {}) {\n" +
-"    localStorage.setItem(\n" +
-"      `${this.parent.id}-autostart`,\n" +
-"      JSON.stringify(Object.assign(this.getConfig(), settings))\n" +
-"    );\n" +
-"  }\n" +
 "}\n" +
 "\n" +
-"class EventEmitter {\n" +
-"  events = {};\n" +
-"  // Abonner une fonction à un événement\n" +
-"  on(event, listener) {\n" +
-"    if (!this.events[event]) {\n" +
-"      this.events[event] = [];\n" +
-"    }\n" +
-"    this.events[event].push(listener);\n" +
+"class CacheList extends Cache {\n" +
+"  constructor(key, initialValue = []) {\n" +
+"    super(key, initialValue);\n" +
 "  }\n" +
-"  // Désabonner une fonction d'un événement\n" +
-"  off(event, listener) {\n" +
-"    if (!this.events[event])\n" +
-"      return;\n" +
-"    this.events[event] = this.events[event].filter((l) => l !== listener);\n" +
-"  }\n" +
-"  // Déclencher un événement avec des données\n" +
-"  emit(event, data) {\n" +
-"    if (!this.events[event])\n" +
-"      return;\n" +
-"    this.events[event].forEach((listener) => listener(data));\n" +
-"  }\n" +
-"}\n" +
-"\n" +
-"class Cache extends EventEmitter {\n" +
-"  storageKey;\n" +
-"  data;\n" +
-"  constructor(key) {\n" +
-"    super();\n" +
-"    this.storageKey = key;\n" +
-"    this.load();\n" +
-"    console.log(\"new Cache\", this);\n" +
-"  }\n" +
-"  /**\n" +
-"   * Load data from localStorage\n" +
-"   */\n" +
-"  load() {\n" +
-"    this.data = JSON.parse(localStorage.getItem(this.storageKey) ?? \"[]\");\n" +
-"    if (!Array.isArray(this.data))\n" +
-"      this.data = [];\n" +
-"    this.emit(\"loadend\", this.data);\n" +
-"  }\n" +
-"  /**\n" +
-"   * Save data to localStorage\n" +
-"   */\n" +
-"  save() {\n" +
-"    localStorage.setItem(this.storageKey, JSON.stringify(this.data));\n" +
-"    this.emit(\"saved\", this.data);\n" +
+"  parse(data) {\n" +
+"    const value = JSON.parse(data);\n" +
+"    if (!Array.isArray(value))\n" +
+"      throw new Error(\"The given value does not parse as an Array.\");\n" +
+"    return value;\n" +
 "  }\n" +
 "  /**\n" +
 "   * Returns the cached elements that match the condition specified\n" +
@@ -829,25 +888,33 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  }\n" +
 "  /**\n" +
 "   * delete one item\n" +
+"   *\n" +
+"   * @return Deleted item if found\n" +
 "   */\n" +
 "  delete(match) {\n" +
 "    const found = this.find(match);\n" +
 "    if (!found)\n" +
-"      return;\n" +
+"      return null;\n" +
 "    this.data.splice(this.data.indexOf(found), 1);\n" +
 "    this.emit(\"delete\", { old: found });\n" +
 "    this.save();\n" +
+"    this.emit(\"change\", this);\n" +
+"    return found;\n" +
 "  }\n" +
 "  /**\n" +
 "   * clear all data\n" +
 "   */\n" +
 "  clear() {\n" +
 "    this.data.length = 0;\n" +
+"    this.emit(\"clear\", this);\n" +
 "    this.save();\n" +
-"    this.emit(\"clear\", this.data);\n" +
+"    this.emit(\"change\", this);\n" +
+"    return this;\n" +
 "  }\n" +
 "  /**\n" +
 "   * Update one item\n" +
+"   *\n" +
+"   * @return Old value\n" +
 "   */\n" +
 "  updateItem(match, value) {\n" +
 "    const item = this.find(match);\n" +
@@ -859,7 +926,8 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      this.emit(\"add\", { new: value });\n" +
 "    }\n" +
 "    this.save();\n" +
-"    return value;\n" +
+"    this.emit(\"change\", this);\n" +
+"    return item;\n" +
 "  }\n" +
 "  /**\n" +
 "   * Calls the specified callback function for all the elements in an array.\n" +
@@ -881,7 +949,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    console.log(this.constructor.name, \"init\");\n" +
 "    this.start = this.start.bind(this);\n" +
 "    this.current = Number(getParam(location.href, this.idParamName));\n" +
-"    this.cache = new Cache(this.storageKey);\n" +
+"    this.cache = new CacheList(this.storageKey);\n" +
 "    this.appendOpenNextButton();\n" +
 "    this.allowIgnoring();\n" +
 "    this.autostart = new Autostarter(this);\n" +
@@ -901,22 +969,18 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "   * Append the button for open next to the DOM\n" +
 "   */\n" +
 "  appendOpenNextButton() {\n" +
+"    const number = this.cache.filter({ valid: false }).length;\n" +
 "    const className = \"sc-jwIPbr kzNmya bxhmjB justify-content-center btn btn-primary btn-sm\";\n" +
 "    this.container.appendChild(parseHTML(\n" +
-"      `<button type=\"button\" class=\"${className} open-next-invalid-btn\">&nbsp;&gt;&nbsp;</button>`\n" +
+"      `<button type=\"button\" class=\"${className} open-next-invalid-btn\">&nbsp;&gt;&nbsp;${number}</button>`\n" +
 "    ));\n" +
 "    const button = $(`.open-next-invalid-btn`, this.container);\n" +
 "    button.addEventListener(\"click\", this.start.bind(this, true));\n" +
 "    Tooltip.make({ target: button, text: \"Ouvrir le prochain \\xE9l\\xE9ment invalide\" });\n" +
-"    this.cache.on(\"saved\", () => {\n" +
-"      const number = this.cache.filter({ valid: false }).length;\n" +
-"      button.innerHTML = `&nbsp;&gt;&nbsp;${number}`;\n" +
+"    this.cache.on(\"change\", () => {\n" +
+"      const number2 = this.cache.filter({ valid: false }).length;\n" +
+"      button.innerHTML = `&nbsp;&gt;&nbsp;${number2}`;\n" +
 "    });\n" +
-"    setInterval(() => {\n" +
-"      this.cache.load();\n" +
-"      const number = this.cache.filter({ valid: false }).length;\n" +
-"      button.innerHTML = `&nbsp;&gt;&nbsp;${number}`;\n" +
-"    }, 3e3);\n" +
 "  }\n" +
 "  /**\n" +
 "   * Create next invalid generator\n" +
@@ -1018,10 +1082,13 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    localStorage.setItem(storageKey, JSON.stringify(state));\n" +
 "  }\n" +
 "  allowIgnoring() {\n" +
+"    const ignored = Boolean(this.cache.find({ id: this.current })?.ignored);\n" +
 "    const className = \"sc-jwIPbr kzNmya bxhmjB justify-content-center btn btn-primary btn-sm\";\n" +
-"    this.container.appendChild(parseHTML(\n" +
-"      `<button type=\"button\" class=\"${className} ignore-item\">x</button>`\n" +
-"    ));\n" +
+"    this.container.appendChild(parseHTML(`<button\n" +
+"      type=\"button\"\n" +
+"      class=\"${className} ignore-item\"\n" +
+"      ${ignored ? 'style=\"background-color: var(--red);\"' : \"\"}\n" +
+"    >x</button>`));\n" +
 "    const button = $(`.ignore-item`, this.container);\n" +
 "    Tooltip.make({ target: button, text: \"Ignorer cet \\xE9l\\xE9ment, ne plus afficher\" });\n" +
 "    button.addEventListener(\"click\", () => {\n" +
@@ -1030,10 +1097,9 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "        return;\n" +
 "      this.cache.updateItem({ id: this.current }, Object.assign(status, { ignored: !status.ignored }));\n" +
 "    });\n" +
-"    setInterval(() => {\n" +
-"      this.cache.load();\n" +
-"      const ignored = Boolean(this.cache.find({ id: this.current })?.ignored);\n" +
-"      const background = ignored ? \"var(--red)\" : \"\";\n" +
+"    this.cache.on(\"change\", () => {\n" +
+"      const ignored2 = Boolean(this.cache.find({ id: this.current })?.ignored);\n" +
+"      const background = ignored2 ? \"var(--red)\" : \"\";\n" +
 "      if (button.style.backgroundColor !== background)\n" +
 "        button.style.backgroundColor = background;\n" +
 "    });\n" +
@@ -1494,23 +1560,14 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "}\n" +
 "\n" +
 "class EntryBlocInfos extends Service$1 {\n" +
-"  docList = /* @__PURE__ */ new WeakSet();\n" +
 "  async init() {\n" +
-"    setInterval(() => {\n" +
-"      this.findBlocs();\n" +
-"    }, 200);\n" +
-"  }\n" +
-"  /**\n" +
-"   * Search for all entry bloc in the page\n" +
-"   */\n" +
-"  findBlocs() {\n" +
-"    const docs = $$(`form[name^=\"DocumentEntries-\"]`);\n" +
-"    docs.forEach((doc) => {\n" +
-"      if (this.docList.has(doc))\n" +
-"        return;\n" +
-"      this.docList.add(doc);\n" +
+"    const className = `${this.constructor.name}-managed`;\n" +
+"    const selector = `form[name^=\"DocumentEntries-\"]:not(.${className})`;\n" +
+"    while (true) {\n" +
+"      const doc = await waitElem(selector);\n" +
+"      doc.classList.add(className);\n" +
 "      this.fill(doc);\n" +
-"    });\n" +
+"    }\n" +
 "  }\n" +
 "  /**\n" +
 "   * Add infos on an entry bloc\n" +
@@ -1522,8 +1579,8 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      return;\n" +
 "    const className = header.firstElementChild?.className ?? \"\";\n" +
 "    header.insertBefore(parseHTML(`<div class=\"${className}\">\n" +
-"            <span class=\"d-inline-block bg-secondary-100 dihsuQ px-0_5\">#${id}</span>\n" +
-"        </div>`), $(\".border-bottom\", header));\n" +
+"      <span class=\"d-inline-block bg-secondary-100 dihsuQ px-0_5\">#${id}</span>\n" +
+"    </div>`), $(\".border-bottom\", header));\n" +
 "  }\n" +
 "}\n" +
 "\n" +
