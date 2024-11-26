@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name     Pennylane
-// @version  0.1.11
+// @version  0.1.12
 // @grant    unsafeWindow
 // @grant    GM.openInTab
 // @match    https://app.pennylane.com/companies/*
@@ -1640,7 +1640,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "Object.assign(window, {\n" +
 "  GM_Pennylane_Version: (\n" +
 "    /** version **/\n" +
-"    \"0.1.11\"\n" +
+"    \"0.1.12\"\n" +
 "  )\n" +
 "});\n" +
 ""
