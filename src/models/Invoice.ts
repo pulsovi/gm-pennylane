@@ -64,7 +64,7 @@ class SupplierInvoice extends Invoice {
 
     // Archived
     if (invoice.archived) {
-      const allowed = ['§ #', '¤ PIECE ETRANGERE', '¤ TRANSACTION INTROUVABLE'];
+      const allowed = ['§ #', '¤ PIECE ETRANGERE', '¤ TRANSACTION INTROUVABLE', 'CHQ DÉCHIRÉ'];
       if (
         //legacy :
         !invoice.invoice_number.startsWith('¤ CARTE ETRANGERE') &&

@@ -7,13 +7,16 @@ import Invoice from "../../models/Invoice";
 export default class InvoiceDisplayInfos extends Service {
   private invoice: Invoice;
   private state: Record<string, unknown> = {};
+  private step: string;
   protected static instance: InvoiceDisplayInfos
 
   static getInstance (): InvoiceDisplayInfos {
+    if (!this.instance) this.instance = new this();
     return this.instance;
   }
 
   async init () {
+    this.step = "waitElem('h4', 'Ventilation')";
     await waitElem('h4', 'Ventilation');
     console.log('GreaseMonkey - Pennylane', 'Invoice panel');
     while (await waitFunc(async () => !await this.isSync())) {
@@ -27,6 +30,7 @@ export default class InvoiceDisplayInfos extends Service {
   }
 
   async isSync () {
+    this.step = "waitElem('h4.heading-section-3.mr-2', 'Informations')";
     const infos = await waitElem('h4.heading-section-3.mr-2', 'Informations');
     const {invoice} = getReact(infos, 32).memoizedProps;
 

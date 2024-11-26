@@ -94,8 +94,11 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
     const from = this.cache.reduce(
       (acc, status) => Math.max(status.createdAt, acc),
     0);
+    const filter = from ?
+      [{ field: 'created_at', operator: 'gteq', value: new Date(from).toISOString() }] :
+      [];
     const news = this.walk({
-      filter: JSON.stringify([{ field: 'created_at', operator: 'gteq', value: new Date(from).toISOString() }]),
+      filter: JSON.stringify(filter),
       sort: '+created_at',
     });
     let newItem = (await news.next()).value;

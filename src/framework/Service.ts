@@ -6,12 +6,12 @@ export default class Service {
   }
 
   public static start () {
-    console.log(this.name, 'start');
-    if (this.instance) return;
-    this.instance = new this();
+    console.log(this.name, 'start', this);
+    this.getInstance();
   }
 
   public static getInstance () {
+    if (!this.instance) this.instance = new this();
     return this.instance;
   }
 
