@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name     Pennylane
-// @version  0.1.12
+// @version  0.1.13
 // @grant    unsafeWindow
 // @grant    GM.openInTab
 // @match    https://app.pennylane.com/companies/*
@@ -555,6 +555,198 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  return await response?.json();\n" +
 "}\n" +
 "\n" +
+"class EventEmitter {\n" +
+"  events = {};\n" +
+"  // Abonner une fonction à un événement\n" +
+"  on(event, listener) {\n" +
+"    if (!this.events[event]) {\n" +
+"      this.events[event] = [];\n" +
+"    }\n" +
+"    this.events[event].push(listener);\n" +
+"  }\n" +
+"  // Désabonner une fonction d'un événement\n" +
+"  off(event, listener) {\n" +
+"    if (!this.events[event])\n" +
+"      return;\n" +
+"    this.events[event] = this.events[event].filter((l) => l !== listener);\n" +
+"  }\n" +
+"  // Déclencher un événement avec des données\n" +
+"  emit(event, data) {\n" +
+"    if (!this.events[event])\n" +
+"      return;\n" +
+"    this.events[event].forEach((listener) => listener(data));\n" +
+"  }\n" +
+"}\n" +
+"\n" +
+"class Cache extends EventEmitter {\n" +
+"  storageKey;\n" +
+"  data;\n" +
+"  constructor(key, initialValue) {\n" +
+"    super();\n" +
+"    this.storageKey = key;\n" +
+"    this.data = initialValue;\n" +
+"    this.load();\n" +
+"    console.log(\"new Cache\", this);\n" +
+"    this.follow();\n" +
+"  }\n" +
+"  /**\n" +
+"   * stringify data for storage\n" +
+"   */\n" +
+"  stringify(value) {\n" +
+"    return JSON.stringify(value);\n" +
+"  }\n" +
+"  /**\n" +
+"   * Load data from localStorage\n" +
+"   */\n" +
+"  load() {\n" +
+"    try {\n" +
+"      this.data = this.parse(localStorage.getItem(this.storageKey));\n" +
+"      this.emit(\"loadend\", this);\n" +
+"    } catch (_error) {\n" +
+"    }\n" +
+"  }\n" +
+"  /**\n" +
+"   * Save data to localStorage\n" +
+"   */\n" +
+"  save(data) {\n" +
+"    if (data) {\n" +
+"      this.parse(this.stringify(data));\n" +
+"      this.data = data;\n" +
+"    }\n" +
+"    localStorage.setItem(this.storageKey, this.stringify(this.data));\n" +
+"    this.emit(\"saved\", this);\n" +
+"  }\n" +
+"  /**\n" +
+"   * Follow storage change from other Browser pages\n" +
+"   */\n" +
+"  follow() {\n" +
+"    window.addEventListener(\"storage\", (event) => {\n" +
+"      if (event.storageArea !== localStorage || event.key !== this.storageKey)\n" +
+"        return;\n" +
+"      try {\n" +
+"        console.log(\"update cache\");\n" +
+"        this.data = this.parse(event.newValue);\n" +
+"        this.emit(\"change\", this);\n" +
+"      } catch (error) {\n" +
+"        console.log(this.constructor.name, \"storage event error\", { error, value: event.newValue });\n" +
+"      }\n" +
+"    });\n" +
+"  }\n" +
+"}\n" +
+"\n" +
+"class CacheList extends Cache {\n" +
+"  constructor(key, initialValue = []) {\n" +
+"    super(key, initialValue);\n" +
+"  }\n" +
+"  parse(data) {\n" +
+"    const value = JSON.parse(data);\n" +
+"    if (!Array.isArray(value))\n" +
+"      throw new Error(\"The given value does not parse as an Array.\");\n" +
+"    return value;\n" +
+"  }\n" +
+"  /**\n" +
+"   * Returns the cached elements that match the condition specified\n" +
+"   */\n" +
+"  filter(match) {\n" +
+"    return this.data.filter(\n" +
+"      (item) => Object.entries(match).every(\n" +
+"        ([key, value]) => item[key] === value\n" +
+"      )\n" +
+"    );\n" +
+"  }\n" +
+"  /**\n" +
+"   * Returns the first cached element that match condition, and undefined\n" +
+"   * otherwise.\n" +
+"   */\n" +
+"  find(match) {\n" +
+"    return this.data.find(\n" +
+"      (item) => Object.entries(match).every(\n" +
+"        ([key, value]) => item[key] === value\n" +
+"      )\n" +
+"    );\n" +
+"  }\n" +
+"  /**\n" +
+"   * delete one item\n" +
+"   *\n" +
+"   * @return Deleted item if found\n" +
+"   */\n" +
+"  delete(match) {\n" +
+"    const found = this.find(match);\n" +
+"    if (!found)\n" +
+"      return null;\n" +
+"    this.data.splice(this.data.indexOf(found), 1);\n" +
+"    this.emit(\"delete\", { old: found });\n" +
+"    this.save();\n" +
+"    this.emit(\"change\", this);\n" +
+"    return found;\n" +
+"  }\n" +
+"  /**\n" +
+"   * clear all data\n" +
+"   */\n" +
+"  clear() {\n" +
+"    this.data.length = 0;\n" +
+"    this.emit(\"clear\", this);\n" +
+"    this.save();\n" +
+"    this.emit(\"change\", this);\n" +
+"    return this;\n" +
+"  }\n" +
+"  /**\n" +
+"   * Update one item\n" +
+"   *\n" +
+"   * @return Old value\n" +
+"   */\n" +
+"  updateItem(match, value) {\n" +
+"    const item = this.find(match);\n" +
+"    if (item) {\n" +
+"      this.data.splice(this.data.indexOf(item), 1, value);\n" +
+"      this.emit(\"update\", { old: item, new: value });\n" +
+"    } else {\n" +
+"      this.data.push(value);\n" +
+"      this.emit(\"add\", { new: value });\n" +
+"    }\n" +
+"    this.save();\n" +
+"    this.emit(\"change\", this);\n" +
+"    return item;\n" +
+"  }\n" +
+"  /**\n" +
+"   * Calls the specified callback function for all the elements in an array.\n" +
+"   * The return value of the callback function is the accumulated result,\n" +
+"   * and is provided as an argument in the next call to the callback function.\n" +
+"   */\n" +
+"  reduce(cb, startingValue) {\n" +
+"    return this.data.reduce(cb, startingValue);\n" +
+"  }\n" +
+"}\n" +
+"\n" +
+"class CacheStatus extends CacheList {\n" +
+"  static instances = {};\n" +
+"  static getInstance(storageKey) {\n" +
+"    if (!this.instances[storageKey]) {\n" +
+"      this.instances[storageKey] = new CacheStatus(storageKey);\n" +
+"    }\n" +
+"    return this.instances[storageKey];\n" +
+"  }\n" +
+"  /**\n" +
+"   * Update one item\n" +
+"   *\n" +
+"   * @return Old value\n" +
+"   */\n" +
+"  updateItem(match, newValue) {\n" +
+"    const oldValue = this.find(match);\n" +
+"    if (oldValue) {\n" +
+"      newValue = { ...oldValue, ...newValue };\n" +
+"      this.data.splice(this.data.indexOf(oldValue), 1, newValue);\n" +
+"      this.emit(\"update\", { oldValue, newValue });\n" +
+"    } else {\n" +
+"      this.data.push(newValue);\n" +
+"      this.emit(\"add\", { newValue });\n" +
+"    }\n" +
+"    this.save();\n" +
+"    this.emit(\"change\", this);\n" +
+"    return oldValue;\n" +
+"  }\n" +
+"}\n" +
+"\n" +
 "let openInTabLaunched = false;\n" +
 "function openInTab(url) {\n" +
 "  if (openInTabLaunched)\n" +
@@ -655,85 +847,6 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    if (tooltip.style.transform !== tooltipTransform) {\n" +
 "      tooltip.style.transform = tooltipTransform;\n" +
 "    }\n" +
-"  }\n" +
-"}\n" +
-"\n" +
-"class EventEmitter {\n" +
-"  events = {};\n" +
-"  // Abonner une fonction à un événement\n" +
-"  on(event, listener) {\n" +
-"    if (!this.events[event]) {\n" +
-"      this.events[event] = [];\n" +
-"    }\n" +
-"    this.events[event].push(listener);\n" +
-"  }\n" +
-"  // Désabonner une fonction d'un événement\n" +
-"  off(event, listener) {\n" +
-"    if (!this.events[event])\n" +
-"      return;\n" +
-"    this.events[event] = this.events[event].filter((l) => l !== listener);\n" +
-"  }\n" +
-"  // Déclencher un événement avec des données\n" +
-"  emit(event, data) {\n" +
-"    if (!this.events[event])\n" +
-"      return;\n" +
-"    this.events[event].forEach((listener) => listener(data));\n" +
-"  }\n" +
-"}\n" +
-"\n" +
-"class Cache extends EventEmitter {\n" +
-"  storageKey;\n" +
-"  data;\n" +
-"  constructor(key, initialValue) {\n" +
-"    super();\n" +
-"    this.storageKey = key;\n" +
-"    this.data = initialValue;\n" +
-"    this.load();\n" +
-"    console.log(\"new Cache\", this);\n" +
-"    this.follow();\n" +
-"  }\n" +
-"  /**\n" +
-"   * stringify data for storage\n" +
-"   */\n" +
-"  stringify(value) {\n" +
-"    return JSON.stringify(value);\n" +
-"  }\n" +
-"  /**\n" +
-"   * Load data from localStorage\n" +
-"   */\n" +
-"  load() {\n" +
-"    try {\n" +
-"      this.data = this.parse(localStorage.getItem(this.storageKey));\n" +
-"      this.emit(\"loadend\", this);\n" +
-"    } catch (_error) {\n" +
-"    }\n" +
-"  }\n" +
-"  /**\n" +
-"   * Save data to localStorage\n" +
-"   */\n" +
-"  save(data) {\n" +
-"    if (data) {\n" +
-"      this.parse(this.stringify(data));\n" +
-"      this.data = data;\n" +
-"    }\n" +
-"    localStorage.setItem(this.storageKey, this.stringify(this.data));\n" +
-"    this.emit(\"saved\", this);\n" +
-"  }\n" +
-"  /**\n" +
-"   * Follow storage change from other Browser pages\n" +
-"   */\n" +
-"  follow() {\n" +
-"    window.addEventListener(\"storage\", (event) => {\n" +
-"      if (event.storageArea !== localStorage || event.key !== this.storageKey)\n" +
-"        return;\n" +
-"      try {\n" +
-"        console.log(\"update cache\");\n" +
-"        this.data = this.parse(event.newValue);\n" +
-"        this.emit(\"change\", this);\n" +
-"      } catch (error) {\n" +
-"        console.log(this.constructor.name, \"storage event error\", { error, value: event.newValue });\n" +
-"      }\n" +
-"    });\n" +
 "  }\n" +
 "}\n" +
 "\n" +
@@ -855,93 +968,8 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  }\n" +
 "}\n" +
 "\n" +
-"class CacheList extends Cache {\n" +
-"  constructor(key, initialValue = []) {\n" +
-"    super(key, initialValue);\n" +
-"  }\n" +
-"  parse(data) {\n" +
-"    const value = JSON.parse(data);\n" +
-"    if (!Array.isArray(value))\n" +
-"      throw new Error(\"The given value does not parse as an Array.\");\n" +
-"    return value;\n" +
-"  }\n" +
-"  /**\n" +
-"   * Returns the cached elements that match the condition specified\n" +
-"   */\n" +
-"  filter(match) {\n" +
-"    return this.data.filter(\n" +
-"      (item) => Object.entries(match).every(\n" +
-"        ([key, value]) => item[key] === value\n" +
-"      )\n" +
-"    );\n" +
-"  }\n" +
-"  /**\n" +
-"   * Returns the first cached element that match condition, and undefined\n" +
-"   * otherwise.\n" +
-"   */\n" +
-"  find(match) {\n" +
-"    return this.data.find(\n" +
-"      (item) => Object.entries(match).every(\n" +
-"        ([key, value]) => item[key] === value\n" +
-"      )\n" +
-"    );\n" +
-"  }\n" +
-"  /**\n" +
-"   * delete one item\n" +
-"   *\n" +
-"   * @return Deleted item if found\n" +
-"   */\n" +
-"  delete(match) {\n" +
-"    const found = this.find(match);\n" +
-"    if (!found)\n" +
-"      return null;\n" +
-"    this.data.splice(this.data.indexOf(found), 1);\n" +
-"    this.emit(\"delete\", { old: found });\n" +
-"    this.save();\n" +
-"    this.emit(\"change\", this);\n" +
-"    return found;\n" +
-"  }\n" +
-"  /**\n" +
-"   * clear all data\n" +
-"   */\n" +
-"  clear() {\n" +
-"    this.data.length = 0;\n" +
-"    this.emit(\"clear\", this);\n" +
-"    this.save();\n" +
-"    this.emit(\"change\", this);\n" +
-"    return this;\n" +
-"  }\n" +
-"  /**\n" +
-"   * Update one item\n" +
-"   *\n" +
-"   * @return Old value\n" +
-"   */\n" +
-"  updateItem(match, value) {\n" +
-"    const item = this.find(match);\n" +
-"    if (item) {\n" +
-"      this.data.splice(this.data.indexOf(item), 1, value);\n" +
-"      this.emit(\"update\", { old: item, new: value });\n" +
-"    } else {\n" +
-"      this.data.push(value);\n" +
-"      this.emit(\"add\", { new: value });\n" +
-"    }\n" +
-"    this.save();\n" +
-"    this.emit(\"change\", this);\n" +
-"    return item;\n" +
-"  }\n" +
-"  /**\n" +
-"   * Calls the specified callback function for all the elements in an array.\n" +
-"   * The return value of the callback function is the accumulated result,\n" +
-"   * and is provided as an argument in the next call to the callback function.\n" +
-"   */\n" +
-"  reduce(cb, startingValue) {\n" +
-"    return this.data.reduce(cb, startingValue);\n" +
-"  }\n" +
-"}\n" +
-"\n" +
 "class OpenNextInvalid extends Service$1 {\n" +
 "  container = document.createElement(\"div\");\n" +
-"  cache;\n" +
 "  autostart;\n" +
 "  current;\n" +
 "  invalidGenerator;\n" +
@@ -949,7 +977,6 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    console.log(this.constructor.name, \"init\");\n" +
 "    this.start = this.start.bind(this);\n" +
 "    this.current = Number(getParam(location.href, this.idParamName));\n" +
-"    this.cache = new CacheList(this.storageKey);\n" +
 "    this.appendOpenNextButton();\n" +
 "    this.allowIgnoring();\n" +
 "    this.autostart = new Autostarter(this);\n" +
@@ -1205,8 +1232,12 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      if (diffLine) {\n" +
 "        if (parseFloat(diffLine.amount) < 0)\n" +
 "          return \"Les \\xE9carts de conversions de devises doivent utiliser le compte 756\";\n" +
-"        else\n" +
-"          return \"Les \\xE9carts de conversions de devises doivent utiliser le compte 656\";\n" +
+"        else {\n" +
+"          return `<a\n" +
+"            title=\"Cliquer ici pour plus d'informations\"\n" +
+"            href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FLes%20%C3%A9carts%20de%20conversions%20de%20devises%20doivent%20utiliser%20le%20compte%20656\"\n" +
+"          >Les \\xE9carts de conversions de devises doivent utiliser le compte 656 \\u24D8</a>`;\n" +
+"        }\n" +
 "      }\n" +
 "    }\n" +
 "    if (invoice.thirdparty?.id === 115640202)\n" +
@@ -1262,8 +1293,10 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  id = \"next-invalid-invoice\";\n" +
 "  storageKey = \"InvoiceValidation\";\n" +
 "  idParamName = \"id\";\n" +
+"  cache;\n" +
 "  async init() {\n" +
 "    await this.appendContainer();\n" +
+"    this.cache = CacheStatus.getInstance(this.storageKey);\n" +
 "    await super.init();\n" +
 "  }\n" +
 "  async *walk(params) {\n" +
@@ -1300,20 +1333,26 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "}\n" +
 "\n" +
 "class InvoiceDisplayInfos extends Service$1 {\n" +
-"  invoice;\n" +
-"  state = {};\n" +
-"  step;\n" +
 "  static instance;\n" +
+"  storageKey = \"InvoiceValidation\";\n" +
+"  cache;\n" +
+"  state = {};\n" +
+"  container;\n" +
 "  static getInstance() {\n" +
 "    if (!this.instance)\n" +
 "      this.instance = new this();\n" +
 "    return this.instance;\n" +
 "  }\n" +
 "  async init() {\n" +
-"    this.step = \"waitElem('h4', 'Ventilation')\";\n" +
 "    await waitElem(\"h4\", \"Ventilation\");\n" +
-"    console.log(\"GreaseMonkey - Pennylane\", \"Invoice panel\");\n" +
+"    this.cache = CacheStatus.getInstance(this.storageKey);\n" +
+"    this.watch();\n" +
+"  }\n" +
+"  async watch() {\n" +
+"    this.watchEventSave();\n" +
+"    this.cache.on(\"change\", () => this.handleCacheChange());\n" +
 "    while (await waitFunc(async () => !await this.isSync())) {\n" +
+"      await this.setId();\n" +
 "      await this.setMessage(\"\\u27F3\");\n" +
 "      await this.loadMessage();\n" +
 "    }\n" +
@@ -1322,53 +1361,73 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    this.state = {};\n" +
 "  }\n" +
 "  async isSync() {\n" +
-"    this.step = \"waitElem('h4.heading-section-3.mr-2', 'Informations')\";\n" +
 "    const infos = await waitElem(\"h4.heading-section-3.mr-2\", \"Informations\");\n" +
-"    const { invoice } = getReact(infos, 32).memoizedProps;\n" +
-"    if (this.state.invoice !== invoice) {\n" +
-"      this.state.lastInvoice = this.state.invoice;\n" +
-"      this.state.invoice = invoice;\n" +
-"      this.invoice = Invoice.from(invoice);\n" +
-"      console.log(this.constructor.name, \"d\\xE9synchronis\\xE9\", { ...this.state });\n" +
+"    const invoice = getReact(infos, 32).memoizedProps.invoice;\n" +
+"    if (this.state.reactInvoice !== invoice) {\n" +
+"      this.state.reactInvoice = invoice;\n" +
+"      this.state.invoice = Invoice.from(invoice);\n" +
 "      return false;\n" +
 "    }\n" +
 "    const ledgerEvents = $$(\"form[name^=DocumentEntries-]\").reduce((events, form) => {\n" +
 "      events.concat(getReactProps(form.parentElement, 3)?.initialValues.ledgerEvents);\n" +
 "      return events;\n" +
 "    }, []);\n" +
-"    if (ledgerEvents.some((event, id) => this.state.events?.[id] !== event)) {\n" +
-"      this.state.lastEvents = ledgerEvents;\n" +
+"    if (this.state.events?.length !== ledgerEvents.length || ledgerEvents.some((event) => this.state.events?.find((ev) => ev.id === event.id) !== event)) {\n" +
 "      this.state.events = ledgerEvents;\n" +
-"      console.log(this.constructor.name, \"desynchronis\\xE9\", { ...this.state });\n" +
 "      return false;\n" +
 "    }\n" +
 "    return true;\n" +
 "  }\n" +
-"  async createTagContainer() {\n" +
+"  async appendContainer() {\n" +
+"    if (!this.container) {\n" +
+"      this.container = parseHTML(`<div class=\"sc-iGgVNO clwwQL d-flex align-items-center gap-1 gm-tag-container\">\n" +
+"        <div id=\"is-valid-tag\" class=\"d-inline-block bg-secondary-100 dihsuQ px-0_5\">\\u27F3</div>\n" +
+"        <div id=\"invoice-id\" class=\"d-inline-block bg-secondary-100 dihsuQ px-0_5\">#${this.state.invoice?.id}</div>\n" +
+"      </div>`).firstElementChild;\n" +
+"    }\n" +
 "    const infos = await waitElem(\"h4.heading-section-3.mr-2\", \"Informations\");\n" +
 "    const tagsContainer = infos.nextSibling;\n" +
 "    if (!tagsContainer)\n" +
 "      throw new Error(\"InvoiceDisplayInfos: Impossible de trouver le bloc de tags\");\n" +
-"    tagsContainer.insertBefore(\n" +
-"      parseHTML(`<div class=\"sc-iGgVNO clwwQL d-flex align-items-center gap-1 gm-tag-container\">\n" +
-"        <div id=\"is-valid-tag\" class=\"d-inline-block bg-secondary-100 dihsuQ px-0_5\">\\u27F3</div>\n" +
-"        <div id=\"invoice-id\" class=\"d-inline-block bg-secondary-100 dihsuQ px-0_5\">#${this.invoice.id}</div>\n" +
-"      </div>`),\n" +
-"      tagsContainer.firstChild\n" +
-"    );\n" +
+"    tagsContainer.insertBefore(this.container, tagsContainer.firstChild);\n" +
 "  }\n" +
 "  async loadMessage() {\n" +
 "    console.log(\"load message\", this);\n" +
-"    const { message, valid } = await this.invoice.getStatus();\n" +
-"    this.setMessage(valid ? \"\\u2713\" : \"\\u2717 \" + message);\n" +
+"    if (!this.state.invoice)\n" +
+"      return this.setMessage(\"\\u27F3\");\n" +
+"    const status = { ...await this.state.invoice.getStatus(), fetchedAt: Date.now() };\n" +
+"    this.state.cachedStatus = status;\n" +
+"    this.cache.updateItem({ id: status.id }, status);\n" +
+"    const { message, valid } = status;\n" +
+"    return this.setMessage(valid ? \"\\u2713\" : \"\\u2717 \" + message);\n" +
+"  }\n" +
+"  async setId() {\n" +
+"    await this.appendContainer();\n" +
+"    const tag = $(\"#invoice-id\", this.container);\n" +
+"    if (!tag)\n" +
+"      throw new Error('tag \"invoice-id\" introuvable');\n" +
+"    tag.innerText = `#${this.state.invoice?.id}`;\n" +
 "  }\n" +
 "  async setMessage(message) {\n" +
-"    if (!$(\"#is-valid-tag\"))\n" +
-"      await this.createTagContainer();\n" +
-"    const tag = $(\"#is-valid-tag\");\n" +
+"    await this.appendContainer();\n" +
+"    const tag = $(\"#is-valid-tag\", this.container);\n" +
 "    if (!tag)\n" +
 "      throw new Error('tag \"is-valid-tag\" introuvable');\n" +
 "    tag.innerHTML = message;\n" +
+"  }\n" +
+"  async watchEventSave() {\n" +
+"    const ref = await waitElem(\"button\", \"Enregistrer\");\n" +
+"    ref.addEventListener(\"click\", () => this.reload());\n" +
+"    await waitFunc(() => findElem(\"button\", \"Enregistrer\") !== ref);\n" +
+"    this.watchEventSave();\n" +
+"  }\n" +
+"  async handleCacheChange() {\n" +
+"    console.log(this.constructor.name, \"handleCacheChange\");\n" +
+"    if (!this.state.invoice)\n" +
+"      return;\n" +
+"    const cachedStatus = this.cache.find({ id: this.state.invoice.id });\n" +
+"    if (this.state.cachedStatus?.message !== cachedStatus?.message || this.state.cachedStatus?.valid !== cachedStatus?.valid)\n" +
+"      this.reload();\n" +
 "  }\n" +
 "}\n" +
 "\n" +
@@ -1420,8 +1479,10 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  id = \"next-invalid-transaction\";\n" +
 "  storageKey = \"transactionValidation\";\n" +
 "  idParamName = \"transaction_id\";\n" +
+"  cache;\n" +
 "  async init() {\n" +
 "    await this.appendContainer();\n" +
+"    this.cache = CacheStatus.getInstance(this.storageKey);\n" +
 "    await super.init();\n" +
 "  }\n" +
 "  async *walk(params) {\n" +
@@ -1640,7 +1701,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "Object.assign(window, {\n" +
 "  GM_Pennylane_Version: (\n" +
 "    /** version **/\n" +
-"    \"0.1.12\"\n" +
+"    \"0.1.13\"\n" +
 "  )\n" +
 "});\n" +
 ""
