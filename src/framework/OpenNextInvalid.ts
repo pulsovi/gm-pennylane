@@ -20,7 +20,6 @@ interface Status extends RawStatus {
 export default abstract class OpenNextInvalid extends Service implements AutostarterParent {
   public abstract readonly id: string;
   public readonly container = document.createElement('div');
-  public cache: CacheList<Status>;
 
   private autostart: Autostarter;
   private current: number;
@@ -28,13 +27,13 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
 
   protected abstract readonly idParamName: string;
   protected abstract readonly storageKey: string;
+  protected abstract cache: CacheList<Status>;
 
   async init () {
     console.log(this.constructor.name, 'init');
 
     this.start = this.start.bind(this);
     this.current = Number(getParam(location.href, this.idParamName));
-    this.cache = new CacheList(this.storageKey);
 
     this.appendOpenNextButton();
     this.allowIgnoring();

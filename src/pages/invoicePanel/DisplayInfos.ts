@@ -1,14 +1,22 @@
 import { $, $$, findElem, getReact, getReactProps, parseHTML, sleep, upElement, waitElem, waitFunc } from "../../_";
-import { LedgerEvent } from "../../api/types";
+import { LedgerEvent, RawInvoice } from "../../api/types";
+import CacheStatus, { Status } from "../../framework/CacheStatus";
 import Service from "../../framework/service";
 import Invoice from "../../models/Invoice";
 
 /** Add infos on Invoice full page display */
 export default class InvoiceDisplayInfos extends Service {
-  private invoice: Invoice;
-  private state: Record<string, unknown> = {};
-  private step: string;
-  protected static instance: InvoiceDisplayInfos
+  protected static instance: InvoiceDisplayInfos;
+
+  protected readonly storageKey = 'InvoiceValidation';
+  protected cache: CacheStatus;
+  private state: {
+    invoice?: Invoice;
+    reactInvoice?: RawInvoice;
+    events?: LedgerEvent[];
+    cachedStatus?: Status;
+  } = {};
+  private container: HTMLDivElement;
 
   static getInstance (): InvoiceDisplayInfos {
     if (!this.instance) this.instance = new this();
@@ -16,10 +24,18 @@ export default class InvoiceDisplayInfos extends Service {
   }
 
   async init () {
-    this.step = "waitElem('h4', 'Ventilation')";
     await waitElem('h4', 'Ventilation');
-    console.log('GreaseMonkey - Pennylane', 'Invoice panel');
+
+    this.cache = CacheStatus.getInstance(this.storageKey);
+    this.watch();
+  }
+
+  async watch () {
+    this.watchEventSave();
+    this.cache.on('change', () => this.handleCacheChange());
+
     while (await waitFunc(async () => !await this.isSync())) {
+      await this.setId();
       await this.setMessage('⟳');
       await this.loadMessage();
     }
@@ -30,15 +46,12 @@ export default class InvoiceDisplayInfos extends Service {
   }
 
   async isSync () {
-    this.step = "waitElem('h4.heading-section-3.mr-2', 'Informations')";
     const infos = await waitElem('h4.heading-section-3.mr-2', 'Informations');
-    const {invoice} = getReact(infos, 32).memoizedProps;
+    const invoice: RawInvoice = getReact(infos, 32).memoizedProps.invoice;
 
-    if (this.state.invoice !== invoice) {
-      this.state.lastInvoice = this.state.invoice;
-      this.state.invoice = invoice;
-      this.invoice = Invoice.from(invoice);
-      console.log(this.constructor.name, 'désynchronisé', { ...this.state });
+    if (this.state.reactInvoice !== invoice) {
+      this.state.reactInvoice = invoice;
+      this.state.invoice = Invoice.from(invoice);
       return false;
     }
 
@@ -48,39 +61,68 @@ export default class InvoiceDisplayInfos extends Service {
         return events;
       }, []);
 
-    if (ledgerEvents.some((event, id) => this.state.events?.[id] !== event)) {
-      this.state.lastEvents = ledgerEvents;
+    if (
+      this.state.events?.length !== ledgerEvents.length
+      || ledgerEvents.some(event => this.state.events?.find(ev => ev.id === event.id) !== event)
+    ) {
       this.state.events = ledgerEvents;
-      console.log(this.constructor.name, 'desynchronisé', { ...this.state });
       return false;
     }
 
     return true;
   }
 
-  async createTagContainer () {
+  async appendContainer () {
+    if (!this.container) {
+      this.container = parseHTML(`<div class="sc-iGgVNO clwwQL d-flex align-items-center gap-1 gm-tag-container">
+        <div id="is-valid-tag" class="d-inline-block bg-secondary-100 dihsuQ px-0_5">⟳</div>
+        <div id="invoice-id" class="d-inline-block bg-secondary-100 dihsuQ px-0_5">#${this.state.invoice?.id}</div>
+      </div>`).firstElementChild as HTMLDivElement;
+    }
     const infos = await waitElem('h4.heading-section-3.mr-2', 'Informations');
     const tagsContainer = infos.nextSibling;
     if (!tagsContainer) throw new Error('InvoiceDisplayInfos: Impossible de trouver le bloc de tags');
-    tagsContainer.insertBefore(
-      parseHTML(`<div class="sc-iGgVNO clwwQL d-flex align-items-center gap-1 gm-tag-container">
-        <div id="is-valid-tag" class="d-inline-block bg-secondary-100 dihsuQ px-0_5">⟳</div>
-        <div id="invoice-id" class="d-inline-block bg-secondary-100 dihsuQ px-0_5">#${this.invoice.id}</div>
-      </div>`),
-      tagsContainer.firstChild
-    );
+    tagsContainer.insertBefore(this.container, tagsContainer.firstChild);
   }
 
   async loadMessage () {
     console.log('load message', this);
-    const {message, valid} = await this.invoice.getStatus();
-    this.setMessage(valid ? '✓' : '✗ '+message);
+    if (!this.state.invoice) return this.setMessage('⟳');
+    const status = { ...await this.state.invoice.getStatus(), fetchedAt: Date.now() };
+    this.state.cachedStatus = status;
+    this.cache.updateItem({ id: status.id }, status);
+    const {message, valid} = status;
+    return this.setMessage(valid ? '✓' : '✗ '+message);
+  }
+
+  async setId () {
+    await this.appendContainer();
+    const tag = $<HTMLDivElement>('#invoice-id', this.container);
+    if (!tag) throw new Error('tag "invoice-id" introuvable');
+    tag.innerText = `#${this.state.invoice?.id}`;
   }
 
   async setMessage (message: string) {
-    if (!$('#is-valid-tag')) await this.createTagContainer();
-    const tag = $('#is-valid-tag');
+    await this.appendContainer();
+    const tag = $('#is-valid-tag', this.container);
     if (!tag) throw new Error('tag "is-valid-tag" introuvable');
     tag.innerHTML = message;
+  }
+
+  async watchEventSave () {
+    const ref = await waitElem('button', 'Enregistrer');
+    ref.addEventListener('click', () => this.reload());
+    await waitFunc(() => findElem('button', 'Enregistrer') !== ref);
+    this.watchEventSave();
+  }
+
+  async handleCacheChange () {
+    console.log(this.constructor.name, 'handleCacheChange');
+    if (!this.state.invoice) return;
+    const cachedStatus = this.cache.find({ id: this.state.invoice.id });
+    if (
+      this.state.cachedStatus?.message !== cachedStatus?.message
+      || this.state.cachedStatus?.valid !== cachedStatus?.valid
+    ) this.reload();
   }
 }

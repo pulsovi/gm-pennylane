@@ -1,6 +1,7 @@
 import { $, findElem, jsonClone, waitElem, waitFunc } from "../../_";
 import { getInvoicesList } from "../../api/invoice";
 import { InvoiceList } from "../../api/types";
+import CacheStatus from "../../framework/CacheStatus";
 import OpenNextInvalid, { RawStatus as Status } from "../../framework/OpenNextInvalid";
 import Invoice from "../../models/Invoice";
 
@@ -8,11 +9,13 @@ export default class NextInvalidInvoice extends OpenNextInvalid {
   public id = 'next-invalid-invoice';
   protected storageKey = 'InvoiceValidation';
   protected readonly idParamName = 'id';
+  protected cache: CacheStatus;
 
   async init () {
+    // Wait for appending button in the matched page before init auto open service
     await this.appendContainer();
 
-    // Wait for appending button in the right page before init auto open service
+    this.cache = CacheStatus.getInstance(this.storageKey);
     await super.init();
   }
 

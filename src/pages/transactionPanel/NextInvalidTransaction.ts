@@ -1,6 +1,7 @@
 import { findElem, jsonClone, waitFunc } from "../../_";
 import { getTransactionsList } from "../../api/transaction";
 import { TransactionList } from "../../api/types";
+import CacheStatus from "../../framework/CacheStatus";
 import OpenNextInvalid, { RawStatus as Status } from "../../framework/OpenNextInvalid";
 import Transaction from "../../models/Transaction";
 
@@ -8,11 +9,13 @@ export default class NextInvalidTransaction extends OpenNextInvalid {
   public readonly id = 'next-invalid-transaction';
   protected readonly storageKey = 'transactionValidation';
   protected readonly idParamName = 'transaction_id';
+  protected cache: CacheStatus;
 
   async init () {
+    // Wait for appending button in the matching page before init auto open service
     await this.appendContainer();
 
-    // Wait for appending button in the right page before init auto open service
+    this.cache = CacheStatus.getInstance(this.storageKey);
     await super.init();
   }
 
