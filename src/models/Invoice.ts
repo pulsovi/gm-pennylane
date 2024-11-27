@@ -130,8 +130,12 @@ class SupplierInvoice extends Invoice {
       if (diffLine) {
         if (parseFloat(diffLine.amount) < 0)
           return 'Les écarts de conversions de devises doivent utiliser le compte 756';
-        else
-          return 'Les écarts de conversions de devises doivent utiliser le compte 656';
+        else {
+          return `<a
+            title="Cliquer ici pour plus d'informations"
+            href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FLes%20%C3%A9carts%20de%20conversions%20de%20devises%20doivent%20utiliser%20le%20compte%20656"
+          >Les écarts de conversions de devises doivent utiliser le compte 656 ⓘ</a>`;
+        }
       }
     }
 
