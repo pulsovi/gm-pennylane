@@ -75,42 +75,54 @@ class SupplierInvoice extends Invoice {
           title="Le numéro de facture d'une facture archivée doit commencer par une de ces possibilités. Cliquer ici pour plus d'informations."
           href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Facture%20archiv%C3%A9e"
         >Facture archivée sans référence ⓘ</a><ul style="margin:0;padding:0.8em;">${allowed.map(it => `<li>${it}</li>`).join('')}</ul>`;
+      if (invoice.id == current) console.log(this.constructor.name, 'loadValidMessage', 'archivé avec numéro de facture correct');
       return 'OK';
     }
 
     // Pas de tiers
-    if (!invoice.thirdparty_id && !invoice.thirdparty) return 'Ajouter un fournisseur';
+    if (!invoice.thirdparty_id && !invoice.thirdparty) {
+      if (invoice.invoice_number.startsWith('CHQ DÉCHIRÉ - CHQ')) {
+        return `<a
+            title="Cliquer ici pour plus d'informations"
+            href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Fournisseur%20inconnu"
+          >Archiver le chèque déchiré ⓘ</a></ul>`;
+      }
+      return `<a
+          title="Cliquer ici pour plus d'informations"
+          href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Fournisseur%20inconnu"
+        >Ajouter un fournisseur ⓘ</a><ul style="margin:0;padding:0.8em;"><li>CHQ DÉCHIRÉ - CHQ###</li></ul>`;
+    }
 
     // Pas de compte de charge associé
     const thirdparty = await this.getThirdparty();
-    if (!thirdparty.thirdparty_invoice_line_rules?.[0]?.pnl_plan_item)
-      return 'Fournisseur inconnu : Chaque fournisseur doit être associé avec un compte de charge or celui-ci n\'en a pas.<br/>-&gt;Choisir un autre fournisseur ou envoyer cette page à David ;).';
+    if (!thirdparty.thirdparty_invoice_line_rules?.[0]?.pnl_plan_item) {
+      return `<a
+          title="Cliquer ici pour plus d'informations"
+          href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Fournisseur%20inconnu"
+        >Fournisseur inconnu ⓘ</a>`;
+    }
 
 
     // exclude 6288
     if (invoice.invoice_lines?.some(line => line.pnl_plan_item?.number == '6288'))
       return 'compte tiers 6288';
 
-    // Known orphan invoice
-    if (invoice.invoice_number?.startsWith('¤')) {
-      if (invoice.id == current) console.log('¤');
-      return 'OK';
-    }
-
     // Aides octroyées ou piece d'indentité avec date
-    if ([106438171, 114270419, 106519227].includes(invoice.thirdparty?.id ?? 0)) {
+    const emptyDateAllowed = ['CHQ'];
+    if (
+      [106438171, 114270419, 106519227].includes(invoice.thirdparty?.id ?? 0)
+      || emptyDateAllowed.some(item => invoice.invoice_number?.startsWith(item))
+    ) {
       if (invoice.date || invoice.deadline) return `<a
           title="Cliquer ici pour plus d'informations"
           href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Date%20de%20facture"
         >Les dates doivent être vides ⓘ</a>`;
     } else if (!invoice.date) {
-      const emptyDateAllowed = ['CHQ'];
       if (!emptyDateAllowed.some(item => invoice.invoice_number?.startsWith(item)))
         return `<a
           title="Cliquer ici pour plus d'informations"
           href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Date%20de%20facture"
         >Date de facture vide ⓘ</a><ul style="margin:0;padding:0.8em;">${emptyDateAllowed.map(it => `<li>${it}</li>`).join('')}</ul>`;
-      return 'OK';
     }
 
     // Aides octroyées avec mauvais ID
@@ -149,7 +161,15 @@ class SupplierInvoice extends Invoice {
     }
 
     // Has transaction attached
-    if (!transactions.length) return 'pas de transaction attachée - Si la transaction est introuvable, mettre le texte "¤ TRANSACTION INTROUVABLE" au début du numéro de facture';
+    if (!transactions.length) {
+      const orphanAllowed = ['¤ TRANSACTION INTROUVABLE'];
+      if (!orphanAllowed.some(label => invoice.label.startsWith(label))) {
+        return `<a
+            title="Cliquer ici pour plus d'informations"
+            href="obsidian://open?vault=Vaults&file=David%20Gabison%2FArchive%2FPennylane%20-%20Pas%20de%20transaction%20attach%C3%A9e"
+          >Pas de transaction attachée ⓘ</a><ul style="margin:0;padding:0.8em;">${orphanAllowed.map(it => `<li>${it}</li>`).join('')}</ul>`;
+      }
+    }
 
 
     return 'OK';
