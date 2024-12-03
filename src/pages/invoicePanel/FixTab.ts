@@ -1,5 +1,5 @@
-import { $, waitElem } from "../../_";
-import Service from "../../framework/service";
+import { $, waitElem, waitFunc } from "../../_";
+import Service from "../../framework/Service";
 
 export default class FixTab extends Service {
   async init () {
@@ -15,6 +15,12 @@ export default class FixTab extends Service {
         $<HTMLInputElement>('input[name=date]')?.focus();
       }
     });
-    $<HTMLInputElement>('input[name="invoice_number"]')?.focus()
+    this.watch();
+  }
+
+  async watch () {
+    const ref = await waitElem<HTMLInputElement>('input[name="invoice_number"]');
+    ref.focus();
+    waitFunc(() => $('input[name="invoice_number"]') !== ref).then(() => this.watch());
   }
 }
