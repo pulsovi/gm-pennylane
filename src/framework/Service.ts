@@ -15,5 +15,9 @@ export default class Service {
     return this.instance;
   }
 
+  protected log (...messages) {
+    console.log(this.constructor.name, ...messages);
+  }
+
   init (): void | Promise<void> {};
 }

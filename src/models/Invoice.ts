@@ -107,6 +107,18 @@ class SupplierInvoice extends Invoice {
     if (invoice.invoice_lines?.some(line => line.pnl_plan_item?.number == '6288'))
       return 'compte tiers 6288';
 
+    // CHQ "Taxi"
+    if (
+      invoice.thirdparty_id === 98348455
+      && invoice.invoice_number.toUpperCase().includes('CHQ')
+      && !invoice.invoice_number.includes('|TAXI|')
+    ) {
+      return `<a
+        title="Le fournisseur 'TAXI' est trop souvent attribué aux chèques par Pennylane, si le fournisseur est réélement 'TAXI' ajouter |TAXI| à la fin du numéro de facture. Cliquer ici pour plus d'informations"
+        href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20CHQ%20TAXI"
+      >Ajouter le fournisseur ⓘ</a><ul style="margin:0;padding:0.8em;"><li>|TAXI|</li></ul>`;
+    }
+
     // Aides octroyées ou piece d'indentité avec date
     const emptyDateAllowed = ['CHQ'];
     if (
@@ -166,7 +178,7 @@ class SupplierInvoice extends Invoice {
       if (!orphanAllowed.some(label => invoice.label.startsWith(label))) {
         return `<a
             title="Cliquer ici pour plus d'informations"
-            href="obsidian://open?vault=Vaults&file=David%20Gabison%2FArchive%2FPennylane%20-%20Pas%20de%20transaction%20attach%C3%A9e"
+            href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Pas%20de%20transaction%20attach%C3%A9e"
           >Pas de transaction attachée ⓘ</a><ul style="margin:0;padding:0.8em;">${orphanAllowed.map(it => `<li>${it}</li>`).join('')}</ul>`;
       }
     }

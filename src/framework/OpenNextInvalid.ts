@@ -2,7 +2,7 @@ import { $, getParam, getRandomArrayItem, parseHTML, sleep } from "../_";
 import { openDocument } from "../navigation/openDocument";
 import Autostarter, { type AutostarterParent } from "./Autostarter";
 import CacheList from "./CacheList";
-import Service from "./service";
+import Service from "./Service";
 import Tooltip from "./Tooltip";
 
 export interface RawStatus {
@@ -13,7 +13,7 @@ export interface RawStatus {
 };
 
 interface Status extends RawStatus {
-  fetchedAt: number;
+  fetchedAt?: number;
   ignored?: boolean;
 }
 
@@ -130,6 +130,12 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
     }
     const oldStatus = this.cache.find({id}) ?? {};
     const status = Object.assign({}, oldStatus, value, { fetchedAt: Date.now() });
+
+    if (isNaN(status.createdAt)) {
+      this.log({ value, id, oldStatus, status });
+      throw new Error('status.createdAt must be number');
+    }
+
     this.cache.updateItem({ id }, status);
     return status;
   }
@@ -184,6 +190,7 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
 
     // load all
     const from = this.cache.reduce((acc, status) => Math.max(status.createdAt, acc), 0);
+    console.log(this.constructor.name, 'firstLoading', { from });
     const news = this.walk({
       filter: JSON.stringify([{ field: 'created_at', operator: 'gteq', value: new Date(from).toISOString() }]),
       sort: '+created_at',

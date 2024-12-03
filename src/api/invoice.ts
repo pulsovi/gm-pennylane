@@ -18,6 +18,7 @@ export async function updateInvoice (id: number, data: Partial<RawInvoice>): Pro
 }
 
 export async function getInvoicesList (params: InvoiceListParams = {}): Promise<InvoiceList> {
+  if (!params.direction) throw new Error('params.direction is mandatory');
   const searchParams = new URLSearchParams(params as Record<string, string>);
   if (!searchParams.has('filter')) searchParams.set('filter', '[]');
   const url = `accountants/invoices/list?${searchParams.toString()}`;

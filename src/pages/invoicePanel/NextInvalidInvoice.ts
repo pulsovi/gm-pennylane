@@ -1,42 +1,61 @@
 import { $, findElem, jsonClone, waitElem, waitFunc } from "../../_";
 import { getInvoicesList } from "../../api/invoice";
 import { InvoiceList } from "../../api/types";
-import CacheStatus from "../../framework/CacheStatus";
-import OpenNextInvalid, { RawStatus as Status } from "../../framework/OpenNextInvalid";
+import CacheListRecord from "../../framework/CacheListRecord";
+import type { Status } from "../../framework/CacheStatus";
+import OpenNextInvalid from "../../framework/OpenNextInvalid";
 import Invoice from "../../models/Invoice";
+
+interface InvoiceStatus extends Status {
+  direction: 'customer' | 'supplier';
+}
 
 export default class NextInvalidInvoice extends OpenNextInvalid {
   public id = 'next-invalid-invoice';
   protected storageKey = 'InvoiceValidation';
   protected readonly idParamName = 'id';
-  protected cache: CacheStatus;
+  protected cache: CacheListRecord<InvoiceStatus>;
 
   async init () {
     // Wait for appending button in the matched page before init auto open service
     await this.appendContainer();
 
-    this.cache = CacheStatus.getInstance(this.storageKey);
+    this.cache = CacheListRecord.getInstance<InvoiceStatus>(this.storageKey);
     await super.init();
   }
 
   protected async *walk (
     params: Record<string, string | number>
   ): AsyncGenerator<Status, undefined, void> {
-    if (('page' in params) && !Number.isInteger(params.page)) {
-      console.log(this.constructor.name, 'walk', { params });
-      throw new Error('The "page" parameter must be a valid integer number');
-    }
+    for await (const status of this.walkInvoices('supplier')) yield status;
+    for await (const status of this.walkInvoices('customer')) yield status;
+  }
 
-    let parameters = jsonClone(params);
-    parameters.page = parameters.page ?? 1;
+  private async *walkInvoices (direction: 'supplier' | 'customer'): AsyncGenerator<InvoiceStatus> {
+    const from = this.cache.reduce(
+      (acc, status) => status.direction === direction ? Math.max(status.createdAt, acc) : acc,
+    0);
+    const filter = from ?
+      [{ field: 'created_at', operator: 'gteq', value: new Date(from).toISOString() }] :
+      [];
+    let parameters = {
+      direction,
+      filter: JSON.stringify(filter),
+      sort: '+created_at',
+      page: 1,
+    };
 
+    this.log('walkInvoices', { direction, from, filter, parameters:{...parameters} });
     let data: InvoiceList | null = null;
     do {
       data = await getInvoicesList(parameters);
       const invoices = data.invoices;
-      if (!invoices?.length) return;
-      for (const invoice of invoices) yield Invoice.from(invoice).getStatus();
-      parameters = Object.assign(jsonClone(parameters), { page: Number(parameters.page ?? 0) + 1 });
+      if (!invoices?.length) break;
+      for (const invoice of invoices) {
+        const status = await Invoice.from(invoice).getStatus();
+        yield { ...status, direction };
+      }
+      parameters = { ...parameters, page: Number(parameters.page ?? 0) + 1 };
     } while (true);
   }
 

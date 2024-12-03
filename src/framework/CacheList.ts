@@ -1,6 +1,15 @@
 import Cache from "./Cache";
 
 export default class CacheList<T> extends Cache<T[]> {
+  private static instances: Record<string, CacheList<unknown>> = {};
+
+  public static getInstance <T>(storageKey: string): CacheList<T> {
+    if (!this.instances[storageKey]) {
+      this.instances[storageKey] = new this<T>(storageKey);
+    }
+    return this.instances[storageKey] as CacheList<T>;
+  }
+
   public constructor (key: string, initialValue = []) {
     super(key, initialValue);
   }
