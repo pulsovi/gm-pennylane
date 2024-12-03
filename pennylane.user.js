@@ -1213,16 +1213,16 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "        console.log(this.constructor.name, \"loadValidMessage\", \"ann\\xE9e pass\\xE9e\");\n" +
 "      return \"OK\";\n" +
 "    }\n" +
+"    const archivedAllowed = [\"\\xA7 #\", \"\\xA4 PIECE ETRANGERE\", \"\\xA4 TRANSACTION INTROUVABLE\", \"CHQ D\\xC9CHIR\\xC9\"];\n" +
 "    if (invoice.archived) {\n" +
-"      const allowed = [\"\\xA7 #\", \"\\xA4 PIECE ETRANGERE\", \"\\xA4 TRANSACTION INTROUVABLE\", \"CHQ D\\xC9CHIR\\xC9\"];\n" +
 "      if (\n" +
 "        //legacy :\n" +
-"        !invoice.invoice_number.startsWith(\"\\xA4 CARTE ETRANGERE\") && !allowed.some((allowedItem) => invoice.invoice_number.startsWith(allowedItem))\n" +
+"        !invoice.invoice_number.startsWith(\"\\xA4 CARTE ETRANGERE\") && !archivedAllowed.some((allowedItem) => invoice.invoice_number.startsWith(allowedItem))\n" +
 "      )\n" +
 "        return `<a\n" +
 "          title=\"Le num\\xE9ro de facture d'une facture archiv\\xE9e doit commencer par une de ces possibilit\\xE9s. Cliquer ici pour plus d'informations.\"\n" +
 "          href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Facture%20archiv%C3%A9e\"\n" +
-"        >Facture archiv\\xE9e sans r\\xE9f\\xE9rence \\u24D8</a><ul style=\"margin:0;padding:0.8em;\">${allowed.map((it) => `<li>${it}</li>`).join(\"\")}</ul>`;\n" +
+"        >Facture archiv\\xE9e sans r\\xE9f\\xE9rence \\u24D8</a><ul style=\"margin:0;padding:0.8em;\">${archivedAllowed.map((it) => `<li>${it}</li>`).join(\"\")}</ul>`;\n" +
 "      if (invoice.id == current)\n" +
 "        console.log(this.constructor.name, \"loadValidMessage\", \"archiv\\xE9 avec num\\xE9ro de facture correct\");\n" +
 "      return \"OK\";\n" +
@@ -1230,7 +1230,8 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    if (!invoice.thirdparty_id && !invoice.thirdparty) {\n" +
 "      if (invoice.invoice_number.startsWith(\"CHQ D\\xC9CHIR\\xC9 - CHQ\")) {\n" +
 "        return `<a\n" +
-"            title=\"Cliquer ici pour plus d'informations\"\n" +
+"            title=\"Archiver la facture : \\u205D > Archiver la facture.\n" +
+"Cliquer ici pour plus d'informations\"\n" +
 "            href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Fournisseur%20inconnu\"\n" +
 "          >Archiver le ch\\xE8que d\\xE9chir\\xE9 \\u24D8</a></ul>`;\n" +
 "      }\n" +
@@ -1250,7 +1251,9 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      return \"compte tiers 6288\";\n" +
 "    if (invoice.thirdparty_id === 98348455 && invoice.invoice_number.toUpperCase().includes(\"CHQ\") && !invoice.invoice_number.includes(\"|TAXI|\")) {\n" +
 "      return `<a\n" +
-"        title=\"Le fournisseur 'TAXI' est trop souvent attribu\\xE9 aux ch\\xE8ques par Pennylane, si le fournisseur est r\\xE9\\xE9lement 'TAXI' ajouter |TAXI| \\xE0 la fin du num\\xE9ro de facture. Cliquer ici pour plus d'informations\"\n" +
+"        title=\"Le fournisseur 'TAXI' est trop souvent attribu\\xE9 aux ch\\xE8ques par Pennylane.\n" +
+"Si le fournisseur est r\\xE9\\xE9lement 'TAXI' ajouter |TAXI| \\xE0 la fin du num\\xE9ro de facture.\n" +
+"Cliquer ici pour plus d'informations\"\n" +
 "        href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20CHQ%20TAXI\"\n" +
 "      >Ajouter le fournisseur \\u24D8</a><ul style=\"margin:0;padding:0.8em;\"><li>|TAXI|</li></ul>`;\n" +
 "    }\n" +
@@ -1297,11 +1300,19 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    }\n" +
 "    if (!transactions.length) {\n" +
 "      const orphanAllowed = [\"\\xA4 TRANSACTION INTROUVABLE\"];\n" +
-"      if (!orphanAllowed.some((label) => invoice.label.startsWith(label))) {\n" +
+"      if (!orphanAllowed.some((label) => invoice.invoice_number.startsWith(label))) {\n" +
+"        const archiveLabel = archivedAllowed.find((label) => invoice.invoice_number.startsWith(label));\n" +
+"        if (archiveLabel) {\n" +
+"          return `<a\n" +
+"            title=\"Archiver la facture : \\u205D > Archiver la facture.\n" +
+"Cliquer ici pour plus d'informations\"\n" +
+"            href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Facture%20archiv%C3%A9e\"\n" +
+"          >Archiver ${archiveLabel} \\u24D8</a><ul style=\"margin:0;padding:0.8em;\">`;\n" +
+"        }\n" +
 "        return `<a\n" +
 "            title=\"Cliquer ici pour plus d'informations\"\n" +
 "            href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Pas%20de%20transaction%20attach%C3%A9e\"\n" +
-"          >Pas de transaction attach\\xE9e \\u24D8</a><ul style=\"margin:0;padding:0.8em;\">${orphanAllowed.map((it) => `<li>${it}</li>`).join(\"\")}</ul>`;\n" +
+"          >Pas de transaction attach\\xE9e \\u24D8</a><ul style=\"margin:0;padding:0.8em;\">${orphanAllowed.concat(archivedAllowed).map((it) => `<li>${it}</li>`).join(\"\")}</ul>`;\n" +
 "      }\n" +
 "    }\n" +
 "    return \"OK\";\n" +

@@ -63,18 +63,18 @@ class SupplierInvoice extends Invoice {
     }
 
     // Archived
+    const archivedAllowed = ['§ #', '¤ PIECE ETRANGERE', '¤ TRANSACTION INTROUVABLE', 'CHQ DÉCHIRÉ'];
     if (invoice.archived) {
-      const allowed = ['§ #', '¤ PIECE ETRANGERE', '¤ TRANSACTION INTROUVABLE', 'CHQ DÉCHIRÉ'];
       if (
         //legacy :
         !invoice.invoice_number.startsWith('¤ CARTE ETRANGERE') &&
 
-        !allowed.some(allowedItem => invoice.invoice_number.startsWith(allowedItem))
+        !archivedAllowed.some(allowedItem => invoice.invoice_number.startsWith(allowedItem))
       )
         return `<a
           title="Le numéro de facture d'une facture archivée doit commencer par une de ces possibilités. Cliquer ici pour plus d'informations."
           href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Facture%20archiv%C3%A9e"
-        >Facture archivée sans référence ⓘ</a><ul style="margin:0;padding:0.8em;">${allowed.map(it => `<li>${it}</li>`).join('')}</ul>`;
+        >Facture archivée sans référence ⓘ</a><ul style="margin:0;padding:0.8em;">${archivedAllowed.map(it => `<li>${it}</li>`).join('')}</ul>`;
       if (invoice.id == current) console.log(this.constructor.name, 'loadValidMessage', 'archivé avec numéro de facture correct');
       return 'OK';
     }
@@ -83,7 +83,7 @@ class SupplierInvoice extends Invoice {
     if (!invoice.thirdparty_id && !invoice.thirdparty) {
       if (invoice.invoice_number.startsWith('CHQ DÉCHIRÉ - CHQ')) {
         return `<a
-            title="Cliquer ici pour plus d'informations"
+            title="Archiver la facture : ⁝ > Archiver la facture.\nCliquer ici pour plus d'informations"
             href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Fournisseur%20inconnu"
           >Archiver le chèque déchiré ⓘ</a></ul>`;
       }
@@ -114,7 +114,7 @@ class SupplierInvoice extends Invoice {
       && !invoice.invoice_number.includes('|TAXI|')
     ) {
       return `<a
-        title="Le fournisseur 'TAXI' est trop souvent attribué aux chèques par Pennylane, si le fournisseur est réélement 'TAXI' ajouter |TAXI| à la fin du numéro de facture. Cliquer ici pour plus d'informations"
+        title="Le fournisseur 'TAXI' est trop souvent attribué aux chèques par Pennylane.\nSi le fournisseur est réélement 'TAXI' ajouter |TAXI| à la fin du numéro de facture.\nCliquer ici pour plus d'informations"
         href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20CHQ%20TAXI"
       >Ajouter le fournisseur ⓘ</a><ul style="margin:0;padding:0.8em;"><li>|TAXI|</li></ul>`;
     }
@@ -175,11 +175,18 @@ class SupplierInvoice extends Invoice {
     // Has transaction attached
     if (!transactions.length) {
       const orphanAllowed = ['¤ TRANSACTION INTROUVABLE'];
-      if (!orphanAllowed.some(label => invoice.label.startsWith(label))) {
+      if (!orphanAllowed.some(label => invoice.invoice_number.startsWith(label))) {
+        const archiveLabel = archivedAllowed.find(label => invoice.invoice_number.startsWith(label));
+        if (archiveLabel) {
+          return `<a
+            title="Archiver la facture : ⁝ > Archiver la facture.\nCliquer ici pour plus d'informations"
+            href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Facture%20archiv%C3%A9e"
+          >Archiver ${archiveLabel} ⓘ</a><ul style="margin:0;padding:0.8em;">`;
+        }
         return `<a
             title="Cliquer ici pour plus d'informations"
             href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Pas%20de%20transaction%20attach%C3%A9e"
-          >Pas de transaction attachée ⓘ</a><ul style="margin:0;padding:0.8em;">${orphanAllowed.map(it => `<li>${it}</li>`).join('')}</ul>`;
+          >Pas de transaction attachée ⓘ</a><ul style="margin:0;padding:0.8em;">${orphanAllowed.concat(archivedAllowed).map(it => `<li>${it}</li>`).join('')}</ul>`;
       }
     }
 
