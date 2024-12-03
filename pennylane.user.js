@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name     Pennylane
-// @version  0.1.13
+// @version  0.1.14
 // @grant    unsafeWindow
 // @grant    GM.openInTab
 // @match    https://app.pennylane.com/companies/*
@@ -147,6 +147,9 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    if (!this.instance)\n" +
 "      this.instance = new this();\n" +
 "    return this.instance;\n" +
+"  }\n" +
+"  log(...messages) {\n" +
+"    console.log(this.constructor.name, ...messages);\n" +
 "  }\n" +
 "  init() {\n" +
 "  }\n" +
@@ -547,6 +550,8 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  return responseData;\n" +
 "}\n" +
 "async function getInvoicesList(params = {}) {\n" +
+"  if (!params.direction)\n" +
+"    throw new Error(\"params.direction is mandatory\");\n" +
 "  const searchParams = new URLSearchParams(params);\n" +
 "  if (!searchParams.has(\"filter\"))\n" +
 "    searchParams.set(\"filter\", \"[]\");\n" +
@@ -635,6 +640,13 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "}\n" +
 "\n" +
 "class CacheList extends Cache {\n" +
+"  static instances = {};\n" +
+"  static getInstance(storageKey) {\n" +
+"    if (!this.instances[storageKey]) {\n" +
+"      this.instances[storageKey] = new this(storageKey);\n" +
+"    }\n" +
+"    return this.instances[storageKey];\n" +
+"  }\n" +
 "  constructor(key, initialValue = []) {\n" +
 "    super(key, initialValue);\n" +
 "  }\n" +
@@ -718,14 +730,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  }\n" +
 "}\n" +
 "\n" +
-"class CacheStatus extends CacheList {\n" +
-"  static instances = {};\n" +
-"  static getInstance(storageKey) {\n" +
-"    if (!this.instances[storageKey]) {\n" +
-"      this.instances[storageKey] = new CacheStatus(storageKey);\n" +
-"    }\n" +
-"    return this.instances[storageKey];\n" +
-"  }\n" +
+"class CacheListRecord extends CacheList {\n" +
 "  /**\n" +
 "   * Update one item\n" +
 "   *\n" +
@@ -968,7 +973,28 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  }\n" +
 "}\n" +
 "\n" +
-"class OpenNextInvalid extends Service$1 {\n" +
+"class Service {\n" +
+"  static instance;\n" +
+"  constructor() {\n" +
+"    this.init();\n" +
+"  }\n" +
+"  static start() {\n" +
+"    console.log(this.name, \"start\", this);\n" +
+"    this.getInstance();\n" +
+"  }\n" +
+"  static getInstance() {\n" +
+"    if (!this.instance)\n" +
+"      this.instance = new this();\n" +
+"    return this.instance;\n" +
+"  }\n" +
+"  log(...messages) {\n" +
+"    console.log(this.constructor.name, ...messages);\n" +
+"  }\n" +
+"  init() {\n" +
+"  }\n" +
+"}\n" +
+"\n" +
+"class OpenNextInvalid extends Service {\n" +
 "  container = document.createElement(\"div\");\n" +
 "  autostart;\n" +
 "  current;\n" +
@@ -1062,6 +1088,10 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    }\n" +
 "    const oldStatus = this.cache.find({ id }) ?? {};\n" +
 "    const status = Object.assign({}, oldStatus, value, { fetchedAt: Date.now() });\n" +
+"    if (isNaN(status.createdAt)) {\n" +
+"      this.log({ value, id, oldStatus, status });\n" +
+"      throw new Error(\"status.createdAt must be number\");\n" +
+"    }\n" +
 "    this.cache.updateItem({ id }, status);\n" +
 "    return status;\n" +
 "  }\n" +
@@ -1096,6 +1126,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    if (state.loaded)\n" +
 "      return;\n" +
 "    const from = this.cache.reduce((acc, status) => Math.max(status.createdAt, acc), 0);\n" +
+"    console.log(this.constructor.name, \"firstLoading\", { from });\n" +
 "    const news = this.walk({\n" +
 "      filter: JSON.stringify([{ field: \"created_at\", operator: \"gteq\", value: new Date(from).toISOString() }]),\n" +
 "      sort: \"+created_at\"\n" +
@@ -1192,34 +1223,50 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "          title=\"Le num\\xE9ro de facture d'une facture archiv\\xE9e doit commencer par une de ces possibilit\\xE9s. Cliquer ici pour plus d'informations.\"\n" +
 "          href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Facture%20archiv%C3%A9e\"\n" +
 "        >Facture archiv\\xE9e sans r\\xE9f\\xE9rence \\u24D8</a><ul style=\"margin:0;padding:0.8em;\">${allowed.map((it) => `<li>${it}</li>`).join(\"\")}</ul>`;\n" +
+"      if (invoice.id == current)\n" +
+"        console.log(this.constructor.name, \"loadValidMessage\", \"archiv\\xE9 avec num\\xE9ro de facture correct\");\n" +
 "      return \"OK\";\n" +
 "    }\n" +
-"    if (!invoice.thirdparty_id && !invoice.thirdparty)\n" +
-"      return \"Ajouter un fournisseur\";\n" +
+"    if (!invoice.thirdparty_id && !invoice.thirdparty) {\n" +
+"      if (invoice.invoice_number.startsWith(\"CHQ D\\xC9CHIR\\xC9 - CHQ\")) {\n" +
+"        return `<a\n" +
+"            title=\"Cliquer ici pour plus d'informations\"\n" +
+"            href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Fournisseur%20inconnu\"\n" +
+"          >Archiver le ch\\xE8que d\\xE9chir\\xE9 \\u24D8</a></ul>`;\n" +
+"      }\n" +
+"      return `<a\n" +
+"          title=\"Cliquer ici pour plus d'informations\"\n" +
+"          href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Fournisseur%20inconnu\"\n" +
+"        >Ajouter un fournisseur \\u24D8</a><ul style=\"margin:0;padding:0.8em;\"><li>CHQ D\\xC9CHIR\\xC9 - CHQ###</li></ul>`;\n" +
+"    }\n" +
 "    const thirdparty = await this.getThirdparty();\n" +
-"    if (!thirdparty.thirdparty_invoice_line_rules?.[0]?.pnl_plan_item)\n" +
-"      return \"Fournisseur inconnu : Chaque fournisseur doit \\xEAtre associ\\xE9 avec un compte de charge or celui-ci n'en a pas.<br/>-&gt;Choisir un autre fournisseur ou envoyer cette page \\xE0 David ;).\";\n" +
+"    if (!thirdparty.thirdparty_invoice_line_rules?.[0]?.pnl_plan_item) {\n" +
+"      return `<a\n" +
+"          title=\"Cliquer ici pour plus d'informations\"\n" +
+"          href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Fournisseur%20inconnu\"\n" +
+"        >Fournisseur inconnu \\u24D8</a>`;\n" +
+"    }\n" +
 "    if (invoice.invoice_lines?.some((line) => line.pnl_plan_item?.number == \"6288\"))\n" +
 "      return \"compte tiers 6288\";\n" +
-"    if (invoice.invoice_number?.startsWith(\"\\xA4\")) {\n" +
-"      if (invoice.id == current)\n" +
-"        console.log(\"\\xA4\");\n" +
-"      return \"OK\";\n" +
+"    if (invoice.thirdparty_id === 98348455 && invoice.invoice_number.toUpperCase().includes(\"CHQ\") && !invoice.invoice_number.includes(\"|TAXI|\")) {\n" +
+"      return `<a\n" +
+"        title=\"Le fournisseur 'TAXI' est trop souvent attribu\\xE9 aux ch\\xE8ques par Pennylane, si le fournisseur est r\\xE9\\xE9lement 'TAXI' ajouter |TAXI| \\xE0 la fin du num\\xE9ro de facture. Cliquer ici pour plus d'informations\"\n" +
+"        href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20CHQ%20TAXI\"\n" +
+"      >Ajouter le fournisseur \\u24D8</a><ul style=\"margin:0;padding:0.8em;\"><li>|TAXI|</li></ul>`;\n" +
 "    }\n" +
-"    if ([106438171, 114270419, 106519227].includes(invoice.thirdparty?.id ?? 0)) {\n" +
+"    const emptyDateAllowed = [\"CHQ\"];\n" +
+"    if ([106438171, 114270419, 106519227].includes(invoice.thirdparty?.id ?? 0) || emptyDateAllowed.some((item) => invoice.invoice_number?.startsWith(item))) {\n" +
 "      if (invoice.date || invoice.deadline)\n" +
 "        return `<a\n" +
 "          title=\"Cliquer ici pour plus d'informations\"\n" +
 "          href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Date%20de%20facture\"\n" +
 "        >Les dates doivent \\xEAtre vides \\u24D8</a>`;\n" +
 "    } else if (!invoice.date) {\n" +
-"      const emptyDateAllowed = [\"CHQ\"];\n" +
 "      if (!emptyDateAllowed.some((item) => invoice.invoice_number?.startsWith(item)))\n" +
 "        return `<a\n" +
 "          title=\"Cliquer ici pour plus d'informations\"\n" +
 "          href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Date%20de%20facture\"\n" +
 "        >Date de facture vide \\u24D8</a><ul style=\"margin:0;padding:0.8em;\">${emptyDateAllowed.map((it) => `<li>${it}</li>`).join(\"\")}</ul>`;\n" +
-"      return \"OK\";\n" +
 "    }\n" +
 "    if (invoice.thirdparty?.name === \"AIDES OCTROY\\xC9ES\" && invoice.thirdparty.id !== 106438171)\n" +
 "      return `Il ne doit y avoir qu'un seul compte \"AIDES OCTROY\\xC9ES\", et ce n'est pas le bon...`;\n" +
@@ -1248,8 +1295,15 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      else\n" +
 "        return `Le \"Num\\xE9ro de facture\" des pi\\xE8ces d'identit\\xE9 commence obligatoirement par \"ID \"`;\n" +
 "    }\n" +
-"    if (!transactions.length)\n" +
-"      return 'pas de transaction attach\\xE9e - Si la transaction est introuvable, mettre le texte \"\\xA4 TRANSACTION INTROUVABLE\" au d\\xE9but du num\\xE9ro de facture';\n" +
+"    if (!transactions.length) {\n" +
+"      const orphanAllowed = [\"\\xA4 TRANSACTION INTROUVABLE\"];\n" +
+"      if (!orphanAllowed.some((label) => invoice.label.startsWith(label))) {\n" +
+"        return `<a\n" +
+"            title=\"Cliquer ici pour plus d'informations\"\n" +
+"            href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Pas%20de%20transaction%20attach%C3%A9e\"\n" +
+"          >Pas de transaction attach\\xE9e \\u24D8</a><ul style=\"margin:0;padding:0.8em;\">${orphanAllowed.map((it) => `<li>${it}</li>`).join(\"\")}</ul>`;\n" +
+"      }\n" +
+"    }\n" +
 "    return \"OK\";\n" +
 "  }\n" +
 "}\n" +
@@ -1296,25 +1350,39 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  cache;\n" +
 "  async init() {\n" +
 "    await this.appendContainer();\n" +
-"    this.cache = CacheStatus.getInstance(this.storageKey);\n" +
+"    this.cache = CacheListRecord.getInstance(this.storageKey);\n" +
 "    await super.init();\n" +
 "  }\n" +
 "  async *walk(params) {\n" +
-"    if (\"page\" in params && !Number.isInteger(params.page)) {\n" +
-"      console.log(this.constructor.name, \"walk\", { params });\n" +
-"      throw new Error('The \"page\" parameter must be a valid integer number');\n" +
-"    }\n" +
-"    let parameters = jsonClone(params);\n" +
-"    parameters.page = parameters.page ?? 1;\n" +
+"    for await (const status of this.walkInvoices(\"supplier\"))\n" +
+"      yield status;\n" +
+"    for await (const status of this.walkInvoices(\"customer\"))\n" +
+"      yield status;\n" +
+"  }\n" +
+"  async *walkInvoices(direction) {\n" +
+"    const from = this.cache.reduce(\n" +
+"      (acc, status) => status.direction === direction ? Math.max(status.createdAt, acc) : acc,\n" +
+"      0\n" +
+"    );\n" +
+"    const filter = from ? [{ field: \"created_at\", operator: \"gteq\", value: new Date(from).toISOString() }] : [];\n" +
+"    let parameters = {\n" +
+"      direction,\n" +
+"      filter: JSON.stringify(filter),\n" +
+"      sort: \"+created_at\",\n" +
+"      page: 1\n" +
+"    };\n" +
+"    this.log(\"walkInvoices\", { direction, from, filter, parameters: { ...parameters } });\n" +
 "    let data = null;\n" +
 "    do {\n" +
 "      data = await getInvoicesList(parameters);\n" +
 "      const invoices = data.invoices;\n" +
 "      if (!invoices?.length)\n" +
-"        return;\n" +
-"      for (const invoice of invoices)\n" +
-"        yield Invoice.from(invoice).getStatus();\n" +
-"      parameters = Object.assign(jsonClone(parameters), { page: Number(parameters.page ?? 0) + 1 });\n" +
+"        break;\n" +
+"      for (const invoice of invoices) {\n" +
+"        const status = await Invoice.from(invoice).getStatus();\n" +
+"        yield { ...status, direction };\n" +
+"      }\n" +
+"      parameters = { ...parameters, page: Number(parameters.page ?? 0) + 1 };\n" +
 "    } while (true);\n" +
 "  }\n" +
 "  async getStatus(id) {\n" +
@@ -1330,6 +1398,9 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    nextButton.parentElement?.insertBefore(this.container, nextButton.previousElementSibling);\n" +
 "    waitFunc(() => findElem(\"h4\", \"Ventilation\") !== ref).then(() => this.appendContainer());\n" +
 "  }\n" +
+"}\n" +
+"\n" +
+"class CacheStatus extends CacheListRecord {\n" +
 "}\n" +
 "\n" +
 "class InvoiceDisplayInfos extends Service$1 {\n" +
@@ -1517,7 +1588,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  }\n" +
 "}\n" +
 "\n" +
-"class FixTab extends Service$1 {\n" +
+"class FixTab extends Service {\n" +
 "  async init() {\n" +
 "    await waitElem(\"h4\", \"Ventilation\");\n" +
 "    document.addEventListener(\"keydown\", (event) => {\n" +
@@ -1527,37 +1598,30 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "        $(\"input[name=date]\")?.focus();\n" +
 "      }\n" +
 "    });\n" +
-"    $('input[name=\"invoice_number\"]')?.focus();\n" +
+"    this.watch();\n" +
 "  }\n" +
-"}\n" +
-"\n" +
-"class Service {\n" +
-"  static instance;\n" +
-"  constructor() {\n" +
-"    this.init();\n" +
-"  }\n" +
-"  static start() {\n" +
-"    console.log(this.name, \"start\", this);\n" +
-"    this.getInstance();\n" +
-"  }\n" +
-"  static getInstance() {\n" +
-"    if (!this.instance)\n" +
-"      this.instance = new this();\n" +
-"    return this.instance;\n" +
-"  }\n" +
-"  init() {\n" +
+"  async watch() {\n" +
+"    const ref = await waitElem('input[name=\"invoice_number\"]');\n" +
+"    ref.focus();\n" +
+"    waitFunc(() => $('input[name=\"invoice_number\"]') !== ref).then(() => this.watch());\n" +
 "  }\n" +
 "}\n" +
 "\n" +
 "class AllowChangeArchivedInvoiceNumber extends Service {\n" +
 "  async init() {\n" +
 "    await waitElem(\"h4\", \"Ventilation\");\n" +
+"    this.watch();\n" +
+"  }\n" +
+"  async watch() {\n" +
 "    document.addEventListener(\"keyup\", async (event) => {\n" +
 "      if (event.code !== \"KeyS\" || !event.ctrlKey)\n" +
 "        return;\n" +
 "      const invoiceNumberField = $(\"input[name=invoice_number]\");\n" +
 "      if (event.target !== invoiceNumberField || !invoiceNumberField)\n" +
 "        return;\n" +
+"      console.log(\"Ctrl + S on invoice number field\");\n" +
+"      event.preventDefault();\n" +
+"      event.stopImmediatePropagation();\n" +
 "      const rawInvoice = getReactProps(invoiceNumberField, 27).initialValues;\n" +
 "      if (!rawInvoice.archived)\n" +
 "        return;\n" +
@@ -1701,7 +1765,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "Object.assign(window, {\n" +
 "  GM_Pennylane_Version: (\n" +
 "    /** version **/\n" +
-"    \"0.1.13\"\n" +
+"    \"0.1.14\"\n" +
 "  )\n" +
 "});\n" +
 ""
