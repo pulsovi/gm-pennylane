@@ -20,10 +20,15 @@ export default class Transaction extends ValidableDocument {
     if (isCurrent) console.log('Transaction getValidMessage', this);
 
     const doc = await this.getDocument();
+    const groupedDocuments = await this.getGroupedDocuments();
 
     if (
       doc.label.toUpperCase().startsWith('VIR ')
-      && !doc.label.includes(' DE: STRIPE MOTIF: STRIPE REF: STRIPE-')
+      && ![
+        ' DE: STRIPE MOTIF: STRIPE REF: STRIPE-',
+        ' DE: STRIPE MOTIF: ALLODONS REF: ',
+      ].some(label => doc.label.includes(label))
+      && groupedDocuments.length < 2
     ) {
       return 'Virement reçu sans justificatif';
     }
@@ -43,7 +48,6 @@ export default class Transaction extends ValidableDocument {
         return 'nom du bénéficiaire manquant dans l\'écriture "6571"';
       }
     } else {
-      const groupedDocuments = await this.getGroupedDocuments();
       for (const doc of groupedDocuments) {
         if (doc.type !== 'Invoice') continue;
         const thirdparty = await new Document(doc).getThirdparty();
