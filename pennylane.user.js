@@ -134,22 +134,118 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  return new URL(url).searchParams.get(paramName);\n" +
 "}\n" +
 "\n" +
-"let Service$1 = class Service {\n" +
+"function hashString(str, seed = 0) {\n" +
+"  let h1 = 3735928559 ^ seed;\n" +
+"  let h2 = 1103547991 ^ seed;\n" +
+"  for (let i = 0; i < str.length; i++) {\n" +
+"    const ch = str.charCodeAt(i);\n" +
+"    h1 = Math.imul(h1 ^ ch, 2654435761);\n" +
+"    h2 = Math.imul(h2 ^ ch, 1597334677);\n" +
+"  }\n" +
+"  h1 = Math.imul(h1 ^ h1 >>> 16, 2246822507);\n" +
+"  h1 ^= Math.imul(h2 ^ h2 >>> 13, 3266489909);\n" +
+"  h2 = Math.imul(h2 ^ h2 >>> 16, 2246822507);\n" +
+"  h2 ^= Math.imul(h1 ^ h1 >>> 13, 3266489909);\n" +
+"  return 4294967296 * (2097151 & h2) + (h1 >>> 0);\n" +
+"}\n" +
+"\n" +
+"function contrastScore(hex1, hex2) {\n" +
+"  const rgb1 = hexToRgb(hex1);\n" +
+"  const rgb2 = hexToRgb(hex2);\n" +
+"  const l1 = relativeLuminance(rgb1);\n" +
+"  const l2 = relativeLuminance(rgb2);\n" +
+"  const ratio = l1 > l2 ? (l1 + 0.05) / (l2 + 0.05) : (l2 + 0.05) / (l1 + 0.05);\n" +
+"  return (ratio - 1) / 20;\n" +
+"}\n" +
+"function hexToRgb(hex) {\n" +
+"  const r = parseInt(hex.slice(1, 3), 16);\n" +
+"  const g = parseInt(hex.slice(3, 5), 16);\n" +
+"  const b = parseInt(hex.slice(5, 7), 16);\n" +
+"  return [r, g, b];\n" +
+"}\n" +
+"function relativeLuminance(rgb) {\n" +
+"  const [r, g, b] = rgb.map((c) => {\n" +
+"    c /= 255;\n" +
+"    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);\n" +
+"  });\n" +
+"  return 0.2126 * r + 0.7152 * g + 0.0722 * b;\n" +
+"}\n" +
+"function rgbToHex([r, g, b]) {\n" +
+"  const hexR = r.toString(16).padStart(2, \"0\");\n" +
+"  const hexG = g.toString(16).padStart(2, \"0\");\n" +
+"  const hexB = b.toString(16).padStart(2, \"0\");\n" +
+"  return `#${hexR}${hexG}${hexB}`;\n" +
+"}\n" +
+"function hslToRgb([h, s, l]) {\n" +
+"  h = h % 360;\n" +
+"  s = Math.max(0, Math.min(100, s)) / 100;\n" +
+"  l = Math.max(0, Math.min(100, l)) / 100;\n" +
+"  const c = (1 - Math.abs(2 * l - 1)) * s;\n" +
+"  const x = c * (1 - Math.abs(h / 60 % 2 - 1));\n" +
+"  const m = l - c / 2;\n" +
+"  let r = 0, g = 0, b = 0;\n" +
+"  if (0 <= h && h < 60) {\n" +
+"    [r, g, b] = [c, x, 0];\n" +
+"  } else if (60 <= h && h < 120) {\n" +
+"    [r, g, b] = [x, c, 0];\n" +
+"  } else if (120 <= h && h < 180) {\n" +
+"    [r, g, b] = [0, c, x];\n" +
+"  } else if (180 <= h && h < 240) {\n" +
+"    [r, g, b] = [0, x, c];\n" +
+"  } else if (240 <= h && h < 300) {\n" +
+"    [r, g, b] = [x, 0, c];\n" +
+"  } else if (300 <= h && h < 360) {\n" +
+"    [r, g, b] = [c, 0, x];\n" +
+"  }\n" +
+"  return [\n" +
+"    Math.round((r + m) * 255),\n" +
+"    Math.round((g + m) * 255),\n" +
+"    Math.round((b + m) * 255)\n" +
+"  ];\n" +
+"}\n" +
+"function textToColor(text) {\n" +
+"  const hashValue = hashString(text);\n" +
+"  const hue = Math.abs(hashValue % 360);\n" +
+"  const saturation = 70;\n" +
+"  const lightness = 50;\n" +
+"  return hslToHex([hue, saturation, lightness]);\n" +
+"}\n" +
+"function hslToHex(hsl) {\n" +
+"  return rgbToHex(hslToRgb(hsl));\n" +
+"}\n" +
+"\n" +
+"class Logger {\n" +
+"  logColor;\n" +
+"  constructor() {\n" +
+"    const background = textToColor(this.constructor.name);\n" +
+"    const foreground = contrastScore(background, \"#ffffff\") > contrastScore(background, \"#000000\") ? \"#ffffff\" : \"#000000\";\n" +
+"    this.logColor = { bg: background, fg: foreground };\n" +
+"  }\n" +
+"  log(...messages) {\n" +
+"    const date = (/* @__PURE__ */ new Date()).toISOString().replace(/^[^T]*T([\\d:]*).*$/, \"[$1]\");\n" +
+"    console.log(\n" +
+"      `${date} %cGM_Pennylane%c${this.constructor.name}`,\n" +
+"      \"background: #0b0b31; color: #fff; padding: 0 .3em; border-radius: 0.3em 0 0 0.3em;\",\n" +
+"      `background: ${this.logColor.bg}; color: ${this.logColor.fg}; padding: 0 .3em; border-radius: 0 0.3em 0.3em 0;`,\n" +
+"      ...messages\n" +
+"    );\n" +
+"  }\n" +
+"}\n" +
+"\n" +
+"let Service$1 = class Service extends Logger {\n" +
 "  static instance;\n" +
 "  constructor() {\n" +
+"    super();\n" +
 "    this.init();\n" +
 "  }\n" +
 "  static start() {\n" +
-"    console.log(this.name, \"start\", this);\n" +
+"    this.log(this.name, \"start\", this);\n" +
 "    this.getInstance();\n" +
 "  }\n" +
 "  static getInstance() {\n" +
 "    if (!this.instance)\n" +
 "      this.instance = new this();\n" +
 "    return this.instance;\n" +
-"  }\n" +
-"  log(...messages) {\n" +
-"    console.log(this.constructor.name, ...messages);\n" +
 "  }\n" +
 "  init() {\n" +
 "  }\n" +
@@ -239,7 +335,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  return { direction, thirdparty };\n" +
 "}\n" +
 "\n" +
-"class Document {\n" +
+"class Document extends Logger {\n" +
 "  type;\n" +
 "  id;\n" +
 "  document;\n" +
@@ -247,6 +343,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  ledgerEvents;\n" +
 "  thirdparty;\n" +
 "  constructor({ id }) {\n" +
+"    super();\n" +
 "    this.id = id;\n" +
 "  }\n" +
 "  async getDocument() {\n" +
@@ -351,7 +448,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  async loadValidMessage() {\n" +
 "    const isCurrent = this.id === Number(getParam(location.href, \"transaction_id\"));\n" +
 "    if (isCurrent)\n" +
-"      console.log(\"Transaction getValidMessage\", this);\n" +
+"      this.log(\"loadValidMessage\", this);\n" +
 "    const doc = await this.getDocument();\n" +
 "    const groupedDocuments = await this.getGroupedDocuments();\n" +
 "    if (doc.label.toUpperCase().startsWith(\"VIR \") && ![\n" +
@@ -394,7 +491,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "        const thirdEvents = ledgerEvents.filter((line) => line.planItem.number === third);\n" +
 "        const balance = thirdEvents.reduce((sum, line) => sum + parseFloat(line.amount), 0);\n" +
 "        if (this.id === Number(getParam(location.href, \"transaction_id\")))\n" +
-"          console.log(this.constructor.name, \"loadValidMessage: Balance\", Math.abs(balance) > 1e-3 ? \"d\\xE9s\\xE9quilibr\\xE9e\" : \"OK\", { third, thirdEvents, balance, ledgerEvents, [this.constructor.name]: this });\n" +
+"          this.log(\"loadValidMessage: Balance\", Math.abs(balance) > 1e-3 ? \"d\\xE9s\\xE9quilibr\\xE9e\" : \"OK\", this);\n" +
 "        if (Math.abs(balance) > 1e-3) {\n" +
 "          return `Balance d\\xE9s\\xE9quilibr\\xE9e: ${balance}`;\n" +
 "        }\n" +
@@ -413,7 +510,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      const groupedDocuments2 = await this.getGroupedDocuments();\n" +
 "      const hasAttachment = groupedDocuments2.length > 1;\n" +
 "      if (isCurrent)\n" +
-"        console.log(this.constructor.name, { attachmentOptional, attachmentRequired, groupedDocuments: groupedDocuments2, hasAttachment });\n" +
+"        this.log({ attachmentOptional, attachmentRequired, groupedDocuments: groupedDocuments2, hasAttachment });\n" +
 "      if (attachmentRequired && !hasAttachment)\n" +
 "        return \"Justificatif manquant\";\n" +
 "    }\n" +
@@ -969,22 +1066,20 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  }\n" +
 "}\n" +
 "\n" +
-"class Service {\n" +
+"class Service extends Logger {\n" +
 "  static instance;\n" +
 "  constructor() {\n" +
+"    super();\n" +
 "    this.init();\n" +
 "  }\n" +
 "  static start() {\n" +
-"    console.log(this.name, \"start\", this);\n" +
+"    this.log(this.name, \"start\", this);\n" +
 "    this.getInstance();\n" +
 "  }\n" +
 "  static getInstance() {\n" +
 "    if (!this.instance)\n" +
 "      this.instance = new this();\n" +
 "    return this.instance;\n" +
-"  }\n" +
-"  log(...messages) {\n" +
-"    console.log(this.constructor.name, ...messages);\n" +
 "  }\n" +
 "  init() {\n" +
 "  }\n" +

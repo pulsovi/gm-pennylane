@@ -3,7 +3,6 @@ import { getParam } from '../_';
 
 import { documentMatching } from '../api/document.ts';
 import ValidableDocument from './ValidableDocument.ts';
-import { getTransaction } from '../api/transaction.ts';
 import Document from './Document.ts';
 
 export default class Transaction extends ValidableDocument {
@@ -17,7 +16,7 @@ export default class Transaction extends ValidableDocument {
 
   protected async loadValidMessage () {
     const isCurrent = this.id === Number(getParam(location.href, 'transaction_id'));
-    if (isCurrent) console.log('Transaction getValidMessage', this);
+    if (isCurrent) this.log('loadValidMessage', this);
 
     const doc = await this.getDocument();
     const groupedDocuments = await this.getGroupedDocuments();
@@ -84,7 +83,7 @@ export default class Transaction extends ValidableDocument {
         const thirdEvents = ledgerEvents.filter(line => line.planItem.number === third);
         const balance = thirdEvents.reduce((sum, line) => sum + parseFloat(line.amount), 0);
         if (this.id === Number(getParam(location.href, 'transaction_id')))
-          console.log(this.constructor.name, 'loadValidMessage: Balance', Math.abs(balance) > 0.001 ? 'déséquilibrée' : 'OK', { third, thirdEvents, balance, ledgerEvents, [this.constructor.name]: this });
+          this.log('loadValidMessage: Balance', Math.abs(balance) > 0.001 ? 'déséquilibrée' : 'OK', this);
         if (Math.abs(balance) > 0.001) {
           // On a parfois des calculs qui ne tombent pas très juste en JS
           return `Balance déséquilibrée: ${balance}`;
@@ -110,7 +109,7 @@ export default class Transaction extends ValidableDocument {
         && (!attachmentOptional || isCurrent);
       const groupedDocuments = await this.getGroupedDocuments();
       const hasAttachment = groupedDocuments.length > 1;
-      if (isCurrent) console.log(this.constructor.name, { attachmentOptional, attachmentRequired, groupedDocuments, hasAttachment });
+      if (isCurrent) this.log({ attachmentOptional, attachmentRequired, groupedDocuments, hasAttachment });
       if (attachmentRequired && !hasAttachment) return 'Justificatif manquant';
     }
 

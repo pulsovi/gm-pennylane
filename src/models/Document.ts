@@ -1,9 +1,10 @@
-import type { GroupedDocument, LedgerEvent, RawDocument, RawLedgerEvent, RawThirdparty } from '../api/types.d.ts';
+import type { GroupedDocument, LedgerEvent, RawDocument, RawThirdparty } from '../api/types.d.ts';
 import { archiveDocument, getDocument, reloadLedgerEvents } from '../api/document.js';
 import { getGroupedDocuments, getLedgerEvents } from '../api/operation.js';
 import { getThirdparty } from '../api/thirdparties.ts';
+import { Logger } from '../framework/Logger.ts';
 
-export default class Document {
+export default class Document extends Logger {
   public readonly type: 'transaction' | 'invoice';
   public readonly id: number;
   protected document: RawDocument | Promise<RawDocument>;
@@ -12,6 +13,7 @@ export default class Document {
   protected thirdparty?: Promise<{direction: string; thirdparty: RawThirdparty}>;
 
   constructor ({ id }: { id: number }) {
+    super();
     this.id = id;
   }
 
