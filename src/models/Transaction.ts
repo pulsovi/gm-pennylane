@@ -95,16 +95,22 @@ export default class Transaction extends ValidableDocument {
       if (Math.abs(parseFloat(doc.currency_amount)) < 100) return 'OK';
 
       // Justificatif manquant
-      const attachmentOptional = Math.abs(parseFloat(doc.currency_amount)) < 100 || [
-        'REMISE CHEQUE ',
-        'VIR RECU ',
-        'VIR INST RE ',
-        'VIR INSTANTANE RECU DE: ',
-      ].some(label => doc.label.startsWith(label));
+      const attachmentOptional =
+        Math.abs(parseFloat(doc.currency_amount)) < 100
+        || [
+          ' DE: STRIPE MOTIF: ALLODONS REF: ',
+        ].some(label => doc.label.includes(label))
+        || [
+          'REMISE CHEQUE ',
+          'VIR RECU ',
+          'VIR INST RE ',
+          'VIR INSTANTANE RECU DE: ',
+        ].some(label => doc.label.startsWith(label));
       const attachmentRequired = doc.attachment_required && !doc.attachment_lost
         && (!attachmentOptional || isCurrent);
       const groupedDocuments = await this.getGroupedDocuments();
       const hasAttachment = groupedDocuments.length > 1;
+      if (isCurrent) console.log(this.constructor.name, { attachmentOptional, attachmentRequired, groupedDocuments, hasAttachment });
       if (attachmentRequired && !hasAttachment) return 'Justificatif manquant';
     }
 
