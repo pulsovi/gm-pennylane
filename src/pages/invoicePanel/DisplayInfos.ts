@@ -117,12 +117,16 @@ export default class InvoiceDisplayInfos extends Service {
   }
 
   async handleCacheChange () {
-    console.log(this.constructor.name, 'handleCacheChange');
     if (!this.state.invoice) return;
     const cachedStatus = this.cache.find({ id: this.state.invoice.id });
-    if (
-      this.state.cachedStatus?.message !== cachedStatus?.message
-      || this.state.cachedStatus?.valid !== cachedStatus?.valid
-    ) this.reload();
+    const diff = ['message', 'valid'].reduce<object[]>((acc, key) => {
+      if (this.state.cachedStatus?.[key] !== cachedStatus?.[key])
+        acc.push({ key, oldValue: this.state.cachedStatus?.[key], newValue: cachedStatus?.[key] });
+      return acc;
+    }, []);
+    if (diff.length) {
+      this.reload();
+      this.log('handleCacheChange', diff);
+    }
   }
 }
