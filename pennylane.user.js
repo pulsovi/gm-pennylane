@@ -752,11 +752,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  }\n" +
 "}\n" +
 "\n" +
-"let openInTabLaunched = false;\n" +
 "function openInTab(url) {\n" +
-"  if (openInTabLaunched)\n" +
-"    console.error(\"openInTab already launched\");\n" +
-"  openInTabLaunched = true;\n" +
 "  document.body.appendChild(\n" +
 "    parseHTML(`<div class=\"open_tab\" data-url=\"${escape(url)}\" style=\"display: none;\"></div>`)\n" +
 "  );\n" +

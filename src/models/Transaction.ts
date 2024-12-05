@@ -64,7 +64,7 @@ export default class Transaction extends ValidableDocument {
 
     // Pas de rapprochement bancaire
     const recent = (Date.now() - new Date(doc.date).getTime()) < 86_400_000 * 30;
-    if (!recent && ledgerEvents.some(line => line.planItem.number.startsWith('512') && !line.reconciliation_id))
+    if (!recent && !groupedDocuments.find(gdoc => gdoc.id === doc.id)?.reconciled)
       return 'Cette transaction n\'est pas rattachée à un rapprochement bancaire';
 
     // justificatif demandé
