@@ -9,7 +9,7 @@ export default class Service extends Logger {
   }
 
   public static start () {
-    this.log(this.name, 'start', this);
+    console.log(this.name, 'start', this);
     this.getInstance();
   }
 

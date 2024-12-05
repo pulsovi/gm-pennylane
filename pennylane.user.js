@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name     Pennylane
-// @version  0.1.14
+// @version  0.1.15
 // @grant    unsafeWindow
 // @grant    GM.openInTab
 // @match    https://app.pennylane.com/companies/*
@@ -239,7 +239,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    this.init();\n" +
 "  }\n" +
 "  static start() {\n" +
-"    this.log(this.name, \"start\", this);\n" +
+"    console.log(this.name, \"start\", this);\n" +
 "    this.getInstance();\n" +
 "  }\n" +
 "  static getInstance() {\n" +
@@ -1073,7 +1073,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    this.init();\n" +
 "  }\n" +
 "  static start() {\n" +
-"    this.log(this.name, \"start\", this);\n" +
+"    console.log(this.name, \"start\", this);\n" +
 "    this.getInstance();\n" +
 "  }\n" +
 "  static getInstance() {\n" +
@@ -1873,7 +1873,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "Object.assign(window, {\n" +
 "  GM_Pennylane_Version: (\n" +
 "    /** version **/\n" +
-"    \"0.1.14\"\n" +
+"    \"0.1.15\"\n" +
 "  )\n" +
 "});\n" +
 ""
