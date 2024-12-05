@@ -110,13 +110,12 @@ class SupplierInvoice extends Invoice {
     // CHQ "Taxi"
     if (
       invoice.thirdparty_id === 98348455
-      && invoice.invoice_number.toUpperCase().includes('CHQ')
       && !invoice.invoice_number.includes('|TAXI|')
     ) {
       return `<a
         title="Le fournisseur 'TAXI' est trop souvent attribué aux chèques par Pennylane.\nSi le fournisseur est réélement 'TAXI' ajouter |TAXI| à la fin du numéro de facture.\nCliquer ici pour plus d'informations"
         href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20CHQ%20TAXI"
-      >Ajouter le fournisseur ⓘ</a><ul style="margin:0;padding:0.8em;"><li>|TAXI|</li></ul>`;
+      >Ajouter le fournisseur ⓘ</a><ul style="margin:0;padding:0.8em;"><li>|TAXI|</li><li>CHQ#</li></ul>`;
     }
 
     // Aides octroyées ou piece d'indentité avec date

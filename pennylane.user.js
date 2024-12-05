@@ -380,7 +380,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    if (ledgerEvents.some((line) => line.planItem.number.startsWith(\"445\")))\n" +
 "      return \"Une \\xE9criture comporte un compte de TVA\";\n" +
 "    const recent = Date.now() - new Date(doc.date).getTime() < 864e5 * 30;\n" +
-"    if (!recent && ledgerEvents.some((line) => line.planItem.number.startsWith(\"512\") && !line.reconciliation_id))\n" +
+"    if (!recent && !groupedDocuments.find((gdoc) => gdoc.id === doc.id)?.reconciled)\n" +
 "      return \"Cette transaction n'est pas rattach\\xE9e \\xE0 un rapprochement bancaire\";\n" +
 "    if (!doc.is_waiting_details || isCurrent) {\n" +
 "      if (ledgerEvents.find((line) => line.planItem.number === \"6288\"))\n" +
@@ -1249,13 +1249,13 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    }\n" +
 "    if (invoice.invoice_lines?.some((line) => line.pnl_plan_item?.number == \"6288\"))\n" +
 "      return \"compte tiers 6288\";\n" +
-"    if (invoice.thirdparty_id === 98348455 && invoice.invoice_number.toUpperCase().includes(\"CHQ\") && !invoice.invoice_number.includes(\"|TAXI|\")) {\n" +
+"    if (invoice.thirdparty_id === 98348455 && !invoice.invoice_number.includes(\"|TAXI|\")) {\n" +
 "      return `<a\n" +
 "        title=\"Le fournisseur 'TAXI' est trop souvent attribu\\xE9 aux ch\\xE8ques par Pennylane.\n" +
 "Si le fournisseur est r\\xE9\\xE9lement 'TAXI' ajouter |TAXI| \\xE0 la fin du num\\xE9ro de facture.\n" +
 "Cliquer ici pour plus d'informations\"\n" +
 "        href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20CHQ%20TAXI\"\n" +
-"      >Ajouter le fournisseur \\u24D8</a><ul style=\"margin:0;padding:0.8em;\"><li>|TAXI|</li></ul>`;\n" +
+"      >Ajouter le fournisseur \\u24D8</a><ul style=\"margin:0;padding:0.8em;\"><li>|TAXI|</li><li>CHQ#</li></ul>`;\n" +
 "    }\n" +
 "    const emptyDateAllowed = [\"CHQ\"];\n" +
 "    if ([106438171, 114270419, 106519227].includes(invoice.thirdparty?.id ?? 0) || emptyDateAllowed.some((item) => invoice.invoice_number?.startsWith(item))) {\n" +
@@ -1504,12 +1504,18 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    this.watchEventSave();\n" +
 "  }\n" +
 "  async handleCacheChange() {\n" +
-"    console.log(this.constructor.name, \"handleCacheChange\");\n" +
 "    if (!this.state.invoice)\n" +
 "      return;\n" +
 "    const cachedStatus = this.cache.find({ id: this.state.invoice.id });\n" +
-"    if (this.state.cachedStatus?.message !== cachedStatus?.message || this.state.cachedStatus?.valid !== cachedStatus?.valid)\n" +
+"    const diff = [\"message\", \"valid\"].reduce((acc, key) => {\n" +
+"      if (this.state.cachedStatus?.[key] !== cachedStatus?.[key])\n" +
+"        acc.push({ key, oldValue: this.state.cachedStatus?.[key], newValue: cachedStatus?.[key] });\n" +
+"      return acc;\n" +
+"    }, []);\n" +
+"    if (diff.length) {\n" +
 "      this.reload();\n" +
+"      this.log(\"handleCacheChange\", diff);\n" +
+"    }\n" +
 "  }\n" +
 "}\n" +
 "\n" +
