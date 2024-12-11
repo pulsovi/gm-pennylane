@@ -1,6 +1,7 @@
 import { $, parseHTML, waitElem } from "../_";
 import Tooltip from "./Tooltip";
 import CacheRecord from './CacheRecord';
+import Logger from "./Logger";
 
 export interface AutostarterParent {
   container: ParentNode;
@@ -15,7 +16,7 @@ interface AutostarterConfig {
 /**
  * Autolaunch some service at the first user interaction
  */
-export default class Autostarter {
+export default class Autostarter extends Logger {
   private readonly parent: AutostarterParent;
   private readonly config: CacheRecord<AutostarterConfig>;
   private readonly eventList = ['click', 'keyup'];
@@ -26,6 +27,7 @@ export default class Autostarter {
   private stopped = false;
 
   public constructor (parent: AutostarterParent) {
+    super(`${parent}_Autostart`);
     this.parent = parent;
     this.config = new CacheRecord<AutostarterConfig>(`${this.parent.id}-autostart`, { enabled: true });
     this.start = this.start.bind(this);
@@ -94,7 +96,7 @@ export default class Autostarter {
     setText();
     this.config.on('change', setText);
 
-    console.log(this.constructor.name, this, { button, tooltip });
+    this.log(this, { button, tooltip });
   }
 
   /**
