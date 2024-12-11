@@ -1,4 +1,4 @@
-import { $, $$, findElem, getReactProps, sleep, waitElem, waitFunc } from "../../_";
+import { $, $$, findElem, getReactProps, waitElem, waitFunc } from "../../_";
 import Service from "../../framework/Service.js"
 
 export default class TransactionPanelHotkeys extends Service {
@@ -25,7 +25,7 @@ export default class TransactionPanelHotkeys extends Service {
     event.preventDefault();
     const filterButton = $$<HTMLButtonElement>('div.dropdown button')
       .find(button => getReactProps(button, 1).label === label);
-    if (!filterButton) console.log(`bouton "${label}" introuvable`);
+    if (!filterButton) this.log(`bouton "${label}" introuvable`);
 
     if (event.shiftKey) {
       $<HTMLDivElement>('div[aria-label=Effacer]', filterButton)?.click();
@@ -35,7 +35,7 @@ export default class TransactionPanelHotkeys extends Service {
     filterButton?.click();
 
     const inputField = await waitElem<HTMLInputElement>(`input[aria-label=${label}]`, '', 2000);
-    if (!inputField) console.log(`champ "input[aria-label=${label}]" introuvable`);
+    if (!inputField) this.log(`champ "input[aria-label=${label}]" introuvable`);
     inputField?.focus();
   }
 

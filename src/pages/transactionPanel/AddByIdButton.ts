@@ -17,7 +17,7 @@ export default class TransactionAddByIdButton extends Service {
     const div = button.closest('.mt-2');
 
     if (!div) {
-      console.log('TransactionAddByIdButton', { button, div });
+      this.log('TransactionAddByIdButton', { button, div });
       throw new Error('Impossible de trouver le bloc de boutons');
     }
 

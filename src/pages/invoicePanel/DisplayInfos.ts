@@ -1,4 +1,4 @@
-import { $, $$, findElem, getReact, getReactProps, parseHTML, sleep, upElement, waitElem, waitFunc } from "../../_";
+import { $, $$, findElem, getReact, getReactProps, parseHTML, waitElem, waitFunc } from "../../_";
 import { LedgerEvent, RawInvoice } from "../../api/types";
 import CacheStatus, { Status } from "../../framework/CacheStatus";
 import Service from "../../framework/service";
@@ -11,7 +11,7 @@ export default class InvoiceDisplayInfos extends Service {
   protected readonly storageKey = 'InvoiceValidation';
   protected cache: CacheStatus;
   private state: {
-    invoice?: Invoice;
+    invoice?: Invoice | null;
     reactInvoice?: RawInvoice;
     events?: LedgerEvent[];
     cachedStatus?: Status;
@@ -51,7 +51,7 @@ export default class InvoiceDisplayInfos extends Service {
 
     if (this.state.reactInvoice !== invoice) {
       this.state.reactInvoice = invoice;
-      this.state.invoice = Invoice.from(invoice);
+      this.state.invoice = await Invoice.load(invoice.id);
       return false;
     }
 
@@ -86,7 +86,7 @@ export default class InvoiceDisplayInfos extends Service {
   }
 
   async loadMessage () {
-    console.log('load message', this);
+    this.log('load message', this);
     if (!this.state.invoice) return this.setMessage('⟳');
     const status = { ...await this.state.invoice.getStatus(), fetchedAt: Date.now() };
     this.state.cachedStatus = status;

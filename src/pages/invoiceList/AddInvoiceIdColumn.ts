@@ -17,7 +17,7 @@ export default class AddInvoiceIdColumn extends Service {
 
   fill (anchor: Element) {
     const table = <HTMLTableElement>anchor.closest('table');
-    console.log(this.constructor.name, "fill", table);
+    this.log("fill", table);
     const headRow = $<HTMLTableRowElement>('thead tr', table);
     $('th.id-column', headRow)?.remove();
     headRow?.insertBefore(parseHTML(`<th class="id-column th-element border-top-0 border-bottom-0 box-shadow-bottom-secondary-200 align-middle p-1 text-secondary-700 font-size-075 text-nowrap is-pinned">
@@ -26,7 +26,7 @@ export default class AddInvoiceIdColumn extends Service {
       </div>
     </th>`), $('th+th', headRow));
     const bodyRows = $$<HTMLTableRowElement>('tbody tr', table);
-    console.log(this.constructor.name, { bodyRows });
+    this.log({ bodyRows });
     bodyRows.forEach(row => {
       const id: number = getReactProps(row, 1).data.id;
       $('.id-column', row)?.remove();

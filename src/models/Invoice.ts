@@ -7,7 +7,7 @@ export default abstract class Invoice extends ValidableDocument {
   public readonly type = 'invoice';
   private invoice: RawInvoice | Promise<RawInvoice>;
 
-  static from (invoice: RawInvoice) {
+  public static from (invoice: RawInvoice) {
     if (invoice.direction === 'supplier') return new SupplierInvoice(invoice);
     return new CustomerInvoice(invoice);
   }
@@ -42,6 +42,7 @@ class SupplierInvoice extends Invoice {
 
   async loadValidMessage () {
     const current = Number(getParam(location.href, 'id'));
+    const isCurrent = current === this.id;
 
     const invoice = await this.getInvoice();
     if (!invoice) this.log('SupplierInvoice.loadValidMessage', {invoice});

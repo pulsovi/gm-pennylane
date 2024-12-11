@@ -214,10 +214,34 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  return rgbToHex(hslToRgb(hsl));\n" +
 "}\n" +
 "\n" +
-"class Logger {\n" +
+"class EventEmitter {\n" +
+"  events = {};\n" +
+"  // Abonner une fonction à un événement\n" +
+"  on(event, listener) {\n" +
+"    if (!this.events[event]) {\n" +
+"      this.events[event] = [];\n" +
+"    }\n" +
+"    this.events[event].push(listener);\n" +
+"  }\n" +
+"  // Désabonner une fonction d'un événement\n" +
+"  off(event, listener) {\n" +
+"    if (!this.events[event])\n" +
+"      return;\n" +
+"    this.events[event] = this.events[event].filter((l) => l !== listener);\n" +
+"  }\n" +
+"  // Déclencher un événement avec des données\n" +
+"  emit(event, data) {\n" +
+"    if (!this.events[event])\n" +
+"      return;\n" +
+"    this.events[event].forEach((listener) => listener(data));\n" +
+"  }\n" +
+"}\n" +
+"\n" +
+"class Logger extends EventEmitter {\n" +
 "  logColor;\n" +
-"  constructor() {\n" +
-"    const background = textToColor(this.constructor.name);\n" +
+"  constructor(name) {\n" +
+"    super();\n" +
+"    const background = textToColor(name ?? this.constructor.name);\n" +
 "    const foreground = contrastScore(background, \"#ffffff\") > contrastScore(background, \"#000000\") ? \"#ffffff\" : \"#000000\";\n" +
 "    this.logColor = { bg: background, fg: foreground };\n" +
 "  }\n" +
@@ -225,7 +249,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    const date = (/* @__PURE__ */ new Date()).toISOString().replace(/^[^T]*T([\\d:]*).*$/, \"[$1]\");\n" +
 "    console.log(\n" +
 "      `${date} %cGM_Pennylane%c${this.constructor.name}`,\n" +
-"      \"background: #0b0b31; color: #fff; padding: 0 .3em; border-radius: 0.3em 0 0 0.3em;\",\n" +
+"      \"background: #0b0b31; color: #fff; padding: 0.1em .3em; border-radius: 0.3em 0 0 0.3em;\",\n" +
 "      `background: ${this.logColor.bg}; color: ${this.logColor.fg}; padding: 0 .3em; border-radius: 0 0.3em 0.3em 0;`,\n" +
 "      ...messages\n" +
 "    );\n" +
@@ -451,14 +475,15 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      this.log(\"loadValidMessage\", this);\n" +
 "    const doc = await this.getDocument();\n" +
 "    const groupedDocuments = await this.getGroupedDocuments();\n" +
-"    if (doc.label.toUpperCase().startsWith(\"VIR \") && ![\n" +
+"    if (doc.archived)\n" +
+"      return \"OK\";\n" +
+"    if (!doc.date.startsWith(\"2023\") && doc.label.toUpperCase().startsWith(\"VIR \") && ![\n" +
 "      \" DE: STRIPE MOTIF: STRIPE REF: STRIPE-\",\n" +
-"      \" DE: STRIPE MOTIF: ALLODONS REF: \"\n" +
+"      \" DE: STRIPE MOTIF: ALLODONS REF: \",\n" +
+"      \" DE: Stripe Technology Europe Ltd MOTIF: STRIPE \"\n" +
 "    ].some((label) => doc.label.includes(label)) && groupedDocuments.length < 2) {\n" +
 "      return \"Virement re\\xE7u sans justificatif\";\n" +
 "    }\n" +
-"    if (doc.archived)\n" +
-"      return \"OK\";\n" +
 "    const ledgerEvents = await this.getLedgerEvents();\n" +
 "    if (ledgerEvents.some((line) => line.planItem.number.startsWith(\"6571\"))) {\n" +
 "      if (ledgerEvents.some((line) => line.planItem.number.startsWith(\"6571\") && !line.label)) {\n" +
@@ -479,24 +504,44 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    const recent = Date.now() - new Date(doc.date).getTime() < 864e5 * 30;\n" +
 "    if (!recent && !groupedDocuments.find((gdoc) => gdoc.id === doc.id)?.reconciled)\n" +
 "      return \"Cette transaction n'est pas rattach\\xE9e \\xE0 un rapprochement bancaire\";\n" +
-"    if (!doc.is_waiting_details || isCurrent) {\n" +
+"    if (\n" +
+"      // si justificatif demandé, sauter cette section\n" +
+"      !doc.is_waiting_details || isCurrent\n" +
+"    ) {\n" +
 "      if (ledgerEvents.find((line) => line.planItem.number === \"6288\"))\n" +
 "        return \"Une ligne d'\\xE9criture comporte le num\\xE9ro de compte 6288\";\n" +
 "      if (ledgerEvents.find((line) => line.planItem.number === \"4716001\"))\n" +
 "        return \"Une ligne d'\\xE9criture utilise un compte d'attente 4716001\";\n" +
-"      if (ledgerEvents.some((line) => line.planItem.number.startsWith(\"41\")))\n" +
+"      if (ledgerEvents.some((line) => line.planItem.number.startsWith(\"47\")))\n" +
 "        return \"Une \\xE9criture comporte un compte d'attente\";\n" +
 "      const third = ledgerEvents.find((line) => line.planItem.number.startsWith(\"40\"))?.planItem?.number;\n" +
 "      if (third) {\n" +
 "        const thirdEvents = ledgerEvents.filter((line) => line.planItem.number === third);\n" +
-"        const balance = thirdEvents.reduce((sum, line) => sum + parseFloat(line.amount), 0);\n" +
+"        const balance2 = thirdEvents.reduce((sum, line) => sum + parseFloat(line.amount), 0);\n" +
 "        if (this.id === Number(getParam(location.href, \"transaction_id\")))\n" +
-"          this.log(\"loadValidMessage: Balance\", Math.abs(balance) > 1e-3 ? \"d\\xE9s\\xE9quilibr\\xE9e\" : \"OK\", this);\n" +
-"        if (Math.abs(balance) > 1e-3) {\n" +
-"          return `Balance d\\xE9s\\xE9quilibr\\xE9e: ${balance}`;\n" +
+"          this.log(\"loadValidMessage: Balance\", Math.abs(balance2) > 1e-3 ? \"d\\xE9s\\xE9quilibr\\xE9e\" : \"OK\", this);\n" +
+"        if (Math.abs(balance2) > 1e-3) {\n" +
+"          return `Balance d\\xE9s\\xE9quilibr\\xE9e: ${balance2}`;\n" +
 "        }\n" +
 "      }\n" +
+"      const balance = groupedDocuments.reduce((acc, gdoc) => {\n" +
+"        const isTransaction = gdoc.type === \"Transaction\";\n" +
+"        const isRemise = doc.label.startsWith(\"REMISE CHEQUE \");\n" +
+"        const coeff = isTransaction ? isRemise ? -2 : -1 : 1;\n" +
+"        const value = parseFloat(gdoc.currency_amount ?? gdoc.amount);\n" +
+"        if (isCurrent)\n" +
+"          this.log({ isTransaction, isRemise, coeff, acc, value });\n" +
+"        return acc + coeff * value;\n" +
+"      }, 0);\n" +
+"      if (Math.abs(balance) > 1e-3) {\n" +
+"        return `<a\n" +
+"          title=\"Cliquer ici pour plus d'informations.\"\n" +
+"          href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Transaction%20-%20Balance%20v2\"\n" +
+"        >Balance v2 d\\xE9s\\xE9quilibr\\xE9e: ${balance} \\u24D8</a>`;\n" +
+"      }\n" +
 "      if (Math.abs(parseFloat(doc.currency_amount)) < 100)\n" +
+"        return \"OK\";\n" +
+"      if (doc.date.startsWith(\"2023\"))\n" +
 "        return \"OK\";\n" +
 "      const attachmentOptional = Math.abs(parseFloat(doc.currency_amount)) < 100 || [\n" +
 "        \" DE: STRIPE MOTIF: ALLODONS REF: \"\n" +
@@ -507,10 +552,9 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "        \"VIR INSTANTANE RECU DE: \"\n" +
 "      ].some((label) => doc.label.startsWith(label));\n" +
 "      const attachmentRequired = doc.attachment_required && !doc.attachment_lost && (!attachmentOptional || isCurrent);\n" +
-"      const groupedDocuments2 = await this.getGroupedDocuments();\n" +
-"      const hasAttachment = groupedDocuments2.length > 1;\n" +
+"      const hasAttachment = groupedDocuments.length > 1;\n" +
 "      if (isCurrent)\n" +
-"        this.log({ attachmentOptional, attachmentRequired, groupedDocuments: groupedDocuments2, hasAttachment });\n" +
+"        this.log({ attachmentOptional, attachmentRequired, groupedDocuments, hasAttachment });\n" +
 "      if (attachmentRequired && !hasAttachment)\n" +
 "        return \"Justificatif manquant\";\n" +
 "    }\n" +
@@ -526,17 +570,23 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "\n" +
 "class ValidMessage extends Service$1 {\n" +
 "  transaction;\n" +
-"  events = [];\n" +
+"  ledgerEvents = [];\n" +
 "  message = \"\\u27F3\";\n" +
 "  async init() {\n" +
 "    await waitElem(\"h3\", \"Transactions\");\n" +
 "    await waitElem(\".paragraph-body-m+.heading-page.mt-1\");\n" +
+"    document.addEventListener(\"keydown\", (event) => {\n" +
+"      if (findElem(\"h3\", \"Transactions\") && event.ctrlKey && event.key === \"s\") {\n" +
+"        event.preventDefault();\n" +
+"        delete this.transaction;\n" +
+"      }\n" +
+"    });\n" +
 "    while (await waitFunc(async () => !await this.isSync())) {\n" +
 "      await this.loadMessage();\n" +
 "    }\n" +
 "  }\n" +
 "  async loadMessage() {\n" +
-"    console.log(this.constructor.name, \"loadMessage\", this);\n" +
+"    this.log(\"loadMessage\", this);\n" +
 "    this.message = \"\\u27F3\";\n" +
 "    this.displayHeadband();\n" +
 "    const rawTransaction = getReactProps($(\".paragraph-body-m+.heading-page.mt-1\"), 9).transaction;\n" +
@@ -550,15 +600,15 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      const formEvents = getReactProps(form.parentElement, 3)?.initialValues.ledgerEvents;\n" +
 "      return [...events, ...formEvents];\n" +
 "    }, []);\n" +
-"    if (ledgerEvents.some((event, id) => this.events[id] !== event)) {\n" +
-"      const logData = { oldEvents: this.events };\n" +
-"      this.events = ledgerEvents;\n" +
-"      console.log(this.constructor.name, \"desynchronis\\xE9\", { ...logData, ...this });\n" +
+"    if (ledgerEvents.some((event, id) => this.ledgerEvents[id] !== event)) {\n" +
+"      const logData = { oldEvents: this.ledgerEvents };\n" +
+"      this.ledgerEvents = ledgerEvents;\n" +
+"      this.log(\"desynchronis\\xE9\", { ...logData, ...this });\n" +
 "      return false;\n" +
 "    }\n" +
 "    const current = Number(getParam(location.href, \"transaction_id\"));\n" +
 "    if (current && current !== this.transaction?.id) {\n" +
-"      console.log(this.constructor.name, \"transaction desynchronis\\xE9e\", { current, ...this });\n" +
+"      this.log(\"transaction desynchronis\\xE9e\", { current, ...this });\n" +
 "      return false;\n" +
 "    }\n" +
 "    return true;\n" +
@@ -604,7 +654,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    ]);\n" +
 "    const div = button.closest(\".mt-2\");\n" +
 "    if (!div) {\n" +
-"      console.log(\"TransactionAddByIdButton\", { button, div });\n" +
+"      this.log(\"TransactionAddByIdButton\", { button, div });\n" +
 "      throw new Error(\"Impossible de trouver le bloc de boutons\");\n" +
 "    }\n" +
 "    div.insertBefore(\n" +
@@ -657,30 +707,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  return await response?.json();\n" +
 "}\n" +
 "\n" +
-"class EventEmitter {\n" +
-"  events = {};\n" +
-"  // Abonner une fonction à un événement\n" +
-"  on(event, listener) {\n" +
-"    if (!this.events[event]) {\n" +
-"      this.events[event] = [];\n" +
-"    }\n" +
-"    this.events[event].push(listener);\n" +
-"  }\n" +
-"  // Désabonner une fonction d'un événement\n" +
-"  off(event, listener) {\n" +
-"    if (!this.events[event])\n" +
-"      return;\n" +
-"    this.events[event] = this.events[event].filter((l) => l !== listener);\n" +
-"  }\n" +
-"  // Déclencher un événement avec des données\n" +
-"  emit(event, data) {\n" +
-"    if (!this.events[event])\n" +
-"      return;\n" +
-"    this.events[event].forEach((listener) => listener(data));\n" +
-"  }\n" +
-"}\n" +
-"\n" +
-"class Cache extends EventEmitter {\n" +
+"class Cache extends Logger {\n" +
 "  storageKey;\n" +
 "  data;\n" +
 "  constructor(key, initialValue) {\n" +
@@ -688,7 +715,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    this.storageKey = key;\n" +
 "    this.data = initialValue;\n" +
 "    this.load();\n" +
-"    console.log(\"new Cache\", this);\n" +
+"    this.log(\"new Cache\", this);\n" +
 "    this.follow();\n" +
 "  }\n" +
 "  /**\n" +
@@ -726,11 +753,10 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      if (event.storageArea !== localStorage || event.key !== this.storageKey)\n" +
 "        return;\n" +
 "      try {\n" +
-"        console.log(\"update cache\");\n" +
 "        this.data = this.parse(event.newValue);\n" +
 "        this.emit(\"change\", this);\n" +
 "      } catch (error) {\n" +
-"        console.log(this.constructor.name, \"storage event error\", { error, value: event.newValue });\n" +
+"        this.log(\"storage event error\", { error, value: event.newValue });\n" +
 "      }\n" +
 "    });\n" +
 "  }\n" +
@@ -977,7 +1003,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  }\n" +
 "}\n" +
 "\n" +
-"class Autostarter {\n" +
+"class Autostarter extends Logger {\n" +
 "  parent;\n" +
 "  config;\n" +
 "  eventList = [\"click\", \"keyup\"];\n" +
@@ -986,6 +1012,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "   */\n" +
 "  stopped = false;\n" +
 "  constructor(parent) {\n" +
+"    super(`${parent}_Autostart`);\n" +
 "    this.parent = parent;\n" +
 "    this.config = new CacheRecord(`${this.parent.id}-autostart`, { enabled: true });\n" +
 "    this.start = this.start.bind(this);\n" +
@@ -1046,7 +1073,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    };\n" +
 "    setText();\n" +
 "    this.config.on(\"change\", setText);\n" +
-"    console.log(this.constructor.name, this, { button, tooltip });\n" +
+"    this.log(this, { button, tooltip });\n" +
 "  }\n" +
 "  /**\n" +
 "   * Callback for autostart events\n" +
@@ -1091,7 +1118,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  current;\n" +
 "  invalidGenerator;\n" +
 "  async init() {\n" +
-"    console.log(this.constructor.name, \"init\");\n" +
+"    this.log(\"init\");\n" +
 "    this.start = this.start.bind(this);\n" +
 "    this.current = Number(getParam(location.href, this.idParamName));\n" +
 "    this.appendOpenNextButton();\n" +
@@ -1133,7 +1160,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    let cached = this.cache.filter({ valid: false });\n" +
 "    for (const cachedItem of cached) {\n" +
 "      const status = await this.updateStatus(cachedItem.id);\n" +
-"      if (status?.valid === false)\n" +
+"      if (status?.valid === false && !status.ignored)\n" +
 "        yield status;\n" +
 "    }\n" +
 "    const from = this.cache.reduce(\n" +
@@ -1187,14 +1214,14 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    return status;\n" +
 "  }\n" +
 "  async openNext(interactionAllowed = false) {\n" +
-"    console.log(this.constructor.name, \"openNext\");\n" +
+"    this.log(\"openNext\");\n" +
 "    let status = (await this.invalidGenerator.next()).value;\n" +
 "    while (status?.id === this.current || status?.ignored) {\n" +
-"      console.log({ status, current: this.current, class: this });\n" +
+"      this.log({ status, current: this.current, class: this });\n" +
 "      status = (await this.invalidGenerator.next()).value;\n" +
 "    }\n" +
 "    if (status) {\n" +
-"      console.log(this.constructor.name, \"next found :\", { current: this.current, status, class: this });\n" +
+"      this.log(\"next found :\", { current: this.current, status, class: this });\n" +
 "      openDocument(status.id);\n" +
 "      return;\n" +
 "    }\n" +
@@ -1217,7 +1244,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    if (state.loaded)\n" +
 "      return;\n" +
 "    const from = this.cache.reduce((acc, status) => Math.max(status.createdAt, acc), 0);\n" +
-"    console.log(this.constructor.name, \"firstLoading\", { from });\n" +
+"    this.log(\"firstLoading\", { from });\n" +
 "    const news = this.walk({\n" +
 "      filter: JSON.stringify([{ field: \"created_at\", operator: \"gteq\", value: new Date(from).toISOString() }]),\n" +
 "      sort: \"+created_at\"\n" +
@@ -1266,7 +1293,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  static async load(id) {\n" +
 "    const invoice = await getInvoice(id);\n" +
 "    if (!invoice?.id) {\n" +
-"      console.log(\"Invoice.load: cannot load this invoice\", { id, invoice });\n" +
+"      console.log(\"Invoice.load: cannot load this invoice\", { id, invoice, _this: this });\n" +
 "      return null;\n" +
 "    }\n" +
 "    return this.from(invoice);\n" +
@@ -1290,18 +1317,19 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  direction = \"supplier\";\n" +
 "  async loadValidMessage() {\n" +
 "    const current = Number(getParam(location.href, \"id\"));\n" +
+"    current === this.id;\n" +
 "    const invoice = await this.getInvoice();\n" +
 "    if (!invoice)\n" +
-"      console.log(\"SupplierInvoice.loadValidMessage\", { invoice });\n" +
-"    const invoiceDocument = await this.getDocument();\n" +
+"      this.log(\"SupplierInvoice.loadValidMessage\", { invoice });\n" +
+"    await this.getDocument();\n" +
 "    if (invoice.id === current)\n" +
-"      console.log(\"SupplierInvoice.loadValidMessage\", { invoice, invoiceDocument });\n" +
+"      this.log(\"SupplierInvoice.loadValidMessage\", this);\n" +
 "    const groupedDocuments = await this.getGroupedDocuments();\n" +
 "    const transactions = groupedDocuments.filter((doc) => doc.type === \"Transaction\");\n" +
 "    const currentYear = 2024;\n" +
 "    if (transactions.length && transactions.every((transaction) => parseInt(transaction.date.slice(0, 4)) < currentYear)) {\n" +
 "      if (invoice.id == current)\n" +
-"        console.log(this.constructor.name, \"loadValidMessage\", \"ann\\xE9e pass\\xE9e\");\n" +
+"        this.log(\"loadValidMessage\", \"ann\\xE9e pass\\xE9e\");\n" +
 "      return \"OK\";\n" +
 "    }\n" +
 "    const archivedAllowed = [\"\\xA7 #\", \"\\xA4 PIECE ETRANGERE\", \"\\xA4 TRANSACTION INTROUVABLE\", \"CHQ D\\xC9CHIR\\xC9\"];\n" +
@@ -1315,7 +1343,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "          href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Facture%20archiv%C3%A9e\"\n" +
 "        >Facture archiv\\xE9e sans r\\xE9f\\xE9rence \\u24D8</a><ul style=\"margin:0;padding:0.8em;\">${archivedAllowed.map((it) => `<li>${it}</li>`).join(\"\")}</ul>`;\n" +
 "      if (invoice.id == current)\n" +
-"        console.log(this.constructor.name, \"loadValidMessage\", \"archiv\\xE9 avec num\\xE9ro de facture correct\");\n" +
+"        this.log(\"loadValidMessage\", \"archiv\\xE9 avec num\\xE9ro de facture correct\");\n" +
 "      return \"OK\";\n" +
 "    }\n" +
 "    if (!invoice.thirdparty_id && !invoice.thirdparty) {\n" +
@@ -1369,7 +1397,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    const ledgerEvents = await this.getLedgerEvents();\n" +
 "    if (invoice.currency !== \"EUR\") {\n" +
 "      const diffLine = ledgerEvents.find((line) => line.planItem.number === \"4716001\");\n" +
-"      console.log({ ledgerEvents, diffLine });\n" +
+"      this.log({ ledgerEvents, diffLine });\n" +
 "      if (diffLine) {\n" +
 "        if (parseFloat(diffLine.amount) < 0)\n" +
 "          return \"Les \\xE9carts de conversions de devises doivent utiliser le compte 756\";\n" +
@@ -1413,7 +1441,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  direction = \"customer\";\n" +
 "  async loadValidMessage() {\n" +
 "    const invoice = await this.getInvoice();\n" +
-"    console.log(this.constructor.name, \"loadValidMessage\", { invoice });\n" +
+"    this.log(\"loadValidMessage\", { invoice });\n" +
 "    if (invoice.archived) {\n" +
 "      const allowed = [\"\\xA7 #\", \"\\xA4 TRANSACTION INTROUVABLE\"];\n" +
 "      if (\n" +
@@ -1428,19 +1456,31 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    }\n" +
 "    if (!invoice.thirdparty)\n" +
 "      return 'choisir un \"client\"';\n" +
-"    if (invoice.date || invoice.deadline)\n" +
-"      return \"les dates des pi\\xE8ces orient\\xE9es client doivent toujours \\xEAtre vides\";\n" +
+"    if (![113420582, 103165930].includes(invoice.thirdparty.id))\n" +
+"      return 'les seuls clients autoris\\xE9s sont \"PIECE ID\" et \"DON MANUEL\"';\n" +
 "    if (invoice.thirdparty.id === 113420582) {\n" +
 "      if (!invoice.invoice_number?.startsWith(\"ID \"))\n" +
 "        return 'le champ \"Num\\xE9ro de facture\" doit commencer par \"ID NOM_DE_LA_PERSONNE\"';\n" +
 "      return \"OK\";\n" +
 "    }\n" +
-"    if (![113420582, 103165930].includes(invoice.thirdparty.id))\n" +
-"      return 'les seuls clients autoris\\xE9s sont \"PIECE ID\" et \"DON MANUEL\"';\n" +
+"    if (invoice.amount === \"0.0\")\n" +
+"      return `<a\n" +
+"      title=\"Cliquer ici pour plus d'informations.\"\n" +
+"      href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Facture%20client\"\n" +
+"    >Ajouter le montant \\u24D8</a>`;\n" +
 "    const invoiceDocument = await this.getDocument();\n" +
+"    const groupedOptional = [\"\\xA4 TRANSACTION INTROUVABLE\"];\n" +
 "    const groupedDocuments = invoiceDocument.grouped_documents;\n" +
-"    if (!groupedDocuments?.some((doc) => doc.type === \"Transaction\") && !invoice.invoice_number.startsWith(\"\\xA4 TRANSACTION INTROUVABLE\"))\n" +
-"      return 'pas de transaction attach\\xE9e - Si la transaction est introuvable, mettre le texte \"\\xA4 TRANSACTION INTROUVABLE\" au d\\xE9but du num\\xE9ro de facture';\n" +
+"    if (!groupedDocuments?.some((doc) => doc.type === \"Transaction\") && !groupedOptional.some((label) => invoice.invoice_number.startsWith(label)))\n" +
+"      return `<a\n" +
+"          title=\"Si la transaction est introuvable, mettre un des textes propos\\xE9s au d\\xE9but du num\\xE9ro de facture. Cliquer ici pour plus d'informations.\"\n" +
+"          href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Pas%20de%20transaction%20attach%C3%A9e\"\n" +
+"        >Pas de transaction attach\\xE9e \\u24D8</a><ul style=\"margin:0;padding:0.8em;\">${groupedOptional.map((it) => `<li>${it}</li>`).join(\"\")}</ul>`;\n" +
+"    if (invoice.date || invoice.deadline)\n" +
+"      return `<a\n" +
+"      title=\"Les dates des pi\\xE8ces orient\\xE9es client doivent toujours \\xEAtre vides. Cliquer ici pour plus d'informations\"\n" +
+"      href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Facture%20client\"\n" +
+"    >Les dates doivent \\xEAtre vides \\u24D8</a>`;\n" +
 "    return \"OK\";\n" +
 "  }\n" +
 "}\n" +
@@ -1538,7 +1578,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    const invoice = getReact(infos, 32).memoizedProps.invoice;\n" +
 "    if (this.state.reactInvoice !== invoice) {\n" +
 "      this.state.reactInvoice = invoice;\n" +
-"      this.state.invoice = Invoice.from(invoice);\n" +
+"      this.state.invoice = await Invoice.load(invoice.id);\n" +
 "      return false;\n" +
 "    }\n" +
 "    const ledgerEvents = $$(\"form[name^=DocumentEntries-]\").reduce((events, form) => {\n" +
@@ -1565,7 +1605,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    tagsContainer.insertBefore(this.container, tagsContainer.firstChild);\n" +
 "  }\n" +
 "  async loadMessage() {\n" +
-"    console.log(\"load message\", this);\n" +
+"    this.log(\"load message\", this);\n" +
 "    if (!this.state.invoice)\n" +
 "      return this.setMessage(\"\\u27F3\");\n" +
 "    const status = { ...await this.state.invoice.getStatus(), fetchedAt: Date.now() };\n" +
@@ -1621,7 +1661,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  addInvoiceInfos() {\n" +
 "    const buttonsBlock = $$(\"div>a+button>svg\").find((svg) => !svg.closest(\"div\")?.querySelector(\".archive-button\"))?.closest(\"div\");\n" +
 "    if (!buttonsBlock) {\n" +
-"      console.log(this.constructor.name, \"addInvoiceInfos : no invoice found\");\n" +
+"      this.log(\"addInvoiceInfos : no invoice found\");\n" +
 "      return;\n" +
 "    }\n" +
 "    const buttonClass = buttonsBlock.querySelector(\"button\")?.className ?? \"\";\n" +
@@ -1644,7 +1684,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      });\n" +
 "      await invoice.archive();\n" +
 "      buttonsBlock.closest(\".card\")?.remove();\n" +
-"      console.log(`archive invoice #${id}`, { invoice });\n" +
+"      this.log(`archive invoice #${id}`, { invoice });\n" +
 "    });\n" +
 "    upElement(buttonsBlock, 3).querySelector(\".flex-grow-1 .d-block:last-child\")?.appendChild(\n" +
 "      parseHTML(\n" +
@@ -1666,7 +1706,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  }\n" +
 "  async *walk(params) {\n" +
 "    if (\"page\" in params && !Number.isInteger(params.page)) {\n" +
-"      console.log(this.constructor.name, \"walk\", { params });\n" +
+"      this.log(\"walk\", { params });\n" +
 "      throw new Error('The \"page\" parameter must be a valid integer number');\n" +
 "    }\n" +
 "    let parameters = jsonClone(params);\n" +
@@ -1727,7 +1767,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      const invoiceNumberField = $(\"input[name=invoice_number]\");\n" +
 "      if (event.target !== invoiceNumberField || !invoiceNumberField)\n" +
 "        return;\n" +
-"      console.log(\"Ctrl + S on invoice number field\");\n" +
+"      this.log(\"Ctrl + S on invoice number field\");\n" +
 "      event.preventDefault();\n" +
 "      event.stopImmediatePropagation();\n" +
 "      const rawInvoice = getReactProps(invoiceNumberField, 27).initialValues;\n" +
@@ -1767,7 +1807,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    event.preventDefault();\n" +
 "    const filterButton = $$(\"div.dropdown button\").find((button) => getReactProps(button, 1).label === label);\n" +
 "    if (!filterButton)\n" +
-"      console.log(`bouton \"${label}\" introuvable`);\n" +
+"      this.log(`bouton \"${label}\" introuvable`);\n" +
 "    if (event.shiftKey) {\n" +
 "      $(\"div[aria-label=Effacer]\", filterButton)?.click();\n" +
 "      return;\n" +
@@ -1775,7 +1815,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    filterButton?.click();\n" +
 "    const inputField = await waitElem(`input[aria-label=${label}]`, \"\", 2e3);\n" +
 "    if (!inputField)\n" +
-"      console.log(`champ \"input[aria-label=${label}]\" introuvable`);\n" +
+"      this.log(`champ \"input[aria-label=${label}]\" introuvable`);\n" +
 "    inputField?.focus();\n" +
 "  }\n" +
 "  async manageEnter(event) {\n" +
@@ -1831,7 +1871,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  }\n" +
 "  fill(anchor) {\n" +
 "    const table = anchor.closest(\"table\");\n" +
-"    console.log(this.constructor.name, \"fill\", table);\n" +
+"    this.log(\"fill\", table);\n" +
 "    const headRow = $(\"thead tr\", table);\n" +
 "    $(\"th.id-column\", headRow)?.remove();\n" +
 "    headRow?.insertBefore(parseHTML(`<th class=\"id-column th-element border-top-0 border-bottom-0 box-shadow-bottom-secondary-200 align-middle p-1 text-secondary-700 font-size-075 text-nowrap is-pinned\">\n" +
@@ -1840,7 +1880,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      </div>\n" +
 "    </th>`), $(\"th+th\", headRow));\n" +
 "    const bodyRows = $$(\"tbody tr\", table);\n" +
-"    console.log(this.constructor.name, { bodyRows });\n" +
+"    this.log({ bodyRows });\n" +
 "    bodyRows.forEach((row) => {\n" +
 "      const id = getReactProps(row, 1).data.id;\n" +
 "      $(\".id-column\", row)?.remove();\n" +

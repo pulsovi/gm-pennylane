@@ -23,7 +23,7 @@ export default class NextInvalidTransaction extends OpenNextInvalid {
     params: Record<string, string | number>
   ): AsyncGenerator<Status, undefined, void> {
     if (('page' in params) && !Number.isInteger(params.page)) {
-      console.log(this.constructor.name, 'walk', { params });
+      this.log('walk', { params });
       throw new Error('The "page" parameter must be a valid integer number');
     }
 

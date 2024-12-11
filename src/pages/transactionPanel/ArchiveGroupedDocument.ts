@@ -17,7 +17,7 @@ export default class ArchiveGroupedDocument extends Service {
       .find(svg => !svg.closest('div')?.querySelector('.archive-button'))
       ?.closest('div');
     if (!buttonsBlock) {
-      console.log(this.constructor.name, 'addInvoiceInfos : no invoice found');
+      this.log('addInvoiceInfos : no invoice found');
       return;
     }
 
@@ -43,7 +43,7 @@ export default class ArchiveGroupedDocument extends Service {
       });
       await invoice.archive();
       buttonsBlock.closest('.card')?.remove();
-      console.log(`archive invoice #${id}`, {invoice});
+      this.log(`archive invoice #${id}`, {invoice});
     });
 
     upElement(buttonsBlock, 3).querySelector('.flex-grow-1 .d-block:last-child')?.appendChild(

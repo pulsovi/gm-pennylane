@@ -5,20 +5,26 @@ import Transaction from '../../models/Transaction.js';
 
 /** Add validation message on transaction panel */
 export default class ValidMessage extends Service {
-  private transaction: Transaction;
-  private events: LedgerEvent[] = [];
+  private transaction?: Transaction;
+  private ledgerEvents: LedgerEvent[] = [];
   private message: string = '⟳';
 
   async init () {
     await waitElem('h3', 'Transactions');                    // Transactions panel
     await waitElem('.paragraph-body-m+.heading-page.mt-1')   // transaction detail panel
+    document.addEventListener('keydown', event => {
+      if (findElem('h3', 'Transactions') && event.ctrlKey && event.key === 's') {
+        event.preventDefault();
+        delete this.transaction;
+      }
+    })
     while (await waitFunc(async () => !await this.isSync())) {
       await this.loadMessage();
     }
   }
 
   async loadMessage () {
-    console.log(this.constructor.name, 'loadMessage', this);
+    this.log('loadMessage', this);
     this.message = '⟳';
     this.displayHeadband();
 
@@ -36,16 +42,16 @@ export default class ValidMessage extends Service {
         return [...events, ...formEvents];
       }, []);
 
-    if (ledgerEvents.some((event, id) => this.events[id] !== event)) {
-      const logData = { oldEvents: this.events };
-      this.events = ledgerEvents;
-      console.log(this.constructor.name, 'desynchronisé', { ...logData, ...this });
+    if (ledgerEvents.some((event, id) => this.ledgerEvents[id] !== event)) {
+      const logData = { oldEvents: this.ledgerEvents };
+      this.ledgerEvents = ledgerEvents;
+      this.log('desynchronisé', { ...logData, ...this });
       return false;
     }
 
     const current = Number(getParam(location.href, 'transaction_id'));
     if (current && current !== this.transaction?.id) {
-      console.log(this.constructor.name, 'transaction desynchronisée', { current, ...this });
+      this.log('transaction desynchronisée', { current, ...this });
       return false;
     }
 

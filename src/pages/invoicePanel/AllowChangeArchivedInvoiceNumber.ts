@@ -16,7 +16,7 @@ export default class AllowChangeArchivedInvoiceNumber extends Service {
       const invoiceNumberField = $<HTMLInputElement>('input[name=invoice_number]');
       if (event.target !== invoiceNumberField || !invoiceNumberField) return;
 
-      console.log('Ctrl + S on invoice number field');
+      this.log('Ctrl + S on invoice number field');
 
       event.preventDefault(); event.stopImmediatePropagation();
       const rawInvoice = getReactProps(invoiceNumberField, 27).initialValues;
