@@ -21,23 +21,21 @@ export default class Transaction extends ValidableDocument {
     const doc = await this.getDocument();
     const groupedDocuments = await this.getGroupedDocuments();
 
+    // Transaction archivée
+    if (doc.archived) return 'OK';
+
     if (
-      doc.label.toUpperCase().startsWith('VIR ')
+      !doc.date.startsWith('2023')
+      && doc.label.toUpperCase().startsWith('VIR ')
       && ![
         ' DE: STRIPE MOTIF: STRIPE REF: STRIPE-',
         ' DE: STRIPE MOTIF: ALLODONS REF: ',
+        ' DE: Stripe Technology Europe Ltd MOTIF: STRIPE ',
       ].some(label => doc.label.includes(label))
       && groupedDocuments.length < 2
     ) {
       return 'Virement reçu sans justificatif';
     }
-
-    // N'afficher que les transaction avant 2024
-    //if (doc.date.startsWith('2024')) return 'OK';
-
-    // Transaction archivée
-    if (doc.archived) return 'OK';
-
 
     const ledgerEvents = await this.getLedgerEvents();
 
@@ -66,15 +64,18 @@ export default class Transaction extends ValidableDocument {
     if (!recent && !groupedDocuments.find(gdoc => gdoc.id === doc.id)?.reconciled)
       return 'Cette transaction n\'est pas rattachée à un rapprochement bancaire';
 
-    // justificatif demandé
-    if (!doc.is_waiting_details || isCurrent) {
+    if (
+      // si justificatif demandé, sauter cette section
+      !doc.is_waiting_details
+      || isCurrent
+    ) {
       if (ledgerEvents.find(line => line.planItem.number === '6288'))
         return 'Une ligne d\'écriture comporte le numéro de compte 6288';
 
       if (ledgerEvents.find(line => line.planItem.number === '4716001'))
         return "Une ligne d'écriture utilise un compte d'attente 4716001";
 
-      if (ledgerEvents.some(line => line.planItem.number.startsWith('41')))
+      if (ledgerEvents.some(line => line.planItem.number.startsWith('47')))
         return 'Une écriture comporte un compte d\'attente';
 
       // balance déséquilibrée
@@ -90,10 +91,29 @@ export default class Transaction extends ValidableDocument {
         }
       }
 
+      // balance déséquilibrée - version exigeante
+      const balance = groupedDocuments.reduce((acc, gdoc) => {
+        const isTransaction = gdoc.type === 'Transaction';
+        // Pour les remises de chèques, on a deux pièces justificatives necessaires : le chèque et le cerfa
+        const isRemise = doc.label.startsWith('REMISE CHEQUE ');
+        const coeff = isTransaction ? (isRemise ? -2 : -1) : 1;
+        const value = parseFloat(gdoc.currency_amount ?? gdoc.amount);
+        if (isCurrent) this.log({ isTransaction, isRemise, coeff, acc, value });
+        return acc + (coeff * value);
+      }, 0);
+      if (Math.abs(balance) > 0.001) {
+        // On a parfois des calculs qui ne tombent pas très juste en JS
+        return `<a
+          title="Cliquer ici pour plus d'informations."
+          href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Transaction%20-%20Balance%20v2"
+        >Balance v2 déséquilibrée: ${balance} ⓘ</a>`;
+      }
+
       // Pas plus d'exigence pour les petits montants
       if (Math.abs(parseFloat(doc.currency_amount)) < 100) return 'OK';
 
       // Justificatif manquant
+      if(doc.date.startsWith('2023')) return 'OK';
       const attachmentOptional =
         Math.abs(parseFloat(doc.currency_amount)) < 100
         || [
@@ -107,7 +127,6 @@ export default class Transaction extends ValidableDocument {
         ].some(label => doc.label.startsWith(label));
       const attachmentRequired = doc.attachment_required && !doc.attachment_lost
         && (!attachmentOptional || isCurrent);
-      const groupedDocuments = await this.getGroupedDocuments();
       const hasAttachment = groupedDocuments.length > 1;
       if (isCurrent) this.log({ attachmentOptional, attachmentRequired, groupedDocuments, hasAttachment });
       if (attachmentRequired && !hasAttachment) return 'Justificatif manquant';
