@@ -1,6 +1,6 @@
 import { getParam } from '../_';
 import { getInvoice, updateInvoice } from '../api/invoice.js';
-import { RawInvoice, RawInvoiceUpdate, RawThirdparty } from '../api/types.js';
+import { RawInvoice, RawInvoiceUpdate } from '../api/types.js';
 import ValidableDocument from './ValidableDocument.js';
 
 export default abstract class Invoice extends ValidableDocument {
@@ -15,7 +15,7 @@ export default abstract class Invoice extends ValidableDocument {
   static async load (id: number) {
     const invoice = await getInvoice(id);
     if (!invoice?.id) {
-      console.log('Invoice.load: cannot load this invoice', {id, invoice});
+      console.log('Invoice.load: cannot load this invoice', {id, invoice, _this: this});
       return null;
     }
     return this.from(invoice);
@@ -44,11 +44,11 @@ class SupplierInvoice extends Invoice {
     const current = Number(getParam(location.href, 'id'));
 
     const invoice = await this.getInvoice();
-    if (!invoice) console.log('SupplierInvoice.loadValidMessage', {invoice});
+    if (!invoice) this.log('SupplierInvoice.loadValidMessage', {invoice});
 
     const invoiceDocument = await this.getDocument();
     if (invoice.id === current)
-      console.log('SupplierInvoice.loadValidMessage', { invoice, invoiceDocument });
+      this.log('SupplierInvoice.loadValidMessage', this);
 
     // Transaction < 2024 => OK
     const groupedDocuments = await this.getGroupedDocuments();
@@ -58,7 +58,7 @@ class SupplierInvoice extends Invoice {
       transactions.length &&
       transactions.every(transaction => parseInt(transaction.date.slice(0, 4)) < currentYear)
     ) {
-      if (invoice.id == current) console.log(this.constructor.name, 'loadValidMessage', 'année passée');
+      if (invoice.id == current) this.log('loadValidMessage', 'année passée');
       return 'OK';
     }
 
@@ -75,7 +75,7 @@ class SupplierInvoice extends Invoice {
           title="Le numéro de facture d'une facture archivée doit commencer par une de ces possibilités. Cliquer ici pour plus d'informations."
           href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Facture%20archiv%C3%A9e"
         >Facture archivée sans référence ⓘ</a><ul style="margin:0;padding:0.8em;">${archivedAllowed.map(it => `<li>${it}</li>`).join('')}</ul>`;
-      if (invoice.id == current) console.log(this.constructor.name, 'loadValidMessage', 'archivé avec numéro de facture correct');
+      if (invoice.id == current) this.log('loadValidMessage', 'archivé avec numéro de facture correct');
       return 'OK';
     }
 
@@ -149,7 +149,7 @@ class SupplierInvoice extends Invoice {
     // Ecarts de conversion de devise
     if (invoice.currency !== 'EUR') {
       const diffLine = ledgerEvents.find(line => line.planItem.number === '4716001');
-      console.log({ledgerEvents, diffLine});
+      this.log({ledgerEvents, diffLine});
       if (diffLine) {
         if (parseFloat(diffLine.amount) < 0)
           return 'Les écarts de conversions de devises doivent utiliser le compte 756';
@@ -199,7 +199,7 @@ class CustomerInvoice extends Invoice {
 
   async loadValidMessage () {
     const invoice = await this.getInvoice();
-    console.log(this.constructor.name, 'loadValidMessage', { invoice });
+    this.log('loadValidMessage', { invoice });
     // Archived
     if (invoice.archived) {
       const allowed = ['§ #', '¤ TRANSACTION INTROUVABLE'];
@@ -219,8 +219,9 @@ class CustomerInvoice extends Invoice {
     // Pas de client
     if (!invoice.thirdparty) return 'choisir un "client"';
 
-    // Les dates doivent toujours être vides
-    if (invoice.date || invoice.deadline) return 'les dates des pièces orientées client doivent toujours être vides';
+    // don manuel
+    if (![113420582, 103165930].includes(invoice.thirdparty.id))
+      return 'les seuls clients autorisés sont "PIECE ID" et "DON MANUEL"';
 
     // piece id
     if (invoice.thirdparty.id === 113420582) {
@@ -229,18 +230,30 @@ class CustomerInvoice extends Invoice {
       return 'OK';
     }
 
-    // don manuel
-    if (![113420582, 103165930].includes(invoice.thirdparty.id))
-      return 'les seuls clients autorisés sont "PIECE ID" et "DON MANUEL"';
+    // Montant
+    if (invoice.amount === '0.0') return `<a
+      title="Cliquer ici pour plus d'informations."
+      href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Facture%20client"
+    >Ajouter le montant ⓘ</a>`;
 
     // Has transaction attached
     const invoiceDocument = await this.getDocument();
+    const groupedOptional = ['¤ TRANSACTION INTROUVABLE'];
     const groupedDocuments = invoiceDocument.grouped_documents;
     if (
       !groupedDocuments?.some(doc => doc.type === 'Transaction')
-      && !invoice.invoice_number.startsWith('¤ TRANSACTION INTROUVABLE')
+      && !groupedOptional.some(label => invoice.invoice_number.startsWith(label))
     )
-      return 'pas de transaction attachée - Si la transaction est introuvable, mettre le texte "¤ TRANSACTION INTROUVABLE" au début du numéro de facture';
+      return `<a
+          title="Si la transaction est introuvable, mettre un des textes proposés au début du numéro de facture. Cliquer ici pour plus d'informations."
+          href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Pas%20de%20transaction%20attach%C3%A9e"
+        >Pas de transaction attachée ⓘ</a><ul style="margin:0;padding:0.8em;">${groupedOptional.map(it => `<li>${it}</li>`).join('')}</ul>`;
+
+    // Les dates doivent toujours être vides
+    if (invoice.date || invoice.deadline) return `<a
+      title="Les dates des pièces orientées client doivent toujours être vides. Cliquer ici pour plus d'informations"
+      href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Facture%20client"
+    >Les dates doivent être vides ⓘ</a>`;
 
     return 'OK';
   }
