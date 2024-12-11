@@ -1,6 +1,6 @@
-import EventEmitter from "./EventEmitter";
+import Logger from "./Logger";
 
-export default abstract class Cache<T> extends EventEmitter {
+export default abstract class Cache<T> extends Logger {
   public readonly storageKey: string;
 
   protected data: T;
@@ -10,7 +10,7 @@ export default abstract class Cache<T> extends EventEmitter {
     this.storageKey = key;
     this.data = initialValue;
     this.load();
-    console.log('new Cache', this);
+    this.log('new Cache', this);
     this.follow();
   }
 
@@ -56,11 +56,10 @@ export default abstract class Cache<T> extends EventEmitter {
     window.addEventListener('storage', event => {
       if (event.storageArea !== localStorage || event.key !== this.storageKey) return;
       try {
-        console.log('update cache');
         this.data = this.parse(event.newValue);
         this.emit('change', this);
       } catch (error) {
-        console.log(this.constructor.name, 'storage event error', { error, value: event.newValue });
+        this.log('storage event error', { error, value: event.newValue });
         /* Reject data and overrid it at next save() */
       }
     });
