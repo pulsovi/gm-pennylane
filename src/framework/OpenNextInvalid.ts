@@ -1,4 +1,4 @@
-import { $, getParam, getRandomArrayItem, parseHTML, sleep } from "../_";
+import { $, getParam, parseHTML } from "../_";
 import { openDocument } from "../navigation/openDocument";
 import Autostarter, { type AutostarterParent } from "./Autostarter";
 import CacheList from "./CacheList";
@@ -30,7 +30,7 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
   protected abstract cache: CacheList<Status>;
 
   async init () {
-    console.log(this.constructor.name, 'init');
+    this.log('init');
 
     this.start = this.start.bind(this);
     this.current = Number(getParam(location.href, this.idParamName));
@@ -81,7 +81,7 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
     let cached = this.cache.filter({ valid: false });
     for (const cachedItem of cached) {
       const status = await this.updateStatus(cachedItem.id);
-      if (status?.valid === false) yield status;
+      if (status?.valid === false && !status.ignored) yield status;
     }
 
     // verifier les entrées non encore chargées
@@ -151,15 +151,15 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
   protected abstract walk (params: Record<string, string|number>): AsyncGenerator<RawStatus, undefined, void>;
 
   async openNext (interactionAllowed = false) {
-    console.log(this.constructor.name, 'openNext');
+    this.log('openNext');
 
     let status = (await this.invalidGenerator.next()).value;
     while (status?.id === this.current || status?.ignored) {
-      console.log({status, current: this.current, class: this});
+      this.log({status, current: this.current, class: this});
       status = (await this.invalidGenerator.next()).value;
     }
     if (status) {
-      console.log(this.constructor.name, 'next found :', { current: this.current, status, class: this });
+      this.log('next found :', { current: this.current, status, class: this });
       openDocument(status.id);
       return;
     }
@@ -190,7 +190,7 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
 
     // load all
     const from = this.cache.reduce((acc, status) => Math.max(status.createdAt, acc), 0);
-    console.log(this.constructor.name, 'firstLoading', { from });
+    this.log('firstLoading', { from });
     const news = this.walk({
       filter: JSON.stringify([{ field: 'created_at', operator: 'gteq', value: new Date(from).toISOString() }]),
       sort: '+created_at',
