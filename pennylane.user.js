@@ -256,7 +256,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  }\n" +
 "}\n" +
 "\n" +
-"let Service$1 = class Service extends Logger {\n" +
+"class Service extends Logger {\n" +
 "  static instance;\n" +
 "  constructor() {\n" +
 "    super();\n" +
@@ -273,7 +273,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  }\n" +
 "  init() {\n" +
 "  }\n" +
-"};\n" +
+"}\n" +
 "\n" +
 "let apiRequestWait = null;\n" +
 "async function apiRequest(endpoint, data, method = \"POST\") {\n" +
@@ -477,14 +477,28 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    const groupedDocuments = await this.getGroupedDocuments();\n" +
 "    if (doc.archived)\n" +
 "      return \"OK\";\n" +
-"    if (!doc.date.startsWith(\"2023\") && doc.label.toUpperCase().startsWith(\"VIR \") && ![\n" +
-"      \" DE: STRIPE MOTIF: STRIPE REF: STRIPE-\",\n" +
-"      \" DE: STRIPE MOTIF: ALLODONS REF: \",\n" +
-"      \" DE: Stripe Technology Europe Ltd MOTIF: STRIPE \"\n" +
-"    ].some((label) => doc.label.includes(label)) && groupedDocuments.length < 2) {\n" +
-"      return \"Virement re\\xE7u sans justificatif\";\n" +
-"    }\n" +
 "    const ledgerEvents = await this.getLedgerEvents();\n" +
+"    if (doc.label.includes(\" DE: STRIPE MOTIF: ALLODONS REF: \")) {\n" +
+"      if (ledgerEvents.length !== 2 || groupedDocuments.length > 1 || ledgerEvents.reduce((acc, ev) => acc + parseFloat(ev.amount), 0) !== 0 || !ledgerEvents.find((ev) => ev.planItem.number === \"754110001\"))\n" +
+"        return \"Virement Allodons mal attribu\\xE9\";\n" +
+"      return \"OK\";\n" +
+"    }\n" +
+"    if (!doc.date.startsWith(\"2023\") && doc.label.toUpperCase().startsWith(\"VIR \")) {\n" +
+"      if (doc.label.includes(\" DE: Stripe Technology Europe Ltd MOTIF: STRIPE \")) {\n" +
+"        if (ledgerEvents.length !== 2 || groupedDocuments.length > 1 || ledgerEvents.reduce((acc, ev) => acc + parseFloat(ev.amount), 0) !== 0 || !ledgerEvents.find((ev) => ev.planItem.number === \"58000001\"))\n" +
+"          return \"Virement interne Stripe mal attribu\\xE9\";\n" +
+"        return \"OK\";\n" +
+"      }\n" +
+"      if (doc.label.includes(\" DE: ASS UNE LUMIERE POUR MILLE\")) {\n" +
+"        if (ledgerEvents.length !== 2 || groupedDocuments.length > 1 || ledgerEvents.reduce((acc, ev) => acc + parseFloat(ev.amount), 0) !== 0 || !ledgerEvents.find((ev) => ev.planItem.number === \"75411\"))\n" +
+"          return \"Virement re\\xE7u d'une association mal attribu\\xE9\";\n" +
+"        return \"OK\";\n" +
+"      }\n" +
+"      if (groupedDocuments.length < 2)\n" +
+"        return \"Virement re\\xE7u sans justificatif\";\n" +
+"      if (!groupedDocuments.find((gdoc) => gdoc.label.includes(\"CERFA\")))\n" +
+"        return \"Les virements re\\xE7us doivent \\xEAtre justifi\\xE9s par un CERFA\";\n" +
+"    }\n" +
 "    if (ledgerEvents.some((line) => line.planItem.number.startsWith(\"6571\"))) {\n" +
 "      if (ledgerEvents.some((line) => line.planItem.number.startsWith(\"6571\") && !line.label)) {\n" +
 "        return `nom du b\\xE9n\\xE9ficiaire manquant dans l'\\xE9criture \"6571\"`;\n" +
@@ -513,7 +527,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      if (ledgerEvents.find((line) => line.planItem.number === \"4716001\"))\n" +
 "        return \"Une ligne d'\\xE9criture utilise un compte d'attente 4716001\";\n" +
 "      if (ledgerEvents.some((line) => line.planItem.number.startsWith(\"47\")))\n" +
-"        return \"Une \\xE9criture comporte un compte d'attente\";\n" +
+"        return \"Une \\xE9criture comporte un compte d'attente (commen\\xE7ant par 47)\";\n" +
 "      const third = ledgerEvents.find((line) => line.planItem.number.startsWith(\"40\"))?.planItem?.number;\n" +
 "      if (third) {\n" +
 "        const thirdEvents = ledgerEvents.filter((line) => line.planItem.number === third);\n" +
@@ -526,11 +540,12 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      }\n" +
 "      const balance = groupedDocuments.reduce((acc, gdoc) => {\n" +
 "        const isTransaction = gdoc.type === \"Transaction\";\n" +
-"        const isRemise = doc.label.startsWith(\"REMISE CHEQUE \");\n" +
-"        const coeff = isTransaction ? isRemise ? -2 : -1 : 1;\n" +
+"        const isCheque = doc.label.startsWith(\"CHEQUE \") || doc.label.startsWith(\"REMISE CHEQUE \");\n" +
+"        const isDonation = parseFloat(doc.amount) > 0;\n" +
+"        const coeff = isTransaction ? (isDonation ? -1 : 1) * (isCheque ? 2 : 1) : 1;\n" +
 "        const value = parseFloat(gdoc.currency_amount ?? gdoc.amount);\n" +
 "        if (isCurrent)\n" +
-"          this.log({ isTransaction, isRemise, coeff, acc, value });\n" +
+"          this.log({ isTransaction, isCheque, isDonation, coeff, acc, value });\n" +
 "        return acc + coeff * value;\n" +
 "      }, 0);\n" +
 "      if (Math.abs(balance) > 1e-3) {\n" +
@@ -568,7 +583,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  }\n" +
 "}\n" +
 "\n" +
-"class ValidMessage extends Service$1 {\n" +
+"class ValidMessage extends Service {\n" +
 "  transaction;\n" +
 "  ledgerEvents = [];\n" +
 "  message = \"\\u27F3\";\n" +
@@ -643,7 +658,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  return await response.json();\n" +
 "}\n" +
 "\n" +
-"class TransactionAddByIdButton extends Service$1 {\n" +
+"class TransactionAddByIdButton extends Service {\n" +
 "  transaction;\n" +
 "  async init() {\n" +
 "    if ($(\".add-by-id-btn\"))\n" +
@@ -1093,25 +1108,6 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  }\n" +
 "}\n" +
 "\n" +
-"class Service extends Logger {\n" +
-"  static instance;\n" +
-"  constructor() {\n" +
-"    super();\n" +
-"    this.init();\n" +
-"  }\n" +
-"  static start() {\n" +
-"    console.log(this.name, \"start\", this);\n" +
-"    this.getInstance();\n" +
-"  }\n" +
-"  static getInstance() {\n" +
-"    if (!this.instance)\n" +
-"      this.instance = new this();\n" +
-"    return this.instance;\n" +
-"  }\n" +
-"  init() {\n" +
-"  }\n" +
-"}\n" +
-"\n" +
 "class OpenNextInvalid extends Service {\n" +
 "  container = document.createElement(\"div\");\n" +
 "  autostart;\n" +
@@ -1321,11 +1317,11 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    const invoice = await this.getInvoice();\n" +
 "    if (!invoice)\n" +
 "      this.log(\"SupplierInvoice.loadValidMessage\", { invoice });\n" +
-"    await this.getDocument();\n" +
+"    const doc = await this.getDocument();\n" +
 "    if (invoice.id === current)\n" +
-"      this.log(\"SupplierInvoice.loadValidMessage\", this);\n" +
+"      this.log(\"loadValidMessage\", this);\n" +
 "    const groupedDocuments = await this.getGroupedDocuments();\n" +
-"    const transactions = groupedDocuments.filter((doc) => doc.type === \"Transaction\");\n" +
+"    const transactions = groupedDocuments.filter((doc2) => doc2.type === \"Transaction\");\n" +
 "    const currentYear = 2024;\n" +
 "    if (transactions.length && transactions.every((transaction) => parseInt(transaction.date.slice(0, 4)) < currentYear)) {\n" +
 "      if (invoice.id == current)\n" +
@@ -1376,7 +1372,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "        href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20CHQ%20TAXI\"\n" +
 "      >Ajouter le fournisseur \\u24D8</a><ul style=\"margin:0;padding:0.8em;\"><li>|TAXI|</li><li>CHQ#</li></ul>`;\n" +
 "    }\n" +
-"    const emptyDateAllowed = [\"CHQ\"];\n" +
+"    const emptyDateAllowed = [\"CHQ\", \"CHQ D\\xC9CHIR\\xC9\"];\n" +
 "    if ([106438171, 114270419, 106519227].includes(invoice.thirdparty?.id ?? 0) || emptyDateAllowed.some((item) => invoice.invoice_number?.startsWith(item))) {\n" +
 "      if (invoice.date || invoice.deadline)\n" +
 "        return `<a\n" +
@@ -1417,7 +1413,10 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      else\n" +
 "        return `Le \"Num\\xE9ro de facture\" des pi\\xE8ces d'identit\\xE9 commence obligatoirement par \"ID \"`;\n" +
 "    }\n" +
-"    if (!transactions.length) {\n" +
+"    const documentDate = new Date(doc.date);\n" +
+"    const day = 864e5;\n" +
+"    const isRecent = Date.now() - documentDate.getTime() < 15 * day;\n" +
+"    if (!isRecent && !transactions.length) {\n" +
 "      const orphanAllowed = [\"\\xA4 TRANSACTION INTROUVABLE\"];\n" +
 "      if (!orphanAllowed.some((label) => invoice.invoice_number.startsWith(label))) {\n" +
 "        const archiveLabel = archivedAllowed.find((label) => invoice.invoice_number.startsWith(label));\n" +
@@ -1468,6 +1467,15 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      title=\"Cliquer ici pour plus d'informations.\"\n" +
 "      href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Facture%20client\"\n" +
 "    >Ajouter le montant \\u24D8</a>`;\n" +
+"    if (invoice.thirdparty_id === 103165930 && ![\"CHQ\", \"CERFA\"].some((label) => invoice.invoice_number.includes(label))) {\n" +
+"      return `<a\n" +
+"        title=\"Le num\\xE9ro de facture doit \\xEAtre conforme \\xE0 un des mod\\xE8les propos\\xE9s. Cliquer ici pour plus d'informations.\"\n" +
+"        href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Don%20Manuel%20-%20num%C3%A9ro%20de%20facture\"\n" +
+"      >Informations manquantes dans le num\\xE9ro de facture \\u24D8</a><ul style=\"margin:0;padding:0.8em;\">${[\n" +
+"        \"CERFA n\\xB0### - Pr\\xE9nom Nom - JJ/MM/AAAA\",\n" +
+"        \"CHQ - Pr\\xE9nom Nom - JJ/MM/AAAA\"\n" +
+"      ].map((it) => `<li>${it}</li>`).join(\"\")}</ul>`;\n" +
+"    }\n" +
 "    const invoiceDocument = await this.getDocument();\n" +
 "    const groupedOptional = [\"\\xA4 TRANSACTION INTROUVABLE\"];\n" +
 "    const groupedDocuments = invoiceDocument.grouped_documents;\n" +
@@ -1545,7 +1553,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "class CacheStatus extends CacheListRecord {\n" +
 "}\n" +
 "\n" +
-"class InvoiceDisplayInfos extends Service$1 {\n" +
+"class InvoiceDisplayInfos extends Service {\n" +
 "  static instance;\n" +
 "  storageKey = \"InvoiceValidation\";\n" +
 "  cache;\n" +
@@ -1595,8 +1603,9 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    if (!this.container) {\n" +
 "      this.container = parseHTML(`<div class=\"sc-iGgVNO clwwQL d-flex align-items-center gap-1 gm-tag-container\">\n" +
 "        <div id=\"is-valid-tag\" class=\"d-inline-block bg-secondary-100 dihsuQ px-0_5\">\\u27F3</div>\n" +
-"        <div id=\"invoice-id\" class=\"d-inline-block bg-secondary-100 dihsuQ px-0_5\">#${this.state.invoice?.id}</div>\n" +
+"        <div id=\"invoice-id\" class=\"d-inline-block bg-secondary-100 dihsuQ px-0_5\"></div>\n" +
 "      </div>`).firstElementChild;\n" +
+"      this.setId();\n" +
 "    }\n" +
 "    const infos = await waitElem(\"h4.heading-section-3.mr-2\", \"Informations\");\n" +
 "    const tagsContainer = infos.nextSibling;\n" +
@@ -1615,11 +1624,12 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    return this.setMessage(valid ? \"\\u2713\" : \"\\u2717 \" + message);\n" +
 "  }\n" +
 "  async setId() {\n" +
-"    await this.appendContainer();\n" +
+"    if (!this.container)\n" +
+"      await this.appendContainer();\n" +
 "    const tag = $(\"#invoice-id\", this.container);\n" +
 "    if (!tag)\n" +
 "      throw new Error('tag \"invoice-id\" introuvable');\n" +
-"    tag.innerText = `#${this.state.invoice?.id}`;\n" +
+"    tag.innerHTML = `#${this.state.invoice?.id}<a title=\"r\\xE9ouvrir cette pi\\xE8ce dans un nouvel onglet\" target=\"_blank\" href=\"${location.href.split(\"/\").slice(0, 5).join(\"/\")}/documents/${this.state.invoice?.id}.html\" ><svg class=\"MuiSvgIcon-root MuiSvgIcon-fontSizeMedium mr-0_5 css-q7mezt\" focusable=\"false\" aria-hidden=\"true\" viewBox=\"0 0 24 24\" data-testid=\"OpenInNewRoundedIcon\" style=\"font-size: 1rem;\"><path d=\"M18 19H6c-.55 0-1-.45-1-1V6c0-.55.45-1 1-1h5c.55 0 1-.45 1-1s-.45-1-1-1H5c-1.11 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-6c0-.55-.45-1-1-1s-1 .45-1 1v5c0 .55-.45 1-1 1M14 4c0 .55.45 1 1 1h2.59l-9.13 9.13c-.39.39-.39 1.02 0 1.41s1.02.39 1.41 0L19 6.41V9c0 .55.45 1 1 1s1-.45 1-1V4c0-.55-.45-1-1-1h-5c-.55 0-1 .45-1 1\"></path></svg></a>`;\n" +
 "  }\n" +
 "  async setMessage(message) {\n" +
 "    await this.appendContainer();\n" +
@@ -1650,7 +1660,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  }\n" +
 "}\n" +
 "\n" +
-"class ArchiveGroupedDocument extends Service$1 {\n" +
+"class ArchiveGroupedDocument extends Service {\n" +
 "  async init() {\n" +
 "    await waitElem(\"h3\", \"Transactions\");\n" +
 "    while (await waitFunc(\n" +
@@ -1739,14 +1749,59 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "class FixTab extends Service {\n" +
 "  async init() {\n" +
 "    await waitElem(\"h4\", \"Ventilation\");\n" +
-"    document.addEventListener(\"keydown\", (event) => {\n" +
-"      if (event.code === \"Tab\" && event.shiftKey && event.srcElement === $(\"input[name=currency_amount]\")) {\n" +
-"        event.preventDefault();\n" +
-"        event.stopPropagation();\n" +
-"        $(\"input[name=date]\")?.focus();\n" +
-"      }\n" +
-"    });\n" +
+"    document.addEventListener(\"keydown\", (event) => this.handleKeyDown(event));\n" +
 "    this.watch();\n" +
+"  }\n" +
+"  handleKeyDown(event) {\n" +
+"    if (event.code !== \"Tab\")\n" +
+"      return;\n" +
+"    const order = this.getOrder(event.target);\n" +
+"    const toSelect = event.shiftKey ? order?.previous : order?.next;\n" +
+"    if (!toSelect || !order)\n" +
+"      return;\n" +
+"    event.preventDefault();\n" +
+"    event.stopPropagation();\n" +
+"    const currentContainer = order.current.closest(\".show.dropdown\");\n" +
+"    if (currentContainer)\n" +
+"      currentContainer.classList.remove(\"show\");\n" +
+"    const toSelectContainer = toSelect.closest(\".dropdown\");\n" +
+"    if (toSelectContainer)\n" +
+"      toSelectContainer.classList.add(\"show\");\n" +
+"    toSelect.focus();\n" +
+"    toSelect.setSelectionRange(0, toSelect.value.length);\n" +
+"  }\n" +
+"  getOrder(target) {\n" +
+"    const orderList = this.getOrderList();\n" +
+"    const currentSelector = orderList.find((selector) => $(selector) === target);\n" +
+"    if (!currentSelector)\n" +
+"      return null;\n" +
+"    const searchList = orderList.slice(orderList.indexOf(currentSelector) + 1).concat(orderList.slice(0, orderList.indexOf(currentSelector)));\n" +
+"    const nextSelector = searchList.find((selector) => $(selector));\n" +
+"    const previousSelector = searchList.reverse().find((selector) => $(selector));\n" +
+"    return {\n" +
+"      current: $(currentSelector),\n" +
+"      previous: previousSelector ? $(previousSelector) : null,\n" +
+"      next: nextSelector ? $(nextSelector) : null\n" +
+"    };\n" +
+"  }\n" +
+"  getOrderList() {\n" +
+"    if (findElem(\"button\", \"Client\"))\n" +
+"      return [\n" +
+"        \".input-group-prepend+.input-group-append input\",\n" +
+"        'input[name=\"invoice_number\"]',\n" +
+"        'input[name=\"currency_amount\"]',\n" +
+"        'input[placeholder=\"Rechercher\"]',\n" +
+"        'input[name=\"date\"]',\n" +
+"        'input[name=\"deadline\"]'\n" +
+"      ];\n" +
+"    return [\n" +
+"      'input[name=\"invoice_number\"]',\n" +
+"      \".input-group-prepend+.input-group-append input\",\n" +
+"      'input[name=\"date\"]',\n" +
+"      'input[name=\"deadline\"]',\n" +
+"      'input[name=\"currency_amount\"]',\n" +
+"      'input[name=\"currency_amount\"]+.input-group-append input[placeholder=\"Rechercher\"]'\n" +
+"    ];\n" +
 "  }\n" +
 "  async watch() {\n" +
 "    const ref = await waitElem('input[name=\"invoice_number\"]');\n" +
@@ -1764,15 +1819,20 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    document.addEventListener(\"keyup\", async (event) => {\n" +
 "      if (event.code !== \"KeyS\" || !event.ctrlKey)\n" +
 "        return;\n" +
+"      this.log(\"Ctrl + S pressed\");\n" +
 "      const invoiceNumberField = $(\"input[name=invoice_number]\");\n" +
-"      if (event.target !== invoiceNumberField || !invoiceNumberField)\n" +
+"      if (event.target !== invoiceNumberField || !invoiceNumberField) {\n" +
+"        this.log({ invoiceNumberField, eventTarget: event.target });\n" +
 "        return;\n" +
-"      this.log(\"Ctrl + S on invoice number field\");\n" +
+"      }\n" +
 "      event.preventDefault();\n" +
 "      event.stopImmediatePropagation();\n" +
-"      const rawInvoice = getReactProps(invoiceNumberField, 27).initialValues;\n" +
-"      if (!rawInvoice.archived)\n" +
+"      const rawInvoice = getReactProps(invoiceNumberField, 27).initialValues ?? // for supplier pieces\n" +
+"      getReactProps(invoiceNumberField, 44).initialValues;\n" +
+"      if (!rawInvoice.archived) {\n" +
+"        this.log(\"Invoice is not archived\");\n" +
 "        return;\n" +
+"      }\n" +
 "      const invoice = Invoice.from(rawInvoice);\n" +
 "      await invoice.unarchive();\n" +
 "      await invoice.update({ invoice_number: invoiceNumberField.value });\n" +
@@ -1832,7 +1892,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  }\n" +
 "}\n" +
 "\n" +
-"class EntryBlocInfos extends Service$1 {\n" +
+"class EntryBlocInfos extends Service {\n" +
 "  async init() {\n" +
 "    const className = `${this.constructor.name}-managed`;\n" +
 "    const selector = `form[name^=\"DocumentEntries-\"]:not(.${className})`;\n" +
@@ -1857,7 +1917,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  }\n" +
 "}\n" +
 "\n" +
-"class AddInvoiceIdColumn extends Service$1 {\n" +
+"class AddInvoiceIdColumn extends Service {\n" +
 "  name = this.constructor.name;\n" +
 "  async init() {\n" +
 "    await Promise.race([\n" +
