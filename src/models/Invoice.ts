@@ -47,9 +47,9 @@ class SupplierInvoice extends Invoice {
     const invoice = await this.getInvoice();
     if (!invoice) this.log('SupplierInvoice.loadValidMessage', {invoice});
 
-    const invoiceDocument = await this.getDocument();
+    const doc = await this.getDocument();
     if (invoice.id === current)
-      this.log('SupplierInvoice.loadValidMessage', this);
+      this.log('loadValidMessage', this);
 
     // Transaction < 2024 => OK
     const groupedDocuments = await this.getGroupedDocuments();
@@ -173,7 +173,10 @@ class SupplierInvoice extends Invoice {
     }
 
     // Has transaction attached
-    if (!transactions.length) {
+    const documentDate = new Date(doc.date);
+    const day = 86_400_000;
+    const isRecent = (Date.now() - documentDate.getTime()) < (15 * day);
+    if (!isRecent && !transactions.length) {
       const orphanAllowed = ['¤ TRANSACTION INTROUVABLE'];
       if (!orphanAllowed.some(label => invoice.invoice_number.startsWith(label))) {
         const archiveLabel = archivedAllowed.find(label => invoice.invoice_number.startsWith(label));
