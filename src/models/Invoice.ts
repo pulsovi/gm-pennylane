@@ -240,10 +240,25 @@ class CustomerInvoice extends Invoice {
       href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Facture%20client"
     >Ajouter le montant ⓘ</a>`;
 
+    // Don Manuel
+    if (
+      invoice.thirdparty_id === 103165930
+      && !['CHQ', 'CERFA '].some(label => invoice.invoice_number.startsWith(label))
+    ) {
+      return `<a
+        title="Le numéro de facture doit être conforme à un des modèles proposés. Cliquer ici pour plus d'informations."
+        href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Don%20Manuel%20-%20num%C3%A9ro%20de%20facture"
+      >Informations manquantes dans le numéro de facture ⓘ</a><ul style="margin:0;padding:0.8em;">${[
+        'CERFA n°### - Prénom Nom - JJ/MM/AAAA',
+        'CHQ - Prénom Nom - JJ/MM/AAAA',
+      ].map(it => `<li>${it}</li>`).join('')}</ul>`;
+    }
+
     // Has transaction attached
     const invoiceDocument = await this.getDocument();
     const groupedOptional = ['¤ TRANSACTION INTROUVABLE'];
     const groupedDocuments = invoiceDocument.grouped_documents;
+
     if (
       !groupedDocuments?.some(doc => doc.type === 'Transaction')
       && !groupedOptional.some(label => invoice.invoice_number.startsWith(label))
