@@ -24,6 +24,18 @@ export default class Transaction extends ValidableDocument {
     // Transaction archivée
     if (doc.archived) return 'OK';
 
+    const ledgerEvents = await this.getLedgerEvents();
+
+    if (doc.label.includes(' DE: STRIPE MOTIF: ALLODONS REF: ')) {
+      if (
+        ledgerEvents.length !== 2
+        || groupedDocuments.length > 1
+        || ledgerEvents.reduce((acc, ev) => acc + parseFloat(ev.amount), 0) !== 0
+        || !ledgerEvents.find(ev => ev.planItem.number === '754110001')
+      ) return 'Virement Allodons mal attribué';
+      return 'OK';
+    }
+
     if (
       !doc.date.startsWith('2023')
       && doc.label.toUpperCase().startsWith('VIR ')
