@@ -24,6 +24,7 @@ export default class CacheList<T> extends Cache<T[]> {
    * Returns the cached elements that match the condition specified
    */
   public filter (match: Partial<T>): T[] {
+    this.load();
     return this.data.filter(
       item => Object.entries(match).every(
         ([key, value]) => item[key] === value
@@ -36,6 +37,7 @@ export default class CacheList<T> extends Cache<T[]> {
    * otherwise.
    */
   public find (match: Partial<T>): T | undefined {
+    this.load();
     return this.data.find(
       item => Object.entries(match).every(
         ([key, value]) => item[key] === value
@@ -49,6 +51,7 @@ export default class CacheList<T> extends Cache<T[]> {
    * @return Deleted item if found
    */
   public delete (match: Partial<T>): T | null {
+    this.load();
     const found = this.find(match);
     if (!found) return null;
     this.data.splice(this.data.indexOf(found), 1);
@@ -75,6 +78,7 @@ export default class CacheList<T> extends Cache<T[]> {
    * @return Old value
    */
   public updateItem (match: Partial<T>, value: T): T | undefined {
+    this.load();
     const item = this.find(match);
     if (item) {
       this.data.splice(this.data.indexOf(item), 1, value);
@@ -94,6 +98,7 @@ export default class CacheList<T> extends Cache<T[]> {
    * and is provided as an argument in the next call to the callback function.
    */
   public reduce <R extends unknown>(cb: (acc: R, item: T) => R, startingValue: R): R {
+    this.load();
     return this.data.reduce(cb, startingValue);
   }
 }

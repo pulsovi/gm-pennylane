@@ -798,6 +798,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "   * Returns the cached elements that match the condition specified\n" +
 "   */\n" +
 "  filter(match) {\n" +
+"    this.load();\n" +
 "    return this.data.filter(\n" +
 "      (item) => Object.entries(match).every(\n" +
 "        ([key, value]) => item[key] === value\n" +
@@ -809,6 +810,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "   * otherwise.\n" +
 "   */\n" +
 "  find(match) {\n" +
+"    this.load();\n" +
 "    return this.data.find(\n" +
 "      (item) => Object.entries(match).every(\n" +
 "        ([key, value]) => item[key] === value\n" +
@@ -821,6 +823,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "   * @return Deleted item if found\n" +
 "   */\n" +
 "  delete(match) {\n" +
+"    this.load();\n" +
 "    const found = this.find(match);\n" +
 "    if (!found)\n" +
 "      return null;\n" +
@@ -846,6 +849,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "   * @return Old value\n" +
 "   */\n" +
 "  updateItem(match, value) {\n" +
+"    this.load();\n" +
 "    const item = this.find(match);\n" +
 "    if (item) {\n" +
 "      this.data.splice(this.data.indexOf(item), 1, value);\n" +
@@ -864,6 +868,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "   * and is provided as an argument in the next call to the callback function.\n" +
 "   */\n" +
 "  reduce(cb, startingValue) {\n" +
+"    this.load();\n" +
 "    return this.data.reduce(cb, startingValue);\n" +
 "  }\n" +
 "}\n" +
