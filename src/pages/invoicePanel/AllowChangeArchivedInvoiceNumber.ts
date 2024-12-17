@@ -13,14 +13,24 @@ export default class AllowChangeArchivedInvoiceNumber extends Service {
     document.addEventListener('keyup', async (event: KeyboardEvent) => {
       if (event.code !== 'KeyS' || !event.ctrlKey) return;
 
+      this.log('Ctrl + S pressed');
+
       const invoiceNumberField = $<HTMLInputElement>('input[name=invoice_number]');
-      if (event.target !== invoiceNumberField || !invoiceNumberField) return;
+      if (event.target !== invoiceNumberField || !invoiceNumberField) {
+        this.log({ invoiceNumberField, eventTarget: event.target });
+        return;
+      }
 
-      this.log('Ctrl + S on invoice number field');
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      const rawInvoice =
+        getReactProps(invoiceNumberField, 27).initialValues ?? // for supplier pieces
+        getReactProps(invoiceNumberField, 44).initialValues; // for customer pieces
 
-      event.preventDefault(); event.stopImmediatePropagation();
-      const rawInvoice = getReactProps(invoiceNumberField, 27).initialValues;
-      if (!rawInvoice.archived) return;
+      if (!rawInvoice.archived) {
+        this.log('Invoice is not archived');
+        return;
+      }
 
       const invoice = Invoice.from(rawInvoice);
       await invoice.unarchive();
