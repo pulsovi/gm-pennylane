@@ -243,7 +243,7 @@ class CustomerInvoice extends Invoice {
     // Don Manuel
     if (
       invoice.thirdparty_id === 103165930
-      && !['CHQ', 'CERFA '].some(label => invoice.invoice_number.startsWith(label))
+      && !['CHQ', 'CERFA'].some(label => invoice.invoice_number.includes(label))
     ) {
       return `<a
         title="Le numéro de facture doit être conforme à un des modèles proposés. Cliquer ici pour plus d'informations."
