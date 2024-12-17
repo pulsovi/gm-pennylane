@@ -1,6 +1,6 @@
 import { $, getParam, parseHTML, waitElem, waitFunc } from '../../_';
 import { getTransaction } from '../../api/transaction.js';
-import Service from '../../framework/service.js';
+import Service from '../../framework/Service.js';
 import Transaction from '../../models/Transaction.js';
 
 /** Add 'add by ID' button on transaction reconciliation tab */

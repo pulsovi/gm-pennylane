@@ -1,6 +1,6 @@
 import { $, waitElem, findElem, getReactProps, parseHTML, waitFunc, $$, getParam } from '../../_';
 import { LedgerEvent } from '../../api/types.js';
-import Service from '../../framework/service.js';
+import Service from '../../framework/Service.js';
 import Transaction from '../../models/Transaction.js';
 
 /** Add validation message on transaction panel */

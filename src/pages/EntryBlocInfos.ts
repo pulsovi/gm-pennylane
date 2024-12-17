@@ -1,5 +1,5 @@
 import { $, $$, parseHTML, waitElem } from "../_";
-import Service from "../framework/service";
+import Service from "../framework/Service";
 
 /**
  * Add infos on each entry form block

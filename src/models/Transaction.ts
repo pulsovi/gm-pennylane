@@ -39,17 +39,33 @@ export default class Transaction extends ValidableDocument {
     if (
       !doc.date.startsWith('2023')
       && doc.label.toUpperCase().startsWith('VIR ')
-      && ![
+      /*&& ![
         ' DE: STRIPE MOTIF: STRIPE REF: STRIPE-',
-        ' DE: STRIPE MOTIF: ALLODONS REF: ',
-        ' DE: Stripe Technology Europe Ltd MOTIF: STRIPE ',
-      ].some(label => doc.label.includes(label))
-      && groupedDocuments.length < 2
+      ].some(label => doc.label.includes(label))*/
     ) {
-      return 'Virement reçu sans justificatif';
+      if (doc.label.includes(' DE: Stripe Technology Europe Ltd MOTIF: STRIPE ')) {
+        if (
+          ledgerEvents.length !== 2
+          || groupedDocuments.length > 1
+          || ledgerEvents.reduce((acc, ev) => acc + parseFloat(ev.amount), 0) !== 0
+          || !ledgerEvents.find(ev => ev.planItem.number === '58000001')
+        ) return 'Virement interne Stripe mal attribué';
+        return 'OK';
+      }
+      if (doc.label.includes(' DE: ASS UNE LUMIERE POUR MILLE')) {
+        if (
+          ledgerEvents.length !== 2
+          || groupedDocuments.length > 1
+          || ledgerEvents.reduce((acc, ev) => acc + parseFloat(ev.amount), 0) !== 0
+          || !ledgerEvents.find(ev => ev.planItem.number === '75411')
+        ) return 'Virement reçu d\'une association mal attribué';
+        return 'OK';
+      }
+      if (groupedDocuments.length < 2) return 'Virement reçu sans justificatif';
+      if (!groupedDocuments.find(gdoc => gdoc.label.includes('CERFA')))
+        return 'Les virements reçus doivent être justifiés par un CERFA';
     }
 
-    const ledgerEvents = await this.getLedgerEvents();
 
     if(ledgerEvents.some(line => line.planItem.number.startsWith('6571'))) {
       if (ledgerEvents.some(line => line.planItem.number.startsWith('6571') && !line.label)) {
@@ -88,7 +104,7 @@ export default class Transaction extends ValidableDocument {
         return "Une ligne d'écriture utilise un compte d'attente 4716001";
 
       if (ledgerEvents.some(line => line.planItem.number.startsWith('47')))
-        return 'Une écriture comporte un compte d\'attente';
+        return 'Une écriture comporte un compte d\'attente (commençant par 47)';
 
       // balance déséquilibrée
       const third = ledgerEvents.find(line => line.planItem.number.startsWith('40'))?.planItem?.number;
@@ -107,10 +123,11 @@ export default class Transaction extends ValidableDocument {
       const balance = groupedDocuments.reduce((acc, gdoc) => {
         const isTransaction = gdoc.type === 'Transaction';
         // Pour les remises de chèques, on a deux pièces justificatives necessaires : le chèque et le cerfa
-        const isRemise = doc.label.startsWith('REMISE CHEQUE ');
-        const coeff = isTransaction ? (isRemise ? -2 : -1) : 1;
+        const isCheque = doc.label.startsWith('CHEQUE ') || doc.label.startsWith('REMISE CHEQUE ');
+        const isDonation = parseFloat(doc.amount) > 0;
+        const coeff = isTransaction ? (isDonation ? -1 : 1)*(isCheque ? 2 : 1) : 1;
         const value = parseFloat(gdoc.currency_amount ?? gdoc.amount);
-        if (isCurrent) this.log({ isTransaction, isRemise, coeff, acc, value });
+        if (isCurrent) this.log({ isTransaction, isCheque, isDonation, coeff, acc, value });
         return acc + (coeff * value);
       }, 0);
       if (Math.abs(balance) > 0.001) {

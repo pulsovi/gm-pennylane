@@ -1,7 +1,7 @@
 import { $, $$, findElem, getReact, getReactProps, parseHTML, waitElem, waitFunc } from "../../_";
 import { LedgerEvent, RawInvoice } from "../../api/types";
 import CacheStatus, { Status } from "../../framework/CacheStatus";
-import Service from "../../framework/service";
+import Service from "../../framework/Service";
 import Invoice from "../../models/Invoice";
 
 /** Add infos on Invoice full page display */

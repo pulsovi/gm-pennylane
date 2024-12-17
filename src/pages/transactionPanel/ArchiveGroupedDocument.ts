@@ -1,5 +1,5 @@
 import { $$, getReactProps, parseHTML, upElement, waitElem, waitFunc } from "../../_";
-import Service from "../../framework/service";
+import Service from "../../framework/Service";
 import Invoice from "../../models/Invoice";
 
 /** Add "Archive" button on bonded invoice in transaction pannel */
