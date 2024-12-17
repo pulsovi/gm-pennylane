@@ -120,7 +120,7 @@ class SupplierInvoice extends Invoice {
     }
 
     // Aides octroyées ou piece d'indentité avec date
-    const emptyDateAllowed = ['CHQ'];
+    const emptyDateAllowed = ['CHQ', 'CHQ DÉCHIRÉ'];
     if (
       [106438171, 114270419, 106519227].includes(invoice.thirdparty?.id ?? 0)
       || emptyDateAllowed.some(item => invoice.invoice_number?.startsWith(item))
