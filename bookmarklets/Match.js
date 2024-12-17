@@ -1,7 +1,7 @@
 javascript:/* Réconcilier de force */
 (async function IIFE() {
   async function apiRequest (endpoint, data, method = 'POST') {
-    return await fetch(`https://app.pennylane.com/companies/21936866/${endpoint}`, {
+    return await fetch(`${location.href.split('/').slice(0, 5).join('/')}/${endpoint}`, {
       method,
       headers: {
         "Content-Type": "application/json",

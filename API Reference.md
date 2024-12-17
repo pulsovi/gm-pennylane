@@ -60,7 +60,7 @@ apiRequest('documents/601421986/matching', {
 apiRequest(`documents/${document_id}`, null, 'GET');
 ```
 
-Type de retour : consulter https://app.pennylane.com/companies/21936866/documents/601421986
+Type de retour : consulter https://app.pennylane.com/companies/###/documents/601421986
 
 
 ### Fusionner des factures
@@ -71,11 +71,11 @@ apiRequest('accountants/invoices/merge_files', {invoice_ids: [invoice1_id, invoi
 
 ### Modifier une facture
 
-`PUT https://app.pennylane.com/companies/21936866/accountants/invoices/582458394`
+`PUT https://app.pennylane.com/companies/###/accountants/invoices/582458394`
 
 pour les données, il suffit de renvoyer une version modifiée de la réponse de la version GET
 
-`GET https://app.pennylane.com/companies/21936866/accountants/invoices/582458394`
+`GET https://app.pennylane.com/companies/###/accountants/invoices/582458394`
 
 On peut se contenter de n'envoyer que les propriétés à modifier. Les propriétés manquantes resteront inchangées
 
@@ -100,5 +100,5 @@ apiRequest(`accountants/wip/transactions/${transactionId}`, null, 'GET');
 ### Regénérer les écriture d'une transaction
 
 ```js
-apiRequest(`https://app.pennylane.com/companies/21936866/documents/${documentId}/settle`, null, 'POST');
+apiRequest(`https://app.pennylane.com/companies/###/documents/${documentId}/settle`, null, 'POST');
 ```

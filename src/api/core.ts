@@ -4,7 +4,7 @@ let apiRequestWait: Promise<void> | null = null;
 
 export async function apiRequest (endpoint: string, data: Record<string, unknown> | null, method = 'POST') {
   if (apiRequestWait) await apiRequestWait;
-  const response = await fetch(`https://app.pennylane.com/companies/21936866/${endpoint}`, {
+  const response = await fetch(`${location.href.split('/').slice(0, 5).join('/')}/${endpoint}`, {
     method,
     headers: {
       "Content-Type": "application/json",

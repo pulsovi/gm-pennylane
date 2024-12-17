@@ -279,7 +279,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "async function apiRequest(endpoint, data, method = \"POST\") {\n" +
 "  if (apiRequestWait)\n" +
 "    await apiRequestWait;\n" +
-"  const response = await fetch(`https://app.pennylane.com/companies/21936866/${endpoint}`, {\n" +
+"  const response = await fetch(`${location.href.split(\"/\").slice(0, 5).join(\"/\")}/${endpoint}`, {\n" +
 "    method,\n" +
 "    headers: {\n" +
 "      \"Content-Type\": \"application/json\",\n" +
