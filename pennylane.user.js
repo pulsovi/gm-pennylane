@@ -338,6 +338,10 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "}\n" +
 "Object.assign(window, { getLedgerEvents });\n" +
 "async function getGroupedDocuments(id) {\n" +
+"  if (!Number.isSafeInteger(id) || !id) {\n" +
+"    console.log(\"getGroupedDocuments\", { id });\n" +
+"    throw new Error(\"`id` MUST be an integer\");\n" +
+"  }\n" +
 "  const response = await apiRequest(`accountants/operations/${id}/grouped_documents?per_page=-1`, null, \"GET\");\n" +
 "  return await response.json();\n" +
 "}\n" +
@@ -358,6 +362,10 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  thirdparty;\n" +
 "  constructor({ id }) {\n" +
 "    super();\n" +
+"    if (!Number.isSafeInteger(id)) {\n" +
+"      this.log(\"constructor\", { id, args: arguments });\n" +
+"      throw new Error(\"`id` MUST be an integer\");\n" +
+"    }\n" +
 "    this.id = id;\n" +
 "  }\n" +
 "  async getDocument() {\n" +
@@ -1230,14 +1238,20 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    let cached = this.cache.filter({ valid: false });\n" +
 "    for (const cachedItem of cached) {\n" +
 "      const status = await this.updateStatus(cachedItem.id);\n" +
-"      if (isSkipped(status))\n" +
+"      if (isSkipped(status)) {\n" +
+"        if (!status?.valid)\n" +
+"          this.log(\"skip\", status);\n" +
 "        continue;\n" +
+"      }\n" +
 "      yield status;\n" +
 "    }\n" +
 "    for await (const item of this.walk()) {\n" +
 "      const status = await this.updateStatus(item);\n" +
-"      if (isSkipped(status))\n" +
+"      if (isSkipped(status)) {\n" +
+"        if (!status?.valid)\n" +
+"          this.log(\"skip\", status);\n" +
 "        continue;\n" +
+"      }\n" +
 "      yield status;\n" +
 "    }\n" +
 "    this.log(\"TODO: v\\xE9rifier les entr\\xE9es qui ont \\xE9t\\xE9 modifi\\xE9e r\\xE9cemment\");\n" +
@@ -1626,6 +1640,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      }\n" +
 "    }\n" +
 "    const min = this.cache.filter({ direction }).reduce((acc, status) => Math.min(status.createdAt, acc), Date.now());\n" +
+"    this.log(\"Recherche vers le pass\\xE9 depuis\", this.cache.find({ createdAt: min }), { cache: this.cache });\n" +
 "    const params = {\n" +
 "      direction,\n" +
 "      filter: JSON.stringify(\n" +
@@ -1842,7 +1857,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    }\n" +
 "  }\n" +
 "  async getStatus(id) {\n" +
-"    const transaction = new Transaction(id);\n" +
+"    const transaction = new Transaction({ id });\n" +
 "    return await transaction.getStatus();\n" +
 "  }\n" +
 "  /** Add \"next invalid transaction\" button on transactions list */\n" +

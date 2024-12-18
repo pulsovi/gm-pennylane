@@ -94,7 +94,7 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
    * Create next invalid generator
    */
   private async *loadInvalid (): AsyncGenerator<Status, undefined, void> {
-    const isSkipped = (status: Status | null): status is null => {
+    const isSkipped = (status: Status | null) => {
       if (!status) return true;
       if (status.valid) return true;
       if (status.ignored) return true;
@@ -106,15 +106,21 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
     let cached = this.cache.filter({ valid: false });
     for (const cachedItem of cached) {
       const status = await this.updateStatus(cachedItem.id);
-      if (isSkipped(status)) continue;
-      yield status;
+      if (isSkipped(status)) {
+        if (!status?.valid) this.log('skip', status);
+        continue;
+      }
+      yield status!;
     }
 
     // verifier les entrées non encore chargées
     for await (const item of this.walk()) {
       const status = await this.updateStatus(item);
-      if (isSkipped(status)) continue;
-      yield status;
+      if (isSkipped(status)) {
+        if (!status?.valid) this.log('skip', status);
+        continue;
+      }
+      yield status!;
     }
 
     // verifier les plus anciennes entrées

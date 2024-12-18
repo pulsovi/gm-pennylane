@@ -50,6 +50,7 @@ export default class NextInvalidInvoice extends OpenNextInvalid {
     const min = this.cache
       .filter({ direction })
       .reduce((acc, status) => Math.min(status.createdAt, acc), Date.now());
+    this.log('Recherche vers le passé depuis', this.cache.find({ createdAt: min }), { cache: this.cache });
     const params: InvoiceListParams = {
       direction,
       filter: JSON.stringify(
