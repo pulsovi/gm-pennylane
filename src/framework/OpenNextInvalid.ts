@@ -42,8 +42,7 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
     this.log('init');
 
     this.start = this.start.bind(this);
-    this.current = Number(getParam(location.href, this.idParamName));
-
+    this.loadCurrent();
     this.appendOpenNextButton();
     setInterval(() => { this.setSpinner(); }, this.spinner.interval);
     this.allowIgnoring();
@@ -52,6 +51,19 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
 
     this.invalidGenerator = this.loadInvalid();
     this.firstLoading();
+  }
+
+  /**
+   * Load current item ID
+   */
+  loadCurrent () {
+    this.current = Number(getParam(location.href, this.idParamName));
+    setInterval(() => {
+      const current = Number(getParam(location.href, this.idParamName));
+      if (current === this.current) return;
+      this.current = current;
+      this.emit('reload', current);
+    });
   }
 
   /**
@@ -223,17 +235,20 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
     const button = $<HTMLButtonElement>(`.ignore-item`, this.container)!;
     Tooltip.make({ target: button, text: 'Ignorer cet élément, ne plus afficher' });
 
+    const refresh = () => {
+      const ignored = Boolean(this.cache.find({ id: this.current })?.ignored);
+      const background = ignored ? 'var(--red)' : '';
+      if (button.style.backgroundColor !== background) button.style.backgroundColor = background;
+    }
+
     button.addEventListener('click', () => {
       const status = this.cache.find({ id: this.current });
       if (!status) return;
       this.cache.updateItem({ id: this.current }, Object.assign(status, { ignored: !status.ignored }));
     });
 
-    this.cache.on('change', () => {
-      const ignored = Boolean(this.cache.find({ id: this.current })?.ignored);
-      const background = ignored ? 'var(--red)' : '';
-      if (button.style.backgroundColor !== background) button.style.backgroundColor = background;
-    });
+    this.cache.on('change', () => { refresh(); });
+    this.on('reload', () => { refresh(); });
   }
 
   private allowWaiting () {
@@ -273,6 +288,7 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
     });
 
     this.cache.on('change', () => { updateWaitDisplay(); });
+    this.on('reload', () => { updateWaitDisplay(); });
   }
 
   setSpinner () {
