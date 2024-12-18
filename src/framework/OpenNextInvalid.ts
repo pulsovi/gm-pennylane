@@ -163,6 +163,7 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
       confirm(this.constructor.name + ': tous les éléments sont valides selon les paramétres actuels. Revérifier tout depuis le début ?')
     ) {
       this.cache.clear();
+      localStorage.removeItem(`${this.storageKey}-state`);
       this.invalidGenerator = this.loadInvalid();
       return this.openNext(interactionAllowed);
     }
