@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name     Pennylane
-// @version  0.1.17
+// @version  0.1.18
 // @grant    unsafeWindow
 // @grant    GM.openInTab
 // @match    https://app.pennylane.com/companies/*
@@ -462,7 +462,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  return await response.json();\n" +
 "}\n" +
 "async function* getTransactionGenerator(params = {}) {\n" +
-"  let page = Number(params.page) ?? 1;\n" +
+"  let page = Number(params.page ?? 1);\n" +
 "  do {\n" +
 "    const data = await getTransactionsList(Object.assign({}, params, { page }));\n" +
 "    const transactions = data.transactions;\n" +
@@ -725,6 +725,10 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "async function getInvoicesList(params = {}) {\n" +
 "  if (!params.direction)\n" +
 "    throw new Error(\"params.direction is mandatory\");\n" +
+"  if (\"page\" in params && !Number.isSafeInteger(params.page)) {\n" +
+"    console.log(\"getInvoicesList\", { params });\n" +
+"    throw new Error(\"params.page, if provided, MUST be a safe integer\");\n" +
+"  }\n" +
 "  const searchParams = new URLSearchParams(params);\n" +
 "  if (!searchParams.has(\"filter\"))\n" +
 "    searchParams.set(\"filter\", \"[]\");\n" +
@@ -733,7 +737,11 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  return await response?.json();\n" +
 "}\n" +
 "async function* getInvoiceGenerator(params = {}) {\n" +
-"  let page = Number(params.page) ?? 1;\n" +
+"  let page = Number(params.page ?? 1);\n" +
+"  if (!Number.isSafeInteger(page)) {\n" +
+"    console.log(\"getInvoiceGenerator\", { params, page });\n" +
+"    throw new Error(\"params.page, if provided, MUST be a safe integer\");\n" +
+"  }\n" +
 "  do {\n" +
 "    const data = await getInvoicesList(Object.assign({}, params, { page }));\n" +
 "    const invoices = data.invoices;\n" +
@@ -912,6 +920,8 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    if (oldValue) {\n" +
 "      newValue = { ...oldValue, ...newValue };\n" +
 "      this.data.splice(this.data.indexOf(oldValue), 1, newValue);\n" +
+"      if (newValue.id == getParam(location.href, \"id\"))\n" +
+"        this.log(\"updateItem\", { match, create, oldValue, newValue, stack: new Error(\"\").stack });\n" +
 "      this.emit(\"update\", { oldValue, newValue });\n" +
 "    } else {\n" +
 "      if (!create)\n" +
@@ -1148,12 +1158,23 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  autostart;\n" +
 "  current;\n" +
 "  invalidGenerator;\n" +
+"  running = false;\n" +
+"  spinner = {\n" +
+"    //frames: '🕛 🕧 🕐 🕜 🕑 🕝 🕒 🕞 🕓 🕟 🕔 🕠 🕕 🕡 🕖 🕢 🕗 🕣 🕘 🕤 🕙 🕥 🕚 🕦'.split(' '),\n" +
+"    //frames: '🕛 🕐 🕑 🕒 🕓 🕔 🕕 🕖 🕗 🕘 🕙 🕚'.split(' '),\n" +
+"    frames: \"\\u288E\\u2870 \\u288E\\u2861 \\u288E\\u2851 \\u288E\\u2831 \\u280E\\u2871 \\u288A\\u2871 \\u288C\\u2871 \\u2886\\u2871\".split(\" \"),\n" +
+"    interval: 200\n" +
+"  };\n" +
 "  async init() {\n" +
 "    this.log(\"init\");\n" +
 "    this.start = this.start.bind(this);\n" +
 "    this.current = Number(getParam(location.href, this.idParamName));\n" +
 "    this.appendOpenNextButton();\n" +
+"    setInterval(() => {\n" +
+"      this.setSpinner();\n" +
+"    }, this.spinner.interval);\n" +
 "    this.allowIgnoring();\n" +
+"    this.allowWaiting();\n" +
 "    this.autostart = new Autostarter(this);\n" +
 "    this.invalidGenerator = this.loadInvalid();\n" +
 "    this.firstLoading();\n" +
@@ -1164,40 +1185,60 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "   * `this` keyword is bounded at constructor\n" +
 "   */\n" +
 "  start(interactionAllowed) {\n" +
+"    if (this.running)\n" +
+"      return;\n" +
 "    this.autostart.stop();\n" +
+"    this.running = true;\n" +
 "    setTimeout(() => this.openNext(interactionAllowed === true), 0);\n" +
 "  }\n" +
 "  /**\n" +
 "   * Append the button for open next to the DOM\n" +
 "   */\n" +
 "  appendOpenNextButton() {\n" +
-"    const number = this.cache.filter({ valid: false }).length;\n" +
+"    const count = this.cache.filter({ valid: false }).length;\n" +
 "    const className = \"sc-jwIPbr kzNmya bxhmjB justify-content-center btn btn-primary btn-sm\";\n" +
 "    this.container.appendChild(parseHTML(\n" +
-"      `<button type=\"button\" class=\"${className} open-next-invalid-btn\">&nbsp;&gt;&nbsp;${number}</button>`\n" +
+"      `<button type=\"button\" class=\"${className} open-next-invalid-btn\">\n" +
+"        &nbsp;<span class=\"icon\" style=\"font-family: monospace;\">&gt;</span>\n" +
+"        &nbsp;<span class=\"number\">${count}</span>\n" +
+"      </button>`\n" +
 "    ));\n" +
 "    const button = $(`.open-next-invalid-btn`, this.container);\n" +
+"    const number = $(\".number\", button);\n" +
 "    button.addEventListener(\"click\", this.start.bind(this, true));\n" +
 "    Tooltip.make({ target: button, text: \"Ouvrir le prochain \\xE9l\\xE9ment invalide\" });\n" +
 "    this.cache.on(\"change\", () => {\n" +
-"      const number2 = this.cache.filter({ valid: false }).length;\n" +
-"      button.innerHTML = `&nbsp;&gt;&nbsp;${number2}`;\n" +
+"      const count2 = this.cache.filter({ valid: false }).length;\n" +
+"      number.innerHTML = `${count2}`;\n" +
 "    });\n" +
 "  }\n" +
 "  /**\n" +
 "   * Create next invalid generator\n" +
 "   */\n" +
 "  async *loadInvalid() {\n" +
+"    const isSkipped = (status) => {\n" +
+"      if (!status)\n" +
+"        return true;\n" +
+"      if (status.valid)\n" +
+"        return true;\n" +
+"      if (status.ignored)\n" +
+"        return true;\n" +
+"      if (status.wait && new Date(status.wait).getTime() > Date.now())\n" +
+"        return true;\n" +
+"      return false;\n" +
+"    };\n" +
 "    let cached = this.cache.filter({ valid: false });\n" +
 "    for (const cachedItem of cached) {\n" +
 "      const status = await this.updateStatus(cachedItem.id);\n" +
-"      if (status?.valid === false && !status.ignored)\n" +
-"        yield status;\n" +
+"      if (isSkipped(status))\n" +
+"        continue;\n" +
+"      yield status;\n" +
 "    }\n" +
 "    for await (const item of this.walk()) {\n" +
 "      const status = await this.updateStatus(item);\n" +
-"      if (status?.valid === false)\n" +
-"        yield status;\n" +
+"      if (isSkipped(status))\n" +
+"        continue;\n" +
+"      yield status;\n" +
 "    }\n" +
 "    this.log(\"TODO: v\\xE9rifier les entr\\xE9es qui ont \\xE9t\\xE9 modifi\\xE9e r\\xE9cemment\");\n" +
 "  }\n" +
@@ -1227,17 +1268,19 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  async openNext(interactionAllowed = false) {\n" +
 "    this.log(\"openNext\");\n" +
 "    let status = (await this.invalidGenerator.next()).value;\n" +
-"    while (status?.id === this.current || status?.ignored) {\n" +
+"    while (status?.id === this.current) {\n" +
 "      this.log({ status, current: this.current, class: this });\n" +
 "      status = (await this.invalidGenerator.next()).value;\n" +
 "    }\n" +
 "    if (status) {\n" +
 "      this.log(\"next found :\", { current: this.current, status, class: this });\n" +
 "      openDocument(status.id);\n" +
+"      this.running = false;\n" +
 "      return;\n" +
 "    }\n" +
 "    if (interactionAllowed && confirm(this.constructor.name + \": tous les \\xE9l\\xE9ments sont valides selon les param\\xE9tres actuels. Rev\\xE9rifier tout depuis le d\\xE9but ?\")) {\n" +
 "      this.cache.clear();\n" +
+"      localStorage.removeItem(`${this.storageKey}-state`);\n" +
 "      this.invalidGenerator = this.loadInvalid();\n" +
 "      return this.openNext(interactionAllowed);\n" +
 "    }\n" +
@@ -1282,6 +1325,52 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      if (button.style.backgroundColor !== background)\n" +
 "        button.style.backgroundColor = background;\n" +
 "    });\n" +
+"  }\n" +
+"  allowWaiting() {\n" +
+"    const className = \"sc-jwIPbr kzNmya bxhmjB justify-content-center btn btn-primary btn-sm\";\n" +
+"    this.container.appendChild(parseHTML(\n" +
+"      `<button type=\"button\" class=\"${className} wait-item\">\\u{1F552}</button>`\n" +
+"    ));\n" +
+"    const button = $(`.wait-item`, this.container);\n" +
+"    const tooltip = Tooltip.make({ target: button, text: \"\" });\n" +
+"    const updateWaitDisplay = () => {\n" +
+"      const status = this.cache.find({ id: this.current });\n" +
+"      if (!status?.wait || new Date(status.wait).getTime() < Date.now()) {\n" +
+"        button.style.backgroundColor = \"\";\n" +
+"        tooltip.setText(\"Ne plus afficher pendant 3 jours\");\n" +
+"        return;\n" +
+"      }\n" +
+"      button.style.backgroundColor = \"var(--blue)\";\n" +
+"      const date = new Date(status.wait).toISOString().replace(\"T\", \" \").slice(0, 16).split(\" \").map((block) => block.split(\"-\").reverse().join(\"/\")).join(\" \");\n" +
+"      tooltip.setText(`Masqu\\xE9 jusqu'\\xE0 ${date}.`);\n" +
+"    };\n" +
+"    updateWaitDisplay();\n" +
+"    setInterval(() => {\n" +
+"      updateWaitDisplay();\n" +
+"    }, 6e4);\n" +
+"    button.addEventListener(\"click\", () => {\n" +
+"      const status = this.cache.find({ id: this.current });\n" +
+"      if (!status)\n" +
+"        return;\n" +
+"      const wait = status.wait && new Date(status.wait).getTime() > Date.now() ? \"\" : new Date(Date.now() + 3 * 864e5).toISOString();\n" +
+"      this.cache.updateItem({ id: this.current }, Object.assign(status, { wait }));\n" +
+"      updateWaitDisplay();\n" +
+"    });\n" +
+"    this.cache.on(\"change\", () => {\n" +
+"      updateWaitDisplay();\n" +
+"    });\n" +
+"  }\n" +
+"  setSpinner() {\n" +
+"    const span = $(\".open-next-invalid-btn .icon\", this.container);\n" +
+"    if (!span)\n" +
+"      return;\n" +
+"    if (!this.running) {\n" +
+"      if (span.innerText !== \">\")\n" +
+"        span.innerText = \">\";\n" +
+"      return;\n" +
+"    }\n" +
+"    this.spinner.index = ((this.spinner.index ?? 0) + 1) % this.spinner.frames.length;\n" +
+"    span.innerText = this.spinner.frames[this.spinner.index];\n" +
 "  }\n" +
 "}\n" +
 "\n" +
@@ -1404,11 +1493,11 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    const ledgerEvents = await this.getLedgerEvents();\n" +
 "    if (invoice.currency !== \"EUR\") {\n" +
 "      const diffLine = ledgerEvents.find((line) => line.planItem.number === \"4716001\");\n" +
-"      this.log({ ledgerEvents, diffLine });\n" +
 "      if (diffLine) {\n" +
-"        if (parseFloat(diffLine.amount) < 0)\n" +
+"        this.log(\"loadValidMessage > Ecarts de conversion de devise\", { ledgerEvents, diffLine });\n" +
+"        if (parseFloat(diffLine.amount) < 0) {\n" +
 "          return \"Les \\xE9carts de conversions de devises doivent utiliser le compte 756\";\n" +
-"        else {\n" +
+"        } else {\n" +
 "          return `<a\n" +
 "            title=\"Cliquer ici pour plus d'informations\"\n" +
 "            href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FLes%20%C3%A9carts%20de%20conversions%20de%20devises%20doivent%20utiliser%20le%20compte%20656\"\n" +
@@ -1536,11 +1625,11 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "        yield { ...status, direction };\n" +
 "      }\n" +
 "    }\n" +
-"    const min = this.cache.filter({ direction }).reduce((acc, status) => Math.min(status.createdAt, acc), 0);\n" +
+"    const min = this.cache.filter({ direction }).reduce((acc, status) => Math.min(status.createdAt, acc), Date.now());\n" +
 "    const params = {\n" +
 "      direction,\n" +
 "      filter: JSON.stringify(\n" +
-"        min ? [{ field: \"created_at\", operator: \"lteq\", value: new Date(min).toISOString() }] : []\n" +
+"        [{ field: \"created_at\", operator: \"lteq\", value: new Date(min).toISOString() }]\n" +
 "      ),\n" +
 "      sort: \"-created_at\"\n" +
 "    };\n" +
@@ -1662,6 +1751,8 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    if (!this.state.invoice)\n" +
 "      return;\n" +
 "    const cachedStatus = this.cache.find({ id: this.state.invoice.id });\n" +
+"    if (!cachedStatus)\n" +
+"      return;\n" +
 "    const diff = [\"message\", \"valid\"].reduce((acc, key) => {\n" +
 "      if (this.state.cachedStatus?.[key] !== cachedStatus?.[key])\n" +
 "        acc.push({ key, oldValue: this.state.cachedStatus?.[key], newValue: cachedStatus?.[key] });\n" +
@@ -1739,10 +1830,10 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "        yield new Transaction(transaction).getStatus();\n" +
 "      }\n" +
 "    }\n" +
-"    const min = this.cache.reduce((acc, status) => Math.min(status.createdAt, acc), 0);\n" +
+"    const min = this.cache.reduce((acc, status) => Math.min(status.createdAt, acc), Date.now());\n" +
 "    const params = {\n" +
 "      filter: JSON.stringify(\n" +
-"        min ? [{ field: \"created_at\", operator: \"lteq\", value: new Date(min).toISOString() }] : []\n" +
+"        [{ field: \"created_at\", operator: \"lteq\", value: new Date(min).toISOString() }]\n" +
 "      ),\n" +
 "      sort: \"-created_at\"\n" +
 "    };\n" +
@@ -1991,7 +2082,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "Object.assign(window, {\n" +
 "  GM_Pennylane_Version: (\n" +
 "    /** version **/\n" +
-"    \"0.1.17\"\n" +
+"    \"0.1.18\"\n" +
 "  )\n" +
 "});\n" +
 ""

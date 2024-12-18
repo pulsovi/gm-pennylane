@@ -24,7 +24,7 @@ export async function getTransactionsList (params: TransactionListParams = {}): 
 export async function* getTransactionGenerator (
   params: TransactionListParams = {}
 ): AsyncGenerator<APITransactionItem> {
-  let page = Number(params.page) ?? 1;
+  let page = Number(params.page ?? 1);
   do {
     const data = await getTransactionsList(Object.assign({}, params, { page }));
     const transactions = data.transactions;
