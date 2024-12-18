@@ -16,6 +16,7 @@ export interface RawStatus {
 interface Status extends RawStatus {
   fetchedAt?: number;
   ignored?: boolean;
+  wait?: string;
 }
 
 export default abstract class OpenNextInvalid extends Service implements AutostarterParent {
@@ -46,6 +47,7 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
     this.appendOpenNextButton();
     setInterval(() => { this.setSpinner(); }, this.spinner.interval);
     this.allowIgnoring();
+    this.allowWaiting();
     this.autostart = new Autostarter(this);
 
     this.invalidGenerator = this.loadInvalid();
@@ -92,17 +94,27 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
    * Create next invalid generator
    */
   private async *loadInvalid (): AsyncGenerator<Status, undefined, void> {
+    const isSkipped = (status: Status | null): status is null => {
+      if (!status) return true;
+      if (status.valid) return true;
+      if (status.ignored) return true;
+      if (status.wait && (new Date(status.wait).getTime() > Date.now())) return true;
+      return false;
+    }
+
     // verifier le cache
     let cached = this.cache.filter({ valid: false });
     for (const cachedItem of cached) {
       const status = await this.updateStatus(cachedItem.id);
-      if (status?.valid === false && !status.ignored) yield status;
+      if (isSkipped(status)) continue;
+      yield status;
     }
 
     // verifier les entrées non encore chargées
     for await (const item of this.walk()) {
       const status = await this.updateStatus(item);
-      if (status?.valid === false) yield status;
+      if (isSkipped(status)) continue;
+      yield status;
     }
 
     // verifier les plus anciennes entrées
@@ -148,7 +160,7 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
     this.log('openNext');
 
     let status = (await this.invalidGenerator.next()).value;
-    while (status?.id === this.current || status?.ignored) {
+    while (status?.id === this.current) {
       this.log({status, current: this.current, class: this});
       status = (await this.invalidGenerator.next()).value;
     }
@@ -216,6 +228,45 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
       const background = ignored ? 'var(--red)' : '';
       if (button.style.backgroundColor !== background) button.style.backgroundColor = background;
     });
+  }
+
+  private allowWaiting () {
+    const className = 'sc-jwIPbr kzNmya bxhmjB justify-content-center btn btn-primary btn-sm';
+    this.container.appendChild(parseHTML(
+      `<button type="button" class="${className} wait-item">\ud83d\udd52</button>`
+    ));
+
+    const button = $<HTMLButtonElement>(`.wait-item`, this.container)!;
+    const tooltip = Tooltip.make({ target: button, text: '' });
+    const updateWaitDisplay = () => {
+      const status = this.cache.find({ id: this.current });
+
+      if (!status?.wait || (new Date(status.wait).getTime() < Date.now())) {
+        button.style.backgroundColor = '';
+        tooltip.setText('Ne plus afficher pendant 3 jours');
+        return;
+      }
+
+      button.style.backgroundColor = 'var(--blue)';
+      const date = new Date(status.wait).toISOString().replace('T', ' ').slice(0, 16)
+          .split(' ').map(block => block.split('-').reverse().join('/')).join(' ');
+      tooltip.setText(`Masqué jusqu'à ${date}.`);
+    }
+
+    updateWaitDisplay();
+
+    setInterval(() => { updateWaitDisplay(); }, 60_000);
+
+    button.addEventListener('click', () => {
+      const status = this.cache.find({ id: this.current });
+      if (!status) return;
+      const wait = (status.wait && (new Date(status.wait).getTime() > Date.now())) ? ''
+        : new Date(Date.now() + 3*86_400_000).toISOString();
+      this.cache.updateItem({ id: this.current }, Object.assign(status, { wait }));
+      updateWaitDisplay();
+    });
+
+    this.cache.on('change', () => { updateWaitDisplay(); });
   }
 
   setSpinner () {
