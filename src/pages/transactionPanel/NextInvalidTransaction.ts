@@ -1,6 +1,6 @@
 import { findElem, jsonClone, waitFunc } from "../../_";
-import { getTransactionsList } from "../../api/transaction";
-import { TransactionList } from "../../api/types";
+import { getTransactionGenerator, getTransactionsList } from "../../api/transaction";
+import { TransactionList, TransactionListParams } from "../../api/types";
 import CacheStatus from "../../framework/CacheStatus";
 import OpenNextInvalid, { RawStatus as Status } from "../../framework/OpenNextInvalid";
 import Transaction from "../../models/Transaction";
@@ -19,25 +19,30 @@ export default class NextInvalidTransaction extends OpenNextInvalid {
     await super.init();
   }
 
-  protected async *walk (
-    params: Record<string, string | number>
-  ): AsyncGenerator<Status, undefined, void> {
-    if (('page' in params) && !Number.isInteger(params.page)) {
-      this.log('walk', { params });
-      throw new Error('The "page" parameter must be a valid integer number');
+  protected async *walk (): AsyncGenerator<Status, undefined, void> {
+    // Load new added transactions
+    const max = this.cache.reduce((acc, status) => Math.max(status.createdAt, acc), 0);
+    if (max) {
+      const params: TransactionListParams = {
+        filter: JSON.stringify([{ field: 'created_at', operator: 'gteq', value: new Date(max).toISOString() }]),
+        sort: '+created_at',
+      };
+      for await (const transaction of getTransactionGenerator(params)) {
+        yield new Transaction(transaction).getStatus();
+      }
     }
 
-    let parameters = jsonClone(params);
-    parameters.page = parameters.page ?? 1;
-
-    let data: TransactionList | null = null;
-    do {
-      data = await getTransactionsList(parameters);
-      const transactions = data.transactions;
-      if (!transactions?.length) return;
-      for (const transaction of transactions) yield new Transaction(transaction).getStatus();
-      parameters = Object.assign(jsonClone(parameters), { page: Number(parameters.page ?? 0) + 1 });
-    } while (true);
+    // Load old un loaded transactions
+    const min = this.cache.reduce((acc, status) => Math.min(status.createdAt, acc), 0);
+    const params: TransactionListParams = {
+      filter: JSON.stringify(
+        min ? [{ field: 'created_at', operator: 'lteq', value: new Date(min).toISOString() }] : []
+      ),
+      sort: '-created_at',
+    };
+    for await (const transaction of getTransactionGenerator(params)) {
+      yield new Transaction(transaction).getStatus();
+    }
   }
 
   async getStatus (id: number): Promise<Status|null> {

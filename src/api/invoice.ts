@@ -1,7 +1,7 @@
 import { jsonClone } from '../_';
 
 import { apiRequest } from './core.js';
-import { DocumentStatus, InvoiceList, InvoiceListParams, MinRawInvoice, RawInvoice } from './types.js';
+import { APIInvoiceItem, DocumentStatus, InvoiceList, InvoiceListParams, MinRawInvoice, RawInvoice } from './types.js';
 
 export async function getInvoice (id: number): Promise<RawInvoice|null> {
   if (!id) throw new Error(`Error: getInvoice() invalid id: ${id}`);
@@ -24,6 +24,19 @@ export async function getInvoicesList (params: InvoiceListParams = {}): Promise<
   const url = `accountants/invoices/list?${searchParams.toString()}`;
   const response = await apiRequest(url, null, 'GET');
   return await response?.json();
+}
+
+export async function* getInvoiceGenerator (
+  params: InvoiceListParams = {}
+): AsyncGenerator<APIInvoiceItem> {
+  let page = Number(params.page) ?? 1;
+  do {
+    const data = await getInvoicesList(Object.assign({}, params, { page }));
+    const invoices = data.invoices;
+    if (!invoices?.length) return;
+    for (const invoice of invoices) yield invoice;
+    ++page;
+  } while (true);
 }
 
 export async function findInvoice (

@@ -1,6 +1,6 @@
 import { $, findElem, jsonClone, waitElem, waitFunc } from "../../_";
-import { getInvoicesList } from "../../api/invoice";
-import { InvoiceList } from "../../api/types";
+import { getInvoiceGenerator, getInvoicesList } from "../../api/invoice";
+import { InvoiceList, InvoiceListParams } from "../../api/types";
 import CacheListRecord from "../../framework/CacheListRecord";
 import type { Status } from "../../framework/CacheStatus";
 import OpenNextInvalid from "../../framework/OpenNextInvalid";
@@ -24,39 +24,43 @@ export default class NextInvalidInvoice extends OpenNextInvalid {
     await super.init();
   }
 
-  protected async *walk (
-    params: Record<string, string | number>
-  ): AsyncGenerator<Status, undefined, void> {
+  protected async *walk (): AsyncGenerator<Status, undefined, void> {
     for await (const status of this.walkInvoices('supplier')) yield status;
     for await (const status of this.walkInvoices('customer')) yield status;
   }
 
   private async *walkInvoices (direction: 'supplier' | 'customer'): AsyncGenerator<InvoiceStatus> {
-    const from = this.cache.reduce(
-      (acc, status) => status.direction === direction ? Math.max(status.createdAt, acc) : acc,
-    0);
-    const filter = from ?
-      [{ field: 'created_at', operator: 'gteq', value: new Date(from).toISOString() }] :
-      [];
-    let parameters = {
-      direction,
-      filter: JSON.stringify(filter),
-      sort: '+created_at',
-      page: 1,
-    };
-
-    this.log('walkInvoices', { direction, from, filter, parameters:{...parameters} });
-    let data: InvoiceList | null = null;
-    do {
-      data = await getInvoicesList(parameters);
-      const invoices = data.invoices;
-      if (!invoices?.length) break;
-      for (const invoice of invoices) {
+    // Load new added invoices
+    const max = this.cache
+      .filter({ direction })
+      .reduce((acc, status) => Math.max(status.createdAt, acc), 0);
+    if (max) {
+      const params: InvoiceListParams = {
+        direction,
+        filter: JSON.stringify([{ field: 'created_at', operator: 'gteq', value: new Date(max).toISOString() }]),
+        sort: '+created_at',
+      };
+      for await (const invoice of getInvoiceGenerator(params)) {
         const status = await Invoice.from(invoice).getStatus();
         yield { ...status, direction };
       }
-      parameters = { ...parameters, page: Number(parameters.page ?? 0) + 1 };
-    } while (true);
+    }
+
+    // Load old un loaded invoices
+    const min = this.cache
+      .filter({ direction })
+      .reduce((acc, status) => Math.min(status.createdAt, acc), 0);
+    const params: InvoiceListParams = {
+      direction,
+      filter: JSON.stringify(
+        min ? [{ field: 'created_at', operator: 'lteq', value: new Date(min).toISOString() }] : []
+      ),
+      sort: '-created_at',
+    };
+    for await (const invoice of getInvoiceGenerator(params)) {
+      const status = await Invoice.from(invoice).getStatus();
+      yield { ...status, direction };
+    }
   }
 
   async getStatus (id: number): Promise<Status|null> {

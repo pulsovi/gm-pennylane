@@ -85,34 +85,13 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
     }
 
     // verifier les entrées non encore chargées
-    const from = this.cache.reduce(
-      (acc, status) => Math.max(status.createdAt, acc),
-    0);
-    const filter = from ?
-      [{ field: 'created_at', operator: 'gteq', value: new Date(from).toISOString() }] :
-      [];
-    const news = this.walk({
-      filter: JSON.stringify(filter),
-      sort: '+created_at',
-    });
-    let newItem = (await news.next()).value;
-    while (newItem) {
-      const status = await this.updateStatus(newItem);
+    for await (const item of this.walk()) {
+      const status = await this.updateStatus(item);
       if (status?.valid === false) yield status;
-      newItem = (await news.next()).value;
     }
 
     // verifier les plus anciennes entrées
-    const olds = this.walk({ sort: '+created_at' });
-    let oldItem = (await olds.next()).value;
-    while (oldItem) {
-      // all next values already tested at "news" step
-      if (oldItem.createdAt >= from) return;
-
-      const status = await this.updateStatus(oldItem);
-      if (status?.valid === false) yield status;
-      oldItem = (await news.next()).value;
-    }
+    this.log('TODO: vérifier les entrées qui ont été modifiée récemment');
   }
 
   /**
@@ -148,7 +127,7 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
   /**
    * Walk through all items matching given search params
    */
-  protected abstract walk (params: Record<string, string|number>): AsyncGenerator<RawStatus, undefined, void>;
+  protected abstract walk (): AsyncGenerator<RawStatus, undefined, void>;
 
   async openNext (interactionAllowed = false) {
     this.log('openNext');
@@ -189,17 +168,8 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
     if (state.loaded) return;
 
     // load all
-    const from = this.cache.reduce((acc, status) => Math.max(status.createdAt, acc), 0);
-    this.log('firstLoading', { from });
-    const news = this.walk({
-      filter: JSON.stringify([{ field: 'created_at', operator: 'gteq', value: new Date(from).toISOString() }]),
-      sort: '+created_at',
-    });
-    let newItem = (await news.next()).value;
-    while (newItem) {
-      await this.updateStatus(newItem);
-      newItem = (await news.next()).value;
-    }
+    const news = this.walk();
+    for await (const item of this.walk()) await this.updateStatus(item);
 
     // save loaded status
     state.loaded = true;

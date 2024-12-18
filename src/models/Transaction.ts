@@ -1,30 +1,44 @@
-import type { RawTransactionMin } from '../api/types.d.ts';
+import type { APITransaction } from '../api/types.d.ts';
 import { getParam } from '../_';
 
 import { documentMatching } from '../api/document.ts';
 import ValidableDocument from './ValidableDocument.ts';
 import Document from './Document.ts';
+import { getTransaction } from '../api/transaction.ts';
 
 export default class Transaction extends ValidableDocument {
-  protected transactionMin: RawTransactionMin;
+  protected _raw;
+  protected _transaction: Promise<APITransaction>;
+  protected transaction: APITransaction;
 
-  constructor(transactionOrId: RawTransactionMin | number) {
-    const id = 'number' === typeof transactionOrId ? transactionOrId : transactionOrId.id;
-    super({id});
-    if ('object' === typeof transactionOrId) this.transactionMin = transactionOrId;
+  constructor(raw: {id: number}) {
+    super(raw);
+    this._raw = raw
+  }
+
+  public async getTransaction (): Promise<APITransaction> {
+    if (!this._transaction) {
+      this._transaction = getTransaction(this.id);
+      this.transaction = await this._transaction;
+    }
+    return await this._transaction;
   }
 
   protected async loadValidMessage () {
     const isCurrent = this.id === Number(getParam(location.href, 'transaction_id'));
     if (isCurrent) this.log('loadValidMessage', this);
 
+    const ledgerEvents = await this.getLedgerEvents();
+
+    // Fait partie d'un exercice clos
+    if (ledgerEvents.some(event => event.closed)) return 'OK';
+
     const doc = await this.getDocument();
-    const groupedDocuments = await this.getGroupedDocuments();
 
     // Transaction archivée
     if (doc.archived) return 'OK';
 
-    const ledgerEvents = await this.getLedgerEvents();
+    const groupedDocuments = await this.getGroupedDocuments();
 
     if (doc.label.includes(' DE: STRIPE MOTIF: ALLODONS REF: ')) {
       if (

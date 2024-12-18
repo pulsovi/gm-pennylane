@@ -17,9 +17,11 @@ declare type List<ItemName extends string, ItemType> = {
 declare interface ListParams {
   page?: number;
   direction?: string;
+  filter?: string;
+  sort?: string;
 }
 
-declare type InvoiceList= List<'invoices', MinRawInvoice>;
+declare type InvoiceList= List<'invoices', APIInvoiceItem>;
 declare type MinRawInvoice = Exclude<RawInvoice, 'thirdparty'> & {
   thirdparty?: {
     id: number;
@@ -208,7 +210,7 @@ declare interface InvoiceLine {
   vat_rate: string;
 }
 
-declare type TransactionList= List<'transactions', RawTransactionMin>;
+declare type TransactionList= List<'transactions', APITransactionItem>;
 declare type TransactionListParams = ListParams;
 /** Liste des propriétés vérifiée. Pour plus de détails, récupérer le "document" */
 declare interface RawTransactionMin {
@@ -460,4 +462,152 @@ declare interface RawThirdparty {
     id:number;
     visible_on:string;
   }[];
+}
+
+/**
+ * Type renvoyé par l'appel API getTransaction(id)
+ */
+declare interface APITransaction {
+  "id": number;
+  "fee": `${number}`;
+  "source": string;
+  "pusher_channel": string;
+  "outstanding_balance": `${number}`;
+  "comments_count": number;
+  "grouped_documents": {
+    "id": number;
+    "type": "Invoice"|"Transaction";
+    "currency": string;
+    "amount": `${number}`;
+    "currency_amount": `${number}`;
+  }[];
+  "automation_rule_plan_item": null;
+  "source_logo": string;
+  "account": {
+    "name": string;
+    "logo_url": string;
+  };
+  "automatically_processed": boolean;
+  "internal_transfer": boolean;
+}
+
+/**
+ * Type renvoyé par l'appel API getLedgerEvents(id)
+ */
+declare interface APILedgerEvent {
+  "amount": `${number}`;
+  "balance": `${number}`;
+  /** Fait partie d'un exercice clos */
+  "closed": boolean;
+  "credit": `${number}`;
+  "debit": `${number}`;
+  "id": number;
+  "label": string|null;
+  "lettering": null;
+  "lettering_id": null;
+  "planItem": {
+    "id": number;
+    "number": `${number}`;
+    "vat_rate": string;
+    "country_alpha2": string;
+    "label": string;
+    "enabled": boolean
+  };
+  "plan_item_id": number;
+  "readonly": boolean;
+  "readonlyAmounts": boolean;
+  "reconciliation_id": null;
+  "source": string;
+}
+
+/**
+ * Type renvoyé par l'appel API getInvoiceList()
+ */
+declare interface APIInvoiceItem {
+  "id": number;
+  "type": "Invoice";
+  "company_id": number;
+  "label": string;
+  /** Date to ISO string */
+  "created_at": string;
+  "currency": string;
+  "amount": `${number}`;
+  "currency_amount": `${number}`;
+  "currency_tax": `${number}`;
+  /** Date string (ex: 2024-12-16) */
+  "date": string;
+  "deadline": string;
+  "direction": "supplier";
+  "invoice_number": string;
+  "source": string;
+  "email_from": null;
+  "gdrive_path": null;
+  "pusher_channel": string;
+  "validation_needed": boolean;
+  "payment_status": string;
+  "paid": boolean;
+  "amount_without_tax": `${number}`;
+  "not_duplicate": boolean;
+  "approval_status": null;
+  "checksum": string;
+  "archived": boolean;
+  "incomplete": boolean;
+  "is_waiting_for_ocr": boolean;
+  "status": string;
+  "filename": string;
+  "is_factur_x": boolean;
+  "thirdparty": {
+    "id": number;
+    "name": string;
+  };
+  "invoice_lines": {
+    "id": number;
+    "vat_rate": string;
+    "pnl_plan_item": {
+      "id": number;
+      "number": `${number}`;
+      "label": string;
+      "enabled": boolean;
+    };
+  }[];
+}
+
+/** type renvoyé par l'appel API getTransactionList() */
+declare interface APITransactionItem {
+  "id": number;
+  "type": "Transaction";
+  "account_id": number;
+  "company_id": number;
+  "dump_id": null;
+  "group_uuid": string;
+  /** Date string (ex: 2024-12-16) */
+  "date": string;
+  "label": string;
+  "amount": `${number}`;
+  "fee": `${number}`;
+  "currency": string;
+  "source": string;
+  "currency_amount": `${number}`;
+  "currency_fee": `${number}`;
+  "archived_at": null;
+  /** Date to ISO string */
+  "updated_at": string;
+  "is_waiting_details": boolean;
+  "validation_needed": boolean;
+  "is_potential_duplicate": boolean;
+  "attachment_lost": boolean;
+  "attachment_required": boolean;
+  "pending": boolean;
+  "status": string;
+  "gross_amount": `${number}`;
+  "reconciliation_id": null;
+  "files_count": number;
+  "source_logo": string;
+  "account_synchronization": {
+    /** Date to ISO string */
+    "created_at": string;
+    "triggered_manually": boolean;
+    "error_message": null;
+  };
+  "dump": null;
 }

@@ -1,21 +1,37 @@
 import { jsonClone } from '../_';
 
 import { apiRequest } from './core.js';
-import { RawTransactionMin, TransactionList, TransactionListParams } from './types.js';
+import { APITransaction, APITransactionItem, RawTransactionMin, TransactionList, TransactionListParams } from './types.js';
 
 /**
  * @return {Promise<RawTransactionMin>}    Type vérifié
  */
-export async function getTransaction (id: number): Promise<RawTransactionMin> {
+export async function getTransaction (id: number): Promise<APITransaction> {
   const response = await apiRequest(`accountants/wip/transactions/${id}`, null, 'GET');
   return await response?.json();
 }
 
+/**
+ * Load list of transactions from API
+ */
 export async function getTransactionsList (params: TransactionListParams = {}): Promise<TransactionList> {
   const searchParams = new URLSearchParams(params);
   const url = `accountants/wip/transactions?${searchParams.toString()}`;
   const response = await apiRequest(url, null, 'GET');
   return await response.json();
+}
+
+export async function* getTransactionGenerator (
+  params: TransactionListParams = {}
+): AsyncGenerator<APITransactionItem> {
+  let page = Number(params.page) ?? 1;
+  do {
+    const data = await getTransactionsList(Object.assign({}, params, { page }));
+    const transactions = data.transactions;
+    if (!transactions?.length) return;
+    for (const transaction of transactions) yield transaction;
+    ++page;
+  } while (true);
 }
 
 export async function findTransaction (

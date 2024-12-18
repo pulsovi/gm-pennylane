@@ -1,7 +1,7 @@
 import { apiRequest } from "./core";
-import { GroupedDocument, LedgerEvent } from "./types";
+import { APILedgerEvent, GroupedDocument } from "./types";
 
-export async function getLedgerEvents (id): Promise<LedgerEvent[]> {
+export async function getLedgerEvents (id): Promise<APILedgerEvent[]> {
   const response = await apiRequest(`accountants/operations/${id}/ledger_events?per_page=-1`, null, 'GET');
   return await response!.json();
 }

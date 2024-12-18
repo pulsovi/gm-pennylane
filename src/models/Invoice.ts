@@ -45,23 +45,17 @@ class SupplierInvoice extends Invoice {
     const isCurrent = current === this.id;
 
     const invoice = await this.getInvoice();
-    if (!invoice) this.log('SupplierInvoice.loadValidMessage', {invoice});
+
+    // Fait partie d'un exercis clôt
+    if (invoice.has_closed_ledger_events) return 'OK';
+
+    if (!invoice) this.log('loadValidMessage', {Invoice: this, invoice});
 
     const doc = await this.getDocument();
     if (invoice.id === current)
       this.log('loadValidMessage', this);
 
-    // Transaction < 2024 => OK
     const groupedDocuments = await this.getGroupedDocuments();
-    const transactions = groupedDocuments.filter(doc => doc.type === 'Transaction');
-    const currentYear = 2024; //new Date().getFullYear();
-    if (
-      transactions.length &&
-      transactions.every(transaction => parseInt(transaction.date.slice(0, 4)) < currentYear)
-    ) {
-      if (invoice.id == current) this.log('loadValidMessage', 'année passée');
-      return 'OK';
-    }
 
     // Archived
     const archivedAllowed = ['§ #', '¤ PIECE ETRANGERE', '¤ TRANSACTION INTROUVABLE', 'CHQ DÉCHIRÉ'];
@@ -130,11 +124,19 @@ class SupplierInvoice extends Invoice {
           href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Date%20de%20facture"
         >Les dates doivent être vides ⓘ</a>`;
     } else if (!invoice.date) {
-      if (!emptyDateAllowed.some(item => invoice.invoice_number?.startsWith(item)))
+      if (!emptyDateAllowed.some(item => invoice.invoice_number?.startsWith(item))) {
+        const archiveLabel = archivedAllowed.find(label => invoice.invoice_number.startsWith(label));
+        if (archiveLabel) {
+          return `<a
+            title="Archiver la facture : ⁝ > Archiver la facture.\nCliquer ici pour plus d'informations"
+            href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Facture%20archiv%C3%A9e"
+          >Archiver ${archiveLabel} ⓘ</a><ul style="margin:0;padding:0.8em;">`;
+        }
         return `<a
           title="Cliquer ici pour plus d'informations"
           href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Date%20de%20facture"
         >Date de facture vide ⓘ</a><ul style="margin:0;padding:0.8em;">${emptyDateAllowed.map(it => `<li>${it}</li>`).join('')}</ul>`;
+      }
     }
 
     // Aides octroyées avec mauvais ID
@@ -173,6 +175,7 @@ class SupplierInvoice extends Invoice {
     }
 
     // Has transaction attached
+    const transactions = groupedDocuments.filter(doc => doc.type === 'Transaction');
     const documentDate = new Date(doc.date);
     const day = 86_400_000;
     const isRecent = (Date.now() - documentDate.getTime()) < (15 * day);
@@ -203,6 +206,10 @@ class CustomerInvoice extends Invoice {
 
   async loadValidMessage () {
     const invoice = await this.getInvoice();
+
+    // Fait partie d'un exercis clôt
+    if (invoice.has_closed_ledger_events) return 'OK';
+
     this.log('loadValidMessage', { invoice });
     // Archived
     if (invoice.archived) {

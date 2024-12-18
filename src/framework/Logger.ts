@@ -17,7 +17,7 @@ export default class Logger extends EventEmitter {
     console.log(
       `${date} %cGM_Pennylane%c${this.constructor.name}`,
       'background: #0b0b31; color: #fff; padding: 0.1em .3em; border-radius: 0.3em 0 0 0.3em;',
-      `background: ${this.logColor.bg}; color: ${this.logColor.fg}; padding: 0 .3em; border-radius: 0 0.3em 0.3em 0;`,
+      `background: ${this.logColor.bg}; color: ${this.logColor.fg}; padding: 0.1em .3em; border-radius: 0 0.3em 0.3em 0;`,
       ...messages
     );
   }

@@ -1,4 +1,4 @@
-import type { GroupedDocument, LedgerEvent, RawDocument, RawThirdparty } from '../api/types.d.ts';
+import type { GroupedDocument, APILedgerEvent, RawDocument, RawThirdparty } from '../api/types.d.ts';
 import { archiveDocument, getDocument, reloadLedgerEvents } from '../api/document.js';
 import { getGroupedDocuments, getLedgerEvents } from '../api/operation.js';
 import { getThirdparty } from '../api/thirdparties.ts';
@@ -9,7 +9,7 @@ export default class Document extends Logger {
   public readonly id: number;
   protected document: RawDocument | Promise<RawDocument>;
   protected groupedDocuments: GroupedDocument[] | Promise<GroupedDocument[]>;
-  protected ledgerEvents?: LedgerEvent[] | Promise<LedgerEvent[]>;
+  protected ledgerEvents?: APILedgerEvent[] | Promise<APILedgerEvent[]>;
   protected thirdparty?: Promise<{direction: string; thirdparty: RawThirdparty}>;
 
   constructor ({ id }: { id: number }) {
@@ -37,7 +37,7 @@ export default class Document extends Logger {
     const events = await Promise.all(groupedDocuments.map(
       doc => getLedgerEvents(doc.id)
     ));
-    this.ledgerEvents = ([] as LedgerEvent[]).concat(...events);
+    this.ledgerEvents = ([] as APILedgerEvent[]).concat(...events);
     return this.ledgerEvents;
   }
 

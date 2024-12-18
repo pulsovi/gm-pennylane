@@ -101,16 +101,6 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  waitElem\n" +
 "} });\n" +
 "\n" +
-"function jsonClone(obj) {\n" +
-"  try {\n" +
-"    return JSON.parse(JSON.stringify(obj));\n" +
-"  } catch (error) {\n" +
-"    console.log(\"unable to jsonClone this object\", obj);\n" +
-"    console.log(error);\n" +
-"    return obj;\n" +
-"  }\n" +
-"}\n" +
-"\n" +
 "function getReact(elem, up = 0) {\n" +
 "  if (!elem)\n" +
 "    return null;\n" +
@@ -250,7 +240,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    console.log(\n" +
 "      `${date} %cGM_Pennylane%c${this.constructor.name}`,\n" +
 "      \"background: #0b0b31; color: #fff; padding: 0.1em .3em; border-radius: 0.3em 0 0 0.3em;\",\n" +
-"      `background: ${this.logColor.bg}; color: ${this.logColor.fg}; padding: 0 .3em; border-radius: 0 0.3em 0.3em 0;`,\n" +
+"      `background: ${this.logColor.bg}; color: ${this.logColor.fg}; padding: 0.1em .3em; border-radius: 0 0.3em 0.3em 0;`,\n" +
 "      ...messages\n" +
 "    );\n" +
 "  }\n" +
@@ -461,23 +451,55 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  }\n" +
 "}\n" +
 "\n" +
+"async function getTransaction(id) {\n" +
+"  const response = await apiRequest(`accountants/wip/transactions/${id}`, null, \"GET\");\n" +
+"  return await response?.json();\n" +
+"}\n" +
+"async function getTransactionsList(params = {}) {\n" +
+"  const searchParams = new URLSearchParams(params);\n" +
+"  const url = `accountants/wip/transactions?${searchParams.toString()}`;\n" +
+"  const response = await apiRequest(url, null, \"GET\");\n" +
+"  return await response.json();\n" +
+"}\n" +
+"async function* getTransactionGenerator(params = {}) {\n" +
+"  let page = Number(params.page) ?? 1;\n" +
+"  do {\n" +
+"    const data = await getTransactionsList(Object.assign({}, params, { page }));\n" +
+"    const transactions = data.transactions;\n" +
+"    if (!transactions?.length)\n" +
+"      return;\n" +
+"    for (const transaction of transactions)\n" +
+"      yield transaction;\n" +
+"    ++page;\n" +
+"  } while (true);\n" +
+"}\n" +
+"\n" +
 "class Transaction extends ValidableDocument {\n" +
-"  transactionMin;\n" +
-"  constructor(transactionOrId) {\n" +
-"    const id = \"number\" === typeof transactionOrId ? transactionOrId : transactionOrId.id;\n" +
-"    super({ id });\n" +
-"    if (\"object\" === typeof transactionOrId)\n" +
-"      this.transactionMin = transactionOrId;\n" +
+"  _raw;\n" +
+"  _transaction;\n" +
+"  transaction;\n" +
+"  constructor(raw) {\n" +
+"    super(raw);\n" +
+"    this._raw = raw;\n" +
+"  }\n" +
+"  async getTransaction() {\n" +
+"    if (!this._transaction) {\n" +
+"      this._transaction = getTransaction(this.id);\n" +
+"      this.transaction = await this._transaction;\n" +
+"    }\n" +
+"    return await this._transaction;\n" +
 "  }\n" +
 "  async loadValidMessage() {\n" +
 "    const isCurrent = this.id === Number(getParam(location.href, \"transaction_id\"));\n" +
 "    if (isCurrent)\n" +
 "      this.log(\"loadValidMessage\", this);\n" +
+"    const ledgerEvents = await this.getLedgerEvents();\n" +
+"    if (ledgerEvents.some((event) => event.closed))\n" +
+"      return \"OK\";\n" +
 "    const doc = await this.getDocument();\n" +
-"    const groupedDocuments = await this.getGroupedDocuments();\n" +
 "    if (doc.archived)\n" +
 "      return \"OK\";\n" +
-"    const ledgerEvents = await this.getLedgerEvents();\n" +
+"    const groupedDocuments = await this.getGroupedDocuments();\n" +
 "    if (doc.label.includes(\" DE: STRIPE MOTIF: ALLODONS REF: \")) {\n" +
 "      if (ledgerEvents.length !== 2 || groupedDocuments.length > 1 || ledgerEvents.reduce((acc, ev) => acc + parseFloat(ev.amount), 0) !== 0 || !ledgerEvents.find((ev) => ev.planItem.number === \"754110001\"))\n" +
 "        return \"Virement Allodons mal attribu\\xE9\";\n" +
@@ -647,17 +669,6 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  }\n" +
 "}\n" +
 "\n" +
-"async function getTransaction(id) {\n" +
-"  const response = await apiRequest(`accountants/wip/transactions/${id}`, null, \"GET\");\n" +
-"  return await response?.json();\n" +
-"}\n" +
-"async function getTransactionsList(params = {}) {\n" +
-"  const searchParams = new URLSearchParams(params);\n" +
-"  const url = `accountants/wip/transactions?${searchParams.toString()}`;\n" +
-"  const response = await apiRequest(url, null, \"GET\");\n" +
-"  return await response.json();\n" +
-"}\n" +
-"\n" +
 "class TransactionAddByIdButton extends Service {\n" +
 "  transaction;\n" +
 "  async init() {\n" +
@@ -720,6 +731,18 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  const url = `accountants/invoices/list?${searchParams.toString()}`;\n" +
 "  const response = await apiRequest(url, null, \"GET\");\n" +
 "  return await response?.json();\n" +
+"}\n" +
+"async function* getInvoiceGenerator(params = {}) {\n" +
+"  let page = Number(params.page) ?? 1;\n" +
+"  do {\n" +
+"    const data = await getInvoicesList(Object.assign({}, params, { page }));\n" +
+"    const invoices = data.invoices;\n" +
+"    if (!invoices?.length)\n" +
+"      return;\n" +
+"    for (const invoice of invoices)\n" +
+"      yield invoice;\n" +
+"    ++page;\n" +
+"  } while (true);\n" +
 "}\n" +
 "\n" +
 "class Cache extends Logger {\n" +
@@ -1026,7 +1049,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "class Autostarter extends Logger {\n" +
 "  parent;\n" +
 "  config;\n" +
-"  eventList = [\"click\", \"keyup\"];\n" +
+"  eventList = [\"click\", \"keyup\", \"keydown\", \"keypress\", \"mouseup\"];\n" +
 "  /**\n" +
 "   * @property stopped Flag moved to true by the stop() method\n" +
 "   */\n" +
@@ -1164,32 +1187,12 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      if (status?.valid === false && !status.ignored)\n" +
 "        yield status;\n" +
 "    }\n" +
-"    const from = this.cache.reduce(\n" +
-"      (acc, status) => Math.max(status.createdAt, acc),\n" +
-"      0\n" +
-"    );\n" +
-"    const filter = from ? [{ field: \"created_at\", operator: \"gteq\", value: new Date(from).toISOString() }] : [];\n" +
-"    const news = this.walk({\n" +
-"      filter: JSON.stringify(filter),\n" +
-"      sort: \"+created_at\"\n" +
-"    });\n" +
-"    let newItem = (await news.next()).value;\n" +
-"    while (newItem) {\n" +
-"      const status = await this.updateStatus(newItem);\n" +
+"    for await (const item of this.walk()) {\n" +
+"      const status = await this.updateStatus(item);\n" +
 "      if (status?.valid === false)\n" +
 "        yield status;\n" +
-"      newItem = (await news.next()).value;\n" +
 "    }\n" +
-"    const olds = this.walk({ sort: \"+created_at\" });\n" +
-"    let oldItem = (await olds.next()).value;\n" +
-"    while (oldItem) {\n" +
-"      if (oldItem.createdAt >= from)\n" +
-"        return;\n" +
-"      const status = await this.updateStatus(oldItem);\n" +
-"      if (status?.valid === false)\n" +
-"        yield status;\n" +
-"      oldItem = (await news.next()).value;\n" +
-"    }\n" +
+"    this.log(\"TODO: v\\xE9rifier les entr\\xE9es qui ont \\xE9t\\xE9 modifi\\xE9e r\\xE9cemment\");\n" +
 "  }\n" +
 "  /**\n" +
 "   * Update status of an item given by its ID\n" +
@@ -1244,17 +1247,9 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    }\n" +
 "    if (state.loaded)\n" +
 "      return;\n" +
-"    const from = this.cache.reduce((acc, status) => Math.max(status.createdAt, acc), 0);\n" +
-"    this.log(\"firstLoading\", { from });\n" +
-"    const news = this.walk({\n" +
-"      filter: JSON.stringify([{ field: \"created_at\", operator: \"gteq\", value: new Date(from).toISOString() }]),\n" +
-"      sort: \"+created_at\"\n" +
-"    });\n" +
-"    let newItem = (await news.next()).value;\n" +
-"    while (newItem) {\n" +
-"      await this.updateStatus(newItem);\n" +
-"      newItem = (await news.next()).value;\n" +
-"    }\n" +
+"    this.walk();\n" +
+"    for await (const item of this.walk())\n" +
+"      await this.updateStatus(item);\n" +
 "    state.loaded = true;\n" +
 "    localStorage.setItem(storageKey, JSON.stringify(state));\n" +
 "  }\n" +
@@ -1320,19 +1315,14 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    const current = Number(getParam(location.href, \"id\"));\n" +
 "    current === this.id;\n" +
 "    const invoice = await this.getInvoice();\n" +
+"    if (invoice.has_closed_ledger_events)\n" +
+"      return \"OK\";\n" +
 "    if (!invoice)\n" +
-"      this.log(\"SupplierInvoice.loadValidMessage\", { invoice });\n" +
+"      this.log(\"loadValidMessage\", { Invoice: this, invoice });\n" +
 "    const doc = await this.getDocument();\n" +
 "    if (invoice.id === current)\n" +
 "      this.log(\"loadValidMessage\", this);\n" +
 "    const groupedDocuments = await this.getGroupedDocuments();\n" +
-"    const transactions = groupedDocuments.filter((doc2) => doc2.type === \"Transaction\");\n" +
-"    const currentYear = 2024;\n" +
-"    if (transactions.length && transactions.every((transaction) => parseInt(transaction.date.slice(0, 4)) < currentYear)) {\n" +
-"      if (invoice.id == current)\n" +
-"        this.log(\"loadValidMessage\", \"ann\\xE9e pass\\xE9e\");\n" +
-"      return \"OK\";\n" +
-"    }\n" +
 "    const archivedAllowed = [\"\\xA7 #\", \"\\xA4 PIECE ETRANGERE\", \"\\xA4 TRANSACTION INTROUVABLE\", \"CHQ D\\xC9CHIR\\xC9\"];\n" +
 "    if (invoice.archived) {\n" +
 "      if (\n" +
@@ -1385,11 +1375,20 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "          href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Date%20de%20facture\"\n" +
 "        >Les dates doivent \\xEAtre vides \\u24D8</a>`;\n" +
 "    } else if (!invoice.date) {\n" +
-"      if (!emptyDateAllowed.some((item) => invoice.invoice_number?.startsWith(item)))\n" +
+"      if (!emptyDateAllowed.some((item) => invoice.invoice_number?.startsWith(item))) {\n" +
+"        const archiveLabel = archivedAllowed.find((label) => invoice.invoice_number.startsWith(label));\n" +
+"        if (archiveLabel) {\n" +
+"          return `<a\n" +
+"            title=\"Archiver la facture : \\u205D > Archiver la facture.\n" +
+"Cliquer ici pour plus d'informations\"\n" +
+"            href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Facture%20archiv%C3%A9e\"\n" +
+"          >Archiver ${archiveLabel} \\u24D8</a><ul style=\"margin:0;padding:0.8em;\">`;\n" +
+"        }\n" +
 "        return `<a\n" +
 "          title=\"Cliquer ici pour plus d'informations\"\n" +
 "          href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Date%20de%20facture\"\n" +
 "        >Date de facture vide \\u24D8</a><ul style=\"margin:0;padding:0.8em;\">${emptyDateAllowed.map((it) => `<li>${it}</li>`).join(\"\")}</ul>`;\n" +
+"      }\n" +
 "    }\n" +
 "    if (invoice.thirdparty?.name === \"AIDES OCTROY\\xC9ES\" && invoice.thirdparty.id !== 106438171)\n" +
 "      return `Il ne doit y avoir qu'un seul compte \"AIDES OCTROY\\xC9ES\", et ce n'est pas le bon...`;\n" +
@@ -1418,6 +1417,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      else\n" +
 "        return `Le \"Num\\xE9ro de facture\" des pi\\xE8ces d'identit\\xE9 commence obligatoirement par \"ID \"`;\n" +
 "    }\n" +
+"    const transactions = groupedDocuments.filter((doc2) => doc2.type === \"Transaction\");\n" +
 "    const documentDate = new Date(doc.date);\n" +
 "    const day = 864e5;\n" +
 "    const isRecent = Date.now() - documentDate.getTime() < 15 * day;\n" +
@@ -1445,6 +1445,8 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  direction = \"customer\";\n" +
 "  async loadValidMessage() {\n" +
 "    const invoice = await this.getInvoice();\n" +
+"    if (invoice.has_closed_ledger_events)\n" +
+"      return \"OK\";\n" +
 "    this.log(\"loadValidMessage\", { invoice });\n" +
 "    if (invoice.archived) {\n" +
 "      const allowed = [\"\\xA7 #\", \"\\xA4 TRANSACTION INTROUVABLE\"];\n" +
@@ -1508,37 +1510,37 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    this.cache = CacheListRecord.getInstance(this.storageKey);\n" +
 "    await super.init();\n" +
 "  }\n" +
-"  async *walk(params) {\n" +
+"  async *walk() {\n" +
 "    for await (const status of this.walkInvoices(\"supplier\"))\n" +
 "      yield status;\n" +
 "    for await (const status of this.walkInvoices(\"customer\"))\n" +
 "      yield status;\n" +
 "  }\n" +
 "  async *walkInvoices(direction) {\n" +
-"    const from = this.cache.reduce(\n" +
-"      (acc, status) => status.direction === direction ? Math.max(status.createdAt, acc) : acc,\n" +
-"      0\n" +
-"    );\n" +
-"    const filter = from ? [{ field: \"created_at\", operator: \"gteq\", value: new Date(from).toISOString() }] : [];\n" +
-"    let parameters = {\n" +
-"      direction,\n" +
-"      filter: JSON.stringify(filter),\n" +
-"      sort: \"+created_at\",\n" +
-"      page: 1\n" +
-"    };\n" +
-"    this.log(\"walkInvoices\", { direction, from, filter, parameters: { ...parameters } });\n" +
-"    let data = null;\n" +
-"    do {\n" +
-"      data = await getInvoicesList(parameters);\n" +
-"      const invoices = data.invoices;\n" +
-"      if (!invoices?.length)\n" +
-"        break;\n" +
-"      for (const invoice of invoices) {\n" +
+"    const max = this.cache.filter({ direction }).reduce((acc, status) => Math.max(status.createdAt, acc), 0);\n" +
+"    if (max) {\n" +
+"      const params2 = {\n" +
+"        direction,\n" +
+"        filter: JSON.stringify([{ field: \"created_at\", operator: \"gteq\", value: new Date(max).toISOString() }]),\n" +
+"        sort: \"+created_at\"\n" +
+"      };\n" +
+"      for await (const invoice of getInvoiceGenerator(params2)) {\n" +
 "        const status = await Invoice.from(invoice).getStatus();\n" +
 "        yield { ...status, direction };\n" +
 "      }\n" +
-"      parameters = { ...parameters, page: Number(parameters.page ?? 0) + 1 };\n" +
-"    } while (true);\n" +
+"    }\n" +
+"    const min = this.cache.filter({ direction }).reduce((acc, status) => Math.min(status.createdAt, acc), 0);\n" +
+"    const params = {\n" +
+"      direction,\n" +
+"      filter: JSON.stringify(\n" +
+"        min ? [{ field: \"created_at\", operator: \"lteq\", value: new Date(min).toISOString() }] : []\n" +
+"      ),\n" +
+"      sort: \"-created_at\"\n" +
+"    };\n" +
+"    for await (const invoice of getInvoiceGenerator(params)) {\n" +
+"      const status = await Invoice.from(invoice).getStatus();\n" +
+"      yield { ...status, direction };\n" +
+"    }\n" +
 "  }\n" +
 "  async getStatus(id) {\n" +
 "    const invoice = await Invoice.load(id);\n" +
@@ -1719,23 +1721,27 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    this.cache = CacheStatus.getInstance(this.storageKey);\n" +
 "    await super.init();\n" +
 "  }\n" +
-"  async *walk(params) {\n" +
-"    if (\"page\" in params && !Number.isInteger(params.page)) {\n" +
-"      this.log(\"walk\", { params });\n" +
-"      throw new Error('The \"page\" parameter must be a valid integer number');\n" +
-"    }\n" +
-"    let parameters = jsonClone(params);\n" +
-"    parameters.page = parameters.page ?? 1;\n" +
-"    let data = null;\n" +
-"    do {\n" +
-"      data = await getTransactionsList(parameters);\n" +
-"      const transactions = data.transactions;\n" +
-"      if (!transactions?.length)\n" +
-"        return;\n" +
-"      for (const transaction of transactions)\n" +
+"  async *walk() {\n" +
+"    const max = this.cache.reduce((acc, status) => Math.max(status.createdAt, acc), 0);\n" +
+"    if (max) {\n" +
+"      const params2 = {\n" +
+"        filter: JSON.stringify([{ field: \"created_at\", operator: \"gteq\", value: new Date(max).toISOString() }]),\n" +
+"        sort: \"+created_at\"\n" +
+"      };\n" +
+"      for await (const transaction of getTransactionGenerator(params2)) {\n" +
 "        yield new Transaction(transaction).getStatus();\n" +
-"      parameters = Object.assign(jsonClone(parameters), { page: Number(parameters.page ?? 0) + 1 });\n" +
-"    } while (true);\n" +
+"      }\n" +
+"    }\n" +
+"    const min = this.cache.reduce((acc, status) => Math.min(status.createdAt, acc), 0);\n" +
+"    const params = {\n" +
+"      filter: JSON.stringify(\n" +
+"        min ? [{ field: \"created_at\", operator: \"lteq\", value: new Date(min).toISOString() }] : []\n" +
+"      ),\n" +
+"      sort: \"-created_at\"\n" +
+"    };\n" +
+"    for await (const transaction of getTransactionGenerator(params)) {\n" +
+"      yield new Transaction(transaction).getStatus();\n" +
+"    }\n" +
 "  }\n" +
 "  async getStatus(id) {\n" +
 "    const transaction = new Transaction(id);\n" +
@@ -1978,7 +1984,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "Object.assign(window, {\n" +
 "  GM_Pennylane_Version: (\n" +
 "    /** version **/\n" +
-"    \"0.1.16\"\n" +
+"    \"0.1.15\"\n" +
 "  )\n" +
 "});\n" +
 ""

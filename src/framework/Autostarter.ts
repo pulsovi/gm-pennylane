@@ -19,7 +19,7 @@ interface AutostarterConfig {
 export default class Autostarter extends Logger {
   private readonly parent: AutostarterParent;
   private readonly config: CacheRecord<AutostarterConfig>;
-  private readonly eventList = ['click', 'keyup'];
+  private readonly eventList = ['click', 'keyup', 'keydown', 'keypress', 'mouseup'];
 
   /**
    * @property stopped Flag moved to true by the stop() method
