@@ -1176,7 +1176,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  async init() {\n" +
 "    this.log(\"init\");\n" +
 "    this.start = this.start.bind(this);\n" +
-"    this.current = Number(getParam(location.href, this.idParamName));\n" +
+"    this.loadCurrent();\n" +
 "    this.appendOpenNextButton();\n" +
 "    setInterval(() => {\n" +
 "      this.setSpinner();\n" +
@@ -1186,6 +1186,19 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    this.autostart = new Autostarter(this);\n" +
 "    this.invalidGenerator = this.loadInvalid();\n" +
 "    this.firstLoading();\n" +
+"  }\n" +
+"  /**\n" +
+"   * Load current item ID\n" +
+"   */\n" +
+"  loadCurrent() {\n" +
+"    this.current = Number(getParam(location.href, this.idParamName));\n" +
+"    setInterval(() => {\n" +
+"      const current = Number(getParam(location.href, this.idParamName));\n" +
+"      if (current === this.current)\n" +
+"        return;\n" +
+"      this.current = current;\n" +
+"      this.emit(\"reload\", current);\n" +
+"    });\n" +
 "  }\n" +
 "  /**\n" +
 "   * Start action\n" +
@@ -1327,6 +1340,12 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    >x</button>`));\n" +
 "    const button = $(`.ignore-item`, this.container);\n" +
 "    Tooltip.make({ target: button, text: \"Ignorer cet \\xE9l\\xE9ment, ne plus afficher\" });\n" +
+"    const refresh = () => {\n" +
+"      const ignored2 = Boolean(this.cache.find({ id: this.current })?.ignored);\n" +
+"      const background = ignored2 ? \"var(--red)\" : \"\";\n" +
+"      if (button.style.backgroundColor !== background)\n" +
+"        button.style.backgroundColor = background;\n" +
+"    };\n" +
 "    button.addEventListener(\"click\", () => {\n" +
 "      const status = this.cache.find({ id: this.current });\n" +
 "      if (!status)\n" +
@@ -1334,10 +1353,10 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      this.cache.updateItem({ id: this.current }, Object.assign(status, { ignored: !status.ignored }));\n" +
 "    });\n" +
 "    this.cache.on(\"change\", () => {\n" +
-"      const ignored2 = Boolean(this.cache.find({ id: this.current })?.ignored);\n" +
-"      const background = ignored2 ? \"var(--red)\" : \"\";\n" +
-"      if (button.style.backgroundColor !== background)\n" +
-"        button.style.backgroundColor = background;\n" +
+"      refresh();\n" +
+"    });\n" +
+"    this.on(\"reload\", () => {\n" +
+"      refresh();\n" +
 "    });\n" +
 "  }\n" +
 "  allowWaiting() {\n" +
@@ -1371,6 +1390,9 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      updateWaitDisplay();\n" +
 "    });\n" +
 "    this.cache.on(\"change\", () => {\n" +
+"      updateWaitDisplay();\n" +
+"    });\n" +
+"    this.on(\"reload\", () => {\n" +
 "      updateWaitDisplay();\n" +
 "    });\n" +
 "  }\n" +
@@ -1426,6 +1448,9 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    current === this.id;\n" +
 "    const invoice = await this.getInvoice();\n" +
 "    if (invoice.has_closed_ledger_events)\n" +
+"      return \"OK\";\n" +
+"    const ledgerEvents = await this.getLedgerEvents();\n" +
+"    if (ledgerEvents.some((levent) => levent.closed))\n" +
 "      return \"OK\";\n" +
 "    if (!invoice)\n" +
 "      this.log(\"loadValidMessage\", { Invoice: this, invoice });\n" +
@@ -1504,7 +1529,6 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      return `Il ne doit y avoir qu'un seul compte \"AIDES OCTROY\\xC9ES\", et ce n'est pas le bon...`;\n" +
 "    if (invoice.thirdparty?.name === \"PIECE ID\" && invoice.thirdparty.id !== 106519227)\n" +
 "      return `Il ne doit y avoir qu'un seul compte \"PIECE ID\", et ce n'est pas le bon...`;\n" +
-"    const ledgerEvents = await this.getLedgerEvents();\n" +
 "    if (invoice.currency !== \"EUR\") {\n" +
 "      const diffLine = ledgerEvents.find((line) => line.planItem.number === \"4716001\");\n" +
 "      if (diffLine) {\n" +

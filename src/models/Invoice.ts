@@ -48,6 +48,8 @@ class SupplierInvoice extends Invoice {
 
     // Fait partie d'un exercis clôt
     if (invoice.has_closed_ledger_events) return 'OK';
+    const ledgerEvents = await this.getLedgerEvents();
+    if (ledgerEvents.some(levent => levent.closed)) return 'OK';
 
     if (!invoice) this.log('loadValidMessage', {Invoice: this, invoice});
 
@@ -147,7 +149,6 @@ class SupplierInvoice extends Invoice {
     if (invoice.thirdparty?.name === "PIECE ID" && invoice.thirdparty.id !== 106519227)
       return 'Il ne doit y avoir qu\'un seul compte "PIECE ID", et ce n\'est pas le bon...';
 
-    const ledgerEvents = await this.getLedgerEvents();
 
     // Ecarts de conversion de devise
     if (invoice.currency !== 'EUR') {
