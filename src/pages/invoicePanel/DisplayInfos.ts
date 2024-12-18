@@ -91,7 +91,7 @@ export default class InvoiceDisplayInfos extends Service {
     if (!this.state.invoice) return this.setMessage('⟳');
     const status = { ...await this.state.invoice.getStatus(), fetchedAt: Date.now() };
     this.state.cachedStatus = status;
-    this.cache.updateItem({ id: status.id }, status);
+    this.cache.updateItem({ id: status.id }, status, false);
     const {message, valid} = status;
     return this.setMessage(valid ? '✓' : '✗ '+message);
   }

@@ -869,15 +869,18 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  /**\n" +
 "   * Update one item\n" +
 "   *\n" +
+"   * @param create Create the item if no match found\n" +
 "   * @return Old value\n" +
 "   */\n" +
-"  updateItem(match, value) {\n" +
+"  updateItem(match, value, create = true) {\n" +
 "    this.load();\n" +
 "    const item = this.find(match);\n" +
 "    if (item) {\n" +
 "      this.data.splice(this.data.indexOf(item), 1, value);\n" +
 "      this.emit(\"update\", { old: item, new: value });\n" +
 "    } else {\n" +
+"      if (!create)\n" +
+"        return;\n" +
 "      this.data.push(value);\n" +
 "      this.emit(\"add\", { new: value });\n" +
 "    }\n" +
@@ -900,15 +903,19 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  /**\n" +
 "   * Update one item\n" +
 "   *\n" +
+"   * @param create Create the item if no match found\n" +
 "   * @return Old value\n" +
 "   */\n" +
-"  updateItem(match, newValue) {\n" +
+"  updateItem(match, newValue, create = true) {\n" +
+"    this.load();\n" +
 "    const oldValue = this.find(match);\n" +
 "    if (oldValue) {\n" +
 "      newValue = { ...oldValue, ...newValue };\n" +
 "      this.data.splice(this.data.indexOf(oldValue), 1, newValue);\n" +
 "      this.emit(\"update\", { oldValue, newValue });\n" +
 "    } else {\n" +
+"      if (!create)\n" +
+"        return;\n" +
 "      this.data.push(newValue);\n" +
 "      this.emit(\"add\", { newValue });\n" +
 "    }\n" +
@@ -1626,7 +1633,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      return this.setMessage(\"\\u27F3\");\n" +
 "    const status = { ...await this.state.invoice.getStatus(), fetchedAt: Date.now() };\n" +
 "    this.state.cachedStatus = status;\n" +
-"    this.cache.updateItem({ id: status.id }, status);\n" +
+"    this.cache.updateItem({ id: status.id }, status, false);\n" +
 "    const { message, valid } = status;\n" +
 "    return this.setMessage(valid ? \"\\u2713\" : \"\\u2717 \" + message);\n" +
 "  }\n" +

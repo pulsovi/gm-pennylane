@@ -75,15 +75,17 @@ export default class CacheList<T> extends Cache<T[]> {
   /**
    * Update one item
    *
+   * @param create Create the item if no match found
    * @return Old value
    */
-  public updateItem (match: Partial<T>, value: T): T | undefined {
+  public updateItem (match: Partial<T>, value: T, create = true): T | undefined {
     this.load();
     const item = this.find(match);
     if (item) {
       this.data.splice(this.data.indexOf(item), 1, value);
       this.emit('update', { old: item, new: value });
     } else {
+      if (!create) return;
       this.data.push(value);
       this.emit('add', { new: value });
     }
