@@ -1356,7 +1356,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      }\n" +
 "      button.style.backgroundColor = \"var(--blue)\";\n" +
 "      const date = new Date(status.wait).toISOString().replace(\"T\", \" \").slice(0, 16).split(\" \").map((block) => block.split(\"-\").reverse().join(\"/\")).join(\" \");\n" +
-"      tooltip.setText(`Masqu\\xE9 jusqu'\\xE0 ${date}.`);\n" +
+"      tooltip.setText(`Ignor\\xE9 jusqu'\\xE0 ${date}.`);\n" +
 "    };\n" +
 "    updateWaitDisplay();\n" +
 "    setInterval(() => {\n" +

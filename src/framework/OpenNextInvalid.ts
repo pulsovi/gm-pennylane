@@ -256,7 +256,7 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
       button.style.backgroundColor = 'var(--blue)';
       const date = new Date(status.wait).toISOString().replace('T', ' ').slice(0, 16)
           .split(' ').map(block => block.split('-').reverse().join('/')).join(' ');
-      tooltip.setText(`Masqué jusqu'à ${date}.`);
+      tooltip.setText(`Ignoré jusqu'à ${date}.`);
     }
 
     updateWaitDisplay();
