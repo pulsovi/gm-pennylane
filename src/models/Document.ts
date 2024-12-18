@@ -14,6 +14,10 @@ export default class Document extends Logger {
 
   constructor ({ id }: { id: number }) {
     super();
+    if (!Number.isSafeInteger(id)) {
+      this.log('constructor', {id, args: arguments});
+      throw new Error('`id` MUST be an integer');
+    }
     this.id = id;
   }
 

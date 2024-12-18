@@ -8,6 +8,10 @@ export async function getLedgerEvents (id): Promise<APILedgerEvent[]> {
 Object.assign(window, {getLedgerEvents});
 
 export async function getGroupedDocuments (id): Promise<GroupedDocument[]> {
+  if (!Number.isSafeInteger(id) || !id) {
+    console.log('getGroupedDocuments', {id});
+    throw new Error('`id` MUST be an integer');
+  }
   const response = await apiRequest(`accountants/operations/${id}/grouped_documents?per_page=-1`, null, 'GET');
   return await response!.json();
 }

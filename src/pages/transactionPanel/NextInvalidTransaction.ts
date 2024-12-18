@@ -46,7 +46,7 @@ export default class NextInvalidTransaction extends OpenNextInvalid {
   }
 
   async getStatus (id: number): Promise<Status|null> {
-    const transaction = new Transaction(id);
+    const transaction = new Transaction({id});
 
     return await transaction.getStatus();
   }
