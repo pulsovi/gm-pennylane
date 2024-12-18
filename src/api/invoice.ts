@@ -19,6 +19,10 @@ export async function updateInvoice (id: number, data: Partial<RawInvoice>): Pro
 
 export async function getInvoicesList (params: InvoiceListParams = {}): Promise<InvoiceList> {
   if (!params.direction) throw new Error('params.direction is mandatory');
+  if ('page' in params && !Number.isSafeInteger(params.page)) {
+    console.log('getInvoicesList', { params });
+    throw new Error('params.page, if provided, MUST be a safe integer');
+  }
   const searchParams = new URLSearchParams(params as Record<string, string>);
   if (!searchParams.has('filter')) searchParams.set('filter', '[]');
   const url = `accountants/invoices/list?${searchParams.toString()}`;
@@ -29,7 +33,11 @@ export async function getInvoicesList (params: InvoiceListParams = {}): Promise<
 export async function* getInvoiceGenerator (
   params: InvoiceListParams = {}
 ): AsyncGenerator<APIInvoiceItem> {
-  let page = Number(params.page) ?? 1;
+  let page = Number(params.page ?? 1);
+  if (!Number.isSafeInteger(page)) {
+    console.log('getInvoiceGenerator', { params, page });
+    throw new Error('params.page, if provided, MUST be a safe integer');
+  }
   do {
     const data = await getInvoicesList(Object.assign({}, params, { page }));
     const invoices = data.invoices;
