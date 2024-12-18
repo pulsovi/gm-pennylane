@@ -32,11 +32,11 @@ export default class NextInvalidTransaction extends OpenNextInvalid {
       }
     }
 
-    // Load old un loaded transactions
-    const min = this.cache.reduce((acc, status) => Math.min(status.createdAt, acc), 0);
+    // Load old unloaded transactions
+    const min = this.cache.reduce((acc, status) => Math.min(status.createdAt, acc), Date.now());
     const params: TransactionListParams = {
       filter: JSON.stringify(
-        min ? [{ field: 'created_at', operator: 'lteq', value: new Date(min).toISOString() }] : []
+        [{ field: 'created_at', operator: 'lteq', value: new Date(min).toISOString() }]
       ),
       sort: '-created_at',
     };

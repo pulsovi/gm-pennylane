@@ -49,11 +49,11 @@ export default class NextInvalidInvoice extends OpenNextInvalid {
     // Load old un loaded invoices
     const min = this.cache
       .filter({ direction })
-      .reduce((acc, status) => Math.min(status.createdAt, acc), 0);
+      .reduce((acc, status) => Math.min(status.createdAt, acc), Date.now());
     const params: InvoiceListParams = {
       direction,
       filter: JSON.stringify(
-        min ? [{ field: 'created_at', operator: 'lteq', value: new Date(min).toISOString() }] : []
+        [{ field: 'created_at', operator: 'lteq', value: new Date(min).toISOString() }]
       ),
       sort: '-created_at',
     };
