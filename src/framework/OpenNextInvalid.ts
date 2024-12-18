@@ -4,6 +4,7 @@ import Autostarter, { type AutostarterParent } from "./Autostarter";
 import CacheList from "./CacheList";
 import Service from "./Service";
 import Tooltip from "./Tooltip";
+import type { Spinner } from "../_/spinners";
 
 export interface RawStatus {
   id: number;
@@ -24,6 +25,13 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
   private autostart: Autostarter;
   private current: number;
   private invalidGenerator: AsyncGenerator<Status>;
+  private running = false;
+  private spinner: Spinner & { index?: number } = {
+    //frames: '🕛 🕧 🕐 🕜 🕑 🕝 🕒 🕞 🕓 🕟 🕔 🕠 🕕 🕡 🕖 🕢 🕗 🕣 🕘 🕤 🕙 🕥 🕚 🕦'.split(' '),
+    //frames: '🕛 🕐 🕑 🕒 🕓 🕔 🕕 🕖 🕗 🕘 🕙 🕚'.split(' '),
+    frames: '⢎⡰ ⢎⡡ ⢎⡑ ⢎⠱ ⠎⡱ ⢊⡱ ⢌⡱ ⢆⡱'.split(' '),
+    interval: 200,
+  };
 
   protected abstract readonly idParamName: string;
   protected abstract readonly storageKey: string;
@@ -36,6 +44,7 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
     this.current = Number(getParam(location.href, this.idParamName));
 
     this.appendOpenNextButton();
+    setInterval(() => { this.setSpinner(); }, this.spinner.interval);
     this.allowIgnoring();
     this.autostart = new Autostarter(this);
 
@@ -49,7 +58,9 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
    * `this` keyword is bounded at constructor
    */
   start (interactionAllowed?: boolean|Event) {
+    if (this.running) return;
     this.autostart.stop();
+    this.running = true;
     setTimeout(() => this.openNext(interactionAllowed ===  true), 0);
   }
 
@@ -57,19 +68,23 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
    * Append the button for open next to the DOM
    */
   private appendOpenNextButton () {
-    const number = this.cache.filter({ valid: false }).length;
+    const count = this.cache.filter({ valid: false }).length;
     const className = 'sc-jwIPbr kzNmya bxhmjB justify-content-center btn btn-primary btn-sm';
     this.container.appendChild(parseHTML(
-      `<button type="button" class="${className} open-next-invalid-btn">&nbsp;&gt;&nbsp;${number}</button>`
+      `<button type="button" class="${className} open-next-invalid-btn">
+        &nbsp;<span class="icon" style="font-family: monospace;">&gt;</span>
+        &nbsp;<span class="number">${count}</span>
+      </button>`
     ));
     const button = $<HTMLButtonElement>(`.open-next-invalid-btn`, this.container)!;
+    const number = $<HTMLSpanElement>('.number', button)!;
 
     button.addEventListener('click', this.start.bind(this, true));
     Tooltip.make({ target: button, text: 'Ouvrir le prochain élément invalide' });
 
     this.cache.on('change', () => {
-      const number = this.cache.filter({ valid: false }).length;
-      button.innerHTML = `&nbsp;&gt;&nbsp;${number}`;
+      const count = this.cache.filter({ valid: false }).length;
+      number.innerHTML = `${count}`;
     });
   }
 
@@ -140,6 +155,7 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
     if (status) {
       this.log('next found :', { current: this.current, status, class: this });
       openDocument(status.id);
+      this.running = false;
       return;
     }
     if (
@@ -199,5 +215,16 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
       const background = ignored ? 'var(--red)' : '';
       if (button.style.backgroundColor !== background) button.style.backgroundColor = background;
     });
+  }
+
+  setSpinner () {
+    const span = $<HTMLSpanElement>('.open-next-invalid-btn .icon', this.container);
+    if (!span) return;
+    if (!this.running) {
+      if (span.innerText !== '>') span.innerText = '>';
+      return;
+    }
+    this.spinner.index = ((this.spinner.index ?? 0) + 1) % this.spinner.frames.length;
+    span.innerText = this.spinner.frames[this.spinner.index];
   }
 }
