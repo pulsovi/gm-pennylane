@@ -10,6 +10,7 @@ import AllowChangeArchivedInvoiceNumber from './pages/invoicePanel/AllowChangeAr
 import TransactionPanelHotkeys from './pages/transactionPanel/Hotkeys.js';
 import EntryBlocInfos from './pages/EntryBlocInfos.js';
 import AddInvoiceIdColumn from './pages/invoiceList/AddInvoiceIdColumn.js';
+import { findElem } from './_/dom.js';
 
 last7DaysFilter();
 TransactionValidMessage.start();
@@ -45,6 +46,7 @@ declare global {
   }
 }
 
-Object.assign(window, { GM_Pennylane_Version:
-/** version **/'0.1.18'
+Object.assign(window, {
+  GM_Pennylane_Version: /** version **/'0.1.18',
+  findElem,
 });

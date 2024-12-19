@@ -8,6 +8,7 @@ export default class TransactionPanelHotkeys extends Service {
 
   private async handleKeydown (event: KeyboardEvent) {
     if (!findElem('h3', 'Transactions')) return;                    // Transactions panel
+    this.debug('handleKeydown', event);
     if (event.altKey) {
       switch (event.code) {
       case 'KeyE': return this.filterClick('Montant', event);
@@ -16,7 +17,7 @@ export default class TransactionPanelHotkeys extends Service {
     }
     if (event.ctrlKey) {
       switch (event.code) {
-      case 'Key S': return this.saveLedgerEvents();
+      case 'KeyS': return this.saveLedgerEvents();
       }
     }
     else switch (event.code) {
@@ -45,11 +46,11 @@ export default class TransactionPanelHotkeys extends Service {
   }
 
   private async manageEnter (event: KeyboardEvent) {
-    if (event.srcElement instanceof HTMLInputElement && event.srcElement.getAttribute('aria-label') === 'Date') {
-      if (/\d\d\/\d\d\/\d\d\d\d - __\/__\/____/u.test(event.srcElement.value)) {
-        const date = event.srcElement.value.slice(0, 10);
-        event.srcElement.value = `${date} - ${date}`;
-        getReactProps(event.srcElement).onChange({target: event.srcElement});
+    if (event.target instanceof HTMLInputElement && event.target.getAttribute('aria-label') === 'Date') {
+      if (/\d\d\/\d\d\/\d\d\d\d - __\/__\/____/u.test(event.target.value)) {
+        const date = event.target.value.slice(0, 10);
+        event.target.value = `${date} - ${date}`;
+        getReactProps(event.target).onChange({target: event.target});
         const validButton = $<HTMLButtonElement>('button[data-tracking-action="Transactions Page - Date Filter click"]');
         await waitFunc(() => !validButton?.disabled);
       }
@@ -58,6 +59,7 @@ export default class TransactionPanelHotkeys extends Service {
   }
 
   private saveLedgerEvents () {
+    this.log('saveLedgerEvents()');
     findElem<HTMLButtonElement>('button', 'Enregistrer')?.click();
   }
 }

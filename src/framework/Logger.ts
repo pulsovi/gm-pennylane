@@ -3,6 +3,8 @@ import EventEmitter from "./EventEmitter";
 
 declare const GM_Pennylane_debug: boolean;
 
+Object.assign(window, { GM_Pennylane_debug: window['GM_Pennylane_debug'] ?? false });
+
 export default class Logger extends EventEmitter {
   private readonly logColor: { bg: string; fg: string; };
 
