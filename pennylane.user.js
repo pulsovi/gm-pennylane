@@ -227,6 +227,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  }\n" +
 "}\n" +
 "\n" +
+"Object.assign(window, { GM_Pennylane_debug: window[\"GM_Pennylane_debug\"] ?? false });\n" +
 "class Logger extends EventEmitter {\n" +
 "  logColor;\n" +
 "  constructor(name) {\n" +
@@ -531,18 +532,30 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    if (doc.archived)\n" +
 "      return \"OK\";\n" +
 "    const groupedDocuments = await this.getGroupedDocuments();\n" +
+"    const recent = Date.now() - new Date(doc.date).getTime() < 864e5 * 30;\n" +
+"    if (!recent && !groupedDocuments.find((gdoc) => gdoc.id === doc.id)?.reconciled)\n" +
+"      return \"Cette transaction n'est pas rattach\\xE9e \\xE0 un rapprochement bancaire\";\n" +
+"    this.debug(\"loadValidMessage > rapprochement bancaire\", {\n" +
+"      recent,\n" +
+"      reconciled: groupedDocuments.find((gdoc) => gdoc.id === doc.id)\n" +
+"    });\n" +
 "    if (doc.label.includes(\" DE: STRIPE MOTIF: ALLODONS REF: \")) {\n" +
 "      if (ledgerEvents.length !== 2 || groupedDocuments.length > 1 || ledgerEvents.reduce((acc, ev) => acc + parseFloat(ev.amount), 0) !== 0 || !ledgerEvents.find((ev) => ev.planItem.number === \"754110001\"))\n" +
 "        return \"Virement Allodons mal attribu\\xE9\";\n" +
 "      return \"OK\";\n" +
 "    }\n" +
-"    if (!doc.date.startsWith(\"2023\") && doc.label.toUpperCase().startsWith(\"VIR \")) {\n" +
+"    if (doc.label.toUpperCase().startsWith(\"VIR \")) {\n" +
 "      if (doc.label.includes(\" DE: Stripe Technology Europe Ltd MOTIF: STRIPE \")) {\n" +
 "        if (ledgerEvents.length !== 2 || groupedDocuments.length > 1 || ledgerEvents.reduce((acc, ev) => acc + parseFloat(ev.amount), 0) !== 0 || !ledgerEvents.find((ev) => ev.planItem.number === \"58000001\"))\n" +
 "          return \"Virement interne Stripe mal attribu\\xE9\";\n" +
 "        return \"OK\";\n" +
 "      }\n" +
-"      if (doc.label.includes(\" DE: ASS UNE LUMIERE POUR MILLE\")) {\n" +
+"      const assos = [\n" +
+"        \" DE: JEOM MOTIF: \",\n" +
+"        \" DE: ASS UNE LUMIERE POUR MILLE\",\n" +
+"        \" DE: MIKDACH MEAT \"\n" +
+"      ];\n" +
+"      if (assos.some((label) => doc.label.includes(label))) {\n" +
 "        if (ledgerEvents.length !== 2 || groupedDocuments.length > 1 || ledgerEvents.reduce((acc, ev) => acc + parseFloat(ev.amount), 0) !== 0 || !ledgerEvents.find((ev) => ev.planItem.number === \"75411\"))\n" +
 "          return \"Virement re\\xE7u d'une association mal attribu\\xE9\";\n" +
 "        return \"OK\";\n" +
@@ -579,9 +592,6 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    }\n" +
 "    if (ledgerEvents.some((line) => line.planItem.number.startsWith(\"445\")))\n" +
 "      return \"Une \\xE9criture comporte un compte de TVA\";\n" +
-"    const recent = Date.now() - new Date(doc.date).getTime() < 864e5 * 30;\n" +
-"    if (!recent && !groupedDocuments.find((gdoc) => gdoc.id === doc.id)?.reconciled)\n" +
-"      return \"Cette transaction n'est pas rattach\\xE9e \\xE0 un rapprochement bancaire\";\n" +
 "    if (\n" +
 "      // si justificatif demandé, sauter cette section\n" +
 "      !doc.is_waiting_details || isCurrent\n" +
@@ -603,20 +613,39 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "        }\n" +
 "      }\n" +
 "      const balance = groupedDocuments.reduce((acc, gdoc) => {\n" +
-"        const isTransaction = gdoc.type === \"Transaction\";\n" +
-"        const isCheque = doc.label.startsWith(\"CHEQUE \") || doc.label.startsWith(\"REMISE CHEQUE \");\n" +
-"        const isDonation = parseFloat(doc.amount) > 0;\n" +
-"        const coeff = isTransaction ? (isDonation ? -1 : 1) * (isCheque ? 2 : 1) : 1;\n" +
 "        const value = parseFloat(gdoc.currency_amount ?? gdoc.amount);\n" +
-"        if (isCurrent)\n" +
-"          this.log({ isTransaction, isCheque, isDonation, coeff, acc, value });\n" +
-"        return acc + coeff * value;\n" +
-"      }, 0);\n" +
-"      if (Math.abs(balance) > 1e-3) {\n" +
+"        if (gdoc.type === \"Transaction\")\n" +
+"          acc.transaction = (acc.transaction ?? 0) + value;\n" +
+"        else if (gdoc.label.includes(\"CHQ\"))\n" +
+"          acc.CHQ = (acc.CHQ ?? 0) + value;\n" +
+"        else if (gdoc.label.includes(\"CERFA\"))\n" +
+"          acc.CERFA = (acc.CERFA ?? 0) + value;\n" +
+"        else\n" +
+"          acc.autre = (acc.autre ?? 0) + value;\n" +
+"        return acc;\n" +
+"      }, {});\n" +
+"      let message = \"\";\n" +
+"      if (doc.label.startsWith(\"REMISE CHEQUE \") || doc.label.toUpperCase().startsWith(\"VIR \")) {\n" +
+"        if (Math.abs((balance.transaction ?? 0) - (balance.CERFA ?? 0)) > 1e-3) {\n" +
+"          message = \"La somme des CERFAs doit valoir le montant de la transaction\";\n" +
+"          balance.CERFA = balance.CERFA ?? 0;\n" +
+"        }\n" +
+"      } else {\n" +
+"        if (Math.abs((balance.transaction ?? 0) - (balance.autre ?? 0)) > 1e-3) {\n" +
+"          message = \"La somme des autres justificatifs doit valoir le montant de la transaction\";\n" +
+"          balance.autre = balance.autre ?? 0;\n" +
+"        }\n" +
+"      }\n" +
+"      if (isCurrent)\n" +
+"        this.log(\"balance:\", balance);\n" +
+"      if (message) {\n" +
 "        return `<a\n" +
 "          title=\"Cliquer ici pour plus d'informations.\"\n" +
 "          href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Transaction%20-%20Balance%20v2\"\n" +
-"        >Balance v2 d\\xE9s\\xE9quilibr\\xE9e: ${balance} \\u24D8</a>`;\n" +
+"        >Balance v2 d\\xE9s\\xE9quilibr\\xE9e: ${message} \\u24D8</a><ul>${Object.entries(balance).sort(([keya], [keyb]) => {\n" +
+"          const keys = [\"transaction\", \"CHQ\", \"CERFA\", \"autre\"];\n" +
+"          return keys.indexOf(keya) - keys.indexOf(keyb);\n" +
+"        }).map(([key, value]) => `<li><strong>${key} :</strong>${value}</li>`).join(\"\")}</ul>`;\n" +
 "      }\n" +
 "      if (Math.abs(parseFloat(doc.currency_amount)) < 100)\n" +
 "        return \"OK\";\n" +
@@ -2041,6 +2070,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  async handleKeydown(event) {\n" +
 "    if (!findElem(\"h3\", \"Transactions\"))\n" +
 "      return;\n" +
+"    this.debug(\"handleKeydown\", event);\n" +
 "    if (event.altKey) {\n" +
 "      switch (event.code) {\n" +
 "        case \"KeyE\":\n" +
@@ -2051,7 +2081,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    }\n" +
 "    if (event.ctrlKey) {\n" +
 "      switch (event.code) {\n" +
-"        case \"Key S\":\n" +
+"        case \"KeyS\":\n" +
 "          return this.saveLedgerEvents();\n" +
 "      }\n" +
 "    } else\n" +
@@ -2077,11 +2107,11 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    inputField?.focus();\n" +
 "  }\n" +
 "  async manageEnter(event) {\n" +
-"    if (event.srcElement instanceof HTMLInputElement && event.srcElement.getAttribute(\"aria-label\") === \"Date\") {\n" +
-"      if (/\\d\\d\\/\\d\\d\\/\\d\\d\\d\\d - __\\/__\\/____/u.test(event.srcElement.value)) {\n" +
-"        const date = event.srcElement.value.slice(0, 10);\n" +
-"        event.srcElement.value = `${date} - ${date}`;\n" +
-"        getReactProps(event.srcElement).onChange({ target: event.srcElement });\n" +
+"    if (event.target instanceof HTMLInputElement && event.target.getAttribute(\"aria-label\") === \"Date\") {\n" +
+"      if (/\\d\\d\\/\\d\\d\\/\\d\\d\\d\\d - __\\/__\\/____/u.test(event.target.value)) {\n" +
+"        const date = event.target.value.slice(0, 10);\n" +
+"        event.target.value = `${date} - ${date}`;\n" +
+"        getReactProps(event.target).onChange({ target: event.target });\n" +
 "        const validButton = $('button[data-tracking-action=\"Transactions Page - Date Filter click\"]');\n" +
 "        await waitFunc(() => !validButton?.disabled);\n" +
 "      }\n" +
@@ -2089,6 +2119,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    }\n" +
 "  }\n" +
 "  saveLedgerEvents() {\n" +
+"    this.log(\"saveLedgerEvents()\");\n" +
 "    findElem(\"button\", \"Enregistrer\")?.click();\n" +
 "  }\n" +
 "}\n" +
@@ -2175,7 +2206,8 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  GM_Pennylane_Version: (\n" +
 "    /** version **/\n" +
 "    \"0.1.18\"\n" +
-"  )\n" +
+"  ),\n" +
+"  findElem\n" +
 "});\n" +
 ""
 +"})();";

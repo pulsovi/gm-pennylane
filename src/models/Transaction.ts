@@ -40,6 +40,15 @@ export default class Transaction extends ValidableDocument {
 
     const groupedDocuments = await this.getGroupedDocuments();
 
+    // Pas de rapprochement bancaire
+    const recent = (Date.now() - new Date(doc.date).getTime()) < 86_400_000 * 30;
+    if (!recent && !groupedDocuments.find(gdoc => gdoc.id === doc.id)?.reconciled)
+      return 'Cette transaction n\'est pas rattachée à un rapprochement bancaire';
+    this.debug('loadValidMessage > rapprochement bancaire', {
+      recent,
+      reconciled: groupedDocuments.find(gdoc => gdoc.id === doc.id),
+    });
+
     if (doc.label.includes(' DE: STRIPE MOTIF: ALLODONS REF: ')) {
       if (
         ledgerEvents.length !== 2
@@ -50,12 +59,8 @@ export default class Transaction extends ValidableDocument {
       return 'OK';
     }
 
-    if (
-      !doc.date.startsWith('2023')
-      && doc.label.toUpperCase().startsWith('VIR ')
-      /*&& ![
-        ' DE: STRIPE MOTIF: STRIPE REF: STRIPE-',
-      ].some(label => doc.label.includes(label))*/
+    if (doc.label.toUpperCase().startsWith('VIR ')
+      /*&& !doc.label.includes(' DE: STRIPE MOTIF: STRIPE REF: STRIPE-')*/
     ) {
       if (doc.label.includes(' DE: Stripe Technology Europe Ltd MOTIF: STRIPE ')) {
         if (
@@ -66,7 +71,12 @@ export default class Transaction extends ValidableDocument {
         ) return 'Virement interne Stripe mal attribué';
         return 'OK';
       }
-      if (doc.label.includes(' DE: ASS UNE LUMIERE POUR MILLE')) {
+      const assos = [
+        ' DE: JEOM MOTIF: ',
+        ' DE: ASS UNE LUMIERE POUR MILLE',
+        ' DE: MIKDACH MEAT ',
+      ];
+      if (assos.some(label => doc.label.includes(label))) {
         if (
           ledgerEvents.length !== 2
           || groupedDocuments.length > 1
@@ -116,11 +126,6 @@ export default class Transaction extends ValidableDocument {
     if (ledgerEvents.some(line => line.planItem.number.startsWith('445')))
       return 'Une écriture comporte un compte de TVA';
 
-    // Pas de rapprochement bancaire
-    const recent = (Date.now() - new Date(doc.date).getTime()) < 86_400_000 * 30;
-    if (!recent && !groupedDocuments.find(gdoc => gdoc.id === doc.id)?.reconciled)
-      return 'Cette transaction n\'est pas rattachée à un rapprochement bancaire';
-
     if (
       // si justificatif demandé, sauter cette section
       !doc.is_waiting_details
@@ -149,22 +154,44 @@ export default class Transaction extends ValidableDocument {
       }
 
       // balance déséquilibrée - version exigeante
-      const balance = groupedDocuments.reduce((acc, gdoc) => {
-        const isTransaction = gdoc.type === 'Transaction';
-        // Pour les remises de chèques, on a deux pièces justificatives necessaires : le chèque et le cerfa
-        const isCheque = doc.label.startsWith('CHEQUE ') || doc.label.startsWith('REMISE CHEQUE ');
-        const isDonation = parseFloat(doc.amount) > 0;
-        const coeff = isTransaction ? (isDonation ? -1 : 1)*(isCheque ? 2 : 1) : 1;
-        const value = parseFloat(gdoc.currency_amount ?? gdoc.amount);
-        if (isCurrent) this.log({ isTransaction, isCheque, isDonation, coeff, acc, value });
-        return acc + (coeff * value);
-      }, 0);
-      if (Math.abs(balance) > 0.001) {
+      const balance = groupedDocuments
+        .reduce<Partial<Record<'transaction'|'CHQ'|'CERFA'|'autre', number>>>((acc, gdoc) => {
+          const value = parseFloat(gdoc.currency_amount ?? gdoc.amount);
+          if (gdoc.type === 'Transaction') acc.transaction = (acc.transaction ?? 0) + value;
+          else if (gdoc.label.includes('CHQ')) acc.CHQ = (acc.CHQ ?? 0) + value;
+          else if (gdoc.label.includes('CERFA')) acc.CERFA = (acc.CERFA ?? 0) + value;
+          else acc.autre = (acc.autre ?? 0) + value;
+          return acc;
+        }, {});
+      let message = '';
+      if (
+        doc.label.startsWith('REMISE CHEQUE ')
+        || doc.label.toUpperCase().startsWith('VIR ')
+      ) {
         // On a parfois des calculs qui ne tombent pas très juste en JS
+        if (Math.abs((balance.transaction ?? 0) - (balance.CERFA ?? 0)) > 0.001) {
+          // Pour les remises de chèques, on a deux pièces justificatives necessaires : le chèque et le cerfa
+          message = 'La somme des CERFAs doit valoir le montant de la transaction';
+          balance.CERFA = balance.CERFA ?? 0;
+        }
+      } else {
+        if (Math.abs((balance.transaction ?? 0) - (balance.autre ?? 0)) > 0.001) {
+          message = 'La somme des autres justificatifs doit valoir le montant de la transaction';
+          balance.autre = balance.autre ?? 0;
+        }
+      }
+      if (isCurrent) this.log('balance:', balance);
+      if (message) {
         return `<a
           title="Cliquer ici pour plus d'informations."
           href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Transaction%20-%20Balance%20v2"
-        >Balance v2 déséquilibrée: ${balance} ⓘ</a>`;
+        >Balance v2 déséquilibrée: ${message} ⓘ</a><ul>${Object.entries(balance)
+          .sort(([keya], [keyb]) => {
+            const keys = ['transaction', 'CHQ', 'CERFA', 'autre'];
+            return keys.indexOf(keya) - keys.indexOf(keyb);
+          })
+          .map(([key, value]) => `<li><strong>${key} :</strong>${value}</li>`)
+        .join('')}</ul>`;
       }
 
       // Pas plus d'exigence pour les petits montants
