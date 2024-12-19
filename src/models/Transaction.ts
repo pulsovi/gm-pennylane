@@ -75,7 +75,22 @@ export default class Transaction extends ValidableDocument {
         ) return 'Virement reçu d\'une association mal attribué';
         return 'OK';
       }
-      if (groupedDocuments.length < 2) return 'Virement reçu sans justificatif';
+      const sansCerfa = [
+        ' DE: MONSIEUR FABRICE HARARI MOTIF: ',
+      ]
+      if (sansCerfa.some(label => doc.label.includes(label))) {
+        if (
+          ledgerEvents.length !== 2
+          || groupedDocuments.length > 1
+          || ledgerEvents.reduce((acc, ev) => acc + parseFloat(ev.amount), 0) !== 0
+          || !ledgerEvents.find(ev => ev.planItem.number === '75411')
+        ) return 'Virement reçu avec CERFA optionel mal attribué';
+        return 'OK';
+      }
+      if (groupedDocuments.length < 2) return `<a
+          title="Ajouter le CERFA dans les pièces de réconciliation. Cliquer ici pour plus d'informations."
+          href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Transaction%20-%20Virement%20re%C3%A7u%20sans%20justificatif"
+        >Virement reçu sans justificatif ⓘ</a>`;
       if (!groupedDocuments.find(gdoc => gdoc.label.includes('CERFA')))
         return 'Les virements reçus doivent être justifiés par un CERFA';
     }

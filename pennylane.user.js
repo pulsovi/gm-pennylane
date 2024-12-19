@@ -284,7 +284,14 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      Accept: \"application/json\"\n" +
 "    },\n" +
 "    body: data ? JSON.stringify(data) : data\n" +
-"  });\n" +
+"  }).catch((error) => ({ error }));\n" +
+"  if (\"error\" in response) {\n" +
+"    console.log(\"API request error :\", { endpoint, data, method, error: response.error });\n" +
+"    apiRequestWait = sleep(3e3).then(() => {\n" +
+"      apiRequestWait = null;\n" +
+"    });\n" +
+"    return apiRequest(endpoint, data, method);\n" +
+"  }\n" +
 "  if (response.status === 429 && await response.clone().text() === \"You made too many requests. Time to take a break?\") {\n" +
 "    apiRequestWait = sleep(1e3).then(() => {\n" +
 "      apiRequestWait = null;\n" +
@@ -524,8 +531,19 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "          return \"Virement re\\xE7u d'une association mal attribu\\xE9\";\n" +
 "        return \"OK\";\n" +
 "      }\n" +
+"      const sansCerfa = [\n" +
+"        \" DE: MONSIEUR FABRICE HARARI MOTIF: \"\n" +
+"      ];\n" +
+"      if (sansCerfa.some((label) => doc.label.includes(label))) {\n" +
+"        if (ledgerEvents.length !== 2 || groupedDocuments.length > 1 || ledgerEvents.reduce((acc, ev) => acc + parseFloat(ev.amount), 0) !== 0 || !ledgerEvents.find((ev) => ev.planItem.number === \"75411\"))\n" +
+"          return \"Virement re\\xE7u avec CERFA optionel mal attribu\\xE9\";\n" +
+"        return \"OK\";\n" +
+"      }\n" +
 "      if (groupedDocuments.length < 2)\n" +
-"        return \"Virement re\\xE7u sans justificatif\";\n" +
+"        return `<a\n" +
+"          title=\"Ajouter le CERFA dans les pi\\xE8ces de r\\xE9conciliation. Cliquer ici pour plus d'informations.\"\n" +
+"          href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Transaction%20-%20Virement%20re%C3%A7u%20sans%20justificatif\"\n" +
+"        >Virement re\\xE7u sans justificatif \\u24D8</a>`;\n" +
 "      if (!groupedDocuments.find((gdoc) => gdoc.label.includes(\"CERFA\")))\n" +
 "        return \"Les virements re\\xE7us doivent \\xEAtre justifi\\xE9s par un CERFA\";\n" +
 "    }\n" +
