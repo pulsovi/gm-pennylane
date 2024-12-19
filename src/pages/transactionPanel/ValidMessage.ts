@@ -13,9 +13,20 @@ export default class ValidMessage extends Service {
     await waitElem('h3', 'Transactions');                    // Transactions panel
     await waitElem('.paragraph-body-m+.heading-page.mt-1')   // transaction detail panel
     document.addEventListener('keydown', event => {
-      if (findElem('h3', 'Transactions') && event.ctrlKey && event.key === 's') {
+      if (findElem('h3', 'Transactions') && event.ctrlKey && event.key.toLowerCase() === 's') {
         event.preventDefault();
         delete this.transaction;
+      }
+      else {
+        this.debug('Ignored hotkey', [
+          {
+            value: "findElem('h3', 'Transactions')",
+            expect: "HTMLH3Element",
+            actual: findElem('h3', 'Transactions'),
+          },
+          { value: 'event.ctrlKey', expect: true, actual: event.ctrlKey },
+          { value: 'event.key', expect: 's', actual: event.key },
+        ]);
       }
     })
     while (await waitFunc(async () => !await this.isSync())) {

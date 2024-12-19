@@ -235,12 +235,28 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    const foreground = contrastScore(background, \"#ffffff\") > contrastScore(background, \"#000000\") ? \"#ffffff\" : \"#000000\";\n" +
 "    this.logColor = { bg: background, fg: foreground };\n" +
 "  }\n" +
+"  getStyles() {\n" +
+"    return [\n" +
+"      \"background: #0b0b31; color: #fff; padding: 0.1em .3em; border-radius: 0.3em 0 0 0.3em;\",\n" +
+"      `background: ${this.logColor.bg}; color: ${this.logColor.fg}; padding: 0.1em .3em; border-radius: 0 0.3em 0.3em 0;`,\n" +
+"      \"background: #f2cc72; color: #555; padding: 0 .8em; border-radius: 1em; margin-left: 1em;\"\n" +
+"    ];\n" +
+"  }\n" +
 "  log(...messages) {\n" +
 "    const date = (/* @__PURE__ */ new Date()).toISOString().replace(/^[^T]*T([\\d:]*).*$/, \"[$1]\");\n" +
 "    console.log(\n" +
 "      `${date} %cGM_Pennylane%c${this.constructor.name}`,\n" +
-"      \"background: #0b0b31; color: #fff; padding: 0.1em .3em; border-radius: 0.3em 0 0 0.3em;\",\n" +
-"      `background: ${this.logColor.bg}; color: ${this.logColor.fg}; padding: 0.1em .3em; border-radius: 0 0.3em 0.3em 0;`,\n" +
+"      ...this.getStyles().slice(0, 2),\n" +
+"      ...messages\n" +
+"    );\n" +
+"  }\n" +
+"  debug(...messages) {\n" +
+"    if (!GM_Pennylane_debug)\n" +
+"      return;\n" +
+"    const date = (/* @__PURE__ */ new Date()).toISOString().replace(/^[^T]*T([\\d:]*).*$/, \"[$1]\");\n" +
+"    console.log(\n" +
+"      `${date} %cGM_Pennylane%c${this.constructor.name}%cDebug`,\n" +
+"      ...this.getStyles(),\n" +
 "      ...messages\n" +
 "    );\n" +
 "  }\n" +
@@ -639,9 +655,19 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    await waitElem(\"h3\", \"Transactions\");\n" +
 "    await waitElem(\".paragraph-body-m+.heading-page.mt-1\");\n" +
 "    document.addEventListener(\"keydown\", (event) => {\n" +
-"      if (findElem(\"h3\", \"Transactions\") && event.ctrlKey && event.key === \"s\") {\n" +
+"      if (findElem(\"h3\", \"Transactions\") && event.ctrlKey && event.key.toLowerCase() === \"s\") {\n" +
 "        event.preventDefault();\n" +
 "        delete this.transaction;\n" +
+"      } else {\n" +
+"        this.debug(\"Ignored hotkey\", [\n" +
+"          {\n" +
+"            value: \"findElem('h3', 'Transactions')\",\n" +
+"            expect: \"HTMLH3Element\",\n" +
+"            actual: findElem(\"h3\", \"Transactions\")\n" +
+"          },\n" +
+"          { value: \"event.ctrlKey\", expect: true, actual: event.ctrlKey },\n" +
+"          { value: \"event.key\", expect: \"s\", actual: event.key }\n" +
+"        ]);\n" +
 "      }\n" +
 "    });\n" +
 "    while (await waitFunc(async () => !await this.isSync())) {\n" +
