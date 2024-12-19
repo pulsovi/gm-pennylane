@@ -2048,6 +2048,12 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "        case \"KeyD\":\n" +
 "          return this.filterClick(\"Date\", event);\n" +
 "      }\n" +
+"    }\n" +
+"    if (event.ctrlKey) {\n" +
+"      switch (event.code) {\n" +
+"        case \"Key S\":\n" +
+"          return this.saveLedgerEvents();\n" +
+"      }\n" +
 "    } else\n" +
 "      switch (event.code) {\n" +
 "        case \"NumpadEnter\":\n" +
@@ -2081,6 +2087,9 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      }\n" +
 "      return $('button[data-tracking-action=\"Transactions Page - Date Filter click\"]')?.click();\n" +
 "    }\n" +
+"  }\n" +
+"  saveLedgerEvents() {\n" +
+"    findElem(\"button\", \"Enregistrer\")?.click();\n" +
 "  }\n" +
 "}\n" +
 "\n" +

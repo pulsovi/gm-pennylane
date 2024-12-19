@@ -6,12 +6,17 @@ export default class TransactionPanelHotkeys extends Service {
     document.addEventListener('keydown', event => this.handleKeydown(event));
   }
 
-  async handleKeydown (event: KeyboardEvent) {
+  private async handleKeydown (event: KeyboardEvent) {
     if (!findElem('h3', 'Transactions')) return;                    // Transactions panel
     if (event.altKey) {
       switch (event.code) {
       case 'KeyE': return this.filterClick('Montant', event);
       case 'KeyD': return this.filterClick('Date', event);
+      }
+    }
+    if (event.ctrlKey) {
+      switch (event.code) {
+      case 'Key S': return this.saveLedgerEvents();
       }
     }
     else switch (event.code) {
@@ -21,7 +26,7 @@ export default class TransactionPanelHotkeys extends Service {
     }
   }
 
-  async filterClick (label: string, event: KeyboardEvent) {
+  private async filterClick (label: string, event: KeyboardEvent) {
     event.preventDefault();
     const filterButton = $$<HTMLButtonElement>('div.dropdown button')
       .find(button => getReactProps(button, 1).label === label);
@@ -39,7 +44,7 @@ export default class TransactionPanelHotkeys extends Service {
     inputField?.focus();
   }
 
-  async manageEnter (event: KeyboardEvent) {
+  private async manageEnter (event: KeyboardEvent) {
     if (event.srcElement instanceof HTMLInputElement && event.srcElement.getAttribute('aria-label') === 'Date') {
       if (/\d\d\/\d\d\/\d\d\d\d - __\/__\/____/u.test(event.srcElement.value)) {
         const date = event.srcElement.value.slice(0, 10);
@@ -50,5 +55,9 @@ export default class TransactionPanelHotkeys extends Service {
       }
       return $<HTMLButtonElement>('button[data-tracking-action="Transactions Page - Date Filter click"]')?.click();
     }
+  }
+
+  private saveLedgerEvents () {
+    findElem<HTMLButtonElement>('button', 'Enregistrer')?.click();
   }
 }
