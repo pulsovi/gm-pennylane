@@ -19,7 +19,13 @@ export async function apiRequest (endpoint: string, data: Record<string, unknown
       Accept: 'application/json'
     },
     body: data ? JSON.stringify(data) : data,
-  });
+  }).catch(error => ({ error }));
+
+  if ('error' in response) {
+    console.log('API request error :', { endpoint, data, method, error: response.error });
+    apiRequestWait = sleep(3000).then(() => { apiRequestWait = null; });
+    return apiRequest(endpoint, data, method);
+  }
 
   if (
     response.status === 429
