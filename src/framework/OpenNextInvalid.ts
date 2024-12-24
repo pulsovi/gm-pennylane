@@ -136,7 +136,7 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
     }
 
     // verifier les plus anciennes entrées
-    this.log('TODO: vérifier les entrées qui ont été modifiée récemment');
+    this.error('TODO: vérifier les entrées qui ont été modifiée récemment');
   }
 
   /**

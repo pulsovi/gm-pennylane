@@ -35,7 +35,7 @@ export default class ValidMessage extends Service {
   }
 
   async loadMessage () {
-    this.log('loadMessage', this);
+    this.debug('loadMessage', this);
     this.message = '⟳';
     this.displayHeadband();
 
@@ -56,13 +56,13 @@ export default class ValidMessage extends Service {
     if (ledgerEvents.some((event, id) => this.ledgerEvents[id] !== event)) {
       const logData = { oldEvents: this.ledgerEvents };
       this.ledgerEvents = ledgerEvents;
-      this.log('desynchronisé', { ...logData, ...this });
+      this.debug('ledgerEvents desynchronisé', { ...logData, ...this });
       return false;
     }
 
     const current = Number(getParam(location.href, 'transaction_id'));
     if (current && current !== this.transaction?.id) {
-      this.log('transaction desynchronisée', { current, ...this });
+      this.debug('transaction desynchronisée', { current, ...this });
       return false;
     }
 

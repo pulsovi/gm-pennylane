@@ -11,6 +11,8 @@ import TransactionPanelHotkeys from './pages/transactionPanel/Hotkeys.js';
 import EntryBlocInfos from './pages/EntryBlocInfos.js';
 import AddInvoiceIdColumn from './pages/invoiceList/AddInvoiceIdColumn.js';
 import { findElem } from './_/dom.js';
+import Transaction from './models/Transaction.js';
+import Invoice from './models/Invoice.js';
 
 last7DaysFilter();
 TransactionValidMessage.start();
@@ -48,5 +50,9 @@ declare global {
 
 Object.assign(window, {
   GM_Pennylane_Version: /** version **/'0.1.18',
-  findElem,
+  GM: {
+    findElem,
+    Transaction,
+    Invoice,
+  },
 });

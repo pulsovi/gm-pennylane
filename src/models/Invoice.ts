@@ -211,7 +211,7 @@ class CustomerInvoice extends Invoice {
     // Fait partie d'un exercis clôt
     if (invoice.has_closed_ledger_events) return 'OK';
 
-    this.log('loadValidMessage', { invoice });
+    this.log('loadValidMessage', this);
     // Archived
     if (invoice.archived) {
       const allowed = ['§ #', '¤ TRANSACTION INTROUVABLE'];

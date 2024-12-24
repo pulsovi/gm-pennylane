@@ -15,7 +15,7 @@ export default class CacheListRecord<T extends object> extends CacheList<T> {
       newValue = {...oldValue, ...newValue};
       this.data.splice(this.data.indexOf(oldValue), 1, newValue);
       if (newValue.id == getParam(location.href, 'id'))
-        this.log('updateItem', { match, create, oldValue, newValue, stack: new Error('').stack });
+        this.debug('updateItem', { match, create, oldValue, newValue, stack: new Error('').stack });
       this.emit('update', { oldValue, newValue });
     } else {
       if (!create) return;

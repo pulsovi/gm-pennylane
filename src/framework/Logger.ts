@@ -33,6 +33,15 @@ export default class Logger extends EventEmitter {
     );
   }
 
+  public error (...messages: unknown[]): void {
+    const date = new Date().toISOString().replace(/^[^T]*T([\d:]*).*$/, '[$1]');
+    console.error(
+      `${date} %cGM_Pennylane%c${this.constructor.name}`,
+      ...this.getStyles().slice(0, 2),
+      ...messages
+    );
+  }
+
   public debug (...messages: unknown[]): void {
     if (!GM_Pennylane_debug) return;
     const date = new Date().toISOString().replace(/^[^T]*T([\d:]*).*$/, '[$1]');

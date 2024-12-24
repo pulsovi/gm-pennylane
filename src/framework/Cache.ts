@@ -10,7 +10,7 @@ export default abstract class Cache<T> extends Logger {
     this.storageKey = key;
     this.data = initialValue;
     this.load();
-    this.log('new Cache', this);
+    this.debug('new Cache', this);
     this.follow();
   }
 

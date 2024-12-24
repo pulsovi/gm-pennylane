@@ -96,7 +96,7 @@ export default class Autostarter extends Logger {
     setText();
     this.config.on('change', setText);
 
-    this.log(this, { button, tooltip });
+    this.debug({ me: this, button, tooltip });
   }
 
   /**
