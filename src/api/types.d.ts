@@ -611,3 +611,28 @@ declare interface APITransactionItem {
   };
   "dump": null;
 }
+
+/**
+ * Type renvoyé par l'appel API getGroupedDocuments()
+ */
+declare interface APIGroupedDocument {
+  "id": number;
+  "type": "Invoice"|"Transaction";
+  /** Date string (ex: 2024-12-16) */
+  "date": string;
+  "journal_id": number;
+  "source": string;
+  "is_waiting_details": boolean;
+  "fec_pieceref": string;
+  "label": string;
+  "amount": `${number}`;
+  "journal": {
+    "id": number;
+    "code": string;
+    "label": string;
+  };
+  "readonly": boolean;
+  "ledgerEventsCount": number;
+  "totalDebit": `${number}`;
+  "totalCredit": `${number}`;
+}
