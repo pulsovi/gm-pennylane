@@ -1,4 +1,4 @@
-import type { GroupedDocument, APILedgerEvent, RawDocument, RawThirdparty } from '../api/types.d.ts';
+import type { GroupedDocument, APILedgerEvent, RawDocument, RawThirdparty, APIGroupedDocument } from '../api/types.d.ts';
 import { archiveDocument, getDocument, reloadLedgerEvents } from '../api/document.js';
 import { getGroupedDocuments, getLedgerEvents } from '../api/operation.js';
 import { getThirdparty } from '../api/thirdparties.ts';
@@ -8,7 +8,7 @@ export default class Document extends Logger {
   public readonly type: 'transaction' | 'invoice';
   public readonly id: number;
   protected document: RawDocument | Promise<RawDocument>;
-  protected groupedDocuments: GroupedDocument[] | Promise<GroupedDocument[]>;
+  protected groupedDocuments: APIGroupedDocument[] | Promise<APIGroupedDocument[]>;
   protected ledgerEvents?: APILedgerEvent[] | Promise<APILedgerEvent[]>;
   protected thirdparty?: Promise<{direction: string; thirdparty: RawThirdparty}>;
 
@@ -66,7 +66,7 @@ export default class Document extends Logger {
     return await this.groupedDocuments;
   }
 
-  async _loadGroupedDocuments () {
+  async _loadGroupedDocuments (): Promise<APIGroupedDocument[]> {
     const otherDocuments = await getGroupedDocuments(this.id);
     const mainDocument = await this.getDocument();
     this.groupedDocuments = [

@@ -1,9 +1,10 @@
 import { apiRequest  } from './core.js';
-import type { RawDocument } from './types.d.js'
+import type { APIDocument, RawDocument } from './types.d.js'
 
-export async function getDocument (id): Promise<RawDocument> {
+export async function getDocument (id): Promise<APIDocument> {
   const response = await apiRequest(`documents/${id}`, null, 'GET');
-  return await response?.json();
+  const result = await response?.json();
+  return result;
 }
 
 interface MatchingOptions {
