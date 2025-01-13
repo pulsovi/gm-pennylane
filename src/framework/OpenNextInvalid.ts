@@ -115,8 +115,12 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
     }
 
     // verifier le cache
-    let cached = this.cache.filter({ valid: false });
+    let cached = this.cache.filter({ valid: false }).sort((a, b) => a.date - b.date);
     for (const cachedItem of cached) {
+      if (isSkipped(cachedItem)) {
+        if (!cachedItem?.valid) this.log('skip', cachedItem);
+        continue;
+      }
       const status = await this.updateStatus(cachedItem.id);
       if (isSkipped(status)) {
         if (!status?.valid) this.log('skip', status);
@@ -197,6 +201,7 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
       this.invalidGenerator = this.loadInvalid();
       return this.openNext(interactionAllowed);
     }
+    this.running = false;
   }
 
   private async firstLoading () {

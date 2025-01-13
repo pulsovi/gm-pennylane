@@ -6,6 +6,7 @@ interface Status {
   valid: boolean;
   message: string;
   createdAt: number;
+  date: number;
 }
 
 export default abstract class ValidableDocument extends Document {
@@ -38,7 +39,8 @@ export default abstract class ValidableDocument extends Document {
     const message = await this.getValidMessage();
     const doc = await this.getDocument();
     const createdAt = new Date(doc.created_at).getTime();
-    return { id, valid, message, createdAt };
+    const date = new Date(doc.date).getTime();
+    return { id, valid, message, createdAt, date };
   }
 
   async reloadLedgerEvents(): Promise<RawDocument> {
