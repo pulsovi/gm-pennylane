@@ -243,10 +243,10 @@ class CustomerInvoice extends Invoice {
     }
 
     // Montant
-    if (invoice.amount === '0.0') return `<a
+    if (invoice.amount === '0.0' && !invoice.invoice_number.includes('|ZERO|')) return `<a
       title="Cliquer ici pour plus d'informations."
       href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Facture%20client"
-    >Ajouter le montant ⓘ</a>`;
+    >Ajouter le montant ⓘ</a><ul style="margin:0;padding:0.8em;"><li>|ZERO|</li></ul>`;
 
     // Don Manuel
     if (
