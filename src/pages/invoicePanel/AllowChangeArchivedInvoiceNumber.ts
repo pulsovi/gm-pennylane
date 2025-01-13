@@ -13,11 +13,11 @@ export default class AllowChangeArchivedInvoiceNumber extends Service {
     document.addEventListener('keyup', async (event: KeyboardEvent) => {
       if (event.code !== 'KeyS' || !event.ctrlKey) return;
 
-      this.log('Ctrl + S pressed');
+      this.debug('Ctrl + S pressed');
 
       const invoiceNumberField = $<HTMLInputElement>('input[name=invoice_number]');
       if (event.target !== invoiceNumberField || !invoiceNumberField) {
-        this.log({ invoiceNumberField, eventTarget: event.target });
+        this.debug({ invoiceNumberField, eventTarget: event.target });
         return;
       }
 
@@ -28,7 +28,7 @@ export default class AllowChangeArchivedInvoiceNumber extends Service {
         getReactProps(invoiceNumberField, 44).initialValues; // for customer pieces
 
       if (!rawInvoice.archived) {
-        this.log('Invoice is not archived');
+        this.debug('Invoice is not archived');
         return;
       }
 
