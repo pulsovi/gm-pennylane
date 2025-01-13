@@ -27,50 +27,76 @@ export default class InvoiceDisplayInfos extends Service {
     await waitElem('h4', 'Ventilation');
 
     this.cache = CacheStatus.getInstance(this.storageKey);
-    this.watch();
+    this.cache.on('change', () => this.handleCacheChange());
+    this.watchReloadHotkey();
+    this.watchEventSave();
+    await this.appendContainer();
+    setInterval(() => { this.watch(); }, 200);
   }
 
-  async watch () {
-    this.watchEventSave();
-    this.cache.on('change', () => this.handleCacheChange());
+  set message (text: string) {
+    this.emit('message-change', text);
+  }
 
-    while (await waitFunc(async () => !await this.isSync())) {
-      await this.setId();
-      await this.setMessage('⟳');
-      await this.loadMessage();
-    }
+  set id (text: string) {
+    this.emit('id-change', text);
+  }
+
+  watchReloadHotkey () {
+    document.addEventListener('keydown', event => {
+      if (findElem('h4', 'Ventilation') && event.ctrlKey && event.code === 'KeyR') {
+        event.preventDefault();
+        this.reload();
+        this.debug('reloading from watchReloadHotkey');
+      } else {
+        this.debug('skip reload hotkey :', {
+          "findElem('h4', 'Ventilation')": findElem('h4', 'Ventilation'),
+          'event.ctrlKey': event.ctrlKey,
+          'event.code (expect "KeyR")': event.code,
+        });
+      }
+    });
   }
 
   reload () {
     this.state = {};
   }
 
-  async isSync () {
+  async watch () {
     const infos = await waitElem('h4.heading-section-3.mr-2', 'Informations');
     const invoice: RawInvoice = getReact(infos, 32).memoizedProps.invoice;
+
+    let reload = false;
 
     if (this.state.reactInvoice !== invoice) {
       this.state.reactInvoice = invoice;
       this.state.invoice = await Invoice.load(invoice.id);
-      return false;
+      reload = true;
     }
 
-    const ledgerEvents = $$<HTMLFormElement>('form[name^=DocumentEntries-]')
+    const reactEvents = $$<HTMLFormElement>('form[name^=DocumentEntries-]')
       .reduce<LedgerEvent[]>((events, form) => {
-        events.concat(getReactProps(form.parentElement ,3)?.initialValues.ledgerEvents);
+        events.concat(getReactProps(form.parentElement ,3)?.initialValues?.ledgerEvents ?? []);
         return events;
       }, []);
 
     if (
-      this.state.events?.length !== ledgerEvents.length
-      || ledgerEvents.some(event => this.state.events?.find(ev => ev.id === event.id) !== event)
+      this.state.events?.length !== reactEvents.length
+      || reactEvents.some(event => this.state.events?.find(ev => ev.id === event.id) !== event)
     ) {
-      this.state.events = ledgerEvents;
-      return false;
+      this.state.events = reactEvents;
+      reload = true;
     }
 
-    return true;
+    if (reload) {
+      this.setId();
+      this.loadMessage();
+    }
   }
+
+  on (eventName: 'message-change', cb: (message: string) => void): this;
+  on (eventName: 'id-change', cb: (id: string) => void): this;
+  on (eventName, cb) { return super.on(eventName, cb); }
 
   async appendContainer () {
     if (!this.container) {
@@ -78,43 +104,50 @@ export default class InvoiceDisplayInfos extends Service {
         <div id="is-valid-tag" class="d-inline-block bg-secondary-100 dihsuQ px-0_5">⟳</div>
         <div id="invoice-id" class="d-inline-block bg-secondary-100 dihsuQ px-0_5"></div>
       </div>`).firstElementChild as HTMLDivElement;
-      this.setId();
+
+      const messageDiv = $<HTMLDivElement>('#is-valid-tag', this.container)!;
+      this.on('message-change', message => { messageDiv.innerHTML = message; });
+
+      const idDiv = $<HTMLDivElement>('#invoice-id', this.container)!;
+      this.on('id-change', id => { idDiv.innerHTML = id; });
+
     }
     const infos = await waitElem('h4.heading-section-3.mr-2', 'Informations');
     const tagsContainer = infos.nextSibling;
     if (!tagsContainer) throw new Error('InvoiceDisplayInfos: Impossible de trouver le bloc de tags');
     tagsContainer.insertBefore(this.container, tagsContainer.firstChild);
+    waitFunc(
+      () => findElem('h4.heading-section-3.mr-2', 'Informations')?.nextSibling !== tagsContainer
+    ).then(() => { this.appendContainer(); });
   }
 
   async loadMessage () {
     this.log('load message', this);
-    if (!this.state.invoice) return this.setMessage('⟳');
+    if (!this.state.invoice) {
+      this.message = '⟳';
+      return;
+    }
+
     const status = { ...await this.state.invoice.getStatus(), fetchedAt: Date.now() };
     this.state.cachedStatus = status;
     this.cache.updateItem({ id: status.id }, status, false);
     const {message, valid} = status;
-    return this.setMessage(valid ? '✓' : '✗ '+message);
+    return this.message = valid ? '✓' : `✗ ${message}`;
   }
 
   async setId () {
-    if (!this.container) await this.appendContainer();
-    const tag = $<HTMLDivElement>('#invoice-id', this.container);
-    if (!tag) throw new Error('tag "invoice-id" introuvable');
-    tag.innerHTML = `#${this.state.invoice?.id}<a title="réouvrir cette pièce dans un nouvel onglet" target="_blank" href="${location.href.split('/').slice(0, 5).join('/')}/documents/${this.state.invoice?.id}.html" ><svg class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium mr-0_5 css-q7mezt" focusable="false" aria-hidden="true" viewBox="0 0 24 24" data-testid="OpenInNewRoundedIcon" style="font-size: 1rem;"><path d="M18 19H6c-.55 0-1-.45-1-1V6c0-.55.45-1 1-1h5c.55 0 1-.45 1-1s-.45-1-1-1H5c-1.11 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-6c0-.55-.45-1-1-1s-1 .45-1 1v5c0 .55-.45 1-1 1M14 4c0 .55.45 1 1 1h2.59l-9.13 9.13c-.39.39-.39 1.02 0 1.41s1.02.39 1.41 0L19 6.41V9c0 .55.45 1 1 1s1-.45 1-1V4c0-.55-.45-1-1-1h-5c-.55 0-1 .45-1 1"></path></svg></a>`;
-  }
-
-  async setMessage (message: string) {
-    await this.appendContainer();
-    const tag = $('#is-valid-tag', this.container);
-    if (!tag) throw new Error('tag "is-valid-tag" introuvable');
-    tag.innerHTML = message;
+    if (!this.state.invoice?.id) {
+      this.id = '';
+      return;
+    }
+    this.id = `#${this.state.invoice?.id}<a title="réouvrir cette pièce dans un nouvel onglet" target="_blank" href="${location.href.split('/').slice(0, 5).join('/')}/documents/${this.state.invoice?.id}.html" ><svg class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium mr-0_5 css-q7mezt" focusable="false" aria-hidden="true" viewBox="0 0 24 24" data-testid="OpenInNewRoundedIcon" style="font-size: 1rem;"><path d="M18 19H6c-.55 0-1-.45-1-1V6c0-.55.45-1 1-1h5c.55 0 1-.45 1-1s-.45-1-1-1H5c-1.11 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-6c0-.55-.45-1-1-1s-1 .45-1 1v5c0 .55-.45 1-1 1M14 4c0 .55.45 1 1 1h2.59l-9.13 9.13c-.39.39-.39 1.02 0 1.41s1.02.39 1.41 0L19 6.41V9c0 .55.45 1 1 1s1-.45 1-1V4c0-.55-.45-1-1-1h-5c-.55 0-1 .45-1 1"></path></svg></a>`;
   }
 
   async watchEventSave () {
     const ref = await waitElem('button', 'Enregistrer');
-    ref.addEventListener('click', () => this.reload());
-    await waitFunc(() => findElem('button', 'Enregistrer') !== ref);
-    this.watchEventSave();
+    ref.addEventListener('click', () => { delete this.state.events; });
+    waitFunc(() => findElem('button', 'Enregistrer') !== ref)
+      .then(() => { this.watchEventSave(); });
   }
 
   async handleCacheChange () {
