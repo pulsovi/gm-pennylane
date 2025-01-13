@@ -65,9 +65,10 @@ export default class Autostarter extends Logger {
    */
   private appendDisableButton () {
     const buttonId = `${this.parent.id}-autostart-enable-disable`;
+    const className = $<HTMLButtonElement>('button[type=button]+button')?.className;
     this.parent.container.appendChild(parseHTML(`<button
       type="button"
-      class="sc-jwIPbr bxhmjB kzNmya justify-content-center btn btn-primary btn-sm"
+      class="${className}"
       id="${buttonId}"
       style="font-family: initial;"
     ></button>`));
