@@ -5,87 +5,95 @@ import Transaction from '../../models/Transaction.js';
 
 /** Add validation message on transaction panel */
 export default class ValidMessage extends Service {
-  private transaction?: Transaction;
-  private ledgerEvents: LedgerEvent[] = [];
-  private message: string = '⟳';
+  private container = parseHTML(`<div><div class="headband-is-valid">⟳</div></div>`)
+    .firstElementChild as HTMLDivElement;
+  private state: {
+    transaction?: Transaction;
+    ledgerEvents: LedgerEvent[];
+  } = { ledgerEvents: [] };
+  private _message: string = '⟳';
+
+  public static getInstance(): ValidMessage {
+    if (!this.instance) this.instance = new this();
+    return this.instance as ValidMessage;
+  }
 
   async init () {
+    await this.insertContainer();
+    this.on('message-change', () => this.displayMessage());
+    this.watchReloadHotkey();
+    await this.loadMessage();
+    setInterval(() => this.watch(), 200);
+  }
+
+  async insertContainer () {
     await waitElem('h3', 'Transactions');                    // Transactions panel
     await waitElem('.paragraph-body-m+.heading-page.mt-1')   // transaction detail panel
+    const detailTab = await waitElem('aside div');
+    detailTab.insertBefore(this.container, detailTab.firstChild);
+    waitFunc(() => $('aside div') !== detailTab).then(() => { this.insertContainer(); });
+  }
+
+  watchReloadHotkey () {
     document.addEventListener('keydown', event => {
       if (findElem('h3', 'Transactions') && event.ctrlKey && event.key.toLowerCase() === 's') {
         event.preventDefault();
-        delete this.transaction;
+        this.reload();
       }
-      else {
-        this.debug('Ignored hotkey', [
-          {
-            value: "findElem('h3', 'Transactions')",
-            expect: "HTMLH3Element",
-            actual: findElem('h3', 'Transactions'),
-          },
-          { value: 'event.ctrlKey', expect: true, actual: event.ctrlKey },
-          { value: 'event.key', expect: 's', actual: event.key },
-        ]);
-      }
-    })
-    while (await waitFunc(async () => !await this.isSync())) {
-      await this.loadMessage();
-    }
+    });
+  }
+
+  reload () {
+    this.loadMessage();
+  }
+
+  set message (html: string) {
+    this._message = html;
+    this.emit('message-change', html);
+  }
+
+  get message (): string {
+    return this._message;
   }
 
   async loadMessage () {
     this.debug('loadMessage', this);
     this.message = '⟳';
-    this.displayHeadband();
 
     const rawTransaction = getReactProps($('.paragraph-body-m+.heading-page.mt-1'), 9).transaction;
-    this.transaction = new Transaction(rawTransaction);
-    this.message = await this.transaction.getValidMessage();
-    this.message = `${(await this.transaction.isValid()) ? '✓' : '✗'} ${this.message}`;
-    this.displayHeadband();
+    this.state.transaction = new Transaction(rawTransaction);
+    const message = await this.state.transaction.getValidMessage();
+    this.message = `${(await this.state.transaction.isValid()) ? '✓' : '✗'} ${message}`;
   }
 
-  async isSync () {
+  async watch () {
     const ledgerEvents = $$<HTMLFormElement>('form[name^=DocumentEntries-]')
       .reduce<LedgerEvent[]>((events, form) => {
-        const formEvents = getReactProps(form.parentElement ,3)?.initialValues.ledgerEvents;
+        const formEvents = getReactProps(form.parentElement ,3)?.initialValues?.ledgerEvents ?? [];
         return [...events, ...formEvents];
       }, []);
 
-    if (ledgerEvents.some((event, id) => this.ledgerEvents[id] !== event)) {
-      const logData = { oldEvents: this.ledgerEvents };
-      this.ledgerEvents = ledgerEvents;
+    if (ledgerEvents.some((event, id) => this.state.ledgerEvents[id] !== event)) {
+      const logData = { oldEvents: this.state.ledgerEvents };
+      this.state.ledgerEvents = ledgerEvents;
       this.debug('ledgerEvents desynchronisé', { ...logData, ...this });
-      return false;
+      this.reload();
     }
 
     const current = Number(getParam(location.href, 'transaction_id'));
-    if (current && current !== this.transaction?.id) {
+    if (current && current !== this.state.transaction?.id) {
       this.debug('transaction desynchronisée', { current, ...this });
-      return false;
+      this.reload();
     }
-
-    return true;
   }
 
-  async displayHeadband () {
-    if (!$('.headband-is-valid')) {
-      const detailTab = $('aside div');
-      detailTab?.insertBefore(parseHTML(`
-        <div><div class="headband-is-valid"></div></div>
-      `), detailTab.firstChild);
-    }
-
-    const headband = $('.headband-is-valid');
-    if (!headband) return;
-
-    headband.innerHTML = `${this.getTransactionId()}${this.message}`;
+  async displayMessage () {
+    $('.headband-is-valid', this.container)!.innerHTML = `${this.getTransactionId()}${this.message}`;
   }
 
   getTransactionId () {
-    if (!this.transaction?.id) return '';
-    return `<span class="transaction-id d-inline-block bg-secondary-100 dihsuQ px-0_5">#${this.transaction.id}</span> `;
+    if (!this.state.transaction?.id) return '';
+    return `<span class="transaction-id d-inline-block bg-secondary-100 dihsuQ px-0_5">#${this.state.transaction.id}</span> `;
   }
 }
 
