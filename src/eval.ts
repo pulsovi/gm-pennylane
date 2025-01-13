@@ -10,9 +10,10 @@ import AllowChangeArchivedInvoiceNumber from './pages/invoicePanel/AllowChangeAr
 import TransactionPanelHotkeys from './pages/transactionPanel/Hotkeys.js';
 import EntryBlocInfos from './pages/EntryBlocInfos.js';
 import AddInvoiceIdColumn from './pages/invoiceList/AddInvoiceIdColumn.js';
-import { findElem } from './_/dom.js';
+import { $, $$, findElem, parseHTML } from './_/dom.js';
 import Transaction from './models/Transaction.js';
 import Invoice from './models/Invoice.js';
+import RotateImg from './pages/transactionPanel/RotateImg.js';
 
 last7DaysFilter();
 TransactionValidMessage.start();
@@ -26,6 +27,7 @@ AllowChangeArchivedInvoiceNumber.start();
 TransactionPanelHotkeys.start();
 EntryBlocInfos.start();
 AddInvoiceIdColumn.start();
+RotateImg.start();
 
 /*
 async function mergeInvoices () {
@@ -49,10 +51,13 @@ declare global {
 }
 
 Object.assign(window, {
-  GM_Pennylane_Version: /** version **/'0.1.18',
+  GM_Pennylane_Version: /** version **/'0.1.17',
   GM: {
     findElem,
     Transaction,
     Invoice,
+    parseHTML,
+    $,
+    $$,
   },
 });
