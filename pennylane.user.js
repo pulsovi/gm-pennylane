@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name     Pennylane
-// @version  0.1.18
+// @version  0.1.19
 // @grant    unsafeWindow
 // @grant    GM.openInTab
 // @match    https://app.pennylane.com/companies/*
@@ -124,6 +124,23 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  return new URL(url).searchParams.get(paramName);\n" +
 "}\n" +
 "\n" +
+"function rotateImage(imageUrl, spin) {\n" +
+"  return new Promise((resolve, reject) => {\n" +
+"    const img = new Image();\n" +
+"    img.onload = () => {\n" +
+"      const canvas = document.createElement(\"canvas\");\n" +
+"      const ctx = canvas.getContext(\"2d\");\n" +
+"      [canvas.width, canvas.height] = spin % 2 ? [img.height, img.width] : [img.width, img.height];\n" +
+"      ctx.translate(canvas.width / 2, canvas.height / 2);\n" +
+"      ctx.rotate(Math.PI * spin / 2);\n" +
+"      ctx.drawImage(img, -img.width / 2, -img.height / 2);\n" +
+"      resolve(canvas.toDataURL());\n" +
+"    };\n" +
+"    img.onerror = reject;\n" +
+"    img.src = imageUrl;\n" +
+"  });\n" +
+"}\n" +
+"\n" +
 "function hashString(str, seed = 0) {\n" +
 "  let h1 = 3735928559 ^ seed;\n" +
 "  let h2 = 1103547991 ^ seed;\n" +
@@ -212,18 +229,30 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      this.events[event] = [];\n" +
 "    }\n" +
 "    this.events[event].push(listener);\n" +
+"    return this;\n" +
+"  }\n" +
+"  // Abonner une fonction à un événement une seule fois\n" +
+"  once(event, listener) {\n" +
+"    const proxy = (data) => {\n" +
+"      listener(data);\n" +
+"      this.off(event, proxy);\n" +
+"    };\n" +
+"    this.on(event, proxy);\n" +
+"    return this;\n" +
 "  }\n" +
 "  // Désabonner une fonction d'un événement\n" +
 "  off(event, listener) {\n" +
 "    if (!this.events[event])\n" +
 "      return;\n" +
 "    this.events[event] = this.events[event].filter((l) => l !== listener);\n" +
+"    return this;\n" +
 "  }\n" +
 "  // Déclencher un événement avec des données\n" +
 "  emit(event, data) {\n" +
 "    if (!this.events[event])\n" +
-"      return;\n" +
+"      return this;\n" +
 "    this.events[event].forEach((listener) => listener(data));\n" +
+"    return this;\n" +
 "  }\n" +
 "}\n" +
 "\n" +
@@ -246,6 +275,14 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  log(...messages) {\n" +
 "    const date = (/* @__PURE__ */ new Date()).toISOString().replace(/^[^T]*T([\\d:]*).*$/, \"[$1]\");\n" +
 "    console.log(\n" +
+"      `${date} %cGM_Pennylane%c${this.constructor.name}`,\n" +
+"      ...this.getStyles().slice(0, 2),\n" +
+"      ...messages\n" +
+"    );\n" +
+"  }\n" +
+"  error(...messages) {\n" +
+"    const date = (/* @__PURE__ */ new Date()).toISOString().replace(/^[^T]*T([\\d:]*).*$/, \"[$1]\");\n" +
+"    console.error(\n" +
 "      `${date} %cGM_Pennylane%c${this.constructor.name}`,\n" +
 "      ...this.getStyles().slice(0, 2),\n" +
 "      ...messages\n" +
@@ -333,7 +370,8 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "\n" +
 "async function getDocument(id) {\n" +
 "  const response = await apiRequest(`documents/${id}`, null, \"GET\");\n" +
-"  return await response?.json();\n" +
+"  const result = await response?.json();\n" +
+"  return result;\n" +
 "}\n" +
 "async function documentMatching(options) {\n" +
 "  const group_uuids = Array.isArray(options.groups) ? options.groups : [options.groups];\n" +
@@ -367,7 +405,8 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    throw new Error(\"`id` MUST be an integer\");\n" +
 "  }\n" +
 "  const response = await apiRequest(`accountants/operations/${id}/grouped_documents?per_page=-1`, null, \"GET\");\n" +
-"  return await response.json();\n" +
+"  const result = await response.json();\n" +
+"  return result;\n" +
 "}\n" +
 "\n" +
 "async function getThirdparty(id) {\n" +
@@ -474,7 +513,8 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    const message = await this.getValidMessage();\n" +
 "    const doc = await this.getDocument();\n" +
 "    const createdAt = new Date(doc.created_at).getTime();\n" +
-"    return { id, valid, message, createdAt };\n" +
+"    const date = new Date(doc.date).getTime();\n" +
+"    return { id, valid, message, createdAt, date };\n" +
 "  }\n" +
 "  async reloadLedgerEvents() {\n" +
 "    this.valid = null;\n" +
@@ -539,21 +579,45 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      recent,\n" +
 "      reconciled: groupedDocuments.find((gdoc) => gdoc.id === doc.id)\n" +
 "    });\n" +
-"    if (doc.label.includes(\" DE: STRIPE MOTIF: ALLODONS REF: \")) {\n" +
-"      if (ledgerEvents.length !== 2 || groupedDocuments.length > 1 || ledgerEvents.reduce((acc, ev) => acc + parseFloat(ev.amount), 0) !== 0 || !ledgerEvents.find((ev) => ev.planItem.number === \"754110001\"))\n" +
-"        return \"Virement Allodons mal attribu\\xE9\";\n" +
+"    if (doc.label.startsWith(\"FRAIS VIR INTL ELEC \")) {\n" +
+"      if (ledgerEvents.length !== 2 || groupedDocuments.length > 1 || ledgerEvents.reduce((acc, ev) => acc + parseFloat(ev.amount), 0) !== 0 || !ledgerEvents.find((ev) => ev.planItem.number === \"6270005\"))\n" +
+"        return \"Frais bancaires SG mal attribu\\xE9 (=> 6270005)\";\n" +
 "      return \"OK\";\n" +
 "    }\n" +
-"    if (doc.label.toUpperCase().startsWith(\"VIR \")) {\n" +
-"      if (doc.label.includes(\" DE: Stripe Technology Europe Ltd MOTIF: STRIPE \")) {\n" +
+"    if (doc.label.includes(\" DE: STRIPE MOTIF: ALLODONS REF: \")) {\n" +
+"      if (ledgerEvents.length !== 2 || groupedDocuments.length > 1 || ledgerEvents.reduce((acc, ev) => acc + parseFloat(ev.amount), 0) !== 0 || !ledgerEvents.find((ev) => ev.planItem.number === \"754110001\"))\n" +
+"        return \"Virement Allodons mal attribu\\xE9 (=>754110001)\";\n" +
+"      return \"OK\";\n" +
+"    }\n" +
+"    if (doc.label.startsWith(\"Fee: Billing - Usage Fee (\")) {\n" +
+"      if (ledgerEvents.length !== 2 || groupedDocuments.length > 1 || ledgerEvents.reduce((acc, ev) => acc + parseFloat(ev.amount), 0) !== 0 || !ledgerEvents.find((ev) => ev.planItem.number === \"6270001\"))\n" +
+"        return \"Frais Stripe mal attribu\\xE9s (=>6270001)\";\n" +
+"      return \"OK\";\n" +
+"    }\n" +
+"    if (doc.label.startsWith(\"Charge: \")) {\n" +
+"      if (ledgerEvents.length !== 3 || groupedDocuments.length > 1 || ledgerEvents.reduce((acc, ev) => acc + parseFloat(ev.amount), 0) !== 0 || !ledgerEvents.find((ev) => ev.planItem.number === \"6270001\") || !ledgerEvents.find((ev) => ev.planItem.number === \"754110002\"))\n" +
+"        return \"Renouvellement de don mal attribu\\xE9s\";\n" +
+"      return \"OK\";\n" +
+"    }\n" +
+"    if ([\"VIR \", \"Payout: \"].some((label) => doc.label.startsWith(label))) {\n" +
+"      if ([\n" +
+"        \" DE: Stripe Technology Europe Ltd MOTIF: STRIPE \",\n" +
+"        \" DE: STRIPE MOTIF: STRIPE REF: STRIPE-\",\n" +
+"        \"Payout: STRIPE PAYOUT (\"\n" +
+"      ].some((label) => doc.label.includes(label))) {\n" +
 "        if (ledgerEvents.length !== 2 || groupedDocuments.length > 1 || ledgerEvents.reduce((acc, ev) => acc + parseFloat(ev.amount), 0) !== 0 || !ledgerEvents.find((ev) => ev.planItem.number === \"58000001\"))\n" +
-"          return \"Virement interne Stripe mal attribu\\xE9\";\n" +
+"          return \"Virement interne Stripe mal attribu\\xE9 (=>58000001)\";\n" +
 "        return \"OK\";\n" +
 "      }\n" +
 "      const assos = [\n" +
-"        \" DE: JEOM MOTIF: \",\n" +
+"        \" DE: ALEF.ASSOC ETUDE ENSEIGNEMENT FO\",\n" +
 "        \" DE: ASS UNE LUMIERE POUR MILLE\",\n" +
-"        \" DE: MIKDACH MEAT \"\n" +
+"        \" DE: COLLEL EREV KINIAN AVRAM (C E K \",\n" +
+"        \" DE: ESPACE CULTUREL ET UNIVERSITAIRE \",\n" +
+"        \" DE: JEOM MOTIF: \",\n" +
+"        \" DE: MIKDACH MEAT \",\n" +
+"        \" DE: YECHIVA AZ YACHIR MOCHE MOTIF: \",\n" +
+"        \" DE: ASSOCIATION BEER MOTIF: \"\n" +
 "      ];\n" +
 "      if (assos.some((label) => doc.label.includes(label))) {\n" +
 "        if (ledgerEvents.length !== 2 || groupedDocuments.length > 1 || ledgerEvents.reduce((acc, ev) => acc + parseFloat(ev.amount), 0) !== 0 || !ledgerEvents.find((ev) => ev.planItem.number === \"75411\"))\n" +
@@ -561,11 +625,14 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "        return \"OK\";\n" +
 "      }\n" +
 "      const sansCerfa = [\n" +
-"        \" DE: MONSIEUR FABRICE HARARI MOTIF: \"\n" +
+"        \" DE: MONSIEUR FABRICE HARARI MOTIF: \",\n" +
+"        \" DE: MR ET MADAME DENIS LEVY\",\n" +
+"        \" DE: Zacharie Mimoun \",\n" +
+"        \" DE: M OU MME MIMOUN ZACHARIE MOTIF: \"\n" +
 "      ];\n" +
 "      if (sansCerfa.some((label) => doc.label.includes(label))) {\n" +
 "        if (ledgerEvents.length !== 2 || groupedDocuments.length > 1 || ledgerEvents.reduce((acc, ev) => acc + parseFloat(ev.amount), 0) !== 0 || !ledgerEvents.find((ev) => ev.planItem.number === \"75411\"))\n" +
-"          return \"Virement re\\xE7u avec CERFA optionel mal attribu\\xE9\";\n" +
+"          return \"Virement re\\xE7u avec CERFA optionel mal attribu\\xE9 (=>75411)\";\n" +
 "        return \"OK\";\n" +
 "      }\n" +
 "      if (groupedDocuments.length < 2)\n" +
@@ -576,15 +643,52 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      if (!groupedDocuments.find((gdoc) => gdoc.label.includes(\"CERFA\")))\n" +
 "        return \"Les virements re\\xE7us doivent \\xEAtre justifi\\xE9s par un CERFA\";\n" +
 "    }\n" +
+"    const balance = groupedDocuments.reduce((acc, gdoc) => {\n" +
+"      const coeff = gdoc.type === \"Invoice\" && gdoc.journal.code === \"HA\" ? -1 : 1;\n" +
+"      const value = parseFloat(gdoc.currency_amount ?? gdoc.amount) * coeff;\n" +
+"      if (gdoc.type === \"Transaction\")\n" +
+"        acc.transaction = (acc.transaction ?? 0) + value;\n" +
+"      else if ([\"CHQ\", \"CERFA\"].some((label) => gdoc.label.includes(label))) {\n" +
+"        if (gdoc.label.includes(\"CHQ\"))\n" +
+"          acc.CHQ = (acc.CHQ ?? 0) + value;\n" +
+"        if (gdoc.label.includes(\"CERFA\"))\n" +
+"          acc.CERFA = (acc.CERFA ?? 0) + value;\n" +
+"      } else\n" +
+"        acc.autre = (acc.autre ?? 0) + value;\n" +
+"      return acc;\n" +
+"    }, {});\n" +
+"    let message = \"\";\n" +
+"    if (doc.label.startsWith(\"REMISE CHEQUE \") || doc.label.toUpperCase().startsWith(\"VIR \")) {\n" +
+"      if (Math.abs((balance.transaction ?? 0) - (balance.CERFA ?? 0)) > 1e-3) {\n" +
+"        message = \"La somme des CERFAs doit valoir le montant de la transaction\";\n" +
+"        balance.CERFA = balance.CERFA ?? 0;\n" +
+"      }\n" +
+"    } else {\n" +
+"      if (Math.abs((balance.transaction ?? 0) - (balance.autre ?? 0)) > 1e-3) {\n" +
+"        message = \"La somme des autres justificatifs doit valoir le montant de la transaction\";\n" +
+"        balance.autre = balance.autre ?? 0;\n" +
+"      }\n" +
+"    }\n" +
+"    if (isCurrent)\n" +
+"      this.log(\"balance:\", balance);\n" +
+"    if (message) {\n" +
+"      return `<a\n" +
+"          title=\"Cliquer ici pour plus d'informations.\"\n" +
+"          href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Transaction%20-%20Balance%20v2\"\n" +
+"        >Balance v2 d\\xE9s\\xE9quilibr\\xE9e: ${message} \\u24D8</a><ul>${Object.entries(balance).sort(([keya], [keyb]) => {\n" +
+"        const keys = [\"transaction\", \"CHQ\", \"CERFA\", \"autre\"];\n" +
+"        return keys.indexOf(keya) - keys.indexOf(keyb);\n" +
+"      }).map(([key, value]) => `<li><strong>${key} :</strong>${value}</li>`).join(\"\")}</ul>`;\n" +
+"    }\n" +
 "    if (ledgerEvents.some((line) => line.planItem.number.startsWith(\"6571\"))) {\n" +
 "      if (ledgerEvents.some((line) => line.planItem.number.startsWith(\"6571\") && !line.label)) {\n" +
 "        return `nom du b\\xE9n\\xE9ficiaire manquant dans l'\\xE9criture \"6571\"`;\n" +
 "      }\n" +
-"    } else {\n" +
-"      for (const doc2 of groupedDocuments) {\n" +
-"        if (doc2.type !== \"Invoice\")\n" +
+"    } else if (parseFloat(doc.amount) < 0) {\n" +
+"      for (const gdoc of groupedDocuments) {\n" +
+"        if (gdoc.type !== \"Invoice\")\n" +
 "          continue;\n" +
-"        const thirdparty = await new Document(doc2).getThirdparty();\n" +
+"        const thirdparty = await new Document(gdoc).getThirdparty();\n" +
 "        if ([106438171, 114270419].includes(thirdparty.id)) {\n" +
 "          return 'contrepartie \"6571\" manquante<br/>-&gt; envoyer la page \\xE0 David.';\n" +
 "        }\n" +
@@ -611,41 +715,6 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "        if (Math.abs(balance2) > 1e-3) {\n" +
 "          return `Balance d\\xE9s\\xE9quilibr\\xE9e: ${balance2}`;\n" +
 "        }\n" +
-"      }\n" +
-"      const balance = groupedDocuments.reduce((acc, gdoc) => {\n" +
-"        const value = parseFloat(gdoc.currency_amount ?? gdoc.amount);\n" +
-"        if (gdoc.type === \"Transaction\")\n" +
-"          acc.transaction = (acc.transaction ?? 0) + value;\n" +
-"        else if (gdoc.label.includes(\"CHQ\"))\n" +
-"          acc.CHQ = (acc.CHQ ?? 0) + value;\n" +
-"        else if (gdoc.label.includes(\"CERFA\"))\n" +
-"          acc.CERFA = (acc.CERFA ?? 0) + value;\n" +
-"        else\n" +
-"          acc.autre = (acc.autre ?? 0) + value;\n" +
-"        return acc;\n" +
-"      }, {});\n" +
-"      let message = \"\";\n" +
-"      if (doc.label.startsWith(\"REMISE CHEQUE \") || doc.label.toUpperCase().startsWith(\"VIR \")) {\n" +
-"        if (Math.abs((balance.transaction ?? 0) - (balance.CERFA ?? 0)) > 1e-3) {\n" +
-"          message = \"La somme des CERFAs doit valoir le montant de la transaction\";\n" +
-"          balance.CERFA = balance.CERFA ?? 0;\n" +
-"        }\n" +
-"      } else {\n" +
-"        if (Math.abs((balance.transaction ?? 0) - (balance.autre ?? 0)) > 1e-3) {\n" +
-"          message = \"La somme des autres justificatifs doit valoir le montant de la transaction\";\n" +
-"          balance.autre = balance.autre ?? 0;\n" +
-"        }\n" +
-"      }\n" +
-"      if (isCurrent)\n" +
-"        this.log(\"balance:\", balance);\n" +
-"      if (message) {\n" +
-"        return `<a\n" +
-"          title=\"Cliquer ici pour plus d'informations.\"\n" +
-"          href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Transaction%20-%20Balance%20v2\"\n" +
-"        >Balance v2 d\\xE9s\\xE9quilibr\\xE9e: ${message} \\u24D8</a><ul>${Object.entries(balance).sort(([keya], [keyb]) => {\n" +
-"          const keys = [\"transaction\", \"CHQ\", \"CERFA\", \"autre\"];\n" +
-"          return keys.indexOf(keya) - keys.indexOf(keyb);\n" +
-"        }).map(([key, value]) => `<li><strong>${key} :</strong>${value}</li>`).join(\"\")}</ul>`;\n" +
 "      }\n" +
 "      if (Math.abs(parseFloat(doc.currency_amount)) < 100)\n" +
 "        return \"OK\";\n" +
@@ -677,115 +746,122 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "}\n" +
 "\n" +
 "class ValidMessage extends Service {\n" +
-"  transaction;\n" +
-"  ledgerEvents = [];\n" +
-"  message = \"\\u27F3\";\n" +
+"  container = parseHTML(`<div><div class=\"headband-is-valid\">\\u27F3</div></div>`).firstElementChild;\n" +
+"  state = { ledgerEvents: [] };\n" +
+"  _message = \"\\u27F3\";\n" +
+"  static getInstance() {\n" +
+"    if (!this.instance)\n" +
+"      this.instance = new this();\n" +
+"    return this.instance;\n" +
+"  }\n" +
 "  async init() {\n" +
+"    await this.insertContainer();\n" +
+"    this.on(\"message-change\", () => this.displayMessage());\n" +
+"    this.watchReloadHotkey();\n" +
+"    await this.loadMessage();\n" +
+"    setInterval(() => this.watch(), 200);\n" +
+"  }\n" +
+"  async insertContainer() {\n" +
 "    await waitElem(\"h3\", \"Transactions\");\n" +
 "    await waitElem(\".paragraph-body-m+.heading-page.mt-1\");\n" +
+"    const detailTab = await waitElem(\"aside div\");\n" +
+"    detailTab.insertBefore(this.container, detailTab.firstChild);\n" +
+"    waitFunc(() => $(\"aside div\") !== detailTab).then(() => {\n" +
+"      this.insertContainer();\n" +
+"    });\n" +
+"  }\n" +
+"  watchReloadHotkey() {\n" +
 "    document.addEventListener(\"keydown\", (event) => {\n" +
 "      if (findElem(\"h3\", \"Transactions\") && event.ctrlKey && event.key.toLowerCase() === \"s\") {\n" +
 "        event.preventDefault();\n" +
-"        delete this.transaction;\n" +
-"      } else {\n" +
-"        this.debug(\"Ignored hotkey\", [\n" +
-"          {\n" +
-"            value: \"findElem('h3', 'Transactions')\",\n" +
-"            expect: \"HTMLH3Element\",\n" +
-"            actual: findElem(\"h3\", \"Transactions\")\n" +
-"          },\n" +
-"          { value: \"event.ctrlKey\", expect: true, actual: event.ctrlKey },\n" +
-"          { value: \"event.key\", expect: \"s\", actual: event.key }\n" +
-"        ]);\n" +
+"        this.reload();\n" +
 "      }\n" +
 "    });\n" +
-"    while (await waitFunc(async () => !await this.isSync())) {\n" +
-"      await this.loadMessage();\n" +
-"    }\n" +
+"  }\n" +
+"  reload() {\n" +
+"    this.loadMessage();\n" +
+"  }\n" +
+"  set message(html) {\n" +
+"    this._message = html;\n" +
+"    this.emit(\"message-change\", html);\n" +
+"  }\n" +
+"  get message() {\n" +
+"    return this._message;\n" +
 "  }\n" +
 "  async loadMessage() {\n" +
-"    this.log(\"loadMessage\", this);\n" +
+"    this.debug(\"loadMessage\", this);\n" +
 "    this.message = \"\\u27F3\";\n" +
-"    this.displayHeadband();\n" +
 "    const rawTransaction = getReactProps($(\".paragraph-body-m+.heading-page.mt-1\"), 9).transaction;\n" +
-"    this.transaction = new Transaction(rawTransaction);\n" +
-"    this.message = await this.transaction.getValidMessage();\n" +
-"    this.message = `${await this.transaction.isValid() ? \"\\u2713\" : \"\\u2717\"} ${this.message}`;\n" +
-"    this.displayHeadband();\n" +
+"    this.state.transaction = new Transaction(rawTransaction);\n" +
+"    const message = await this.state.transaction.getValidMessage();\n" +
+"    this.message = `${await this.state.transaction.isValid() ? \"\\u2713\" : \"\\u2717\"} ${message}`;\n" +
 "  }\n" +
-"  async isSync() {\n" +
+"  async watch() {\n" +
 "    const ledgerEvents = $$(\"form[name^=DocumentEntries-]\").reduce((events, form) => {\n" +
-"      const formEvents = getReactProps(form.parentElement, 3)?.initialValues.ledgerEvents;\n" +
+"      const formEvents = getReactProps(form.parentElement, 3)?.initialValues?.ledgerEvents ?? [];\n" +
 "      return [...events, ...formEvents];\n" +
 "    }, []);\n" +
-"    if (ledgerEvents.some((event, id) => this.ledgerEvents[id] !== event)) {\n" +
-"      const logData = { oldEvents: this.ledgerEvents };\n" +
-"      this.ledgerEvents = ledgerEvents;\n" +
-"      this.log(\"desynchronis\\xE9\", { ...logData, ...this });\n" +
-"      return false;\n" +
+"    if (ledgerEvents.some((event, id) => this.state.ledgerEvents[id] !== event)) {\n" +
+"      const logData = { oldEvents: this.state.ledgerEvents };\n" +
+"      this.state.ledgerEvents = ledgerEvents;\n" +
+"      this.debug(\"ledgerEvents desynchronis\\xE9\", { ...logData, ...this });\n" +
+"      this.reload();\n" +
 "    }\n" +
 "    const current = Number(getParam(location.href, \"transaction_id\"));\n" +
-"    if (current && current !== this.transaction?.id) {\n" +
-"      this.log(\"transaction desynchronis\\xE9e\", { current, ...this });\n" +
-"      return false;\n" +
+"    if (current && current !== this.state.transaction?.id) {\n" +
+"      this.debug(\"transaction desynchronis\\xE9e\", { current, ...this });\n" +
+"      this.reload();\n" +
 "    }\n" +
-"    return true;\n" +
 "  }\n" +
-"  async displayHeadband() {\n" +
-"    if (!$(\".headband-is-valid\")) {\n" +
-"      const detailTab = $(\"aside div\");\n" +
-"      detailTab?.insertBefore(parseHTML(`\n" +
-"        <div><div class=\"headband-is-valid\"></div></div>\n" +
-"      `), detailTab.firstChild);\n" +
-"    }\n" +
-"    const headband = $(\".headband-is-valid\");\n" +
-"    if (!headband)\n" +
-"      return;\n" +
-"    headband.innerHTML = `${this.getTransactionId()}${this.message}`;\n" +
+"  async displayMessage() {\n" +
+"    $(\".headband-is-valid\", this.container).innerHTML = `${this.getTransactionId()}${this.message}`;\n" +
 "  }\n" +
 "  getTransactionId() {\n" +
-"    if (!this.transaction?.id)\n" +
+"    if (!this.state.transaction?.id)\n" +
 "      return \"\";\n" +
-"    return `<span class=\"transaction-id d-inline-block bg-secondary-100 dihsuQ px-0_5\">#${this.transaction.id}</span> `;\n" +
+"    return `<span class=\"transaction-id d-inline-block bg-secondary-100 dihsuQ px-0_5\">#${this.state.transaction.id}</span> `;\n" +
 "  }\n" +
 "}\n" +
 "\n" +
 "class TransactionAddByIdButton extends Service {\n" +
-"  transaction;\n" +
+"  button = parseHTML('<div class=\"btn-sm w-100 btn-primary add-by-id-btn\" style=\"cursor: pointer;\">Ajouter par ID</div>').firstElementChild;\n" +
 "  async init() {\n" +
-"    if ($(\".add-by-id-btn\"))\n" +
-"      return;\n" +
-"    const button = await Promise.race([\n" +
+"    await this.insertContainer();\n" +
+"    this.attachEvent();\n" +
+"  }\n" +
+"  async insertContainer() {\n" +
+"    const div = (await Promise.race([\n" +
 "      waitElem(\"button\", \"Voir plus de factures\"),\n" +
 "      waitElem(\"button\", \"Chercher parmi les factures\")\n" +
-"    ]);\n" +
-"    const div = button.closest(\".mt-2\");\n" +
+"    ])).closest(\".mt-2\");\n" +
 "    if (!div) {\n" +
-"      this.log(\"TransactionAddByIdButton\", { button, div });\n" +
+"      this.log(\"TransactionAddByIdButton\", { button: await Promise.race([\n" +
+"        waitElem(\"button\", \"Voir plus de factures\"),\n" +
+"        waitElem(\"button\", \"Chercher parmi les factures\")\n" +
+"      ]), div });\n" +
 "      throw new Error(\"Impossible de trouver le bloc de boutons\");\n" +
 "    }\n" +
-"    div.insertBefore(\n" +
-"      parseHTML('<div class=\"btn-sm w-100 btn-primary add-by-id-btn\" style=\"cursor: pointer;\">Ajouter par ID</div>'),\n" +
-"      div.lastElementChild\n" +
-"    );\n" +
-"    $(\".add-by-id-btn\").addEventListener(\"click\", () => {\n" +
+"    div.insertBefore(this.button, div.lastElementChild);\n" +
+"    waitFunc(async () => {\n" +
+"      const currentDiv = (await Promise.race([\n" +
+"        waitElem(\"button\", \"Voir plus de factures\"),\n" +
+"        waitElem(\"button\", \"Chercher parmi les factures\")\n" +
+"      ])).closest(\".mt-2\");\n" +
+"      return currentDiv !== div;\n" +
+"    }).then(() => this.insertContainer());\n" +
+"  }\n" +
+"  attachEvent() {\n" +
+"    this.log({ button: this.button });\n" +
+"    this.button.addEventListener(\"click\", () => {\n" +
 "      this.addById();\n" +
 "    });\n" +
-"    await waitFunc(() => !$(\".add-by-id-btn\"));\n" +
-"    setTimeout(() => this.init(), 0);\n" +
 "  }\n" +
 "  async addById() {\n" +
-"    getParam(location.href, \"transaction_id\");\n" +
+"    const transactionId = Number(getParam(location.href, \"transaction_id\"));\n" +
 "    const id = Number(prompt(\"ID du justificatif ?\"));\n" +
-"    const transaction = await this.getTransaction();\n" +
+"    const transaction = new Transaction({ id: transactionId });\n" +
 "    await transaction.groupAdd(id);\n" +
-"  }\n" +
-"  async getTransaction() {\n" +
-"    const id = Number(getParam(location.href, \"transaction_id\"));\n" +
-"    if (this.transaction?.id !== id) {\n" +
-"      this.transaction = new Transaction(await getTransaction(id));\n" +
-"    }\n" +
-"    return this.transaction;\n" +
+"    ValidMessage.getInstance().reload();\n" +
 "  }\n" +
 "}\n" +
 "\n" +
@@ -842,7 +918,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    this.storageKey = key;\n" +
 "    this.data = initialValue;\n" +
 "    this.load();\n" +
-"    this.log(\"new Cache\", this);\n" +
+"    this.debug(\"new Cache\", this);\n" +
 "    this.follow();\n" +
 "  }\n" +
 "  /**\n" +
@@ -1002,7 +1078,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      newValue = { ...oldValue, ...newValue };\n" +
 "      this.data.splice(this.data.indexOf(oldValue), 1, newValue);\n" +
 "      if (newValue.id == getParam(location.href, \"id\"))\n" +
-"        this.log(\"updateItem\", { match, create, oldValue, newValue, stack: new Error(\"\").stack });\n" +
+"        this.debug(\"updateItem\", { match, create, oldValue, newValue, stack: new Error(\"\").stack });\n" +
 "      this.emit(\"update\", { oldValue, newValue });\n" +
 "    } else {\n" +
 "      if (!create)\n" +
@@ -1187,9 +1263,10 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "   */\n" +
 "  appendDisableButton() {\n" +
 "    const buttonId = `${this.parent.id}-autostart-enable-disable`;\n" +
+"    const className = $(\"button[type=button]+button\")?.className;\n" +
 "    this.parent.container.appendChild(parseHTML(`<button\n" +
 "      type=\"button\"\n" +
-"      class=\"sc-jwIPbr bxhmjB kzNmya justify-content-center btn btn-primary btn-sm\"\n" +
+"      class=\"${className}\"\n" +
 "      id=\"${buttonId}\"\n" +
 "      style=\"font-family: initial;\"\n" +
 "    ></button>`));\n" +
@@ -1214,7 +1291,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    };\n" +
 "    setText();\n" +
 "    this.config.on(\"change\", setText);\n" +
-"    this.log(this, { button, tooltip });\n" +
+"    this.debug({ me: this, button, tooltip });\n" +
 "  }\n" +
 "  /**\n" +
 "   * Callback for autostart events\n" +
@@ -1290,7 +1367,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "   */\n" +
 "  appendOpenNextButton() {\n" +
 "    const count = this.cache.filter({ valid: false }).length;\n" +
-"    const className = \"sc-jwIPbr kzNmya bxhmjB justify-content-center btn btn-primary btn-sm\";\n" +
+"    const className = $(\"button[type=button]+button\")?.className;\n" +
 "    this.container.appendChild(parseHTML(\n" +
 "      `<button type=\"button\" class=\"${className} open-next-invalid-btn\">\n" +
 "        &nbsp;<span class=\"icon\" style=\"font-family: monospace;\">&gt;</span>\n" +
@@ -1321,8 +1398,13 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "        return true;\n" +
 "      return false;\n" +
 "    };\n" +
-"    let cached = this.cache.filter({ valid: false });\n" +
+"    let cached = this.cache.filter({ valid: false }).sort((a, b) => a.date - b.date);\n" +
 "    for (const cachedItem of cached) {\n" +
+"      if (isSkipped(cachedItem)) {\n" +
+"        if (!cachedItem?.valid)\n" +
+"          this.log(\"skip\", cachedItem);\n" +
+"        continue;\n" +
+"      }\n" +
 "      const status = await this.updateStatus(cachedItem.id);\n" +
 "      if (isSkipped(status)) {\n" +
 "        if (!status?.valid)\n" +
@@ -1340,7 +1422,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      }\n" +
 "      yield status;\n" +
 "    }\n" +
-"    this.log(\"TODO: v\\xE9rifier les entr\\xE9es qui ont \\xE9t\\xE9 modifi\\xE9e r\\xE9cemment\");\n" +
+"    this.error(\"TODO: v\\xE9rifier les entr\\xE9es qui ont \\xE9t\\xE9 modifi\\xE9e r\\xE9cemment\");\n" +
 "  }\n" +
 "  /**\n" +
 "   * Update status of an item given by its ID\n" +
@@ -1384,6 +1466,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      this.invalidGenerator = this.loadInvalid();\n" +
 "      return this.openNext(interactionAllowed);\n" +
 "    }\n" +
+"    this.running = false;\n" +
 "  }\n" +
 "  async firstLoading() {\n" +
 "    const storageKey = `${this.storageKey}-state`;\n" +
@@ -1405,7 +1488,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  }\n" +
 "  allowIgnoring() {\n" +
 "    const ignored = Boolean(this.cache.find({ id: this.current })?.ignored);\n" +
-"    const className = \"sc-jwIPbr kzNmya bxhmjB justify-content-center btn btn-primary btn-sm\";\n" +
+"    const className = $(\"button[type=button]+button\")?.className;\n" +
 "    this.container.appendChild(parseHTML(`<button\n" +
 "      type=\"button\"\n" +
 "      class=\"${className} ignore-item\"\n" +
@@ -1433,7 +1516,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    });\n" +
 "  }\n" +
 "  allowWaiting() {\n" +
-"    const className = \"sc-jwIPbr kzNmya bxhmjB justify-content-center btn btn-primary btn-sm\";\n" +
+"    const className = $(\"button[type=button]+button\")?.className;\n" +
 "    this.container.appendChild(parseHTML(\n" +
 "      `<button type=\"button\" class=\"${className} wait-item\">\\u{1F552}</button>`\n" +
 "    ));\n" +
@@ -1654,7 +1737,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    const invoice = await this.getInvoice();\n" +
 "    if (invoice.has_closed_ledger_events)\n" +
 "      return \"OK\";\n" +
-"    this.log(\"loadValidMessage\", { invoice });\n" +
+"    this.log(\"loadValidMessage\", this);\n" +
 "    if (invoice.archived) {\n" +
 "      const allowed = [\"\\xA7 #\", \"\\xA4 TRANSACTION INTROUVABLE\"];\n" +
 "      if (\n" +
@@ -1676,11 +1759,11 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "        return 'le champ \"Num\\xE9ro de facture\" doit commencer par \"ID NOM_DE_LA_PERSONNE\"';\n" +
 "      return \"OK\";\n" +
 "    }\n" +
-"    if (invoice.amount === \"0.0\")\n" +
+"    if (invoice.amount === \"0.0\" && !invoice.invoice_number.includes(\"|ZERO|\"))\n" +
 "      return `<a\n" +
 "      title=\"Cliquer ici pour plus d'informations.\"\n" +
 "      href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Facture%20client\"\n" +
-"    >Ajouter le montant \\u24D8</a>`;\n" +
+"    >Ajouter le montant \\u24D8</a><ul style=\"margin:0;padding:0.8em;\"><li>|ZERO|</li></ul>`;\n" +
 "    if (invoice.thirdparty_id === 103165930 && ![\"CHQ\", \"CERFA\"].some((label) => invoice.invoice_number.includes(label))) {\n" +
 "      return `<a\n" +
 "        title=\"Le num\\xE9ro de facture doit \\xEAtre conforme \\xE0 un des mod\\xE8les propos\\xE9s. Cliquer ici pour plus d'informations.\"\n" +
@@ -1782,37 +1865,62 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  async init() {\n" +
 "    await waitElem(\"h4\", \"Ventilation\");\n" +
 "    this.cache = CacheStatus.getInstance(this.storageKey);\n" +
-"    this.watch();\n" +
-"  }\n" +
-"  async watch() {\n" +
-"    this.watchEventSave();\n" +
 "    this.cache.on(\"change\", () => this.handleCacheChange());\n" +
-"    while (await waitFunc(async () => !await this.isSync())) {\n" +
-"      await this.setId();\n" +
-"      await this.setMessage(\"\\u27F3\");\n" +
-"      await this.loadMessage();\n" +
-"    }\n" +
+"    this.watchReloadHotkey();\n" +
+"    this.watchEventSave();\n" +
+"    await this.appendContainer();\n" +
+"    setInterval(() => {\n" +
+"      this.watch();\n" +
+"    }, 200);\n" +
+"  }\n" +
+"  set message(text) {\n" +
+"    this.emit(\"message-change\", text);\n" +
+"  }\n" +
+"  set id(text) {\n" +
+"    this.emit(\"id-change\", text);\n" +
+"  }\n" +
+"  watchReloadHotkey() {\n" +
+"    document.addEventListener(\"keydown\", (event) => {\n" +
+"      if (findElem(\"h4\", \"Ventilation\") && event.ctrlKey && event.code === \"KeyR\") {\n" +
+"        event.preventDefault();\n" +
+"        this.reload();\n" +
+"        this.debug(\"reloading from watchReloadHotkey\");\n" +
+"      } else {\n" +
+"        this.debug(\"skip reload hotkey :\", {\n" +
+"          \"findElem('h4', 'Ventilation')\": findElem(\"h4\", \"Ventilation\"),\n" +
+"          \"event.ctrlKey\": event.ctrlKey,\n" +
+"          'event.code (expect \"KeyR\")': event.code\n" +
+"        });\n" +
+"      }\n" +
+"    });\n" +
 "  }\n" +
 "  reload() {\n" +
 "    this.state = {};\n" +
 "  }\n" +
-"  async isSync() {\n" +
+"  async watch() {\n" +
 "    const infos = await waitElem(\"h4.heading-section-3.mr-2\", \"Informations\");\n" +
 "    const invoice = getReact(infos, 32).memoizedProps.invoice;\n" +
+"    let reload = false;\n" +
 "    if (this.state.reactInvoice !== invoice) {\n" +
 "      this.state.reactInvoice = invoice;\n" +
 "      this.state.invoice = await Invoice.load(invoice.id);\n" +
-"      return false;\n" +
+"      reload = true;\n" +
 "    }\n" +
-"    const ledgerEvents = $$(\"form[name^=DocumentEntries-]\").reduce((events, form) => {\n" +
-"      events.concat(getReactProps(form.parentElement, 3)?.initialValues.ledgerEvents);\n" +
+"    const reactEvents = $$(\"form[name^=DocumentEntries-]\").reduce((events, form) => {\n" +
+"      events.concat(getReactProps(form.parentElement, 3)?.initialValues?.ledgerEvents ?? []);\n" +
 "      return events;\n" +
 "    }, []);\n" +
-"    if (this.state.events?.length !== ledgerEvents.length || ledgerEvents.some((event) => this.state.events?.find((ev) => ev.id === event.id) !== event)) {\n" +
-"      this.state.events = ledgerEvents;\n" +
-"      return false;\n" +
+"    if (this.state.events?.length !== reactEvents.length || reactEvents.some((event) => this.state.events?.find((ev) => ev.id === event.id) !== event)) {\n" +
+"      this.state.events = reactEvents;\n" +
+"      reload = true;\n" +
 "    }\n" +
-"    return true;\n" +
+"    if (reload) {\n" +
+"      this.setId();\n" +
+"      this.loadMessage();\n" +
+"    }\n" +
+"  }\n" +
+"  on(eventName, cb) {\n" +
+"    return super.on(eventName, cb);\n" +
 "  }\n" +
 "  async appendContainer() {\n" +
 "    if (!this.container) {\n" +
@@ -1820,44 +1928,53 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "        <div id=\"is-valid-tag\" class=\"d-inline-block bg-secondary-100 dihsuQ px-0_5\">\\u27F3</div>\n" +
 "        <div id=\"invoice-id\" class=\"d-inline-block bg-secondary-100 dihsuQ px-0_5\"></div>\n" +
 "      </div>`).firstElementChild;\n" +
-"      this.setId();\n" +
+"      const messageDiv = $(\"#is-valid-tag\", this.container);\n" +
+"      this.on(\"message-change\", (message) => {\n" +
+"        messageDiv.innerHTML = message;\n" +
+"      });\n" +
+"      const idDiv = $(\"#invoice-id\", this.container);\n" +
+"      this.on(\"id-change\", (id) => {\n" +
+"        idDiv.innerHTML = id;\n" +
+"      });\n" +
 "    }\n" +
 "    const infos = await waitElem(\"h4.heading-section-3.mr-2\", \"Informations\");\n" +
 "    const tagsContainer = infos.nextSibling;\n" +
 "    if (!tagsContainer)\n" +
 "      throw new Error(\"InvoiceDisplayInfos: Impossible de trouver le bloc de tags\");\n" +
 "    tagsContainer.insertBefore(this.container, tagsContainer.firstChild);\n" +
+"    waitFunc(\n" +
+"      () => findElem(\"h4.heading-section-3.mr-2\", \"Informations\")?.nextSibling !== tagsContainer\n" +
+"    ).then(() => {\n" +
+"      this.appendContainer();\n" +
+"    });\n" +
 "  }\n" +
 "  async loadMessage() {\n" +
 "    this.log(\"load message\", this);\n" +
-"    if (!this.state.invoice)\n" +
-"      return this.setMessage(\"\\u27F3\");\n" +
+"    if (!this.state.invoice) {\n" +
+"      this.message = \"\\u27F3\";\n" +
+"      return;\n" +
+"    }\n" +
 "    const status = { ...await this.state.invoice.getStatus(), fetchedAt: Date.now() };\n" +
 "    this.state.cachedStatus = status;\n" +
 "    this.cache.updateItem({ id: status.id }, status, false);\n" +
 "    const { message, valid } = status;\n" +
-"    return this.setMessage(valid ? \"\\u2713\" : \"\\u2717 \" + message);\n" +
+"    return this.message = valid ? \"\\u2713\" : `\\u2717 ${message}`;\n" +
 "  }\n" +
 "  async setId() {\n" +
-"    if (!this.container)\n" +
-"      await this.appendContainer();\n" +
-"    const tag = $(\"#invoice-id\", this.container);\n" +
-"    if (!tag)\n" +
-"      throw new Error('tag \"invoice-id\" introuvable');\n" +
-"    tag.innerHTML = `#${this.state.invoice?.id}<a title=\"r\\xE9ouvrir cette pi\\xE8ce dans un nouvel onglet\" target=\"_blank\" href=\"${location.href.split(\"/\").slice(0, 5).join(\"/\")}/documents/${this.state.invoice?.id}.html\" ><svg class=\"MuiSvgIcon-root MuiSvgIcon-fontSizeMedium mr-0_5 css-q7mezt\" focusable=\"false\" aria-hidden=\"true\" viewBox=\"0 0 24 24\" data-testid=\"OpenInNewRoundedIcon\" style=\"font-size: 1rem;\"><path d=\"M18 19H6c-.55 0-1-.45-1-1V6c0-.55.45-1 1-1h5c.55 0 1-.45 1-1s-.45-1-1-1H5c-1.11 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-6c0-.55-.45-1-1-1s-1 .45-1 1v5c0 .55-.45 1-1 1M14 4c0 .55.45 1 1 1h2.59l-9.13 9.13c-.39.39-.39 1.02 0 1.41s1.02.39 1.41 0L19 6.41V9c0 .55.45 1 1 1s1-.45 1-1V4c0-.55-.45-1-1-1h-5c-.55 0-1 .45-1 1\"></path></svg></a>`;\n" +
-"  }\n" +
-"  async setMessage(message) {\n" +
-"    await this.appendContainer();\n" +
-"    const tag = $(\"#is-valid-tag\", this.container);\n" +
-"    if (!tag)\n" +
-"      throw new Error('tag \"is-valid-tag\" introuvable');\n" +
-"    tag.innerHTML = message;\n" +
+"    if (!this.state.invoice?.id) {\n" +
+"      this.id = \"\";\n" +
+"      return;\n" +
+"    }\n" +
+"    this.id = `#${this.state.invoice?.id}<a title=\"r\\xE9ouvrir cette pi\\xE8ce dans un nouvel onglet\" target=\"_blank\" href=\"${location.href.split(\"/\").slice(0, 5).join(\"/\")}/documents/${this.state.invoice?.id}.html\" ><svg class=\"MuiSvgIcon-root MuiSvgIcon-fontSizeMedium mr-0_5 css-q7mezt\" focusable=\"false\" aria-hidden=\"true\" viewBox=\"0 0 24 24\" data-testid=\"OpenInNewRoundedIcon\" style=\"font-size: 1rem;\"><path d=\"M18 19H6c-.55 0-1-.45-1-1V6c0-.55.45-1 1-1h5c.55 0 1-.45 1-1s-.45-1-1-1H5c-1.11 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-6c0-.55-.45-1-1-1s-1 .45-1 1v5c0 .55-.45 1-1 1M14 4c0 .55.45 1 1 1h2.59l-9.13 9.13c-.39.39-.39 1.02 0 1.41s1.02.39 1.41 0L19 6.41V9c0 .55.45 1 1 1s1-.45 1-1V4c0-.55-.45-1-1-1h-5c-.55 0-1 .45-1 1\"></path></svg></a>`;\n" +
 "  }\n" +
 "  async watchEventSave() {\n" +
 "    const ref = await waitElem(\"button\", \"Enregistrer\");\n" +
-"    ref.addEventListener(\"click\", () => this.reload());\n" +
-"    await waitFunc(() => findElem(\"button\", \"Enregistrer\") !== ref);\n" +
-"    this.watchEventSave();\n" +
+"    ref.addEventListener(\"click\", () => {\n" +
+"      delete this.state.events;\n" +
+"    });\n" +
+"    waitFunc(() => findElem(\"button\", \"Enregistrer\") !== ref).then(() => {\n" +
+"      this.watchEventSave();\n" +
+"    });\n" +
 "  }\n" +
 "  async handleCacheChange() {\n" +
 "    if (!this.state.invoice)\n" +
@@ -2040,10 +2157,10 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    document.addEventListener(\"keyup\", async (event) => {\n" +
 "      if (event.code !== \"KeyS\" || !event.ctrlKey)\n" +
 "        return;\n" +
-"      this.log(\"Ctrl + S pressed\");\n" +
+"      this.debug(\"Ctrl + S pressed\");\n" +
 "      const invoiceNumberField = $(\"input[name=invoice_number]\");\n" +
 "      if (event.target !== invoiceNumberField || !invoiceNumberField) {\n" +
-"        this.log({ invoiceNumberField, eventTarget: event.target });\n" +
+"        this.debug({ invoiceNumberField, eventTarget: event.target });\n" +
 "        return;\n" +
 "      }\n" +
 "      event.preventDefault();\n" +
@@ -2051,7 +2168,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      const rawInvoice = getReactProps(invoiceNumberField, 27).initialValues ?? // for supplier pieces\n" +
 "      getReactProps(invoiceNumberField, 44).initialValues;\n" +
 "      if (!rawInvoice.archived) {\n" +
-"        this.log(\"Invoice is not archived\");\n" +
+"        this.debug(\"Invoice is not archived\");\n" +
 "        return;\n" +
 "      }\n" +
 "      const invoice = Invoice.from(rawInvoice);\n" +
@@ -2190,6 +2307,59 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  }\n" +
 "}\n" +
 "\n" +
+"function blobToUrl(blob) {\n" +
+"  return new Promise((resolve, reject) => {\n" +
+"    const reader = new FileReader();\n" +
+"    reader.onloadend = () => resolve(reader.result);\n" +
+"    reader.onerror = reject;\n" +
+"    reader.readAsDataURL(blob);\n" +
+"  });\n" +
+"}\n" +
+"\n" +
+"async function fetchToDataURL(url) {\n" +
+"  const response = await fetch(url);\n" +
+"  const blob = await response.blob();\n" +
+"  return await blobToUrl(blob);\n" +
+"}\n" +
+"\n" +
+"class RotateImg extends Service {\n" +
+"  rotateButton = parseHTML(`<button>\\u27F3</button>`).firstElementChild;\n" +
+"  /**\n" +
+"   * @inheritDoc\n" +
+"   */\n" +
+"  async init() {\n" +
+"    this.watch();\n" +
+"  }\n" +
+"  async watch() {\n" +
+"    let modal;\n" +
+"    while (await waitFunc(() => $(\"div.modal-dialog\") !== modal)) {\n" +
+"      this.emit(\"new-modal\");\n" +
+"      modal = $(\"div.modal-dialog\");\n" +
+"      const closeButton = $(\"div.modal-header button.close\", modal);\n" +
+"      if (!modal || !closeButton)\n" +
+"        continue;\n" +
+"      modal.style.margin = \"5rem 0 auto auto\";\n" +
+"      closeButton.parentElement?.insertBefore(this.rotateButton, closeButton);\n" +
+"      $$(\"img\", modal).forEach((image) => this.handleImage(image));\n" +
+"    }\n" +
+"  }\n" +
+"  async handleImage(image) {\n" +
+"    let rotation = 0;\n" +
+"    const mainImage = await fetchToDataURL(image.src);\n" +
+"    const rotations = [mainImage];\n" +
+"    const handleRotation = async () => {\n" +
+"      rotation = (rotation + 1) % 4;\n" +
+"      if (!rotations[rotation])\n" +
+"        rotations[rotation] = await rotateImage(mainImage, rotation);\n" +
+"      image.src = rotations[rotation];\n" +
+"    };\n" +
+"    this.rotateButton.addEventListener(\"click\", handleRotation);\n" +
+"    this.once(\"new-modal\", () => {\n" +
+"      this.rotateButton.removeEventListener(\"click\", handleRotation);\n" +
+"    });\n" +
+"  }\n" +
+"}\n" +
+"\n" +
 "last7DaysFilter();\n" +
 "ValidMessage.start();\n" +
 "TransactionAddByIdButton.start();\n" +
@@ -2202,12 +2372,20 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "TransactionPanelHotkeys.start();\n" +
 "EntryBlocInfos.start();\n" +
 "AddInvoiceIdColumn.start();\n" +
+"RotateImg.start();\n" +
 "Object.assign(window, {\n" +
 "  GM_Pennylane_Version: (\n" +
 "    /** version **/\n" +
-"    \"0.1.18\"\n" +
+"    \"0.1.17\"\n" +
 "  ),\n" +
-"  findElem\n" +
+"  GM: {\n" +
+"    findElem,\n" +
+"    Transaction,\n" +
+"    Invoice,\n" +
+"    parseHTML,\n" +
+"    $,\n" +
+"    $$\n" +
+"  }\n" +
 "});\n" +
 ""
 +"})();";
