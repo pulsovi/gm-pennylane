@@ -49,32 +49,71 @@ export default class Transaction extends ValidableDocument {
       reconciled: groupedDocuments.find(gdoc => gdoc.id === doc.id),
     });
 
+    if (doc.label.startsWith('FRAIS VIR INTL ELEC ')) {
+      if (
+        ledgerEvents.length !== 2
+        || groupedDocuments.length > 1
+        || ledgerEvents.reduce((acc, ev) => acc + parseFloat(ev.amount), 0) !== 0
+        || !ledgerEvents.find(ev => ev.planItem.number === '6270005')
+      ) return 'Frais bancaires SG mal attribué (=> 6270005)';
+      return 'OK';
+    }
+
     if (doc.label.includes(' DE: STRIPE MOTIF: ALLODONS REF: ')) {
       if (
         ledgerEvents.length !== 2
         || groupedDocuments.length > 1
         || ledgerEvents.reduce((acc, ev) => acc + parseFloat(ev.amount), 0) !== 0
         || !ledgerEvents.find(ev => ev.planItem.number === '754110001')
-      ) return 'Virement Allodons mal attribué';
+      ) return 'Virement Allodons mal attribué (=>754110001)';
       return 'OK';
     }
 
-    if (doc.label.toUpperCase().startsWith('VIR ')
-      /*&& !doc.label.includes(' DE: STRIPE MOTIF: STRIPE REF: STRIPE-')*/
-    ) {
-      if (doc.label.includes(' DE: Stripe Technology Europe Ltd MOTIF: STRIPE ')) {
+    if (doc.label.startsWith('Fee: Billing - Usage Fee (')) {
+      if (
+        ledgerEvents.length !== 2
+        || groupedDocuments.length > 1
+        || ledgerEvents.reduce((acc, ev) => acc + parseFloat(ev.amount), 0) !== 0
+        || !ledgerEvents.find(ev => ev.planItem.number === '6270001')
+      ) return 'Frais Stripe mal attribués (=>6270001)';
+      return 'OK';
+    }
+
+    if (doc.label.startsWith('Charge: ')) {
+      if (
+        ledgerEvents.length !== 3
+        || groupedDocuments.length > 1
+        || ledgerEvents.reduce((acc, ev) => acc + parseFloat(ev.amount), 0) !== 0
+        || !ledgerEvents.find(ev => ev.planItem.number === '6270001')
+        || !ledgerEvents.find(ev => ev.planItem.number === '754110002')
+      ) return 'Renouvellement de don mal attribués';
+      return 'OK';
+    }
+
+    if (['VIR ', 'Payout: '].some(label => doc.label.startsWith(label))) {
+      if ([
+        ' DE: Stripe Technology Europe Ltd MOTIF: STRIPE ',
+        ' DE: STRIPE MOTIF: STRIPE REF: STRIPE-',
+        'Payout: STRIPE PAYOUT (',
+      ].some(label => doc.label.includes(label))) {
         if (
           ledgerEvents.length !== 2
           || groupedDocuments.length > 1
           || ledgerEvents.reduce((acc, ev) => acc + parseFloat(ev.amount), 0) !== 0
           || !ledgerEvents.find(ev => ev.planItem.number === '58000001')
-        ) return 'Virement interne Stripe mal attribué';
+        ) return 'Virement interne Stripe mal attribué (=>58000001)';
         return 'OK';
       }
+
       const assos = [
-        ' DE: JEOM MOTIF: ',
+        ' DE: ALEF.ASSOC ETUDE ENSEIGNEMENT FO',
         ' DE: ASS UNE LUMIERE POUR MILLE',
+        ' DE: COLLEL EREV KINIAN AVRAM (C E K ',
+        ' DE: ESPACE CULTUREL ET UNIVERSITAIRE ',
+        ' DE: JEOM MOTIF: ',
         ' DE: MIKDACH MEAT ',
+        ' DE: YECHIVA AZ YACHIR MOCHE MOTIF: ',
+        ' DE: ASSOCIATION BEER MOTIF: ',
       ];
       if (assos.some(label => doc.label.includes(label))) {
         if (
@@ -87,6 +126,9 @@ export default class Transaction extends ValidableDocument {
       }
       const sansCerfa = [
         ' DE: MONSIEUR FABRICE HARARI MOTIF: ',
+        ' DE: MR ET MADAME DENIS LEVY',
+        ' DE: Zacharie Mimoun ',
+        ' DE: M OU MME MIMOUN ZACHARIE MOTIF: ',
       ]
       if (sansCerfa.some(label => doc.label.includes(label))) {
         if (
@@ -94,7 +136,7 @@ export default class Transaction extends ValidableDocument {
           || groupedDocuments.length > 1
           || ledgerEvents.reduce((acc, ev) => acc + parseFloat(ev.amount), 0) !== 0
           || !ledgerEvents.find(ev => ev.planItem.number === '75411')
-        ) return 'Virement reçu avec CERFA optionel mal attribué';
+        ) return 'Virement reçu avec CERFA optionel mal attribué (=>75411)';
         return 'OK';
       }
       if (groupedDocuments.length < 2) return `<a
@@ -106,15 +148,60 @@ export default class Transaction extends ValidableDocument {
     }
 
 
+      // balance déséquilibrée - version exigeante
+      const balance = groupedDocuments
+        .reduce<Partial<Record<'transaction'|'CHQ'|'CERFA'|'autre', number>>>((acc, gdoc) => {
+          const coeff = (gdoc.type === 'Invoice' && gdoc.journal.code === 'HA') ? -1 : 1;
+          const value = parseFloat(gdoc.currency_amount ?? gdoc.amount) * coeff;
+          if (gdoc.type === 'Transaction') acc.transaction = (acc.transaction ?? 0) + value;
+          else if (['CHQ', 'CERFA'].some(label => gdoc.label.includes(label))) {
+            if (gdoc.label.includes('CHQ')) acc.CHQ = (acc.CHQ ?? 0) + value;
+            if (gdoc.label.includes('CERFA')) acc.CERFA = (acc.CERFA ?? 0) + value;
+          }
+          else acc.autre = (acc.autre ?? 0) + value;
+          return acc;
+        }, {});
+      let message = '';
+      if (
+        doc.label.startsWith('REMISE CHEQUE ')
+        || doc.label.toUpperCase().startsWith('VIR ')
+      ) {
+        // On a parfois des calculs qui ne tombent pas très juste en JS
+        if (Math.abs((balance.transaction ?? 0) - (balance.CERFA ?? 0)) > 0.001) {
+          // Pour les remises de chèques, on a deux pièces justificatives necessaires : le chèque et le cerfa
+          message = 'La somme des CERFAs doit valoir le montant de la transaction';
+          balance.CERFA = balance.CERFA ?? 0;
+        }
+      } else {
+        if (Math.abs((balance.transaction ?? 0) - (balance.autre ?? 0)) > 0.001) {
+          message = 'La somme des autres justificatifs doit valoir le montant de la transaction';
+          balance.autre = balance.autre ?? 0;
+        }
+      }
+      if (isCurrent) this.log('balance:', balance);
+      if (message) {
+        return `<a
+          title="Cliquer ici pour plus d'informations."
+          href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Transaction%20-%20Balance%20v2"
+        >Balance v2 déséquilibrée: ${message} ⓘ</a><ul>${Object.entries(balance)
+          .sort(([keya], [keyb]) => {
+            const keys = ['transaction', 'CHQ', 'CERFA', 'autre'];
+            return keys.indexOf(keya) - keys.indexOf(keyb);
+          })
+          .map(([key, value]) => `<li><strong>${key} :</strong>${value}</li>`)
+        .join('')}</ul>`;
+      }
+
     if(ledgerEvents.some(line => line.planItem.number.startsWith('6571'))) {
       if (ledgerEvents.some(line => line.planItem.number.startsWith('6571') && !line.label)) {
         // Aides octroyées sans label
         return 'nom du bénéficiaire manquant dans l\'écriture "6571"';
       }
-    } else {
-      for (const doc of groupedDocuments) {
-        if (doc.type !== 'Invoice') continue;
-        const thirdparty = await new Document(doc).getThirdparty();
+    } else if (parseFloat(doc.amount) < 0) {
+      for (const gdoc of groupedDocuments) {
+        if (gdoc.type !== 'Invoice') continue;
+        const thirdparty = await new Document(gdoc).getThirdparty();
+        // Aides octroyées à une asso ou un particulier
         if ([106438171, 114270419].includes(thirdparty.id)) {
           // Aides octroyées sans compte d'aide
           return 'contrepartie "6571" manquante<br/>-&gt; envoyer la page à David.';
@@ -151,47 +238,6 @@ export default class Transaction extends ValidableDocument {
           // On a parfois des calculs qui ne tombent pas très juste en JS
           return `Balance déséquilibrée: ${balance}`;
         }
-      }
-
-      // balance déséquilibrée - version exigeante
-      const balance = groupedDocuments
-        .reduce<Partial<Record<'transaction'|'CHQ'|'CERFA'|'autre', number>>>((acc, gdoc) => {
-          const value = parseFloat(gdoc.currency_amount ?? gdoc.amount);
-          if (gdoc.type === 'Transaction') acc.transaction = (acc.transaction ?? 0) + value;
-          else if (gdoc.label.includes('CHQ')) acc.CHQ = (acc.CHQ ?? 0) + value;
-          else if (gdoc.label.includes('CERFA')) acc.CERFA = (acc.CERFA ?? 0) + value;
-          else acc.autre = (acc.autre ?? 0) + value;
-          return acc;
-        }, {});
-      let message = '';
-      if (
-        doc.label.startsWith('REMISE CHEQUE ')
-        || doc.label.toUpperCase().startsWith('VIR ')
-      ) {
-        // On a parfois des calculs qui ne tombent pas très juste en JS
-        if (Math.abs((balance.transaction ?? 0) - (balance.CERFA ?? 0)) > 0.001) {
-          // Pour les remises de chèques, on a deux pièces justificatives necessaires : le chèque et le cerfa
-          message = 'La somme des CERFAs doit valoir le montant de la transaction';
-          balance.CERFA = balance.CERFA ?? 0;
-        }
-      } else {
-        if (Math.abs((balance.transaction ?? 0) - (balance.autre ?? 0)) > 0.001) {
-          message = 'La somme des autres justificatifs doit valoir le montant de la transaction';
-          balance.autre = balance.autre ?? 0;
-        }
-      }
-      if (isCurrent) this.log('balance:', balance);
-      if (message) {
-        return `<a
-          title="Cliquer ici pour plus d'informations."
-          href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Transaction%20-%20Balance%20v2"
-        >Balance v2 déséquilibrée: ${message} ⓘ</a><ul>${Object.entries(balance)
-          .sort(([keya], [keyb]) => {
-            const keys = ['transaction', 'CHQ', 'CERFA', 'autre'];
-            return keys.indexOf(keya) - keys.indexOf(keyb);
-          })
-          .map(([key, value]) => `<li><strong>${key} :</strong>${value}</li>`)
-        .join('')}</ul>`;
       }
 
       // Pas plus d'exigence pour les petits montants
