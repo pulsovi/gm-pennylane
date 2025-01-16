@@ -384,7 +384,8 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "async function reloadLedgerEvents(id) {\n" +
 "  const response = await apiRequest(`documents/${id}/settle`, null, \"POST\");\n" +
 "  const data = await response.json();\n" +
-"  console.log(\"reloadLedgerEvents result\", { id, data });\n" +
+"  console.error(\"reloadLedgerEvents() result\", { id, data });\n" +
+"  alert(\"reloadLedgerEvents() : enregistrer le type de retour\");\n" +
 "  return data;\n" +
 "}\n" +
 "async function archiveDocument(id, unarchive = false) {\n" +
@@ -406,6 +407,14 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  }\n" +
 "  const response = await apiRequest(`accountants/operations/${id}/grouped_documents?per_page=-1`, null, \"GET\");\n" +
 "  const result = await response.json();\n" +
+"  if (result.some((item) => item.reconciled)) {\n" +
+"    console.error('APIGroupedDocument : enregistrer le type de la propri\\xE9t\\xE9 \"reconciled\" ', { result: result.find((item) => item.reconciled) });\n" +
+"    alert('APIGroupedDocument : enregistrer le type de la propri\\xE9t\\xE9 \"reconciled\" ');\n" +
+"  }\n" +
+"  if (result.some((item) => item.currency_amount)) {\n" +
+"    console.error('APIGroupedDocument : enregistrer le type de la propri\\xE9t\\xE9 \"currency_amount\" ', { result: result.find((item) => item.currency_amount) });\n" +
+"    alert('APIGroupedDocument : enregistrer le type de la propri\\xE9t\\xE9 \"currency_amount\" ');\n" +
+"  }\n" +
 "  return result;\n" +
 "}\n" +
 "\n" +
@@ -663,11 +672,6 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "        message = \"La somme des CERFAs doit valoir le montant de la transaction\";\n" +
 "        balance.CERFA = balance.CERFA ?? 0;\n" +
 "      }\n" +
-"    } else {\n" +
-"      if (Math.abs((balance.transaction ?? 0) - (balance.autre ?? 0)) > 1e-3) {\n" +
-"        message = \"La somme des autres justificatifs doit valoir le montant de la transaction\";\n" +
-"        balance.autre = balance.autre ?? 0;\n" +
-"      }\n" +
 "    }\n" +
 "    if (isCurrent)\n" +
 "      this.log(\"balance:\", balance);\n" +
@@ -679,61 +683,6 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "        const keys = [\"transaction\", \"CHQ\", \"CERFA\", \"autre\"];\n" +
 "        return keys.indexOf(keya) - keys.indexOf(keyb);\n" +
 "      }).map(([key, value]) => `<li><strong>${key} :</strong>${value}</li>`).join(\"\")}</ul>`;\n" +
-"    }\n" +
-"    if (ledgerEvents.some((line) => line.planItem.number.startsWith(\"6571\"))) {\n" +
-"      if (ledgerEvents.some((line) => line.planItem.number.startsWith(\"6571\") && !line.label)) {\n" +
-"        return `nom du b\\xE9n\\xE9ficiaire manquant dans l'\\xE9criture \"6571\"`;\n" +
-"      }\n" +
-"    } else if (parseFloat(doc.amount) < 0) {\n" +
-"      for (const gdoc of groupedDocuments) {\n" +
-"        if (gdoc.type !== \"Invoice\")\n" +
-"          continue;\n" +
-"        const thirdparty = await new Document(gdoc).getThirdparty();\n" +
-"        if ([106438171, 114270419].includes(thirdparty.id)) {\n" +
-"          return 'contrepartie \"6571\" manquante<br/>-&gt; envoyer la page \\xE0 David.';\n" +
-"        }\n" +
-"      }\n" +
-"    }\n" +
-"    if (ledgerEvents.some((line) => line.planItem.number.startsWith(\"445\")))\n" +
-"      return \"Une \\xE9criture comporte un compte de TVA\";\n" +
-"    if (\n" +
-"      // si justificatif demandé, sauter cette section\n" +
-"      !doc.is_waiting_details || isCurrent\n" +
-"    ) {\n" +
-"      if (ledgerEvents.find((line) => line.planItem.number === \"6288\"))\n" +
-"        return \"Une ligne d'\\xE9criture comporte le num\\xE9ro de compte 6288\";\n" +
-"      if (ledgerEvents.find((line) => line.planItem.number === \"4716001\"))\n" +
-"        return \"Une ligne d'\\xE9criture utilise un compte d'attente 4716001\";\n" +
-"      if (ledgerEvents.some((line) => line.planItem.number.startsWith(\"47\")))\n" +
-"        return \"Une \\xE9criture comporte un compte d'attente (commen\\xE7ant par 47)\";\n" +
-"      const third = ledgerEvents.find((line) => line.planItem.number.startsWith(\"40\"))?.planItem?.number;\n" +
-"      if (third) {\n" +
-"        const thirdEvents = ledgerEvents.filter((line) => line.planItem.number === third);\n" +
-"        const balance2 = thirdEvents.reduce((sum, line) => sum + parseFloat(line.amount), 0);\n" +
-"        if (this.id === Number(getParam(location.href, \"transaction_id\")))\n" +
-"          this.log(\"loadValidMessage: Balance\", Math.abs(balance2) > 1e-3 ? \"d\\xE9s\\xE9quilibr\\xE9e\" : \"OK\", this);\n" +
-"        if (Math.abs(balance2) > 1e-3) {\n" +
-"          return `Balance d\\xE9s\\xE9quilibr\\xE9e: ${balance2}`;\n" +
-"        }\n" +
-"      }\n" +
-"      if (Math.abs(parseFloat(doc.currency_amount)) < 100)\n" +
-"        return \"OK\";\n" +
-"      if (doc.date.startsWith(\"2023\"))\n" +
-"        return \"OK\";\n" +
-"      const attachmentOptional = Math.abs(parseFloat(doc.currency_amount)) < 100 || [\n" +
-"        \" DE: STRIPE MOTIF: ALLODONS REF: \"\n" +
-"      ].some((label) => doc.label.includes(label)) || [\n" +
-"        \"REMISE CHEQUE \",\n" +
-"        \"VIR RECU \",\n" +
-"        \"VIR INST RE \",\n" +
-"        \"VIR INSTANTANE RECU DE: \"\n" +
-"      ].some((label) => doc.label.startsWith(label));\n" +
-"      const attachmentRequired = doc.attachment_required && !doc.attachment_lost && (!attachmentOptional || isCurrent);\n" +
-"      const hasAttachment = groupedDocuments.length > 1;\n" +
-"      if (isCurrent)\n" +
-"        this.log({ attachmentOptional, attachmentRequired, groupedDocuments, hasAttachment });\n" +
-"      if (attachmentRequired && !hasAttachment)\n" +
-"        return \"Justificatif manquant\";\n" +
 "    }\n" +
 "    return \"OK\";\n" +
 "  }\n" +
@@ -982,13 +931,12 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      throw new Error(\"The given value does not parse as an Array.\");\n" +
 "    return value;\n" +
 "  }\n" +
-"  /**\n" +
-"   * Returns the cached elements that match the condition specified\n" +
-"   */\n" +
-"  filter(match) {\n" +
+"  filter(matchOrPredicate) {\n" +
 "    this.load();\n" +
+"    if (typeof matchOrPredicate === \"function\")\n" +
+"      return this.data.filter(matchOrPredicate);\n" +
 "    return this.data.filter(\n" +
-"      (item) => Object.entries(match).every(\n" +
+"      (item) => Object.entries(matchOrPredicate).every(\n" +
 "        ([key, value]) => item[key] === value\n" +
 "      )\n" +
 "    );\n" +
@@ -1323,6 +1271,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    frames: \"\\u288E\\u2870 \\u288E\\u2861 \\u288E\\u2851 \\u288E\\u2831 \\u280E\\u2871 \\u288A\\u2871 \\u288C\\u2871 \\u2886\\u2871\".split(\" \"),\n" +
 "    interval: 200\n" +
 "  };\n" +
+"  skippedElems;\n" +
 "  async init() {\n" +
 "    this.log(\"init\");\n" +
 "    this.start = this.start.bind(this);\n" +
@@ -1387,26 +1336,15 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "   * Create next invalid generator\n" +
 "   */\n" +
 "  async *loadInvalid() {\n" +
-"    const isSkipped = (status) => {\n" +
-"      if (!status)\n" +
-"        return true;\n" +
-"      if (status.valid)\n" +
-"        return true;\n" +
-"      if (status.ignored)\n" +
-"        return true;\n" +
-"      if (status.wait && new Date(status.wait).getTime() > Date.now())\n" +
-"        return true;\n" +
-"      return false;\n" +
-"    };\n" +
 "    let cached = this.cache.filter({ valid: false }).sort((a, b) => a.date - b.date);\n" +
 "    for (const cachedItem of cached) {\n" +
-"      if (isSkipped(cachedItem)) {\n" +
+"      if (this.isSkipped(cachedItem)) {\n" +
 "        if (!cachedItem?.valid)\n" +
 "          this.log(\"skip\", cachedItem);\n" +
 "        continue;\n" +
 "      }\n" +
 "      const status = await this.updateStatus(cachedItem.id);\n" +
-"      if (isSkipped(status)) {\n" +
+"      if (this.isSkipped(status)) {\n" +
 "        if (!status?.valid)\n" +
 "          this.log(\"skip\", status);\n" +
 "        continue;\n" +
@@ -1415,7 +1353,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    }\n" +
 "    for await (const item of this.walk()) {\n" +
 "      const status = await this.updateStatus(item);\n" +
-"      if (isSkipped(status)) {\n" +
+"      if (this.isSkipped(status)) {\n" +
 "        if (!status?.valid)\n" +
 "          this.log(\"skip\", status);\n" +
 "        continue;\n" +
@@ -1423,6 +1361,17 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      yield status;\n" +
 "    }\n" +
 "    this.error(\"TODO: v\\xE9rifier les entr\\xE9es qui ont \\xE9t\\xE9 modifi\\xE9e r\\xE9cemment\");\n" +
+"  }\n" +
+"  isSkipped(status) {\n" +
+"    if (!status)\n" +
+"      return true;\n" +
+"    if (status.valid)\n" +
+"      return true;\n" +
+"    if (status.ignored)\n" +
+"      return true;\n" +
+"    if (status.wait && new Date(status.wait).getTime() > Date.now())\n" +
+"      return true;\n" +
+"    return false;\n" +
 "  }\n" +
 "  /**\n" +
 "   * Update status of an item given by its ID\n" +
@@ -1453,6 +1402,16 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    while (status?.id === this.current) {\n" +
 "      this.log({ status, current: this.current, class: this });\n" +
 "      status = (await this.invalidGenerator.next()).value;\n" +
+"    }\n" +
+"    if (!status && interactionAllowed) {\n" +
+"      if (!this.skippedElems)\n" +
+"        this.skippedElems = this.cache.filter((item) => this.isSkipped(item));\n" +
+"      while (!status && this.skippedElems.length) {\n" +
+"        const id = this.skippedElems.shift().id;\n" +
+"        status = await this.updateStatus(id);\n" +
+"        if (status?.valid || status.id === this.current)\n" +
+"          status = false;\n" +
+"      }\n" +
 "    }\n" +
 "    if (status) {\n" +
 "      this.log(\"next found :\", { current: this.current, status, class: this });\n" +

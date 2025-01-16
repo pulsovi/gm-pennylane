@@ -23,10 +23,15 @@ export default class CacheList<T> extends Cache<T[]> {
   /**
    * Returns the cached elements that match the condition specified
    */
-  public filter (match: Partial<T>): T[] {
+  public filter (predicate: (item: T) => boolean): T[];
+  public filter (match: Partial<T>): T[];
+  public filter (matchOrPredicate: ((item: T) => boolean) | Partial<T>): T[] {
     this.load();
+    if (typeof matchOrPredicate === 'function')
+      return this.data.filter(matchOrPredicate);
+
     return this.data.filter(
-      item => Object.entries(match).every(
+      item => Object.entries(matchOrPredicate).every(
         ([key, value]) => item[key] === value
       )
     );

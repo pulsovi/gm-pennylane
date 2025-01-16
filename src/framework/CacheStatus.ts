@@ -6,6 +6,7 @@ export interface Status {
   ignored?: boolean;
   message: string;
   valid: boolean;
+  date: number;
 }
 
 export default class CacheStatus extends CacheListRecord<Status> {}

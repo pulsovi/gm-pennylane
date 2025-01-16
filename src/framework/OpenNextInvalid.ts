@@ -17,6 +17,8 @@ interface Status extends RawStatus {
   fetchedAt?: number;
   ignored?: boolean;
   wait?: string;
+  /** timestamp de création du document */
+  date: number;
 }
 
 export default abstract class OpenNextInvalid extends Service implements AutostarterParent {
@@ -33,6 +35,7 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
     frames: '⢎⡰ ⢎⡡ ⢎⡑ ⢎⠱ ⠎⡱ ⢊⡱ ⢌⡱ ⢆⡱'.split(' '),
     interval: 200,
   };
+  private skippedElems: Status[];
 
   protected abstract readonly idParamName: string;
   protected abstract readonly storageKey: string;
@@ -106,23 +109,15 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
    * Create next invalid generator
    */
   private async *loadInvalid (): AsyncGenerator<Status, undefined, void> {
-    const isSkipped = (status: Status | null) => {
-      if (!status) return true;
-      if (status.valid) return true;
-      if (status.ignored) return true;
-      if (status.wait && (new Date(status.wait).getTime() > Date.now())) return true;
-      return false;
-    }
-
     // verifier le cache
     let cached = this.cache.filter({ valid: false }).sort((a, b) => a.date - b.date);
     for (const cachedItem of cached) {
-      if (isSkipped(cachedItem)) {
+      if (this.isSkipped(cachedItem)) {
         if (!cachedItem?.valid) this.log('skip', cachedItem);
         continue;
       }
       const status = await this.updateStatus(cachedItem.id);
-      if (isSkipped(status)) {
+      if (this.isSkipped(status)) {
         if (!status?.valid) this.log('skip', status);
         continue;
       }
@@ -132,7 +127,7 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
     // verifier les entrées non encore chargées
     for await (const item of this.walk()) {
       const status = await this.updateStatus(item);
-      if (isSkipped(status)) {
+      if (this.isSkipped(status)) {
         if (!status?.valid) this.log('skip', status);
         continue;
       }
@@ -140,7 +135,21 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
     }
 
     // verifier les plus anciennes entrées
+    /**
+     * A ce stade toutes les entrées ont été traitées, mais rien ne garantit
+     * que les premières entrées chargées nèont pas subi de modification depuis
+     * il faudrait avoir un champ status.updatedAt et retester toutes les entrées
+     * pour lesquelles ce champ est vieux de plus de 3 jours, disons
+     */
     this.error('TODO: vérifier les entrées qui ont été modifiée récemment');
+  }
+
+  private isSkipped (status: Status | null) {
+    if (!status) return true;
+    if (status.valid) return true;
+    if (status.ignored) return true;
+    if (status.wait && (new Date(status.wait).getTime() > Date.now())) return true;
+    return false;
   }
 
   /**
@@ -186,12 +195,23 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
       this.log({status, current: this.current, class: this});
       status = (await this.invalidGenerator.next()).value;
     }
+
+    if (!status && interactionAllowed) {
+      if (!this.skippedElems) this.skippedElems = this.cache.filter(item => this.isSkipped(item));
+      while (!status && this.skippedElems.length) {
+        const id = this.skippedElems.shift()!.id;
+        status = await this.updateStatus(id);
+        if (status?.valid || status.id === this.current) status = false;
+      }
+    }
+
     if (status) {
       this.log('next found :', { current: this.current, status, class: this });
       openDocument(status.id);
       this.running = false;
       return;
     }
+
     if (
       interactionAllowed &&
       confirm(this.constructor.name + ': tous les éléments sont valides selon les paramétres actuels. Revérifier tout depuis le début ?')
@@ -201,6 +221,7 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
       this.invalidGenerator = this.loadInvalid();
       return this.openNext(interactionAllowed);
     }
+
     this.running = false;
   }
 
