@@ -1,4 +1,4 @@
-type Listener = (data: unknown) => void;
+export type Listener = (data: unknown) => void;
 
 export default class EventEmitter {
   private events: Record<string, Listener[]> = {};
@@ -24,7 +24,7 @@ export default class EventEmitter {
 
   // Désabonner une fonction d'un événement
   off(event: string, listener: Listener): this {
-    if (!this.events[event]) return;
+    if (!this.events[event]) return this;
     this.events[event] = this.events[event].filter(l => l !== listener);
     return this;
   }
