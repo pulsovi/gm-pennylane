@@ -179,7 +179,8 @@ export default class Transaction extends ValidableDocument {
         }
       }
       if (isCurrent) this.log('balance:', balance);
-      if (message) {
+      const toSkip = balance.transaction && Math.abs(balance.transaction) < 100 && Object.keys(balance).every(key => key === 'transaction' || key === 'autre');
+      if (message && !toSkip) {
         return `<a
           title="Cliquer ici pour plus d'informations."
           href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Transaction%20-%20Balance%20v2"
@@ -188,7 +189,7 @@ export default class Transaction extends ValidableDocument {
             const keys = ['transaction', 'CHQ', 'CERFA', 'autre'];
             return keys.indexOf(keya) - keys.indexOf(keyb);
           })
-          .map(([key, value]) => `<li><strong>${key} :</strong>${value}</li>`)
+          .map(([key, value]) => `<li><strong>${key} :</strong>${value}${(key !== 'transaction' && balance.transaction && value !== balance.transaction) ? ` (diff : ${balance.transaction - value})` : ''}</li>`)
         .join('')}</ul>`;
       }
 
@@ -236,7 +237,7 @@ export default class Transaction extends ValidableDocument {
           this.log('loadValidMessage: Balance', Math.abs(balance) > 0.001 ? 'déséquilibrée' : 'OK', this);
         if (Math.abs(balance) > 0.001) {
           // On a parfois des calculs qui ne tombent pas très juste en JS
-          return `Balance déséquilibrée: ${balance}`;
+          return `Balance déséquilibrée avec Tiers spécifié : ${balance}`;
         }
       }
 
