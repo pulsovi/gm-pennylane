@@ -206,12 +206,14 @@ class CustomerInvoice extends Invoice {
   public readonly direction = 'customer';
 
   async loadValidMessage () {
+    const current = Number(getParam(location.href, 'id'));
+    const isCurrent = current === this.id;
     const invoice = await this.getInvoice();
 
     // Fait partie d'un exercis clôt
     if (invoice.has_closed_ledger_events) return 'OK';
 
-    this.log('loadValidMessage', this);
+    if (isCurrent) this.log('loadValidMessage', this);
     // Archived
     if (invoice.archived) {
       const allowed = ['§ #', '¤ TRANSACTION INTROUVABLE'];
