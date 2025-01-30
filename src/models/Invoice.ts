@@ -1,13 +1,13 @@
 import { getParam } from '../_';
 import { getInvoice, updateInvoice } from '../api/invoice.js';
-import { RawInvoice, RawInvoiceUpdate } from '../api/types.js';
+import { APIInvoiceItem, RawInvoice, RawInvoiceUpdate } from '../api/types.js';
 import ValidableDocument from './ValidableDocument.js';
 
 export default abstract class Invoice extends ValidableDocument {
   public readonly type = 'invoice';
   private invoice: RawInvoice | Promise<RawInvoice>;
 
-  public static from (invoice: RawInvoice) {
+  public static from (invoice: APIInvoiceItem) {
     if (invoice.direction === 'supplier') return new SupplierInvoice(invoice);
     return new CustomerInvoice(invoice);
   }
