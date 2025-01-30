@@ -671,14 +671,15 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    }\n" +
 "    if (isCurrent)\n" +
 "      this.log(\"balance:\", balance);\n" +
-"    if (message) {\n" +
+"    const toSkip = balance.transaction && Math.abs(balance.transaction) < 100 && Object.keys(balance).every((key) => key === \"transaction\" || key === \"autre\");\n" +
+"    if (message && !toSkip) {\n" +
 "      return `<a\n" +
 "          title=\"Cliquer ici pour plus d'informations.\"\n" +
 "          href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Transaction%20-%20Balance%20v2\"\n" +
 "        >Balance v2 d\\xE9s\\xE9quilibr\\xE9e: ${message} \\u24D8</a><ul>${Object.entries(balance).sort(([keya], [keyb]) => {\n" +
 "        const keys = [\"transaction\", \"CHQ\", \"CERFA\", \"autre\"];\n" +
 "        return keys.indexOf(keya) - keys.indexOf(keyb);\n" +
-"      }).map(([key, value]) => `<li><strong>${key} :</strong>${value}</li>`).join(\"\")}</ul>`;\n" +
+"      }).map(([key, value]) => `<li><strong>${key} :</strong>${value}${key !== \"transaction\" && balance.transaction && value !== balance.transaction ? ` (diff : ${balance.transaction - value})` : \"\"}</li>`).join(\"\")}</ul>`;\n" +
 "    }\n" +
 "    if (ledgerEvents.some((line) => line.planItem.number.startsWith(\"6571\"))) {\n" +
 "      if (ledgerEvents.some((line) => line.planItem.number.startsWith(\"6571\") && !line.label)) {\n" +
@@ -713,7 +714,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "        if (this.id === Number(getParam(location.href, \"transaction_id\")))\n" +
 "          this.log(\"loadValidMessage: Balance\", Math.abs(balance2) > 1e-3 ? \"d\\xE9s\\xE9quilibr\\xE9e\" : \"OK\", this);\n" +
 "        if (Math.abs(balance2) > 1e-3) {\n" +
-"          return `Balance d\\xE9s\\xE9quilibr\\xE9e: ${balance2}`;\n" +
+"          return `Balance d\\xE9s\\xE9quilibr\\xE9e avec Tiers sp\\xE9cifi\\xE9 : ${balance2}`;\n" +
 "        }\n" +
 "      }\n" +
 "      if (Math.abs(parseFloat(doc.currency_amount)) < 100)\n" +
@@ -1744,10 +1745,13 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "class CustomerInvoice extends Invoice {\n" +
 "  direction = \"customer\";\n" +
 "  async loadValidMessage() {\n" +
+"    const current = Number(getParam(location.href, \"id\"));\n" +
+"    const isCurrent = current === this.id;\n" +
 "    const invoice = await this.getInvoice();\n" +
 "    if (invoice.has_closed_ledger_events)\n" +
 "      return \"OK\";\n" +
-"    this.log(\"loadValidMessage\", this);\n" +
+"    if (isCurrent)\n" +
+"      this.log(\"loadValidMessage\", this);\n" +
 "    if (invoice.archived) {\n" +
 "      const allowed = [\"\\xA7 #\", \"\\xA4 TRANSACTION INTROUVABLE\"];\n" +
 "      if (\n" +
@@ -1811,36 +1815,31 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    await super.init();\n" +
 "  }\n" +
 "  async *walk() {\n" +
-"    for await (const status of this.walkInvoices(\"supplier\"))\n" +
+"    for await (const status of this.walkInvoices(\"supplier\", \"+\"))\n" +
 "      yield status;\n" +
-"    for await (const status of this.walkInvoices(\"customer\"))\n" +
+"    for await (const status of this.walkInvoices(\"customer\", \"+\"))\n" +
+"      yield status;\n" +
+"    for await (const status of this.walkInvoices(\"supplier\", \"-\"))\n" +
+"      yield status;\n" +
+"    for await (const status of this.walkInvoices(\"customer\", \"-\"))\n" +
 "      yield status;\n" +
 "  }\n" +
-"  async *walkInvoices(direction) {\n" +
-"    const max = this.cache.filter({ direction }).reduce((acc, status) => Math.max(status.createdAt, acc), 0);\n" +
-"    if (max) {\n" +
-"      const params2 = {\n" +
+"  async *walkInvoices(direction, sort) {\n" +
+"    const startFrom = sort === \"+\" ? 0 : Date.now();\n" +
+"    const limit = this.cache.filter({ direction }).reduce((acc, status) => Math[sort === \"+\" ? \"max\" : \"min\"](status.createdAt, acc), startFrom);\n" +
+"    if (limit || sort === \"-\") {\n" +
+"      this.log(`Recherche vers le ${sort === \"+\" ? \"futur\" : \"pass\\xE9\"} depuis`, this.cache.find({ createdAt: limit }), { cache: this.cache });\n" +
+"      const operator = sort === \"+\" ? \"gteq\" : \"lteq\";\n" +
+"      const value = new Date(limit).toISOString();\n" +
+"      const params = {\n" +
 "        direction,\n" +
-"        filter: JSON.stringify([{ field: \"created_at\", operator: \"gteq\", value: new Date(max).toISOString() }]),\n" +
-"        sort: \"+created_at\"\n" +
+"        filter: JSON.stringify([{ field: \"created_at\", operator, value }]),\n" +
+"        sort: `${sort}created_at`\n" +
 "      };\n" +
-"      for await (const invoice of getInvoiceGenerator(params2)) {\n" +
+"      for await (const invoice of getInvoiceGenerator(params)) {\n" +
 "        const status = await Invoice.from(invoice).getStatus();\n" +
 "        yield { ...status, direction };\n" +
 "      }\n" +
-"    }\n" +
-"    const min = this.cache.filter({ direction }).reduce((acc, status) => Math.min(status.createdAt, acc), Date.now());\n" +
-"    this.log(\"Recherche vers le pass\\xE9 depuis\", this.cache.find({ createdAt: min }), { cache: this.cache });\n" +
-"    const params = {\n" +
-"      direction,\n" +
-"      filter: JSON.stringify(\n" +
-"        [{ field: \"created_at\", operator: \"lteq\", value: new Date(min).toISOString() }]\n" +
-"      ),\n" +
-"      sort: \"-created_at\"\n" +
-"    };\n" +
-"    for await (const invoice of getInvoiceGenerator(params)) {\n" +
-"      const status = await Invoice.from(invoice).getStatus();\n" +
-"      yield { ...status, direction };\n" +
 "    }\n" +
 "  }\n" +
 "  async getStatus(id) {\n" +

@@ -25,42 +25,33 @@ export default class NextInvalidInvoice extends OpenNextInvalid {
   }
 
   protected async *walk (): AsyncGenerator<Status, undefined, void> {
-    for await (const status of this.walkInvoices('supplier')) yield status;
-    for await (const status of this.walkInvoices('customer')) yield status;
+    // Load new added invoices
+    for await (const status of this.walkInvoices('supplier', '+')) yield status;
+    for await (const status of this.walkInvoices('customer', '+')) yield status;
+
+    // Load old un loaded invoices
+    for await (const status of this.walkInvoices('supplier', '-')) yield status;
+    for await (const status of this.walkInvoices('customer', '-')) yield status;
   }
 
-  private async *walkInvoices (direction: 'supplier' | 'customer'): AsyncGenerator<InvoiceStatus> {
-    // Load new added invoices
-    const max = this.cache
+  private async *walkInvoices (direction: 'supplier' | 'customer', sort: '+' | '-'): AsyncGenerator<InvoiceStatus> {
+    const startFrom = sort === '+' ? 0 : Date.now();
+    const limit = this.cache
       .filter({ direction })
-      .reduce((acc, status) => Math.max(status.createdAt, acc), 0);
-    if (max) {
+      .reduce((acc, status) => Math[sort === '+' ? 'max' : 'min'](status.createdAt, acc), startFrom);
+    if (limit || sort === '-') {
+      this.log(`Recherche vers le ${sort === '+' ? 'futur' : 'passé'} depuis`, this.cache.find({ createdAt: limit }), { cache: this.cache });
+      const operator = sort === '+' ? 'gteq' : 'lteq';
+      const value = new Date(limit).toISOString();
       const params: InvoiceListParams = {
         direction,
-        filter: JSON.stringify([{ field: 'created_at', operator: 'gteq', value: new Date(max).toISOString() }]),
-        sort: '+created_at',
+        filter: JSON.stringify([{ field: 'created_at', operator, value }]),
+        sort: `${sort}created_at`,
       };
       for await (const invoice of getInvoiceGenerator(params)) {
         const status = await Invoice.from(invoice).getStatus();
         yield { ...status, direction };
       }
-    }
-
-    // Load old un loaded invoices
-    const min = this.cache
-      .filter({ direction })
-      .reduce((acc, status) => Math.min(status.createdAt, acc), Date.now());
-    this.log('Recherche vers le passé depuis', this.cache.find({ createdAt: min }), { cache: this.cache });
-    const params: InvoiceListParams = {
-      direction,
-      filter: JSON.stringify(
-        [{ field: 'created_at', operator: 'lteq', value: new Date(min).toISOString() }]
-      ),
-      sort: '-created_at',
-    };
-    for await (const invoice of getInvoiceGenerator(params)) {
-      const status = await Invoice.from(invoice).getStatus();
-      yield { ...status, direction };
     }
   }
 
