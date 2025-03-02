@@ -9,6 +9,8 @@ import { getButtonClassName } from "../_/getButtonClassName";
 
 export interface RawStatus {
   id: number;
+  /** timestamp de création du document */
+  date: number;
   valid: boolean;
   message: string;
   createdAt: number;
