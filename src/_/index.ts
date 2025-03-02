@@ -5,3 +5,4 @@ export * from './react.js';
 export * from './time.js';
 export * from './url.js';
 export * from './image.js';
+export * from './getButtonClassName.js';

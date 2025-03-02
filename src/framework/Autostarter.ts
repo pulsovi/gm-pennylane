@@ -1,4 +1,4 @@
-import { $, parseHTML, waitElem } from "../_";
+import { $, getButtonClassName, parseHTML, waitElem } from "../_";
 import Tooltip from "./Tooltip";
 import CacheRecord from './CacheRecord';
 import Logger from "./Logger";
@@ -65,10 +65,9 @@ export default class Autostarter extends Logger {
    */
   private appendDisableButton () {
     const buttonId = `${this.parent.id}-autostart-enable-disable`;
-    const className = $<HTMLButtonElement>('button[type=button]+button')?.className;
     this.parent.container.appendChild(parseHTML(`<button
       type="button"
-      class="${className}"
+      class="${getButtonClassName()}"
       id="${buttonId}"
       style="font-family: initial;"
     ></button>`));

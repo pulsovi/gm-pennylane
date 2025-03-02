@@ -5,6 +5,7 @@ import CacheList from "./CacheList";
 import Service from "./Service";
 import Tooltip from "./Tooltip";
 import type { Spinner } from "../_/spinners";
+import { getButtonClassName } from "../_/getButtonClassName";
 
 export interface RawStatus {
   id: number;
@@ -86,9 +87,8 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
    */
   private appendOpenNextButton () {
     const count = this.cache.filter({ valid: false }).length;
-    const className = $<HTMLButtonElement>('button[type=button]+button')?.className;
     this.container.appendChild(parseHTML(
-      `<button type="button" class="${className} open-next-invalid-btn">
+      `<button type="button" class="${getButtonClassName()} open-next-invalid-btn">
         &nbsp;<span class="icon" style="font-family: monospace;">&gt;</span>
         &nbsp;<span class="number">${count}</span>
       </button>`
@@ -251,11 +251,10 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
 
   private allowIgnoring () {
     const ignored = Boolean(this.cache.find({ id: this.current })?.ignored);
-    const className = $<HTMLButtonElement>('button[type=button]+button')?.className;
 
     this.container.appendChild(parseHTML(`<button
       type="button"
-      class="${className} ignore-item"
+      class="${getButtonClassName()} ignore-item"
       ${ignored ? 'style="background-color: var(--red);"' : ''}
     >x</button>`));
     const button = $<HTMLButtonElement>(`.ignore-item`, this.container)!;
@@ -278,9 +277,8 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
   }
 
   private allowWaiting () {
-    const className = $<HTMLButtonElement>('button[type=button]+button')?.className;
     this.container.appendChild(parseHTML(
-      `<button type="button" class="${className} wait-item">\ud83d\udd52</button>`
+      `<button type="button" class="${getButtonClassName()} wait-item">\ud83d\udd52</button>`
     ));
 
     const button = $<HTMLButtonElement>(`.wait-item`, this.container)!;
