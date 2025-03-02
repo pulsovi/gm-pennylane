@@ -196,7 +196,10 @@ export default class Transaction extends ValidableDocument {
     if(ledgerEvents.some(line => line.planItem.number.startsWith('6571'))) {
       if (ledgerEvents.some(line => line.planItem.number.startsWith('6571') && !line.label)) {
         // Aides octroyées sans label
-        return 'nom du bénéficiaire manquant dans l\'écriture "6571"';
+        return `<a
+          title="Cliquer ici pour plus d'informations."
+          href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FProcessus%20-%20Traitement%20des%20re%C3%A7us%20d'aides%20octroy%C3%A9es#nom%20du%20bénéficiaire%20manquant%20dans%20l'écriture%20%226571%22"
+        >nom du bénéficiaire manquant dans l\'écriture "6571" ⓘ</a>`;
       }
     } else if (parseFloat(doc.amount) < 0) {
       for (const gdoc of groupedDocuments) {
@@ -205,7 +208,10 @@ export default class Transaction extends ValidableDocument {
         // Aides octroyées à une asso ou un particulier
         if ([106438171, 114270419].includes(thirdparty.id)) {
           // Aides octroyées sans compte d'aide
-          return 'contrepartie "6571" manquante<br/>-&gt; envoyer la page à David.';
+          return `<a
+            title="Cliquer ici pour plus d'informations."
+            href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FProcessus%20-%20Traitement%20des%20re%C3%A7us%20d'aides%20octroy%C3%A9es#contrepartie%20%226571%22%20manquante"
+          >contrepartie "6571" manquante ⓘ</a>`;
         }
       }
     }
