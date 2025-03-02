@@ -64,7 +64,7 @@ export default class InvoiceDisplayInfos extends Service {
 
   async watch () {
     const infos = await waitElem('h4.heading-section-3.mr-2', 'Informations');
-    const invoice: RawInvoice = getReact(infos, 32).memoizedProps.invoice;
+    const invoice: RawInvoice = getReactProps(infos, 28).invoice;
 
     let reload = false;
 
