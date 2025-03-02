@@ -35,6 +35,14 @@ export async function apiRequest (endpoint: string, data: Record<string, unknown
     return apiRequest(endpoint, data, method);
   }
 
+  if (response.status === 422) {
+    const message = (await response.clone().json()).message;
+    if (message) {
+      alert(message);
+      return null;
+    }
+  }
+
   if (response.status === 404) {
     console.log('API Request: page introuvable', { endpoint, data, method });
     return null;
