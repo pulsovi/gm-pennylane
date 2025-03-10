@@ -305,6 +305,7 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
     setInterval(() => { updateWaitDisplay(); }, 60_000);
 
     button.addEventListener('click', () => {
+      this.log('waiting button clicked');
       const status = this.cache.find({ id: this.current });
       if (!status) return;
       const wait = (status.wait && (new Date(status.wait).getTime() > Date.now())) ? ''
