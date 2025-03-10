@@ -1,8 +1,9 @@
-import { $, $$, findElem, getReact, getReactProps, parseHTML, waitElem, waitFunc } from "../../_";
+import { $, $$, findElem, getReactProps, parseHTML, waitElem, waitFunc } from "../../_";
 import { LedgerEvent, RawInvoice } from "../../api/types";
 import CacheStatus, { Status } from "../../framework/CacheStatus";
 import Service from "../../framework/Service";
 import Invoice from "../../models/Invoice";
+import { isPage, waitPage } from "../../navigation/waitPage";
 
 /** Add infos on Invoice full page display */
 export default class InvoiceDisplayInfos extends Service {
@@ -24,7 +25,7 @@ export default class InvoiceDisplayInfos extends Service {
   }
 
   async init () {
-    await waitElem('h4', 'Ventilation');
+    await waitPage('invoiceDetail');
 
     this.cache = CacheStatus.getInstance(this.storageKey);
     this.cache.on('change', () => this.handleCacheChange());
@@ -44,13 +45,13 @@ export default class InvoiceDisplayInfos extends Service {
 
   watchReloadHotkey () {
     document.addEventListener('keydown', event => {
-      if (findElem('h4', 'Ventilation') && event.ctrlKey && event.code === 'KeyR') {
+      if (isPage('invoiceDetail') && event.ctrlKey && event.code === 'KeyR') {
         event.preventDefault();
         this.reload();
         this.debug('reloading from watchReloadHotkey');
       } else {
         this.debug('skip reload hotkey :', {
-          "findElem('h4', 'Ventilation')": findElem('h4', 'Ventilation'),
+          "isPage('invoiceDetail')": isPage('invoiceDetail'),
           'event.ctrlKey': event.ctrlKey,
           'event.code (expect "KeyR")': event.code,
         });

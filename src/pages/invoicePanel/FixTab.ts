@@ -1,9 +1,10 @@
 import { $, findElem, waitElem, waitFunc } from "../../_";
 import Service from "../../framework/Service";
+import { waitPage } from "../../navigation/waitPage";
 
 export default class FixTab extends Service {
   async init () {
-    await waitElem('h4', 'Ventilation');
+    await waitPage('invoiceDetail');
     document.addEventListener('keydown', event => this.handleKeyDown(event));
     this.watch();
   }

@@ -1819,6 +1819,18 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  }\n" +
 "}\n" +
 "\n" +
+"async function waitPage(pageName) {\n" +
+"  return await waitFunc(() => isPage(pageName));\n" +
+"}\n" +
+"function isPage(pageName) {\n" +
+"  switch (pageName) {\n" +
+"    case \"invoiceDetail\":\n" +
+"      return findElem(\"h4\", \"R\\xE9conciliation\") ?? false;\n" +
+"    default:\n" +
+"      throw new Error(`unknown page required : \"${pageName}\"`);\n" +
+"  }\n" +
+"}\n" +
+"\n" +
 "class NextInvalidInvoice extends OpenNextInvalid {\n" +
 "  id = \"next-invalid-invoice\";\n" +
 "  storageKey = \"InvoiceValidation\";\n" +
@@ -1865,10 +1877,10 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  }\n" +
 "  /** Add \"next invalid invoice\" button on invoices list */\n" +
 "  async appendContainer() {\n" +
-"    const ref = await waitElem(\"h4\", \"Ventilation\");\n" +
+"    const ref = await waitPage(\"invoiceDetail\");\n" +
 "    const nextButton = await waitElem(\"div>span+button+button:last-child\");\n" +
 "    nextButton.parentElement?.insertBefore(this.container, nextButton.previousElementSibling);\n" +
-"    waitFunc(() => findElem(\"h4\", \"Ventilation\") !== ref).then(() => this.appendContainer());\n" +
+"    waitFunc(() => isPage(\"invoiceDetail\") !== ref).then(() => this.appendContainer());\n" +
 "  }\n" +
 "}\n" +
 "\n" +
@@ -1887,7 +1899,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    return this.instance;\n" +
 "  }\n" +
 "  async init() {\n" +
-"    await waitElem(\"h4\", \"Ventilation\");\n" +
+"    await waitPage(\"invoiceDetail\");\n" +
 "    this.cache = CacheStatus.getInstance(this.storageKey);\n" +
 "    this.cache.on(\"change\", () => this.handleCacheChange());\n" +
 "    this.watchReloadHotkey();\n" +
@@ -1905,13 +1917,13 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  }\n" +
 "  watchReloadHotkey() {\n" +
 "    document.addEventListener(\"keydown\", (event) => {\n" +
-"      if (findElem(\"h4\", \"Ventilation\") && event.ctrlKey && event.code === \"KeyR\") {\n" +
+"      if (isPage(\"invoiceDetail\") && event.ctrlKey && event.code === \"KeyR\") {\n" +
 "        event.preventDefault();\n" +
 "        this.reload();\n" +
 "        this.debug(\"reloading from watchReloadHotkey\");\n" +
 "      } else {\n" +
 "        this.debug(\"skip reload hotkey :\", {\n" +
-"          \"findElem('h4', 'Ventilation')\": findElem(\"h4\", \"Ventilation\"),\n" +
+"          \"isPage('invoiceDetail')\": isPage(\"invoiceDetail\"),\n" +
 "          \"event.ctrlKey\": event.ctrlKey,\n" +
 "          'event.code (expect \"KeyR\")': event.code\n" +
 "        });\n" +
@@ -2110,7 +2122,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "\n" +
 "class FixTab extends Service {\n" +
 "  async init() {\n" +
-"    await waitElem(\"h4\", \"Ventilation\");\n" +
+"    await waitPage(\"invoiceDetail\");\n" +
 "    document.addEventListener(\"keydown\", (event) => this.handleKeyDown(event));\n" +
 "    this.watch();\n" +
 "  }\n" +
@@ -2174,7 +2186,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "\n" +
 "class AllowChangeArchivedInvoiceNumber extends Service {\n" +
 "  async init() {\n" +
-"    await waitElem(\"h4\", \"Ventilation\");\n" +
+"    await waitPage(\"invoiceDetail\");\n" +
 "    this.watch();\n" +
 "  }\n" +
 "  async watch() {\n" +

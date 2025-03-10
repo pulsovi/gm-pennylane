@@ -1,11 +1,12 @@
-import { $, getReactProps, waitElem } from "../../_";
+import { $, getReactProps } from "../../_";
 import Service from "../../framework/Service.js";
 import Invoice from "../../models/Invoice.js";
+import { waitPage } from "../../navigation/waitPage.js";
 import InvoiceDisplayInfos from "./DisplayInfos.js";
 
 export default class AllowChangeArchivedInvoiceNumber extends Service {
   async init () {
-    await waitElem('h4', 'Ventilation');
+    await waitPage('invoiceDetail');
     this.watch();
   }
 

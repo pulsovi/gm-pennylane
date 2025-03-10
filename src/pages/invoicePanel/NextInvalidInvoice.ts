@@ -5,6 +5,7 @@ import CacheListRecord from "../../framework/CacheListRecord";
 import type { Status } from "../../framework/CacheStatus";
 import OpenNextInvalid from "../../framework/OpenNextInvalid";
 import Invoice from "../../models/Invoice";
+import { isPage, waitPage } from "../../navigation/waitPage";
 
 interface InvoiceStatus extends Status {
   direction: 'customer' | 'supplier';
@@ -65,9 +66,9 @@ export default class NextInvalidInvoice extends OpenNextInvalid {
 
   /** Add "next invalid invoice" button on invoices list */
   private async appendContainer () {
-    const ref = await waitElem('h4', 'Ventilation');
+    const ref = await waitPage('invoiceDetail');
     const nextButton = await waitElem('div>span+button+button:last-child');
     nextButton.parentElement?.insertBefore(this.container, nextButton.previousElementSibling);
-    waitFunc(() => findElem('h4', 'Ventilation') !== ref).then(() => this.appendContainer());
+    waitFunc(() => isPage('invoiceDetail') !== ref).then(() => this.appendContainer());
   }
 }
