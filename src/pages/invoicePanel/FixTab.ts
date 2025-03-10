@@ -61,6 +61,7 @@ export default class FixTab extends Service {
     ];
 
     return [
+      'div[data-testid="thirdpartyAutocompleteAsyncSelect"] input',
       'input[name="invoice_number"]',
       '.input-group-prepend+.input-group-append input',
       'input[name="date"]',

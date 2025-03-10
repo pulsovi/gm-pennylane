@@ -1564,6 +1564,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      updateWaitDisplay();\n" +
 "    }, 6e4);\n" +
 "    button.addEventListener(\"click\", () => {\n" +
+"      this.log(\"waiting button clicked\");\n" +
 "      const status = this.cache.find({ id: this.current });\n" +
 "      if (!status)\n" +
 "        return;\n" +
@@ -1684,8 +1685,21 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "        href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20CHQ%20TAXI\"\n" +
 "      >Ajouter le fournisseur \\u24D8</a><ul style=\"margin:0;padding:0.8em;\"><li>|TAXI|</li><li>CHQ#</li></ul>`;\n" +
 "    }\n" +
+"    if (106438171 === invoice.thirdparty_id && !invoice.invoice_number.startsWith(\"AIDES - \")) {\n" +
+"      if (invoice.invoice_number.startsWith(\"\\xA7 #\"))\n" +
+"        return \"Archiver le re\\xE7u.\";\n" +
+"      return `<a\n" +
+"        title=\"Cliquer ici pour plus d'informations\"\n" +
+"        href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FProcessus%20-%20Traitement%20des%20re%C3%A7us%20d'aides%20octroy%C3%A9es#Format%20incorrect%20pour%20le%20num%E9ro%20de%20facture\"\n" +
+"      >Format incorrect pour le num\\xE9ro de facture \\u24D8</a><ul style=\"margin:0;padding:0.8em;\"><li>AIDES - NOM - JJ/MM/AAAA</li></ul>`;\n" +
+"    }\n" +
 "    const emptyDateAllowed = [\"CHQ\", \"CHQ D\\xC9CHIR\\xC9\"];\n" +
-"    if ([106438171, 114270419, 106519227].includes(invoice.thirdparty?.id ?? 0) || emptyDateAllowed.some((item) => invoice.invoice_number?.startsWith(item))) {\n" +
+"    if ([\n" +
+"      106438171,\n" +
+"      // AIDES OCTROYÉES\n" +
+"      114270419,\n" +
+"      106519227\n" +
+"    ].includes(invoice.thirdparty?.id ?? 0) || emptyDateAllowed.some((item) => invoice.invoice_number?.startsWith(item))) {\n" +
 "      if (invoice.date || invoice.deadline)\n" +
 "        return `<a\n" +
 "          title=\"Cliquer ici pour plus d'informations\"\n" +
@@ -1799,7 +1813,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "        href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Don%20Manuel%20-%20num%C3%A9ro%20de%20facture\"\n" +
 "      >Informations manquantes dans le num\\xE9ro de facture \\u24D8</a><ul style=\"margin:0;padding:0.8em;\">${[\n" +
 "        \"CERFA n\\xB0### - Pr\\xE9nom Nom - JJ/MM/AAAA\",\n" +
-"        \"CHQ - Pr\\xE9nom Nom - JJ/MM/AAAA\"\n" +
+"        \"CHQ n\\xB0### - Pr\\xE9nom Nom - JJ/MM/AAAA\"\n" +
 "      ].map((it) => `<li>${it}</li>`).join(\"\")}</ul>`;\n" +
 "    }\n" +
 "    const invoiceDocument = await this.getDocument();\n" +
@@ -2169,6 +2183,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "        'input[name=\"deadline\"]'\n" +
 "      ];\n" +
 "    return [\n" +
+"      'div[data-testid=\"thirdpartyAutocompleteAsyncSelect\"] input',\n" +
 "      'input[name=\"invoice_number\"]',\n" +
 "      \".input-group-prepend+.input-group-append input\",\n" +
 "      'input[name=\"date\"]',\n" +
