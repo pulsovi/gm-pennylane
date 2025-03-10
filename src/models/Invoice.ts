@@ -115,12 +115,19 @@ class SupplierInvoice extends Invoice {
     }
 
     // Aides octroyées sans numéro de facture
-    if (106438171 === invoice.thirdparty_id && !invoice.invoice_number.startsWith('AIDES - ')) {
+    if (
+      106438171 === invoice.thirdparty_id
+      && !['AIDES - ', 'CHQ'].some(label => invoice.invoice_number.startsWith(label))
+    ) {
       if (invoice.invoice_number.startsWith('§ #')) return "Archiver le reçu.";
       return `<a
         title="Cliquer ici pour plus d'informations"
         href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FProcessus%20-%20Traitement%20des%20re%C3%A7us%20d'aides%20octroy%C3%A9es#Format%20incorrect%20pour%20le%20num%E9ro%20de%20facture"
-      >Format incorrect pour le numéro de facture ⓘ</a><ul style="margin:0;padding:0.8em;"><li>AIDES - NOM - JJ/MM/AAAA</li></ul>`;
+      >Format incorrect pour le numéro de facture ⓘ</a>
+      <ul style="margin:0;padding:0.8em;">
+        <li>AIDES - NOM - JJ/MM/AAAA</li>
+        <li>CHQ###</li>
+      </ul>`;
     }
 
     // Aides octroyées ou piece d'indentité avec date

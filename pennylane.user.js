@@ -57,7 +57,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  return result;\n" +
 "}\n" +
 "\n" +
-"function $$1(selector, root = document) {\n" +
+"function $(selector, root = document) {\n" +
 "  if (root === null)\n" +
 "    root = document;\n" +
 "  return root.querySelector(selector);\n" +
@@ -93,7 +93,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "}\n" +
 "Object.assign(window, { gm: {\n" +
 "  $$,\n" +
-"  $: $$1,\n" +
+"  $,\n" +
 "  findElem,\n" +
 "  parentElement,\n" +
 "  parseHTML,\n" +
@@ -141,9 +141,13 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  });\n" +
 "}\n" +
 "\n" +
+"let cachedClassName = \"\";\n" +
 "function getButtonClassName() {\n" +
-"  const buttonModel = findElem(\"button div\", \"Raccourcis\")?.parentElement ?? $(\"button[type=button]+button\");\n" +
-"  const className = buttonModel?.className;\n" +
+"  if (cachedClassName)\n" +
+"    return cachedClassName;\n" +
+"  const buttonModel = findElem(\"button div\", \"Raccourcis\")?.parentElement ?? findElem(\"div\", \"D\\xE9tails\")?.querySelector(\"button+button:last-child\");\n" +
+"  const className = buttonModel?.className ?? \"\";\n" +
+"  cachedClassName = className;\n" +
 "  return className;\n" +
 "}\n" +
 "\n" +
@@ -786,7 +790,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    await waitElem(\".paragraph-body-m+.heading-page.mt-1\");\n" +
 "    const detailTab = await waitElem(\"aside div\");\n" +
 "    detailTab.insertBefore(this.container, detailTab.firstChild);\n" +
-"    waitFunc(() => $$1(\"aside div\") !== detailTab).then(() => {\n" +
+"    waitFunc(() => $(\"aside div\") !== detailTab).then(() => {\n" +
 "      this.insertContainer();\n" +
 "    });\n" +
 "  }\n" +
@@ -811,7 +815,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  async loadMessage() {\n" +
 "    this.debug(\"loadMessage\", this);\n" +
 "    this.message = \"\\u27F3\";\n" +
-"    const rawTransaction = getReactProps($$1(\".paragraph-body-m+.heading-page.mt-1\"), 9).transaction;\n" +
+"    const rawTransaction = getReactProps($(\".paragraph-body-m+.heading-page.mt-1\"), 9).transaction;\n" +
 "    this.state.transaction = new Transaction(rawTransaction);\n" +
 "    const message = await this.state.transaction.getValidMessage();\n" +
 "    this.message = `${await this.state.transaction.isValid() ? \"\\u2713\" : \"\\u2717\"} ${message}`;\n" +
@@ -834,7 +838,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    }\n" +
 "  }\n" +
 "  async displayMessage() {\n" +
-"    $$1(\".headband-is-valid\", this.container).innerHTML = `${this.getTransactionId()}${this.message}`;\n" +
+"    $(\".headband-is-valid\", this.container).innerHTML = `${this.getTransactionId()}${this.message}`;\n" +
 "  }\n" +
 "  getTransactionId() {\n" +
 "    if (!this.state.transaction?.id)\n" +
@@ -1166,17 +1170,17 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    </div>`));\n" +
 "    this.target.setAttribute(\"aria-labelledby\", this.id);\n" +
 "    this.target.addEventListener(\"mouseenter\", () => {\n" +
-"      $$1(`#${this.id}`).style.display = \"unset\";\n" +
+"      $(`#${this.id}`).style.display = \"unset\";\n" +
 "    });\n" +
 "    this.target.addEventListener(\"mouseleave\", () => {\n" +
-"      $$1(`#${this.id}`).style.display = \"none\";\n" +
+"      $(`#${this.id}`).style.display = \"none\";\n" +
 "    });\n" +
 "  }\n" +
 "  /**\n" +
 "   * Set the text for the tooltip\n" +
 "   */\n" +
 "  setText(text, html = false) {\n" +
-"    const inner = $$1(`#${this.id} .tooltip-inner`);\n" +
+"    const inner = $(`#${this.id} .tooltip-inner`);\n" +
 "    if (!inner)\n" +
 "      throw new Error(\"Unable to find tooltip container\");\n" +
 "    if (html) {\n" +
@@ -1189,8 +1193,8 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "   * Move the tooltip at good position to point visually the target\n" +
 "   */\n" +
 "  setPos() {\n" +
-"    const tooltip = $$1(`#${this.id}`);\n" +
-"    const arrow = $$1(\".arrow\", tooltip);\n" +
+"    const tooltip = $(`#${this.id}`);\n" +
+"    const arrow = $(\".arrow\", tooltip);\n" +
 "    if (tooltip.style.display === \"none\")\n" +
 "      return;\n" +
 "    const targetRect = this.target.getBoundingClientRect();\n" +
@@ -1288,7 +1292,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      id=\"${buttonId}\"\n" +
 "      style=\"font-family: initial;\"\n" +
 "    ></button>`));\n" +
-"    const button = $$1(`#${buttonId}`, this.parent.container);\n" +
+"    const button = $(`#${buttonId}`, this.parent.container);\n" +
 "    const tooltip = Tooltip.make({ target: button });\n" +
 "    button.addEventListener(\"click\", () => {\n" +
 "      this.config.set(\"enabled\", (oldValue) => !oldValue);\n" +
@@ -1392,8 +1396,8 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "        &nbsp;<span class=\"number\">${count}</span>\n" +
 "      </button>`\n" +
 "    ));\n" +
-"    const button = $$1(`.open-next-invalid-btn`, this.container);\n" +
-"    const number = $$1(\".number\", button);\n" +
+"    const button = $(`.open-next-invalid-btn`, this.container);\n" +
+"    const number = $(\".number\", button);\n" +
 "    button.addEventListener(\"click\", this.start.bind(this, true));\n" +
 "    Tooltip.make({ target: button, text: \"Ouvrir le prochain \\xE9l\\xE9ment invalide\" });\n" +
 "    this.cache.on(\"change\", () => {\n" +
@@ -1521,7 +1525,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      class=\"${getButtonClassName()} ignore-item\"\n" +
 "      ${ignored ? 'style=\"background-color: var(--red);\"' : \"\"}\n" +
 "    >x</button>`));\n" +
-"    const button = $$1(`.ignore-item`, this.container);\n" +
+"    const button = $(`.ignore-item`, this.container);\n" +
 "    Tooltip.make({ target: button, text: \"Ignorer cet \\xE9l\\xE9ment, ne plus afficher\" });\n" +
 "    const refresh = () => {\n" +
 "      const ignored2 = Boolean(this.cache.find({ id: this.current })?.ignored);\n" +
@@ -1546,7 +1550,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    this.container.appendChild(parseHTML(\n" +
 "      `<button type=\"button\" class=\"${getButtonClassName()} wait-item\">\\u{1F552}</button>`\n" +
 "    ));\n" +
-"    const button = $$1(`.wait-item`, this.container);\n" +
+"    const button = $(`.wait-item`, this.container);\n" +
 "    const tooltip = Tooltip.make({ target: button, text: \"\" });\n" +
 "    const updateWaitDisplay = () => {\n" +
 "      const status = this.cache.find({ id: this.current });\n" +
@@ -1580,7 +1584,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    });\n" +
 "  }\n" +
 "  setSpinner() {\n" +
-"    const span = $$1(\".open-next-invalid-btn .icon\", this.container);\n" +
+"    const span = $(\".open-next-invalid-btn .icon\", this.container);\n" +
 "    if (!span)\n" +
 "      return;\n" +
 "    if (!this.running) {\n" +
@@ -1685,13 +1689,17 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "        href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20CHQ%20TAXI\"\n" +
 "      >Ajouter le fournisseur \\u24D8</a><ul style=\"margin:0;padding:0.8em;\"><li>|TAXI|</li><li>CHQ#</li></ul>`;\n" +
 "    }\n" +
-"    if (106438171 === invoice.thirdparty_id && !invoice.invoice_number.startsWith(\"AIDES - \")) {\n" +
+"    if (106438171 === invoice.thirdparty_id && ![\"AIDES - \", \"CHQ\"].some((label) => invoice.invoice_number.startsWith(label))) {\n" +
 "      if (invoice.invoice_number.startsWith(\"\\xA7 #\"))\n" +
 "        return \"Archiver le re\\xE7u.\";\n" +
 "      return `<a\n" +
 "        title=\"Cliquer ici pour plus d'informations\"\n" +
 "        href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FProcessus%20-%20Traitement%20des%20re%C3%A7us%20d'aides%20octroy%C3%A9es#Format%20incorrect%20pour%20le%20num%E9ro%20de%20facture\"\n" +
-"      >Format incorrect pour le num\\xE9ro de facture \\u24D8</a><ul style=\"margin:0;padding:0.8em;\"><li>AIDES - NOM - JJ/MM/AAAA</li></ul>`;\n" +
+"      >Format incorrect pour le num\\xE9ro de facture \\u24D8</a>\n" +
+"      <ul style=\"margin:0;padding:0.8em;\">\n" +
+"        <li>AIDES - NOM - JJ/MM/AAAA</li>\n" +
+"        <li>CHQ###</li>\n" +
+"      </ul>`;\n" +
 "    }\n" +
 "    const emptyDateAllowed = [\"CHQ\", \"CHQ D\\xC9CHIR\\xC9\"];\n" +
 "    if ([\n" +
@@ -1978,11 +1986,11 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "        <div id=\"is-valid-tag\" class=\"d-inline-block bg-secondary-100 dihsuQ px-0_5\">\\u27F3</div>\n" +
 "        <div id=\"invoice-id\" class=\"d-inline-block bg-secondary-100 dihsuQ px-0_5\"></div>\n" +
 "      </div>`).firstElementChild;\n" +
-"      const messageDiv = $$1(\"#is-valid-tag\", this.container);\n" +
+"      const messageDiv = $(\"#is-valid-tag\", this.container);\n" +
 "      this.on(\"message-change\", (message) => {\n" +
 "        messageDiv.innerHTML = message;\n" +
 "      });\n" +
-"      const idDiv = $$1(\"#invoice-id\", this.container);\n" +
+"      const idDiv = $(\"#invoice-id\", this.container);\n" +
 "      this.on(\"id-change\", (id) => {\n" +
 "        idDiv.innerHTML = id;\n" +
 "      });\n" +
@@ -2160,16 +2168,16 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  }\n" +
 "  getOrder(target) {\n" +
 "    const orderList = this.getOrderList();\n" +
-"    const currentSelector = orderList.find((selector) => $$1(selector) === target);\n" +
+"    const currentSelector = orderList.find((selector) => $(selector) === target);\n" +
 "    if (!currentSelector)\n" +
 "      return null;\n" +
 "    const searchList = orderList.slice(orderList.indexOf(currentSelector) + 1).concat(orderList.slice(0, orderList.indexOf(currentSelector)));\n" +
-"    const nextSelector = searchList.find((selector) => $$1(selector));\n" +
-"    const previousSelector = searchList.reverse().find((selector) => $$1(selector));\n" +
+"    const nextSelector = searchList.find((selector) => $(selector));\n" +
+"    const previousSelector = searchList.reverse().find((selector) => $(selector));\n" +
 "    return {\n" +
-"      current: $$1(currentSelector),\n" +
-"      previous: previousSelector ? $$1(previousSelector) : null,\n" +
-"      next: nextSelector ? $$1(nextSelector) : null\n" +
+"      current: $(currentSelector),\n" +
+"      previous: previousSelector ? $(previousSelector) : null,\n" +
+"      next: nextSelector ? $(nextSelector) : null\n" +
 "    };\n" +
 "  }\n" +
 "  getOrderList() {\n" +
@@ -2195,7 +2203,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  async watch() {\n" +
 "    const ref = await waitElem('input[name=\"invoice_number\"]');\n" +
 "    ref.focus();\n" +
-"    waitFunc(() => $$1('input[name=\"invoice_number\"]') !== ref).then(() => this.watch());\n" +
+"    waitFunc(() => $('input[name=\"invoice_number\"]') !== ref).then(() => this.watch());\n" +
 "  }\n" +
 "}\n" +
 "\n" +
@@ -2209,7 +2217,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "      if (event.code !== \"KeyS\" || !event.ctrlKey)\n" +
 "        return;\n" +
 "      this.debug(\"Ctrl + S pressed\");\n" +
-"      const invoiceNumberField = $$1(\"input[name=invoice_number]\");\n" +
+"      const invoiceNumberField = $(\"input[name=invoice_number]\");\n" +
 "      if (event.target !== invoiceNumberField || !invoiceNumberField) {\n" +
 "        this.debug({ invoiceNumberField, eventTarget: event.target });\n" +
 "        return;\n" +
@@ -2265,7 +2273,7 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    if (!filterButton)\n" +
 "      this.log(`bouton \"${label}\" introuvable`);\n" +
 "    if (event.shiftKey) {\n" +
-"      $$1(\"div[aria-label=Effacer]\", filterButton)?.click();\n" +
+"      $(\"div[aria-label=Effacer]\", filterButton)?.click();\n" +
 "      return;\n" +
 "    }\n" +
 "    filterButton?.click();\n" +
@@ -2280,10 +2288,10 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "        const date = event.target.value.slice(0, 10);\n" +
 "        event.target.value = `${date} - ${date}`;\n" +
 "        getReactProps(event.target).onChange({ target: event.target });\n" +
-"        const validButton = $$1('button[data-tracking-action=\"Transactions Page - Date Filter click\"]');\n" +
+"        const validButton = $('button[data-tracking-action=\"Transactions Page - Date Filter click\"]');\n" +
 "        await waitFunc(() => !validButton?.disabled);\n" +
 "      }\n" +
-"      return $$1('button[data-tracking-action=\"Transactions Page - Date Filter click\"]')?.click();\n" +
+"      return $('button[data-tracking-action=\"Transactions Page - Date Filter click\"]')?.click();\n" +
 "    }\n" +
 "  }\n" +
 "  saveLedgerEvents() {\n" +
@@ -2307,13 +2315,13 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "   */\n" +
 "  fill(form) {\n" +
 "    const id = form.getAttribute(\"name\")?.split(\"-\").pop();\n" +
-"    const header = $$1(\"header\", form);\n" +
+"    const header = $(\"header\", form);\n" +
 "    if (!header)\n" +
 "      return;\n" +
 "    const className = header.firstElementChild?.className ?? \"\";\n" +
 "    header.insertBefore(parseHTML(`<div class=\"${className}\">\n" +
 "      <span class=\"d-inline-block bg-secondary-100 dihsuQ px-0_5\">#${id}</span>\n" +
-"    </div>`), $$1(\".border-bottom\", header));\n" +
+"    </div>`), $(\".border-bottom\", header));\n" +
 "  }\n" +
 "}\n" +
 "\n" +
@@ -2332,25 +2340,25 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  fill(anchor) {\n" +
 "    const table = anchor.closest(\"table\");\n" +
 "    this.log(\"fill\", table);\n" +
-"    const headRow = $$1(\"thead tr\", table);\n" +
-"    $$1(\"th.id-column\", headRow)?.remove();\n" +
+"    const headRow = $(\"thead tr\", table);\n" +
+"    $(\"th.id-column\", headRow)?.remove();\n" +
 "    headRow?.insertBefore(parseHTML(`<th class=\"id-column th-element border-top-0 border-bottom-0 box-shadow-bottom-secondary-200 align-middle p-1 text-secondary-700 font-size-075 text-nowrap is-pinned\">\n" +
 "      <div class=\"sc-ivxoEo dLrrKG d-flex flex-row sc-eSclpK dSYLCv\">\n" +
 "        <span class=\"tiny-caption font-weight-bold\">ID</span>\n" +
 "      </div>\n" +
-"    </th>`), $$1(\"th+th\", headRow));\n" +
+"    </th>`), $(\"th+th\", headRow));\n" +
 "    const bodyRows = $$(\"tbody tr\", table);\n" +
 "    this.log({ bodyRows });\n" +
 "    bodyRows.forEach((row) => {\n" +
 "      const id = getReactProps(row, 1).data.id;\n" +
-"      $$1(\".id-column\", row)?.remove();\n" +
+"      $(\".id-column\", row)?.remove();\n" +
 "      row.insertBefore(\n" +
 "        parseHTML(`<td style=\"cursor: auto;\" class=\"id-column px-1 py-0_5 align-middle border-top-0 box-shadow-bottom-secondary-100\">\n" +
 "          <span class=\"d-inline-block bg-secondary-100 dihsuQ px-0_5\">#${id}</span>\n" +
 "        </td>`),\n" +
-"        $$1(\"td+td\", row)\n" +
+"        $(\"td+td\", row)\n" +
 "      );\n" +
-"      $$1(\".id-column\", row)?.addEventListener(\"click\", (e) => {\n" +
+"      $(\".id-column\", row)?.addEventListener(\"click\", (e) => {\n" +
 "        e.preventDefault();\n" +
 "        e.stopPropagation();\n" +
 "      });\n" +
@@ -2383,10 +2391,10 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "  }\n" +
 "  async watch() {\n" +
 "    let modal;\n" +
-"    while (await waitFunc(() => $$1(\"div.modal-dialog\") !== modal)) {\n" +
+"    while (await waitFunc(() => $(\"div.modal-dialog\") !== modal)) {\n" +
 "      this.emit(\"new-modal\");\n" +
-"      modal = $$1(\"div.modal-dialog\");\n" +
-"      const closeButton = $$1(\"div.modal-header button.close\", modal);\n" +
+"      modal = $(\"div.modal-dialog\");\n" +
+"      const closeButton = $(\"div.modal-header button.close\", modal);\n" +
 "      if (!modal || !closeButton)\n" +
 "        continue;\n" +
 "      modal.style.margin = \"5rem 0 auto auto\";\n" +
@@ -2434,8 +2442,13 @@ const code = ";(function IIFE() {" + "'use strict';\n" +
 "    Transaction,\n" +
 "    Invoice,\n" +
 "    parseHTML,\n" +
-"    $: $$1,\n" +
-"    $$\n" +
+"    $,\n" +
+"    $$,\n" +
+"    API: {\n" +
+"      getInvoicesList,\n" +
+"      getDocument,\n" +
+"      getInvoice\n" +
+"    }\n" +
 "  }\n" +
 "});\n" +
 ""
