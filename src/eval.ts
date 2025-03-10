@@ -5,7 +5,7 @@ import NextInvalidInvoice from './pages/invoicePanel/NextInvalidInvoice.js';
 import InvoiceDisplayInfos from './pages/invoicePanel/DisplayInfos.js';
 import ArchiveGroupedDocument from './pages/transactionPanel/ArchiveGroupedDocument.js';
 import NextInvalidTransaction from './pages/transactionPanel/NextInvalidTransaction.js';
-import FixTab from './pages/invoicePanel/fixTab.js';
+import FixTab from './pages/invoicePanel/FixTab.js';
 import AllowChangeArchivedInvoiceNumber from './pages/invoicePanel/AllowChangeArchivedInvoiceNumber.js';
 import TransactionPanelHotkeys from './pages/transactionPanel/Hotkeys.js';
 import EntryBlocInfos from './pages/EntryBlocInfos.js';
@@ -14,6 +14,8 @@ import { $, $$, findElem, parseHTML } from './_/dom.js';
 import Transaction from './models/Transaction.js';
 import Invoice from './models/Invoice.js';
 import RotateImg from './pages/transactionPanel/RotateImg.js';
+import { getInvoice, getInvoicesList } from './api/invoice.js';
+import { getDocument } from './api/document.js';
 
 last7DaysFilter();
 TransactionValidMessage.start();
@@ -59,5 +61,10 @@ Object.assign(window, {
     parseHTML,
     $,
     $$,
+    API: {
+      getInvoicesList,
+      getDocument,
+      getInvoice,
+    }
   },
 });
