@@ -99,7 +99,6 @@ class SupplierInvoice extends Invoice {
         >Fournisseur inconnu ⓘ</a>`;
     }
 
-
     // exclude 6288
     if (invoice.invoice_lines?.some(line => line.pnl_plan_item?.number == '6288'))
       return 'compte tiers 6288';
@@ -115,10 +114,23 @@ class SupplierInvoice extends Invoice {
       >Ajouter le fournisseur ⓘ</a><ul style="margin:0;padding:0.8em;"><li>|TAXI|</li><li>CHQ#</li></ul>`;
     }
 
+    // Aides octroyées sans numéro de facture
+    if (106438171 === invoice.thirdparty_id && !invoice.invoice_number.startsWith('AIDES - ')) {
+      if (invoice.invoice_number.startsWith('§ #')) return "Archiver le reçu.";
+      return `<a
+        title="Cliquer ici pour plus d'informations"
+        href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FProcessus%20-%20Traitement%20des%20re%C3%A7us%20d'aides%20octroy%C3%A9es#Format%20incorrect%20pour%20le%20num%E9ro%20de%20facture"
+      >Format incorrect pour le numéro de facture ⓘ</a><ul style="margin:0;padding:0.8em;"><li>AIDES - NOM - JJ/MM/AAAA</li></ul>`;
+    }
+
     // Aides octroyées ou piece d'indentité avec date
     const emptyDateAllowed = ['CHQ', 'CHQ DÉCHIRÉ'];
     if (
-      [106438171, 114270419, 106519227].includes(invoice.thirdparty?.id ?? 0)
+      [
+        106438171, // AIDES OCTROYÉES
+        114270419,
+        106519227,
+      ].includes(invoice.thirdparty?.id ?? 0)
       || emptyDateAllowed.some(item => invoice.invoice_number?.startsWith(item))
     ) {
       if (invoice.date || invoice.deadline) return `<a
@@ -260,7 +272,7 @@ class CustomerInvoice extends Invoice {
         href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Don%20Manuel%20-%20num%C3%A9ro%20de%20facture"
       >Informations manquantes dans le numéro de facture ⓘ</a><ul style="margin:0;padding:0.8em;">${[
         'CERFA n°### - Prénom Nom - JJ/MM/AAAA',
-        'CHQ - Prénom Nom - JJ/MM/AAAA',
+        'CHQ n°### - Prénom Nom - JJ/MM/AAAA',
       ].map(it => `<li>${it}</li>`).join('')}</ul>`;
     }
 
