@@ -1,6 +1,6 @@
 import { openTabService } from './GM/openTabService.js';
 
-const code = ';(function IIFE() {'+/*eval*/+'})();';
+const code = ';(function IIFE() {'+evalContent+'})();';
 try {
   unsafeWindow.eval(code);
   openTabService();

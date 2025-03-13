@@ -3,18 +3,17 @@
   "packageManager": "yarn@4.5.2",
   "type": "module",
   "scripts": {
-    "build": "pkgroll",
+    "build": "rollup -c",
     "prepare": "husky",
     "version": "bash ./.husky/version"
   },
   "dependencies": {
-    "husky": "^9.0.11"
-  },
-  "devDependencies": {
-    "pkgroll": "^2.1.1"
-  },
-  "exports": [
-    "./dist/eval.cjs",
-    "./dist/main.cjs"
-  ]
+    "@rollup/plugin-commonjs": "^28.0.3",
+    "@rollup/plugin-node-resolve": "^16.0.1",
+    "@rollup/plugin-typescript": "^12.1.2",
+    "husky": "^9.0.11",
+    "rollup": "^4.35.0",
+    "tslib": "^2.8.1",
+    "typescript": "^5.8.2"
+  }
 }
