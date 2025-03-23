@@ -1,0 +1,11 @@
+.open-next-invalid-btn .number .waiting {
+  background: var(--blue);
+  color: white;
+  padding: 0 0.2em;
+}
+
+.open-next-invalid-btn .number .ignored {
+  background: var(--red);
+  color: white;
+  padding: 0 0.2em;
+}

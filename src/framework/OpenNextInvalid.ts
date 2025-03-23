@@ -6,6 +6,10 @@ import Service from "./Service";
 import Tooltip from "./Tooltip";
 import type { Spinner } from "../_/spinners";
 import { getButtonClassName } from "../_/getButtonClassName";
+import styles from './openNextInvalid.css';
+import { injectStyles } from "../_/styles";
+
+injectStyles(styles);
 
 export interface RawStatus {
   id: number;
@@ -88,22 +92,45 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
    * Append the button for open next to the DOM
    */
   private appendOpenNextButton () {
-    const count = this.cache.filter({ valid: false }).length;
     this.container.appendChild(parseHTML(
-      `<button type="button" class="${getButtonClassName()} open-next-invalid-btn">
-        &nbsp;<span class="icon" style="font-family: monospace;">&gt;</span>
-        &nbsp;<span class="number">${count}</span>
-      </button>`
+      `<button type="button" class="${getButtonClassName()} open-next-invalid-btn">&nbsp;
+        <span class="icon" style="font-family: monospace;">&gt;</span>&nbsp;
+        <span class="number">
+          <span class="invalid" title="nombre d'éléments invalides"></span>|
+          <span class="waiting" title="nombre d'éléments temporairement ignorés"></span>|
+          <span class="ignored" title="nombre d'éléments ignorés"></span>
+        </span>
+      </button>`.trim().replace(/\n\s*/g, '')
     ));
     const button = $<HTMLButtonElement>(`.open-next-invalid-btn`, this.container)!;
-    const number = $<HTMLSpanElement>('.number', button)!;
 
     button.addEventListener('click', this.start.bind(this, true));
     Tooltip.make({ target: button, text: 'Ouvrir le prochain élément invalide' });
+    this.reloadNumber();
 
-    this.cache.on('change', () => {
-      const count = this.cache.filter({ valid: false }).length;
-      number.innerHTML = `${count}`;
+    this.cache.on('change', () => this.reloadNumber());
+  }
+
+  /**
+   * Set the number display on openNextInvalid button
+   */
+  private reloadNumber () {
+    const count = this.cache.reduce((acc, status) => {
+      if (status.ignored) return {...acc, ignored: acc.ignored + 1};
+      if (status.wait && (new Date(status.wait).getTime() > Date.now()))
+        return {...acc, waiting: acc.waiting + 1};
+      if (!status.valid) return {...acc, invalid: acc.invalid + 1};
+      return acc;
+    }, {invalid: 0, waiting: 0, ignored: 0});
+    const button = $<HTMLButtonElement>(`.open-next-invalid-btn`, this.container);
+    const number = $<HTMLSpanElement>('.number', button);
+    Object.entries(count).forEach(([key, value]) => {
+      const span = $<HTMLSpanElement>(`.${key}`, number);
+      if (!span) {
+        this.log(`Unable to find the "${key}" number span`, {button, number});
+        return;
+      }
+      span.innerText = `${value}`;
     });
   }
 
