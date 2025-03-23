@@ -10,6 +10,10 @@ export default class ValidMessage extends Service {
   private state: {
     transaction?: Transaction;
     ledgerEvents: APILedgerEvent[];
+    comments?: {
+      transactionId: number;
+      hasComment: boolean;
+    }
   } = { ledgerEvents: [] };
   private _message: string = '⟳';
 
@@ -18,7 +22,7 @@ export default class ValidMessage extends Service {
     return this.instance as ValidMessage;
   }
 
-  async init () {
+  async init() {
     await this.insertContainer();
     this.on('message-change', () => this.displayMessage());
     this.watchReloadHotkey();
@@ -26,7 +30,7 @@ export default class ValidMessage extends Service {
     setInterval(() => this.watch(), 200);
   }
 
-  async insertContainer () {
+  async insertContainer() {
     await waitElem('h3', 'Transactions');                    // Transactions panel
     await waitElem('.paragraph-body-m+.heading-page.mt-1')   // transaction detail panel
     const detailTab = await waitElem('aside div');
@@ -34,7 +38,7 @@ export default class ValidMessage extends Service {
     waitFunc(() => $('aside div') !== detailTab).then(() => { this.insertContainer(); });
   }
 
-  watchReloadHotkey () {
+  watchReloadHotkey() {
     document.addEventListener('keydown', event => {
       if (findElem('h3', 'Transactions') && event.ctrlKey && event.key.toLowerCase() === 's') {
         event.preventDefault();
@@ -43,20 +47,20 @@ export default class ValidMessage extends Service {
     });
   }
 
-  reload () {
+  reload() {
     this.loadMessage();
   }
 
-  set message (html: string) {
+  set message(html: string) {
     this._message = html;
     this.emit('message-change', html);
   }
 
-  get message (): string {
+  get message(): string {
     return this._message;
   }
 
-  async loadMessage () {
+  async loadMessage() {
     this.debug('loadMessage', this);
     this.message = '⟳';
 
@@ -66,10 +70,10 @@ export default class ValidMessage extends Service {
     this.message = `${(await this.state.transaction.isValid()) ? '✓' : '✗'} ${message}`;
   }
 
-  async watch () {
+  async watch() {
     const ledgerEvents = $$<HTMLFormElement>('form[name^=DocumentEntries-]')
       .reduce<APILedgerEvent[]>((events, form) => {
-        const formEvents = getReactProps(form.parentElement ,3)?.initialValues?.ledgerEvents ?? [];
+        const formEvents = getReactProps(form.parentElement, 3)?.initialValues?.ledgerEvents ?? [];
         return [...events, ...formEvents];
       }, []);
 
@@ -87,18 +91,41 @@ export default class ValidMessage extends Service {
     }
   }
 
-  async displayMessage () {
-    $('.headband-is-valid', this.container)!.innerHTML = `${this.getTransactionId()}${this.message}`;
+  async displayMessage() {
+    $('.headband-is-valid', this.container)!.innerHTML =
+      `${this.getTransactionId()}${this.getCommentLogo()} ${this.message}`;
   }
 
-  getTransactionId () {
+  getTransactionId() {
     if (!this.state.transaction?.id) return '';
-    return `<span class="transaction-id d-inline-block bg-secondary-100 dihsuQ px-0_5">#${this.state.transaction.id}</span> `;
+    return `<span class="transaction-id d-inline-block bg-secondary-100 dihsuQ px-0_5 m-0">#${this.state.transaction.id}</span>`;
+  }
+
+  private getCommentLogo() {
+    if (!this.state.transaction) return '';
+    if (!this.state.comments || this.state.transaction.id !== this.state.comments.transactionId) {
+      this.reloadCommentState();
+      return '';
+    }
+    return this.state.comments.hasComment ?
+      '<span class="d-inline-block bg-danger m-0">💬</span>' : '';
+  }
+
+  private async reloadCommentState() {
+    if (!this.state.transaction) return;
+    const transactionId = this.state.transaction.id;
+    const transactionDoc = await this.state.transaction.getDocument();
+    const transaction = transactionDoc.grouped_documents.find(doc => doc.id === transactionId);
+    this.state.comments = {
+      transactionId,
+      hasComment: Boolean(transaction?.client_comments?.length),
+    };
+    this.reload();
   }
 }
 
-  /** Open next invalid transaction */
-  /**
-   * Dans la page des transactions, utiliser le code suivant pour afficher une transaction :
-  getReactProps($('tbody tr'),5).extra.openSidePanel(transactionId);
-   */
+/** Open next invalid transaction */
+/**
+ * Dans la page des transactions, utiliser le code suivant pour afficher une transaction :
+getReactProps($('tbody tr'),5).extra.openSidePanel(transactionId);
+ */
