@@ -1,6 +1,7 @@
 import { $$, getReactProps, parseHTML, upElement, waitElem, waitFunc } from "../../_";
 import Service from "../../framework/Service";
 import Invoice from "../../models/Invoice";
+import ValidMessage from "./ValidMessage";
 
 /** Add "Archive" button on bonded invoice in transaction pannel */
 export default class ArchiveGroupedDocument extends Service {
@@ -29,10 +30,15 @@ export default class ArchiveGroupedDocument extends Service {
       buttonsBlock.firstElementChild
     );
 
-    buttonsBlock.querySelector('.archive-button')!.addEventListener('click', async () => {
+    const archiveButton = buttonsBlock.querySelector<HTMLButtonElement>('.archive-button');
+    archiveButton!.addEventListener('click', async () => {
+      archiveButton.disabled = true;
+      archiveButton.classList.add('disabled');
+      archiveButton.innerText = '⟳';
       const invoice = await Invoice.load(id);
       if (!invoice) {
         alert('Impossible de trouver la facture #'+id);
+        archiveButton.innerText = '⚠';
         return;
       }
       const invoiceDoc = await invoice?.getInvoice();
@@ -42,8 +48,9 @@ export default class ArchiveGroupedDocument extends Service {
         invoice_number: `§ ${transactions.join(' - ')} - ${invoiceDoc.invoice_number}`
       });
       await invoice.archive();
-      buttonsBlock.closest('.card')?.remove();
+      buttonsBlock.closest('.ui-card')?.remove();
       this.log(`archive invoice #${id}`, {invoice});
+      ValidMessage.getInstance().reload();
     });
 
     upElement(buttonsBlock, 3).querySelector('.flex-grow-1 .d-block:last-child')?.appendChild(
