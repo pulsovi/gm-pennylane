@@ -1,11 +1,11 @@
 import { apiRequest } from "./core";
-import { APILedgerEvent, APIGroupedDocument } from "./types";
+import { APIGroupedDocument, APILedgerEvent } from "./types";
 
 export async function getLedgerEvents (id): Promise<APILedgerEvent[]> {
   const response = await apiRequest(`accountants/operations/${id}/ledger_events?per_page=-1`, null, 'GET');
-  return await response!.json();
+  const data = await response!.json();
+  return data.map(item => APILedgerEvent.Create(item));
 }
-Object.assign(window, {getLedgerEvents});
 
 export async function getGroupedDocuments (id): Promise<APIGroupedDocument[]> {
   if (!Number.isSafeInteger(id) || !id) {
@@ -14,5 +14,5 @@ export async function getGroupedDocuments (id): Promise<APIGroupedDocument[]> {
   }
   const response = await apiRequest(`accountants/operations/${id}/grouped_documents?per_page=-1`, null, 'GET');
   const result = await response!.json();
-  return result;
+  return result.map(item => APIGroupedDocument.Create(item));
 }

@@ -1,5 +1,5 @@
 import { $, $$, findElem, getReactProps, parseHTML, waitElem, waitFunc } from "../../_";
-import { LedgerEvent, RawInvoice } from "../../api/types";
+import { APILedgerEvent, APIInvoice } from "../../api/types";
 import CacheStatus, { Status } from "../../framework/CacheStatus";
 import Service from "../../framework/Service";
 import Invoice from "../../models/Invoice";
@@ -13,8 +13,8 @@ export default class InvoiceDisplayInfos extends Service {
   protected cache: CacheStatus;
   private state: {
     invoice?: Invoice | null;
-    reactInvoice?: RawInvoice;
-    events?: LedgerEvent[];
+    reactInvoice?: APIInvoice;
+    events?: APILedgerEvent[];
     cachedStatus?: Status;
   } = {};
   private container: HTMLDivElement;
@@ -65,7 +65,7 @@ export default class InvoiceDisplayInfos extends Service {
 
   async watch () {
     const infos = await waitElem('h4.heading-section-3.mr-2', 'Informations');
-    const invoice: RawInvoice = getReactProps(infos, 28).invoice;
+    const invoice: APIInvoice = getReactProps(infos, 28).invoice;
 
     let reload = false;
 
@@ -76,7 +76,7 @@ export default class InvoiceDisplayInfos extends Service {
     }
 
     const reactEvents = $$<HTMLFormElement>('form[name^=DocumentEntries-]')
-      .reduce<LedgerEvent[]>((events, form) => {
+      .reduce<APILedgerEvent[]>((events, form) => {
         events.concat(getReactProps(form.parentElement ,3)?.initialValues?.ledgerEvents ?? []);
         return events;
       }, []);

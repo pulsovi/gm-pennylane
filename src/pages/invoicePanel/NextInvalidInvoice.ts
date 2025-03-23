@@ -1,6 +1,6 @@
 import { $, findElem, jsonClone, waitElem, waitFunc } from "../../_";
 import { getInvoiceGenerator, getInvoicesList } from "../../api/invoice";
-import { InvoiceList, InvoiceListParams } from "../../api/types";
+import { APIInvoiceListParams } from "../../api/types";
 import CacheListRecord from "../../framework/CacheListRecord";
 import type { Status } from "../../framework/CacheStatus";
 import OpenNextInvalid from "../../framework/OpenNextInvalid";
@@ -44,7 +44,7 @@ export default class NextInvalidInvoice extends OpenNextInvalid {
       this.log(`Recherche vers le ${sort === '+' ? 'futur' : 'passé'} depuis`, this.cache.find({ createdAt: limit }), { cache: this.cache });
       const operator = sort === '+' ? 'gteq' : 'lteq';
       const value = new Date(limit).toISOString();
-      const params: InvoiceListParams = {
+      const params: APIInvoiceListParams = {
         direction,
         filter: JSON.stringify([{ field: 'created_at', operator, value }]),
         sort: `${sort}created_at`,

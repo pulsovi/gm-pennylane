@@ -1,29 +1,36 @@
-import { jsonClone } from '../_';
+import { jsonClone } from '../_/json';
 
 import { apiRequest } from './core.js';
-import { APITransaction, APITransactionItem, RawTransactionMin, TransactionList, TransactionListParams } from './types.js';
+import { APITransaction, APITransactionList, APITransactionListParams } from './types.js';
+import type { TransactionsEntity } from './Transaction/List'
 
 /**
  * @return {Promise<RawTransactionMin>}    Type vérifié
  */
 export async function getTransaction (id: number): Promise<APITransaction> {
   const response = await apiRequest(`accountants/wip/transactions/${id}`, null, 'GET');
-  return await response?.json();
+  const data = await response?.json();
+  return APITransaction.Create(data);
 }
 
 /**
- * Load list of transactions from API
+ * Load list of transactions from API. paginated.
  */
-export async function getTransactionsList (params: TransactionListParams = {}): Promise<TransactionList> {
-  const searchParams = new URLSearchParams(params);
+export async function getTransactionsList (
+  params: APITransactionListParams = {}
+): Promise<APITransactionList> {
+  const searchParams = new URLSearchParams(APITransactionListParams.Create(params) as Record<string, string>);
   const url = `accountants/wip/transactions?${searchParams.toString()}`;
   const response = await apiRequest(url, null, 'GET');
-  return await response.json();
+  return APITransactionList.Create(await response.json());
 }
 
+/**
+ * Load list of transaction one to one as generator
+ */
 export async function* getTransactionGenerator (
-  params: TransactionListParams = {}
-): AsyncGenerator<APITransactionItem> {
+  params: APITransactionListParams = {}
+): AsyncGenerator<TransactionsEntity> {
   let page = Number(params.page ?? 1);
   do {
     const data = await getTransactionsList(Object.assign({}, params, { page }));
@@ -35,18 +42,17 @@ export async function* getTransactionGenerator (
 }
 
 export async function findTransaction (
-  cb: (transaction: RawTransactionMin, params: TransactionListParams & { page: number }) => boolean | Promise<boolean>,
-  params: TransactionListParams = {}
-) {
+  cb: (transaction: TransactionsEntity, params: APITransactionListParams & { page: number }) => boolean | Promise<boolean>,
+  params: APITransactionListParams = {}
+): Promise<APITransaction> {
   if (('page' in params) && !Number.isInteger(params.page)) {
     console.log('findTransaction', { params });
     throw new Error('The "page" parameter must be a valid integer number');
   }
 
-  let parameters = jsonClone(params);
-  parameters.page = parameters.page ?? 1;
+  let parameters = Object.assign(jsonClone(params), {page: params.page ?? 1});
 
-  let data: TransactionList | null = null;
+  let data: APITransactionList | null = null;
   do {
     data = await getTransactionsList(parameters);
     const transactions = data.transactions;

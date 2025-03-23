@@ -1,5 +1,5 @@
 import { $, waitElem, findElem, getReactProps, parseHTML, waitFunc, $$, getParam } from '../../_';
-import { LedgerEvent } from '../../api/types.js';
+import { APILedgerEvent } from '../../api/types.js';
 import Service from '../../framework/Service.js';
 import Transaction from '../../models/Transaction.js';
 
@@ -9,7 +9,7 @@ export default class ValidMessage extends Service {
     .firstElementChild as HTMLDivElement;
   private state: {
     transaction?: Transaction;
-    ledgerEvents: LedgerEvent[];
+    ledgerEvents: APILedgerEvent[];
   } = { ledgerEvents: [] };
   private _message: string = '⟳';
 
@@ -68,7 +68,7 @@ export default class ValidMessage extends Service {
 
   async watch () {
     const ledgerEvents = $$<HTMLFormElement>('form[name^=DocumentEntries-]')
-      .reduce<LedgerEvent[]>((events, form) => {
+      .reduce<APILedgerEvent[]>((events, form) => {
         const formEvents = getReactProps(form.parentElement ,3)?.initialValues?.ledgerEvents ?? [];
         return [...events, ...formEvents];
       }, []);

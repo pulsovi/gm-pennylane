@@ -5,18 +5,19 @@ import { documentMatching } from '../api/document.js';
 import ValidableDocument from './ValidableDocument.js';
 import Document from './Document.js';
 import { getTransaction } from '../api/transaction.js';
+import { GroupedDocumentsEntity } from '../api/Document/index.js';
 
 export default class Transaction extends ValidableDocument {
   protected _raw;
   protected _transaction: Promise<APITransaction>;
   protected transaction: APITransaction;
 
-  constructor(raw: {id: number}) {
+  constructor(raw: { id: number }) {
     super(raw);
     this._raw = raw
   }
 
-  public async getTransaction (): Promise<APITransaction> {
+  public async getTransaction(): Promise<APITransaction> {
     if (!this._transaction) {
       this._transaction = getTransaction(this.id);
       this.transaction = await this._transaction;
@@ -24,7 +25,7 @@ export default class Transaction extends ValidableDocument {
     return await this._transaction;
   }
 
-  protected async loadValidMessage () {
+  protected async loadValidMessage() {
     const isCurrent = this.id === Number(getParam(location.href, 'transaction_id'));
     if (isCurrent) this.log('loadValidMessage', this);
 

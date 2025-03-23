@@ -1,16 +1,19 @@
-import type { GroupedDocument, APILedgerEvent, RawDocument, RawThirdparty, APIGroupedDocument } from '../api/types.d.ts';
 import { archiveDocument, getDocument, reloadLedgerEvents } from '../api/document.js';
+import { GroupedDocumentsEntity } from '../api/Document/index.js';
 import { getGroupedDocuments, getLedgerEvents } from '../api/operation.js';
-import { getThirdparty } from '../api/thirdparties.ts';
-import { Logger } from '../framework/Logger.ts';
+import { getThirdparty, type Thirdparty } from '../api/thirdparties.js';
+import { APIDocument, APIGroupedDocument, APILedgerEvent } from '../api/types.js';
+import { Logger } from '../framework/Logger.js';
+
+type GroupedDocumentEntity = APIGroupedDocument | GroupedDocumentsEntity;
 
 export default class Document extends Logger {
   public readonly type: 'transaction' | 'invoice';
   public readonly id: number;
-  protected document: RawDocument | Promise<RawDocument>;
-  protected groupedDocuments: APIGroupedDocument[] | Promise<APIGroupedDocument[]>;
+  protected document: APIDocument | Promise<APIDocument>;
+  protected groupedDocuments: SyncOrPromise<GroupedDocumentEntity[]>;
   protected ledgerEvents?: APILedgerEvent[] | Promise<APILedgerEvent[]>;
-  protected thirdparty?: Promise<{direction: string; thirdparty: RawThirdparty}>;
+  protected thirdparty?: Promise<Thirdparty>;
 
   constructor ({ id }: { id: number }) {
     super();
@@ -66,7 +69,7 @@ export default class Document extends Logger {
     return await this.groupedDocuments;
   }
 
-  async _loadGroupedDocuments (): Promise<APIGroupedDocument[]> {
+  async _loadGroupedDocuments (): Promise<GroupedDocumentEntity[]> {
     const otherDocuments = await getGroupedDocuments(this.id);
     const mainDocument = await this.getDocument();
     this.groupedDocuments = [
@@ -76,7 +79,7 @@ export default class Document extends Logger {
     return this.groupedDocuments;
   }
 
-  async getThirdparty (): Promise<RawThirdparty> {
+  async getThirdparty (): Promise<Thirdparty['thirdparty']> {
     if (!this.thirdparty)
       this.thirdparty = this._getThirdparty();
     return (await this.thirdparty).thirdparty;

@@ -1,16 +1,20 @@
 import { apiRequest  } from './core.js';
-import type { RawThirdparty, ThirdParty } from './types.d.js'
+import { APIThirdparty, Direction } from './types.js';
 
-interface Thirdparty {
-  direction: 'customer'|'supplier';
-  thirdparty: RawThirdparty;
+export interface Thirdparty {
+  direction: Direction;
+  thirdparty: APIThirdparty[Direction];
 }
 
+/**
+ * @param id The ID of the supplier or customer
+ */
 export async function getThirdparty (
   id
 ): Promise<Thirdparty> {
   const response = await apiRequest(`thirdparties/${id}`, null, 'GET');
   const json = await response?.json();
-  const [direction, thirdparty] = Object.entries(json)[0];
-  return { direction, thirdparty } as Thirdparty;
+  const data = APIThirdparty.Create(json);
+  const [direction, thirdparty] = Object.entries(data)[0] as [Direction, APIThirdparty[Direction]];
+  return { direction, thirdparty };
 }

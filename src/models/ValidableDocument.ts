@@ -1,4 +1,4 @@
-import { RawDocument } from '../api/types.js';
+import { APIDocument } from '../api/Document/index.js';
 import Document from './Document.js';
 
 interface Status {
@@ -43,7 +43,7 @@ export default abstract class ValidableDocument extends Document {
     return { id, valid, message, createdAt, date };
   }
 
-  async reloadLedgerEvents(): Promise<RawDocument> {
+  async reloadLedgerEvents(): Promise<APIDocument> {
     this.valid = null;
     this.validMessage = null;
     return super.reloadLedgerEvents();

@@ -1,23 +1,31 @@
-import { jsonClone } from '../_';
+import { jsonClone } from '../_/json.js';
 
 import { apiRequest } from './core.js';
-import { APIInvoiceItem, DocumentStatus, InvoiceList, InvoiceListParams, MinRawInvoice, RawInvoice } from './types.js';
+import {
+  APIInvoice, APIInvoiceListParams, APIInvoiceUpdateResponse, APIInvoiceList, APIInvoiceItem
+} from './types.js';
 
-export async function getInvoice (id: number): Promise<RawInvoice|null> {
+export async function getInvoice(id: number): Promise<APIInvoice | null> {
   if (!id) throw new Error(`Error: getInvoice() invalid id: ${id}`);
   const response = await apiRequest(`accountants/invoices/${id}`, null, 'GET');
   if (!response) return null;
   const data = await response.json();
-  return data.invoice;
+  return APIInvoice.Create(data.invoice);
 }
 
-export async function updateInvoice (id: number, data: Partial<RawInvoice>): Promise<DocumentStatus> {
-  const response = await apiRequest(`/accountants/invoices/${id}`, {invoice: data}, 'PUT');
+export async function updateInvoice(
+  id: number, data: Partial<APIInvoice>
+): Promise<APIInvoiceUpdateResponse> {
+  const response = await apiRequest(`/accountants/invoices/${id}`, { invoice: data }, 'PUT');
   const responseData = await response?.json();
-  return responseData;
+  return APIInvoiceUpdateResponse.Create(responseData);
 }
 
-export async function getInvoicesList (params: InvoiceListParams = {}): Promise<InvoiceList> {
+/**
+ * Get invoice list paginated
+ */
+export async function getInvoicesList(params: APIInvoiceListParams = {}): Promise<APIInvoiceList> {
+  params = APIInvoiceListParams.Create(params);
   if (!params.direction) throw new Error('params.direction is mandatory');
   if ('page' in params && !Number.isSafeInteger(params.page)) {
     console.log('getInvoicesList', { params });
@@ -27,11 +35,15 @@ export async function getInvoicesList (params: InvoiceListParams = {}): Promise<
   if (!searchParams.has('filter')) searchParams.set('filter', '[]');
   const url = `accountants/invoices/list?${searchParams.toString()}`;
   const response = await apiRequest(url, null, 'GET');
-  return await response?.json();
+  const data = await response?.json();
+  return APIInvoiceList.Create(data);
 }
 
-export async function* getInvoiceGenerator (
-  params: InvoiceListParams = {}
+/**
+ * Generate all result one by one as generator
+ */
+export async function* getInvoiceGenerator(
+  params: APIInvoiceListParams = {}
 ): AsyncGenerator<APIInvoiceItem> {
   let page = Number(params.page ?? 1);
   if (!Number.isSafeInteger(page)) {
@@ -47,9 +59,8 @@ export async function* getInvoiceGenerator (
   } while (true);
 }
 
-export async function findInvoice (
-  cb: (invoice: MinRawInvoice, parameters: typeof params) => Promise<boolean> | boolean,
-  params: InvoiceListParams = {}
+export async function findInvoice<P extends APIInvoiceListParams>(
+  cb: (invoice: APIInvoiceItem, parameters: P) => Promise<boolean> | boolean, params: P = {} as P
 ) {
   if (('page' in params) && !Number.isInteger(params.page)) {
     console.log('findInvoice', { cb, params });
@@ -57,14 +68,14 @@ export async function findInvoice (
   }
 
   let parameters = jsonClone(params);
-  parameters.page = parameters.page ?? 1;
+  Object.assign(parameters, { page: parameters.page ?? 1 });
 
-  let data: InvoiceList | null = null;
+  let data: APIInvoiceList | null = null;
   do {
     data = await getInvoicesList(parameters);
     const invoices = data.invoices;
     if (!invoices?.length) return null;
-    console.log('findInvoice page', {parameters, data, invoices});
+    console.log('findInvoice page', { parameters, data, invoices });
     for (const invoice of invoices) if (await cb(invoice, parameters)) return invoice;
     parameters = Object.assign(jsonClone(parameters), { page: (parameters.page ?? 0) + 1 });
   } while (true);

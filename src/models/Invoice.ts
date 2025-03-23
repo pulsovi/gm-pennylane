@@ -1,13 +1,14 @@
-import { getParam } from '../_';
+import { getParam } from '../_/url.js';
 import { getInvoice, updateInvoice } from '../api/invoice.js';
-import { APIInvoiceItem, RawInvoice, RawInvoiceUpdate } from '../api/types.js';
+import { APIInvoice } from '../api/types';
+
 import ValidableDocument from './ValidableDocument.js';
 
 export default abstract class Invoice extends ValidableDocument {
   public readonly type = 'invoice';
-  private invoice: RawInvoice | Promise<RawInvoice>;
+  private invoice: APIInvoice | Promise<APIInvoice>;
 
-  public static from (invoice: APIInvoiceItem) {
+  public static from (invoice: { direction: string; id: number }) {
     if (invoice.direction === 'supplier') return new SupplierInvoice(invoice);
     return new CustomerInvoice(invoice);
   }
@@ -21,7 +22,7 @@ export default abstract class Invoice extends ValidableDocument {
     return this.from(invoice);
   }
 
-  async update (data: Partial<RawInvoiceUpdate>) {
+  async update (data: Partial<APIInvoice>) {
     return await updateInvoice(this.id, data);
   }
 

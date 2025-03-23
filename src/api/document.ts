@@ -1,10 +1,10 @@
 import { apiRequest  } from './core.js';
-import type { APIDocument, RawDocument } from './types.d.js'
+import {APIDocument} from './Document/index.js';
 
 export async function getDocument (id): Promise<APIDocument> {
   const response = await apiRequest(`documents/${id}`, null, 'GET');
-  const result = await response?.json();
-  return result;
+  const data = await response?.json();
+  return APIDocument.Create(data);
 }
 
 interface MatchingOptions {
@@ -20,12 +20,10 @@ export async function documentMatching (options: MatchingOptions) {
   );
 }
 
-export async function reloadLedgerEvents (id): Promise<RawDocument> {
+export async function reloadLedgerEvents (id): Promise<APIDocument> {
   const response = await apiRequest(`documents/${id}/settle`, null, 'POST');
-  //return await response.json();
-  const data = await response.json();
-  console.log('reloadLedgerEvents result', { id, data });
-  return data;
+  const data = await response?.json();
+  return APIDocument.Create(data);
 }
 
 /**

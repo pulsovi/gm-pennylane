@@ -1,6 +1,6 @@
 import { findElem, waitFunc } from "../../_";
 import { getTransactionGenerator } from "../../api/transaction";
-import { TransactionListParams } from "../../api/types";
+import { APITransactionListParams } from "../../api/types";
 import CacheStatus from "../../framework/CacheStatus";
 import OpenNextInvalid, { RawStatus as Status } from "../../framework/OpenNextInvalid";
 import Transaction from "../../models/Transaction";
@@ -23,7 +23,7 @@ export default class NextInvalidTransaction extends OpenNextInvalid {
     // Load new added transactions
     const max = this.cache.reduce((acc, status) => Math.max(status.createdAt, acc), 0);
     if (max) {
-      const params: TransactionListParams = {
+      const params: APITransactionListParams = {
         filter: JSON.stringify([{ field: 'created_at', operator: 'gteq', value: new Date(max).toISOString() }]),
         sort: '+created_at',
       };
@@ -34,7 +34,7 @@ export default class NextInvalidTransaction extends OpenNextInvalid {
 
     // Load old unloaded transactions
     const min = this.cache.reduce((acc, status) => Math.min(status.createdAt, acc), Date.now());
-    const params: TransactionListParams = {
+    const params: APITransactionListParams = {
       filter: JSON.stringify(
         [{ field: 'created_at', operator: 'lteq', value: new Date(min).toISOString() }]
       ),
