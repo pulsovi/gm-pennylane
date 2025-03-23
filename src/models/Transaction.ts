@@ -42,8 +42,9 @@ export default class Transaction extends ValidableDocument {
     const groupedDocuments = await this.getGroupedDocuments();
 
     // Pas de rapprochement bancaire
+    const groupedDoc = groupedDocuments.find(gdoc => gdoc.id === doc.id) as GroupedDocumentsEntity;
     const recent = (Date.now() - new Date(doc.date).getTime()) < 86_400_000 * 30;
-    if (!recent && !groupedDocuments.find(gdoc => gdoc.id === doc.id)?.reconciled)
+    if (!recent && !groupedDoc.reconciled)
       return 'Cette transaction n\'est pas rattachée à un rapprochement bancaire';
     this.debug('loadValidMessage > rapprochement bancaire', {
       recent,
@@ -148,66 +149,53 @@ export default class Transaction extends ValidableDocument {
         return 'Les virements reçus doivent être justifiés par un CERFA';
     }
 
-
-      // balance déséquilibrée - version exigeante
-      const balance = groupedDocuments
-        .reduce<Partial<Record<'transaction'|'CHQ'|'CERFA'|'autre', number>>>((acc, gdoc) => {
-          const coeff = (gdoc.type === 'Invoice' && gdoc.journal.code === 'HA') ? -1 : 1;
-          const value = parseFloat(gdoc.currency_amount ?? gdoc.amount) * coeff;
-          if (gdoc.type === 'Transaction') acc.transaction = (acc.transaction ?? 0) + value;
-          else if (['CHQ', 'CERFA'].some(label => gdoc.label.includes(label))) {
-            if (gdoc.label.includes('CHQ')) acc.CHQ = (acc.CHQ ?? 0) + value;
-            if (gdoc.label.includes('CERFA')) acc.CERFA = (acc.CERFA ?? 0) + value;
-          }
-          else acc.autre = (acc.autre ?? 0) + value;
-          return acc;
-        }, {});
-      let message = '';
-      if (
-        doc.label.startsWith('REMISE CHEQUE ')
-        || doc.label.toUpperCase().startsWith('VIR ')
-      ) {
-        // On a parfois des calculs qui ne tombent pas très juste en JS
-        if (Math.abs((balance.transaction ?? 0) - (balance.CERFA ?? 0)) > 0.001) {
-          // Pour les remises de chèques, on a deux pièces justificatives necessaires : le chèque et le cerfa
-          message = 'La somme des CERFAs doit valoir le montant de la transaction';
-          balance.CERFA = balance.CERFA ?? 0;
-        }
-      } else {
-        if (Math.abs((balance.transaction ?? 0) - (balance.autre ?? 0)) > 0.001) {
-          message = 'La somme des autres justificatifs doit valoir le montant de la transaction';
-          balance.autre = balance.autre ?? 0;
-        }
-      }
-      if (isCurrent) this.log('balance:', balance);
-      const toSkip = balance.transaction && Math.abs(balance.transaction) < 100 && Object.keys(balance).every(key => key === 'transaction' || key === 'autre');
-      if (message && !toSkip) {
+    // Aides octroyées
+    const aidLedgerEvent = ledgerEvents.find(line => line.planItem.number.startsWith('6571'));
+    if (aidLedgerEvent?.planItem.number === '6571002') { // a une autre asso
+      // Aides octroyées sans label
+      if (!aidLedgerEvent.label) {
         return `<a
           title="Cliquer ici pour plus d'informations."
-          href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Transaction%20-%20Balance%20v2"
-        >Balance v2 déséquilibrée: ${message} ⓘ</a><ul>${Object.entries(balance)
-          .sort(([keya], [keyb]) => {
-            const keys = ['transaction', 'CHQ', 'CERFA', 'autre'];
-            return keys.indexOf(keya) - keys.indexOf(keyb);
-          })
-          .map(([key, value]) => `<li><strong>${key} :</strong>${value}${(key !== 'transaction' && balance.transaction && value !== balance.transaction) ? ` (diff : ${balance.transaction - value})` : ''}</li>`)
-        .join('')}</ul>`;
-      }
-
-    if(ledgerEvents.some(line => line.planItem.number.startsWith('6571'))) {
-      if (ledgerEvents.some(line => line.planItem.number.startsWith('6571') && !line.label)) {
-        // Aides octroyées sans label
-        return `<a
-          title="Cliquer ici pour plus d'informations."
-          href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FProcessus%20-%20Traitement%20des%20re%C3%A7us%20d'aides%20octroy%C3%A9es#nom%20du%20bénéficiaire%20manquant%20dans%20l'écriture%20%226571%22"
+          href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Don%20%C3%A0%20une%20autre%20association"
         >nom du bénéficiaire manquant dans l\'écriture "6571" ⓘ</a>`;
       }
-    } else if (parseFloat(doc.amount) < 0) {
+
+      const isCheck = doc.label.startsWith('CHEQUE ');
+      const withReceipt = groupedDocuments.filter(gdoc => gdoc.type !== 'Transaction'
+        && [' CERFA ', ' CB '].some(needle => gdoc.label.includes(needle))
+      ).length;
+      if (
+        ledgerEvents.length !== 2
+        || groupedDocuments.length !== 1 + Number(isCheck) + Number(withReceipt)
+        || ledgerEvents.reduce((acc, ev) => acc + parseFloat(ev.amount), 0) !== 0
+      ) {
+        if (isCurrent) this.log({
+          'ledgerEvents.length': ledgerEvents.length,
+          'groupedDocuments.length': groupedDocuments.length,
+          isCheck,
+          withReceipt,
+          eventsSum: ledgerEvents.reduce((acc, ev) => acc + parseFloat(ev.amount), 0)
+        });
+        return `<a
+          title="Cliquer ici pour plus d'informations."
+          href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Don%20%C3%A0%20une%20autre%20association"
+        >Don versé à une autre association incorrectement traité ⓘ</a>`;
+      }
+      return 'OK';
+    }
+    if (aidLedgerEvent && !aidLedgerEvent.label) {
+      // Aides octroyées sans label
+      return `<a
+        title="Cliquer ici pour plus d'informations."
+        href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FProcessus%20-%20Traitement%20des%20re%C3%A7us%20d'aides%20octroy%C3%A9es#nom%20du%20bénéficiaire%20manquant%20dans%20l'écriture%20%226571%22"
+      >nom du bénéficiaire manquant dans l\'écriture "6571" ⓘ</a>`;
+    }
+    if (!aidLedgerEvent && parseFloat(doc.amount) < 0) {
       for (const gdoc of groupedDocuments) {
         if (gdoc.type !== 'Invoice') continue;
-        const thirdparty = await new Document(gdoc).getThirdparty();
+        const {thirdparty_id} = await new Document(gdoc).getDocument();
         // Aides octroyées à une asso ou un particulier
-        if ([106438171, 114270419].includes(thirdparty.id)) {
+        if ([106438171, 114270419].includes(thirdparty_id)) {
           // Aides octroyées sans compte d'aide
           return `<a
             title="Cliquer ici pour plus d'informations."
@@ -215,6 +203,60 @@ export default class Transaction extends ValidableDocument {
           >contrepartie "6571" manquante ⓘ</a>`;
         }
       }
+    }
+
+    // balance déséquilibrée - version exigeante
+    const balance: {
+      transaction: number;
+      autre?: number;
+      CHQ?: number;
+      Reçu?: number;
+    } = { transaction: 0 }
+    groupedDocuments.forEach(gdoc => {
+      const coeff = (gdoc.type === 'Invoice' && gdoc.journal.code === 'HA') ? -1 : 1;
+      const value = parseFloat(gdoc.amount) * coeff;
+      if (gdoc.type === 'Transaction') balance.transaction += value;
+      else if (/ CERFA | AIDES - /u.test(gdoc.label)) balance.Reçu = (balance.Reçu ?? 0) + value;
+      else if (/ CHQ(?:\d|\s)/u.test(gdoc.label)) balance.CHQ = (balance.CHQ ?? 0) + value;
+      else balance.autre = (balance.autre ?? 0) + value;
+    });
+    ledgerEvents.forEach(event => {
+      // pertes/gains de change
+      if (['47600001', '656', '75800002'].includes(event.planItem.number)) {
+        balance.autre = (balance.autre ?? 0) - parseFloat(event.amount);
+      }
+    });
+    let message = '';
+    if (
+      doc.label.startsWith('REMISE CHEQUE ')
+      || doc.label.toUpperCase().startsWith('VIR ')
+      || aidLedgerEvent
+    ) {
+      // On a parfois des calculs qui ne tombent pas très juste en JS
+      if (Math.abs((balance.transaction ?? 0) - (balance.Reçu ?? 0)) > 0.001) {
+        // Pour les remises de chèques, on a deux pièces justificatives necessaires : le chèque et le cerfa
+        message = 'La somme des Reçus doit valoir le montant de la transaction';
+        balance.Reçu = balance.Reçu ?? 0;
+      }
+    } else {
+      if (Math.abs((balance.transaction ?? 0) - (balance.autre ?? 0)) > 0.001) {
+        message = 'La somme des autres justificatifs doit valoir le montant de la transaction';
+        balance.autre = balance.autre ?? 0;
+      }
+    }
+    if (isCurrent) this.log('balance:', balance);
+    const toSkip = balance.transaction && Math.abs(balance.transaction) < 100 && Object.keys(balance).every(key => key === 'transaction' || key === 'autre');
+    if (message && !toSkip) {
+      return `<a
+          title="Cliquer ici pour plus d'informations."
+          href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Transaction%20-%20Balance%20v2"
+        >Balance v2 déséquilibrée: ${message} ⓘ</a><ul>${Object.entries(balance)
+          .sort(([keya], [keyb]) => {
+            const keys = ['transaction', 'CHQ', 'Reçu', 'autre'];
+            return keys.indexOf(keya) - keys.indexOf(keyb);
+          })
+          .map(([key, value]) => `<li><strong>${key} :</strong>${value}${(key !== 'transaction' && balance.transaction && value !== balance.transaction) ? ` (diff : ${balance.transaction - value})` : ''}</li>`)
+          .join('')}</ul>`;
     }
 
     // Les associations ne gèrent pas la TVA
@@ -229,21 +271,33 @@ export default class Transaction extends ValidableDocument {
       if (ledgerEvents.find(line => line.planItem.number === '6288'))
         return 'Une ligne d\'écriture comporte le numéro de compte 6288';
 
-      if (ledgerEvents.find(line => line.planItem.number === '4716001'))
-        return "Une ligne d'écriture utilise un compte d'attente 4716001";
+      if (ledgerEvents.find(line => line.planItem.number === '4716001')) {
+        return `<a
+            title="Cliquer ici pour plus d'informations."
+            href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Transaction%20attribu%C3%A9e%20%C3%A0%20un%20compte%20d'attente"
+          >Une ligne d'écriture utilise un compte d'attente: 4716001 ⓘ</a>`;
+      }
 
-      if (ledgerEvents.some(line => line.planItem.number.startsWith('47')))
-        return 'Une écriture comporte un compte d\'attente (commençant par 47)';
+      if (ledgerEvents.some(
+        line => line.planItem.number.startsWith('47') && line.planItem.number !== '47600001')
+      ) {
+        return `<a
+            title="Cliquer ici pour plus d'informations."
+            href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Transaction%20attribu%C3%A9e%20%C3%A0%20un%20compte%20d'attente"
+          >Une écriture comporte un compte d\'attente (commençant par 47) ⓘ</a>`;
+      }
 
       // balance déséquilibrée
       const third = ledgerEvents.find(line => line.planItem.number.startsWith('40'))?.planItem?.number;
       if (third) {
         const thirdEvents = ledgerEvents.filter(line => line.planItem.number === third);
         const balance = thirdEvents.reduce((sum, line) => sum + parseFloat(line.amount), 0);
-        if (this.id === Number(getParam(location.href, 'transaction_id')))
+        if (isCurrent)
           this.log('loadValidMessage: Balance', Math.abs(balance) > 0.001 ? 'déséquilibrée' : 'OK', this);
-        if (Math.abs(balance) > 0.001) {
-          // On a parfois des calculs qui ne tombent pas très juste en JS
+
+        // On a parfois des calculs qui ne tombent pas très juste en JS
+        //if (Math.abs(balance) > 0.001) {
+        if (Math.abs(balance) > 100) {
           return `Balance déséquilibrée avec Tiers spécifié : ${balance}`;
         }
       }
@@ -252,7 +306,7 @@ export default class Transaction extends ValidableDocument {
       if (Math.abs(parseFloat(doc.currency_amount)) < 100) return 'OK';
 
       // Justificatif manquant
-      if(doc.date.startsWith('2023')) return 'OK';
+      if (doc.date.startsWith('2023')) return 'OK';
       const attachmentOptional =
         Math.abs(parseFloat(doc.currency_amount)) < 100
         || [
@@ -275,7 +329,7 @@ export default class Transaction extends ValidableDocument {
   }
 
   /** Add item to this transaction's group */
-  async groupAdd (id: number) {
+  async groupAdd(id: number) {
     const doc = await this.getDocument();
     const groups = doc.group_uuid;
     await documentMatching({ id, groups });
