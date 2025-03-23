@@ -78,17 +78,26 @@ class SupplierInvoice extends Invoice {
     }
 
     // Pas de tiers
-    if (!invoice.thirdparty_id && !invoice.thirdparty) {
+    else if (!invoice.thirdparty_id && !invoice.thirdparty) {
       if (invoice.invoice_number.startsWith('CHQ DÉCHIRÉ - CHQ')) {
         return `<a
-            title="Archiver la facture : ⁝ > Archiver la facture.\nCliquer ici pour plus d'informations"
-            href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Fournisseur%20inconnu"
-          >Archiver le chèque déchiré ⓘ</a></ul>`;
+          title="Archiver la facture : ⁝ > Archiver la facture.\nCliquer ici pour plus d'informations"
+          href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Fournisseur%20inconnu"
+        >Archiver le chèque déchiré ⓘ</a></ul>`;
       }
       return `<a
-          title="Cliquer ici pour plus d'informations"
-          href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Fournisseur%20inconnu"
-        >Ajouter un fournisseur ⓘ</a><ul style="margin:0;padding:0.8em;"><li>CHQ DÉCHIRÉ - CHQ###</li></ul>`;
+        title="Cliquer ici pour plus d'informations"
+        href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Fournisseur%20inconnu"
+      >Ajouter un fournisseur ⓘ</a><ul style="margin:0;padding:0.8em;"><li>CHQ DÉCHIRÉ - CHQ###</li></ul>`;
+    }
+
+     else if (
+      archivedAllowed.some(allowedItem => invoice.invoice_number.startsWith(allowedItem))
+    ) {
+      return `<a
+        title="Archiver la facture : ⁝ > Archiver la facture.\nCliquer ici pour plus d'informations"
+        href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Fournisseur%20inconnu"
+      >Archiver la facture ⓘ</a></ul>`;
     }
 
     // Pas de compte de charge associé
