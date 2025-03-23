@@ -17,14 +17,20 @@ export default class RotateImg extends Service {
 
   async watch () {
     let modal: HTMLDivElement | null;
-    while (await waitFunc(() => $<HTMLDivElement>('div.modal-dialog') !== modal)) {
+    while (await waitFunc(() => $<HTMLDivElement>('div.ui-modal') !== modal)) {
       this.emit('new-modal');
-      modal = $<HTMLDivElement>('div.modal-dialog');
+      modal = $<HTMLDivElement>('div.ui-modal');
 
-      const closeButton = $('div.modal-header button.close', modal);
+      const closeButton = $('button.ui-modal-header-close-button', modal);
       if (!modal || !closeButton) continue;
 
-      modal.style.margin = '5rem 0 auto auto';
+      modal.classList.remove('ui-modal-dialog-centered');
+      modal.style.right = '1em';
+      modal.style.top = '50%';
+      modal.style.transform = 'translate(0,-50%)';
+      modal.style.position = 'absolute';
+      this.rotateButton.classList.add(...closeButton.className.split(' '));
+      this.rotateButton.style.marginRight = '2.5em';
       closeButton.parentElement?.insertBefore(this.rotateButton, closeButton);
 
       $$<HTMLImageElement>('img', modal).forEach(image => this.handleImage(image));
