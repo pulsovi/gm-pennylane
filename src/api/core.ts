@@ -1,4 +1,4 @@
-import { sleep } from "../_";
+import { sleep } from "../_/time";
 
 let apiRequestWait: Promise<void> | null = null;
 
@@ -18,7 +18,7 @@ export async function apiRequest (endpoint: string, data: Record<string, unknown
       "X-DOCUMENT-REFERRER": location.origin + location.pathname,
       Accept: 'application/json'
     },
-    body: data ? JSON.stringify(data) : data,
+    body: data ? JSON.stringify(data) : null,
   }).catch(error => ({ error }));
 
   if ('error' in response) {

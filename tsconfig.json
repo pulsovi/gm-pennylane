@@ -1,0 +1,7 @@
+{
+    "compilerOptions": {
+        "allowSyntheticDefaultImports": true,
+        "target": "ES2020",
+        "types": ["vite-plugin-monkey/global"]
+    }
+}
