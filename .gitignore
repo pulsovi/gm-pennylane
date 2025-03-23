@@ -4,7 +4,8 @@
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
-!.yarn/cache
+.yarn/cache
 .pnp.*
 *.sublime-workspace
 dist/
+node_modules
