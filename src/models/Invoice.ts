@@ -127,7 +127,7 @@ class SupplierInvoice extends Invoice {
     // Aides octroyées sans numéro de facture
     if (
       106438171 === invoice.thirdparty_id
-      && !['AIDES - ', 'CHQ'].some(label => invoice.invoice_number.startsWith(label))
+      && !['AIDES - ', 'CHQ', 'CERFA - '].some(label => invoice.invoice_number.startsWith(label))
     ) {
       if (invoice.invoice_number.startsWith('§ #')) return "Archiver le reçu.";
       return `<a
@@ -136,6 +136,7 @@ class SupplierInvoice extends Invoice {
       >Format incorrect pour le numéro de facture ⓘ</a>
       <ul style="margin:0;padding:0.8em;">
         <li>AIDES - NOM - JJ/MM/AAAA</li>
+        <li>CERFA - NOM ASSO - JJ/MM/AAAA</li>
         <li>CHQ###</li>
       </ul>`;
     }
