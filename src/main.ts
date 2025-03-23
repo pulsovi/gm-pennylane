@@ -9,3 +9,10 @@ try {
   console.log('GM ERROR');
   console.log({error, line: code.split('\n')[error.lineNumber-1]});
 }
+
+declare global {
+  const evalContent: string;
+  interface Window {
+    eval(code: string): any;
+  }
+}

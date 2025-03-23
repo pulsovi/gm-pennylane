@@ -16,6 +16,10 @@ import Invoice from './models/Invoice.js';
 import RotateImg from './pages/transactionPanel/RotateImg.js';
 import { getInvoice, getInvoicesList } from './api/invoice.js';
 import { getDocument } from './api/document.js';
+import { getGroupedDocuments, getLedgerEvents } from './api/operation.js';
+import { getThirdparty } from './api/thirdparties.js';
+import { getTransactionsList } from './api/transaction.js';
+import { getReact, getReactProps } from './_/react.js';
 
 last7DaysFilter();
 TransactionValidMessage.start();
@@ -46,25 +50,33 @@ async function mergeInvoices () {
 }
 */
 
+const augmentation = {
+  GM_Pennylane_Version: /** version **/'0.1.17',
+  GM: {
+    API: {
+      getDocument,
+      getGroupedDocuments,
+      getInvoice,
+      getInvoicesList,
+      getLedgerEvents,
+      getThirdparty,
+      getTransactionsList,
+    },
+    $$,
+    $,
+    findElem,
+    getReact,
+    getReactProps,
+    Invoice,
+    parseHTML,
+    Transaction,
+  },
+};
+Object.assign(window, augmentation);
 declare global {
   interface Window {
     GM_Pennylane_Version: string;
+    GM: typeof augmentation['GM'];
   }
 }
 
-Object.assign(window, {
-  GM_Pennylane_Version: /** version **/'0.1.17',
-  GM: {
-    findElem,
-    Transaction,
-    Invoice,
-    parseHTML,
-    $,
-    $$,
-    API: {
-      getInvoicesList,
-      getDocument,
-      getInvoice,
-    }
-  },
-});

@@ -10,10 +10,8 @@ export function getReact (elem?: Element | null, up = 0) {
   for (let i = 0; i < up; ++i) component = component.return;
   return component;
 }
-window.getReact = getReact;
 
 export function getReactProps (elem?: Element | null, up = 0) {
   return getReact(elem, up)?.memoizedProps;
 }
-window.getReactProps = getReactProps;
 

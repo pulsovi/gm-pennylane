@@ -1,5 +1,5 @@
-import { getParam } from "../_";
-import CacheList from "./CacheList";
+import { getParam } from "../_/url.js";
+import CacheList from "./CacheList.js";
 
 export default class CacheListRecord<T extends object> extends CacheList<T> {
   /**
@@ -14,7 +14,7 @@ export default class CacheListRecord<T extends object> extends CacheList<T> {
     if (oldValue) {
       newValue = {...oldValue, ...newValue};
       this.data.splice(this.data.indexOf(oldValue), 1, newValue);
-      if (newValue.id == getParam(location.href, 'id'))
+      if (('id' in newValue) && newValue.id == getParam(location.href, 'id'))
         this.debug('updateItem', { match, create, oldValue, newValue, stack: new Error('').stack });
       this.emit('update', { oldValue, newValue });
     } else {
