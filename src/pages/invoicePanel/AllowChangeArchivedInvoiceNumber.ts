@@ -25,6 +25,7 @@ export default class AllowChangeArchivedInvoiceNumber extends Service {
       event.preventDefault();
       event.stopImmediatePropagation();
       const rawInvoice =
+        getReactProps(invoiceNumberField, 25).initialValues ?? // for customer pieces
         getReactProps(invoiceNumberField, 27).initialValues ?? // for supplier pieces
         getReactProps(invoiceNumberField, 44).initialValues; // for customer pieces
 
