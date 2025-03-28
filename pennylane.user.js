@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name     Pennylane
-// @version  0.1.22
+// @version  0.1.23
 // @grant    unsafeWindow
 // @grant    GM.openInTab
 // @match    https://app.pennylane.com/companies/*
@@ -933,7 +933,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkNull$5(d.invoicing_detailed_source, field + \".invoicing_detailed_source\");\n" +
 "        checkBoolean$7(d.manual_partial_invoices, true, field + \".manual_partial_invoices\");\n" +
 "        d.establishment_comment = EstablishmentComment.Create(d.establishment_comment, field + \".establishment_comment\");\n" +
-"        const knownProperties = [\"id\", \"company_id\", \"date\", \"created_at\", \"updated_at\", \"archived_at\", \"type\", \"source\", \"draft\", \"group_uuid\", \"gdrive_path\", \"preview_status\", \"pusher_channel\", \"email_from\", \"score\", \"is_waiting_details\", \"external_id\", \"journal_id\", \"grouped_at\", \"attachment_required\", \"attachment_lost\", \"pdf_generation_status\", \"reversal_origin_id\", \"billing_subscription_id\", \"fec_pieceref\", \"label\", \"journal\", \"url\", \"method\", \"accounting_type\", \"preview_urls\", \"archived\", \"quotes\", \"filename\", \"has_file\", \"readonly\", \"account_id\", \"thirdparty_id\", \"payment_id\", \"amount\", \"currency\", \"currency_amount\", \"outstanding_balance\", \"completeness\", \"gross_amount\", \"status\", \"complete\", \"account\", \"company\", \"scored_invoices\", \"is_accounting_needed\", \"pending\", \"hasTooManyLedgerEvents\", \"ledgerEventsCount\", \"ledgerEvents\", \"reconciled\", \"client_comments\", \"is_waiting_for_ocr\", \"has_linked_quotes\", \"size\", \"embeddable_in_browser\", \"ocr_thirdparty_id\", \"direction\", \"deadline\", \"multiplier\", \"price_before_tax\", \"quote_uid\", \"special_mention\", \"not_duplicate\", \"validation_needed\", \"currency_tax\", \"currency_price_before_tax\", \"language\", \"payment_status\", \"payment_method\", \"invoice_number\", \"tax\", \"estimate_status\", \"iban\", \"paid\", \"future_in_days\", \"discount\", \"discount_type\", \"finalized_at\", \"quote_group_uuid\", \"factor_status\", \"currency_amount_before_tax\", \"from_estimate_id\", \"credit_notes_amount\", \"payment_reminder_enabled\", \"payment_reference\", \"is_credit_note\", \"is_estimate\", \"is_destroyable\", \"can_be_stamped_as_paid_in_pdf\", \"custom_payment_reference\", \"scored_transactions\", \"is_sendable\", \"incomplete\", \"subcomplete\", \"attachment_label\", \"accounting_status\", \"thirdparty\", \"recipients\", \"invoice_lines\", \"invoice_kind\", \"file_signed_id\", \"pages_count\", \"tagged_at_ledger_events_level\", \"pdf_invoice_title\", \"pdf_invoice_free_text\", \"pdf_invoice_free_text_enabled\", \"pdf_invoice_subject\", \"pdf_invoice_subject_enabled\", \"pdf_invoice_display_products_list\", \"pdf_paid_stamp\", \"invoicing_detailed_source\", \"manual_partial_invoices\", \"establishment_comment\"];\n" +
+"        d.current_account_plan_item = PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem.Create(d.current_account_plan_item, field + \".current_account_plan_item\");\n" +
+"        const knownProperties = [\"id\", \"company_id\", \"date\", \"created_at\", \"updated_at\", \"archived_at\", \"type\", \"source\", \"draft\", \"group_uuid\", \"gdrive_path\", \"preview_status\", \"pusher_channel\", \"email_from\", \"score\", \"is_waiting_details\", \"external_id\", \"journal_id\", \"grouped_at\", \"attachment_required\", \"attachment_lost\", \"pdf_generation_status\", \"reversal_origin_id\", \"billing_subscription_id\", \"fec_pieceref\", \"label\", \"journal\", \"url\", \"method\", \"accounting_type\", \"preview_urls\", \"archived\", \"quotes\", \"filename\", \"has_file\", \"readonly\", \"account_id\", \"thirdparty_id\", \"payment_id\", \"amount\", \"currency\", \"currency_amount\", \"outstanding_balance\", \"completeness\", \"gross_amount\", \"status\", \"complete\", \"account\", \"company\", \"scored_invoices\", \"is_accounting_needed\", \"pending\", \"hasTooManyLedgerEvents\", \"ledgerEventsCount\", \"ledgerEvents\", \"reconciled\", \"client_comments\", \"is_waiting_for_ocr\", \"has_linked_quotes\", \"size\", \"embeddable_in_browser\", \"ocr_thirdparty_id\", \"direction\", \"deadline\", \"multiplier\", \"price_before_tax\", \"quote_uid\", \"special_mention\", \"not_duplicate\", \"validation_needed\", \"currency_tax\", \"currency_price_before_tax\", \"language\", \"payment_status\", \"payment_method\", \"invoice_number\", \"tax\", \"estimate_status\", \"iban\", \"paid\", \"future_in_days\", \"discount\", \"discount_type\", \"finalized_at\", \"quote_group_uuid\", \"factor_status\", \"currency_amount_before_tax\", \"from_estimate_id\", \"credit_notes_amount\", \"payment_reminder_enabled\", \"payment_reference\", \"is_credit_note\", \"is_estimate\", \"is_destroyable\", \"can_be_stamped_as_paid_in_pdf\", \"custom_payment_reference\", \"scored_transactions\", \"is_sendable\", \"incomplete\", \"subcomplete\", \"attachment_label\", \"accounting_status\", \"thirdparty\", \"recipients\", \"invoice_lines\", \"invoice_kind\", \"file_signed_id\", \"pages_count\", \"tagged_at_ledger_events_level\", \"pdf_invoice_title\", \"pdf_invoice_free_text\", \"pdf_invoice_free_text_enabled\", \"pdf_invoice_subject\", \"pdf_invoice_subject_enabled\", \"pdf_invoice_display_products_list\", \"pdf_paid_stamp\", \"invoicing_detailed_source\", \"manual_partial_invoices\", \"establishment_comment\", \"current_account_plan_item\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
 "            errorHelper$a(unknownProperty, d, \"never\", false);\n" +
@@ -1143,6 +1144,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            this.manual_partial_invoices = d.manual_partial_invoices;\n" +
 "        if (\"establishment_comment\" in d)\n" +
 "            this.establishment_comment = d.establishment_comment;\n" +
+"        if (\"current_account_plan_item\" in d)\n" +
+"            this.current_account_plan_item = d.current_account_plan_item;\n" +
 "    }\n" +
 "}\n" +
 "let Journal$1 = class Journal {\n" +
@@ -1555,7 +1558,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        checkNumber$8(d.id, false, field + \".id\");\n" +
 "        checkString$9(d.created_at, false, field + \".created_at\");\n" +
-"        d.fromPlanItem = PlanItemOrPnlPlanItemOrFromPlanItem.Create(d.fromPlanItem, field + \".fromPlanItem\");\n" +
+"        d.fromPlanItem = PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem1.Create(d.fromPlanItem, field + \".fromPlanItem\");\n" +
 "        const knownProperties = [\"id\", \"created_at\", \"fromPlanItem\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -1568,9 +1571,9 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        this.fromPlanItem = d.fromPlanItem;\n" +
 "    }\n" +
 "}\n" +
-"class PlanItemOrPnlPlanItemOrFromPlanItem {\n" +
+"class PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem1 {\n" +
 "    static Parse(d) {\n" +
-"        return PlanItemOrPnlPlanItemOrFromPlanItem.Create(JSON.parse(d));\n" +
+"        return PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem1.Create(JSON.parse(d));\n" +
 "    }\n" +
 "    static Create(d, field) {\n" +
 "        if (!field) {\n" +
@@ -1599,7 +1602,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
 "            errorHelper$a(unknownProperty, d, \"never\", false);\n" +
-"        return new PlanItemOrPnlPlanItemOrFromPlanItem(d);\n" +
+"        return new PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem1(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
 "        this.id = d.id;\n" +
@@ -2121,6 +2124,52 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        this.full_name = d.full_name;\n" +
 "        if (\"profile_picture_url\" in d)\n" +
 "            this.profile_picture_url = d.profile_picture_url;\n" +
+"    }\n" +
+"}\n" +
+"class PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem {\n" +
+"    static Parse(d) {\n" +
+"        return PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field) {\n" +
+"        if (!field) {\n" +
+"            obj$a = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (d === null || d === undefined) {\n" +
+"            return null;\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$9(field, d, true);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$9(field, d, true);\n" +
+"        }\n" +
+"        checkNumber$8(d.id, false, field + \".id\");\n" +
+"        checkString$9(d.number, false, field + \".number\");\n" +
+"        checkNull$5(d.internal_identifier, field + \".internal_identifier\");\n" +
+"        checkString$9(d.label, false, field + \".label\");\n" +
+"        checkNumber$8(d.company_id, false, field + \".company_id\");\n" +
+"        checkBoolean$7(d.enabled, false, field + \".enabled\");\n" +
+"        checkString$9(d.vat_rate, false, field + \".vat_rate\");\n" +
+"        checkString$9(d[\"country_alpha2\"], false, field + \".country_alpha2\");\n" +
+"        checkBoolean$7(d.label_is_editable, false, field + \".label_is_editable\");\n" +
+"        const knownProperties = [\"id\", \"number\", \"internal_identifier\", \"label\", \"company_id\", \"enabled\", \"vat_rate\", \"country_alpha2\", \"label_is_editable\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$a(unknownProperty, d, \"never\", false);\n" +
+"        return new PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.id = d.id;\n" +
+"        this.number = d.number;\n" +
+"        if (\"internal_identifier\" in d)\n" +
+"            this.internal_identifier = d.internal_identifier;\n" +
+"        this.label = d.label;\n" +
+"        this.company_id = d.company_id;\n" +
+"        this.enabled = d.enabled;\n" +
+"        this.vat_rate = d.vat_rate;\n" +
+"        this[\"country_alpha2\"] = d[\"country_alpha2\"];\n" +
+"        this.label_is_editable = d.label_is_editable;\n" +
 "    }\n" +
 "}\n" +
 "function throwNull2NonNull$9(field, d) {\n" +
@@ -2835,7 +2884,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkString$4(d.currency_amount, false, field + \".currency_amount\");\n" +
 "        checkString$4(d.currency_tax, false, field + \".currency_tax\");\n" +
 "        checkString$4(d.currency_price_before_tax, false, field + \".currency_price_before_tax\");\n" +
-"        checkNull$3(d.current_account_plan_item_id, field + \".current_account_plan_item_id\");\n" +
+"        checkNumber$4(d.current_account_plan_item_id, true, field + \".current_account_plan_item_id\");\n" +
 "        checkString$4(d.date, true, field + \".date\");\n" +
 "        checkString$4(d.deadline, true, field + \".deadline\");\n" +
 "        checkString$4(d.direction, false, field + \".direction\");\n" +
@@ -2884,7 +2933,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkBoolean$3(d.is_waiting_for_ocr, false, field + \".is_waiting_for_ocr\");\n" +
 "        checkString$4(d.status, false, field + \".status\");\n" +
 "        checkBoolean$3(d.tagged_at_ledger_events_level, false, field + \".tagged_at_ledger_events_level\");\n" +
-"        checkNull$3(d.current_account_plan_item, field + \".current_account_plan_item\");\n" +
+"        d.current_account_plan_item = PnlPlanItemOrCurrentAccountPlanItem.Create(d.current_account_plan_item, field + \".current_account_plan_item\");\n" +
 "        checkBoolean$3(d.has_file, false, field + \".has_file\");\n" +
 "        checkString$4(d.file_signed_id, false, field + \".file_signed_id\");\n" +
 "        checkBoolean$3(d.embeddable_in_browser, false, field + \".embeddable_in_browser\");\n" +
@@ -3335,7 +3384,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkBoolean$3(d.prepaid_pnl, false, field + \".prepaid_pnl\");\n" +
 "        checkBoolean$3(d.global_vat, false, field + \".global_vat\");\n" +
 "        checkNull$3(d.ledger_event_label, field + \".ledger_event_label\");\n" +
-"        d.pnl_plan_item = PnlPlanItem1.Create(d.pnl_plan_item, field + \".pnl_plan_item\");\n" +
+"        d.pnl_plan_item = PnlPlanItemOrCurrentAccountPlanItem1.Create(d.pnl_plan_item, field + \".pnl_plan_item\");\n" +
 "        checkNull$3(d.deferral, field + \".deferral\");\n" +
 "        d.asset = Asset.Create(d.asset, field + \".asset\");\n" +
 "        checkBoolean$3(d.advance_pnl, false, field + \".advance_pnl\");\n" +
@@ -3377,9 +3426,9 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        this.advance_pnl = d.advance_pnl;\n" +
 "    }\n" +
 "}\n" +
-"class PnlPlanItem1 {\n" +
+"class PnlPlanItemOrCurrentAccountPlanItem1 {\n" +
 "    static Parse(d) {\n" +
-"        return PnlPlanItem1.Create(JSON.parse(d));\n" +
+"        return PnlPlanItemOrCurrentAccountPlanItem1.Create(JSON.parse(d));\n" +
 "    }\n" +
 "    static Create(d, field) {\n" +
 "        if (!field) {\n" +
@@ -3403,7 +3452,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
 "            errorHelper$5(unknownProperty, d, \"never\", false);\n" +
-"        return new PnlPlanItem1(d);\n" +
+"        return new PnlPlanItemOrCurrentAccountPlanItem1(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
 "        this.id = d.id;\n" +
@@ -3457,6 +3506,41 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            this.amortization_type = d.amortization_type;\n" +
 "        this.amortization_months = d.amortization_months;\n" +
 "        this.invoice_line_editable = d.invoice_line_editable;\n" +
+"    }\n" +
+"}\n" +
+"class PnlPlanItemOrCurrentAccountPlanItem {\n" +
+"    static Parse(d) {\n" +
+"        return PnlPlanItemOrCurrentAccountPlanItem.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field) {\n" +
+"        if (!field) {\n" +
+"            obj$5 = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (d === null || d === undefined) {\n" +
+"            return null;\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$4(field, d, true);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$4(field, d, true);\n" +
+"        }\n" +
+"        checkNumber$4(d.id, false, field + \".id\");\n" +
+"        checkString$4(d.number, false, field + \".number\");\n" +
+"        checkString$4(d.label, false, field + \".label\");\n" +
+"        checkBoolean$3(d.enabled, false, field + \".enabled\");\n" +
+"        const knownProperties = [\"id\", \"number\", \"label\", \"enabled\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$5(unknownProperty, d, \"never\", false);\n" +
+"        return new PnlPlanItemOrCurrentAccountPlanItem(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.id = d.id;\n" +
+"        this.number = d.number;\n" +
+"        this.label = d.label;\n" +
+"        this.enabled = d.enabled;\n" +
 "    }\n" +
 "}\n" +
 "class DocumentTagsEntity {\n" +
@@ -6876,7 +6960,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            event.preventDefault();\n" +
 "            event.stopImmediatePropagation();\n" +
-"            const rawInvoice = getReactProps(invoiceNumberField, 27).initialValues ?? // for supplier pieces\n" +
+"            const rawInvoice = getReactProps(invoiceNumberField, 25).initialValues ?? // for customer pieces\n" +
+"                getReactProps(invoiceNumberField, 27).initialValues ?? // for supplier pieces\n" +
 "                getReactProps(invoiceNumberField, 44).initialValues; // for customer pieces\n" +
 "            if (!rawInvoice.archived) {\n" +
 "                this.debug('Invoice is not archived');\n" +
