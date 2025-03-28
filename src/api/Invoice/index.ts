@@ -11,7 +11,7 @@ export class APIInvoice {
   public readonly currency_amount: string;
   public readonly currency_tax: string;
   public readonly currency_price_before_tax: string;
-  public readonly current_account_plan_item_id?: null;
+  public readonly current_account_plan_item_id?: number | null;
   public readonly date?: string | null;
   public readonly deadline?: string | null;
   public readonly direction: string;
@@ -50,7 +50,7 @@ export class APIInvoice {
   public readonly is_waiting_for_ocr: boolean;
   public readonly status: string;
   public readonly tagged_at_ledger_events_level: boolean;
-  public readonly current_account_plan_item?: null;
+  public readonly current_account_plan_item?: PnlPlanItemOrCurrentAccountPlanItem | null;
   public readonly has_file: boolean;
   public readonly file_signed_id: string;
   public readonly embeddable_in_browser: boolean;
@@ -84,7 +84,7 @@ export class APIInvoice {
     checkString(d.currency_amount, false, field + ".currency_amount");
     checkString(d.currency_tax, false, field + ".currency_tax");
     checkString(d.currency_price_before_tax, false, field + ".currency_price_before_tax");
-    checkNull(d.current_account_plan_item_id, field + ".current_account_plan_item_id");
+    checkNumber(d.current_account_plan_item_id, true, field + ".current_account_plan_item_id");
     checkString(d.date, true, field + ".date");
     checkString(d.deadline, true, field + ".deadline");
     checkString(d.direction, false, field + ".direction");
@@ -133,7 +133,7 @@ export class APIInvoice {
     checkBoolean(d.is_waiting_for_ocr, false, field + ".is_waiting_for_ocr");
     checkString(d.status, false, field + ".status");
     checkBoolean(d.tagged_at_ledger_events_level, false, field + ".tagged_at_ledger_events_level");
-    checkNull(d.current_account_plan_item, field + ".current_account_plan_item");
+    d.current_account_plan_item = PnlPlanItemOrCurrentAccountPlanItem.Create(d.current_account_plan_item, field + ".current_account_plan_item");
     checkBoolean(d.has_file, false, field + ".has_file");
     checkString(d.file_signed_id, false, field + ".file_signed_id");
     checkBoolean(d.embeddable_in_browser, false, field + ".embeddable_in_browser");
@@ -605,7 +605,7 @@ export class InvoiceLinesEntity {
   public readonly prepaid_pnl: boolean;
   public readonly global_vat: boolean;
   public readonly ledger_event_label?: null;
-  public readonly pnl_plan_item: PnlPlanItem1;
+  public readonly pnl_plan_item: PnlPlanItemOrCurrentAccountPlanItem1;
   public readonly deferral?: null;
   public readonly asset?: Asset | null;
   public readonly advance_pnl: boolean;
@@ -641,7 +641,7 @@ export class InvoiceLinesEntity {
     checkBoolean(d.prepaid_pnl, false, field + ".prepaid_pnl");
     checkBoolean(d.global_vat, false, field + ".global_vat");
     checkNull(d.ledger_event_label, field + ".ledger_event_label");
-    d.pnl_plan_item = PnlPlanItem1.Create(d.pnl_plan_item, field + ".pnl_plan_item");
+    d.pnl_plan_item = PnlPlanItemOrCurrentAccountPlanItem1.Create(d.pnl_plan_item, field + ".pnl_plan_item");
     checkNull(d.deferral, field + ".deferral");
     d.asset = Asset.Create(d.asset, field + ".asset");
     checkBoolean(d.advance_pnl, false, field + ".advance_pnl");
@@ -675,15 +675,15 @@ export class InvoiceLinesEntity {
   }
 }
 
-export class PnlPlanItem1 {
+export class PnlPlanItemOrCurrentAccountPlanItem1 {
   public readonly id: number;
   public readonly number: string;
   public readonly label: string;
   public readonly enabled: boolean;
-  public static Parse(d: string): PnlPlanItem1 {
-    return PnlPlanItem1.Create(JSON.parse(d));
+  public static Parse(d: string): PnlPlanItemOrCurrentAccountPlanItem1 {
+    return PnlPlanItemOrCurrentAccountPlanItem1.Create(JSON.parse(d));
   }
-  public static Create(d: any, field?: string): PnlPlanItem1 {
+  public static Create(d: any, field?: string): PnlPlanItemOrCurrentAccountPlanItem1 {
     if (!field) {
       obj = d;
       field = "root";
@@ -702,7 +702,7 @@ export class PnlPlanItem1 {
     const knownProperties = ["id","number","label","enabled"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
     if (unknownProperty) errorHelper(unknownProperty, d, "never", false);
-    return new PnlPlanItem1(d);
+    return new PnlPlanItemOrCurrentAccountPlanItem1(d);
   }
   private constructor(d: any) {
     this.id = d.id;
@@ -761,6 +761,43 @@ export class Asset {
     if ("amortization_type" in d) this.amortization_type = d.amortization_type;
     this.amortization_months = d.amortization_months;
     this.invoice_line_editable = d.invoice_line_editable;
+  }
+}
+
+export class PnlPlanItemOrCurrentAccountPlanItem {
+  public readonly id: number;
+  public readonly number: string;
+  public readonly label: string;
+  public readonly enabled: boolean;
+  public static Parse(d: string): PnlPlanItemOrCurrentAccountPlanItem | null {
+    return PnlPlanItemOrCurrentAccountPlanItem.Create(JSON.parse(d));
+  }
+  public static Create(d: any, field?: string): PnlPlanItemOrCurrentAccountPlanItem | null {
+    if (!field) {
+      obj = d;
+      field = "root";
+    }
+    if (d === null || d === undefined) {
+      return null;
+    } else if (typeof(d) !== 'object') {
+      throwNotObject(field, d, true);
+    } else if (Array.isArray(d)) {
+      throwIsArray(field, d, true);
+    }
+    checkNumber(d.id, false, field + ".id");
+    checkString(d.number, false, field + ".number");
+    checkString(d.label, false, field + ".label");
+    checkBoolean(d.enabled, false, field + ".enabled");
+    const knownProperties = ["id","number","label","enabled"];
+    const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
+    if (unknownProperty) errorHelper(unknownProperty, d, "never", false);
+    return new PnlPlanItemOrCurrentAccountPlanItem(d);
+  }
+  private constructor(d: any) {
+    this.id = d.id;
+    this.number = d.number;
+    this.label = d.label;
+    this.enabled = d.enabled;
   }
 }
 

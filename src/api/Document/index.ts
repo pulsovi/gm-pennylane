@@ -496,6 +496,7 @@ export class GroupedDocumentsEntity {
   public readonly invoicing_detailed_source?: null;
   public readonly manual_partial_invoices?: boolean | null;
   public readonly establishment_comment?: EstablishmentComment | null;
+  public readonly current_account_plan_item?: PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem | null;
   public static Parse(d: string): GroupedDocumentsEntity {
     return GroupedDocumentsEntity.Create(JSON.parse(d));
   }
@@ -660,7 +661,8 @@ export class GroupedDocumentsEntity {
     checkNull(d.invoicing_detailed_source, field + ".invoicing_detailed_source");
     checkBoolean(d.manual_partial_invoices, true, field + ".manual_partial_invoices");
     d.establishment_comment = EstablishmentComment.Create(d.establishment_comment, field + ".establishment_comment");
-    const knownProperties = ["id","company_id","date","created_at","updated_at","archived_at","type","source","draft","group_uuid","gdrive_path","preview_status","pusher_channel","email_from","score","is_waiting_details","external_id","journal_id","grouped_at","attachment_required","attachment_lost","pdf_generation_status","reversal_origin_id","billing_subscription_id","fec_pieceref","label","journal","url","method","accounting_type","preview_urls","archived","quotes","filename","has_file","readonly","account_id","thirdparty_id","payment_id","amount","currency","currency_amount","outstanding_balance","completeness","gross_amount","status","complete","account","company","scored_invoices","is_accounting_needed","pending","hasTooManyLedgerEvents","ledgerEventsCount","ledgerEvents","reconciled","client_comments","is_waiting_for_ocr","has_linked_quotes","size","embeddable_in_browser","ocr_thirdparty_id","direction","deadline","multiplier","price_before_tax","quote_uid","special_mention","not_duplicate","validation_needed","currency_tax","currency_price_before_tax","language","payment_status","payment_method","invoice_number","tax","estimate_status","iban","paid","future_in_days","discount","discount_type","finalized_at","quote_group_uuid","factor_status","currency_amount_before_tax","from_estimate_id","credit_notes_amount","payment_reminder_enabled","payment_reference","is_credit_note","is_estimate","is_destroyable","can_be_stamped_as_paid_in_pdf","custom_payment_reference","scored_transactions","is_sendable","incomplete","subcomplete","attachment_label","accounting_status","thirdparty","recipients","invoice_lines","invoice_kind","file_signed_id","pages_count","tagged_at_ledger_events_level","pdf_invoice_title","pdf_invoice_free_text","pdf_invoice_free_text_enabled","pdf_invoice_subject","pdf_invoice_subject_enabled","pdf_invoice_display_products_list","pdf_paid_stamp","invoicing_detailed_source","manual_partial_invoices","establishment_comment"];
+    d.current_account_plan_item = PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem.Create(d.current_account_plan_item, field + ".current_account_plan_item");
+    const knownProperties = ["id","company_id","date","created_at","updated_at","archived_at","type","source","draft","group_uuid","gdrive_path","preview_status","pusher_channel","email_from","score","is_waiting_details","external_id","journal_id","grouped_at","attachment_required","attachment_lost","pdf_generation_status","reversal_origin_id","billing_subscription_id","fec_pieceref","label","journal","url","method","accounting_type","preview_urls","archived","quotes","filename","has_file","readonly","account_id","thirdparty_id","payment_id","amount","currency","currency_amount","outstanding_balance","completeness","gross_amount","status","complete","account","company","scored_invoices","is_accounting_needed","pending","hasTooManyLedgerEvents","ledgerEventsCount","ledgerEvents","reconciled","client_comments","is_waiting_for_ocr","has_linked_quotes","size","embeddable_in_browser","ocr_thirdparty_id","direction","deadline","multiplier","price_before_tax","quote_uid","special_mention","not_duplicate","validation_needed","currency_tax","currency_price_before_tax","language","payment_status","payment_method","invoice_number","tax","estimate_status","iban","paid","future_in_days","discount","discount_type","finalized_at","quote_group_uuid","factor_status","currency_amount_before_tax","from_estimate_id","credit_notes_amount","payment_reminder_enabled","payment_reference","is_credit_note","is_estimate","is_destroyable","can_be_stamped_as_paid_in_pdf","custom_payment_reference","scored_transactions","is_sendable","incomplete","subcomplete","attachment_label","accounting_status","thirdparty","recipients","invoice_lines","invoice_kind","file_signed_id","pages_count","tagged_at_ledger_events_level","pdf_invoice_title","pdf_invoice_free_text","pdf_invoice_free_text_enabled","pdf_invoice_subject","pdf_invoice_subject_enabled","pdf_invoice_display_products_list","pdf_paid_stamp","invoicing_detailed_source","manual_partial_invoices","establishment_comment","current_account_plan_item"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
     if (unknownProperty) errorHelper(unknownProperty, d, "never", false);
     return new GroupedDocumentsEntity(d);
@@ -785,6 +787,7 @@ export class GroupedDocumentsEntity {
     if ("invoicing_detailed_source" in d) this.invoicing_detailed_source = d.invoicing_detailed_source;
     if ("manual_partial_invoices" in d) this.manual_partial_invoices = d.manual_partial_invoices;
     if ("establishment_comment" in d) this.establishment_comment = d.establishment_comment;
+    if ("current_account_plan_item" in d) this.current_account_plan_item = d.current_account_plan_item;
   }
 }
 
@@ -1224,7 +1227,7 @@ export class Lettering {
 export class Reallocation {
   public readonly id: number;
   public readonly created_at: string;
-  public readonly fromPlanItem: PlanItemOrPnlPlanItemOrFromPlanItem;
+  public readonly fromPlanItem: PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem1;
   public static Parse(d: string): Reallocation | null {
     return Reallocation.Create(JSON.parse(d));
   }
@@ -1242,7 +1245,7 @@ export class Reallocation {
     }
     checkNumber(d.id, false, field + ".id");
     checkString(d.created_at, false, field + ".created_at");
-    d.fromPlanItem = PlanItemOrPnlPlanItemOrFromPlanItem.Create(d.fromPlanItem, field + ".fromPlanItem");
+    d.fromPlanItem = PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem1.Create(d.fromPlanItem, field + ".fromPlanItem");
     const knownProperties = ["id","created_at","fromPlanItem"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
     if (unknownProperty) errorHelper(unknownProperty, d, "never", false);
@@ -1255,7 +1258,7 @@ export class Reallocation {
   }
 }
 
-export class PlanItemOrPnlPlanItemOrFromPlanItem {
+export class PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem1 {
   public readonly id: number;
   public readonly number: string;
   public readonly internal_identifier?: null;
@@ -1265,10 +1268,10 @@ export class PlanItemOrPnlPlanItemOrFromPlanItem {
   public readonly vat_rate: string;
   public readonly "country_alpha2": string;
   public readonly label_is_editable: boolean;
-  public static Parse(d: string): PlanItemOrPnlPlanItemOrFromPlanItem {
-    return PlanItemOrPnlPlanItemOrFromPlanItem.Create(JSON.parse(d));
+  public static Parse(d: string): PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem1 {
+    return PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem1.Create(JSON.parse(d));
   }
-  public static Create(d: any, field?: string): PlanItemOrPnlPlanItemOrFromPlanItem {
+  public static Create(d: any, field?: string): PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem1 {
     if (!field) {
       obj = d;
       field = "root";
@@ -1292,7 +1295,7 @@ export class PlanItemOrPnlPlanItemOrFromPlanItem {
     const knownProperties = ["id","number","internal_identifier","label","company_id","enabled","vat_rate","country_alpha2","label_is_editable"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
     if (unknownProperty) errorHelper(unknownProperty, d, "never", false);
-    return new PlanItemOrPnlPlanItemOrFromPlanItem(d);
+    return new PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem1(d);
   }
   private constructor(d: any) {
     this.id = d.id;
@@ -1892,6 +1895,58 @@ export class User1 {
     this.last_name = d.last_name;
     this.full_name = d.full_name;
     if ("profile_picture_url" in d) this.profile_picture_url = d.profile_picture_url;
+  }
+}
+
+export class PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem {
+  public readonly id: number;
+  public readonly number: string;
+  public readonly internal_identifier?: null;
+  public readonly label: string;
+  public readonly company_id: number;
+  public readonly enabled: boolean;
+  public readonly vat_rate: string;
+  public readonly "country_alpha2": string;
+  public readonly label_is_editable: boolean;
+  public static Parse(d: string): PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem | null {
+    return PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem.Create(JSON.parse(d));
+  }
+  public static Create(d: any, field?: string): PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem | null {
+    if (!field) {
+      obj = d;
+      field = "root";
+    }
+    if (d === null || d === undefined) {
+      return null;
+    } else if (typeof(d) !== 'object') {
+      throwNotObject(field, d, true);
+    } else if (Array.isArray(d)) {
+      throwIsArray(field, d, true);
+    }
+    checkNumber(d.id, false, field + ".id");
+    checkString(d.number, false, field + ".number");
+    checkNull(d.internal_identifier, field + ".internal_identifier");
+    checkString(d.label, false, field + ".label");
+    checkNumber(d.company_id, false, field + ".company_id");
+    checkBoolean(d.enabled, false, field + ".enabled");
+    checkString(d.vat_rate, false, field + ".vat_rate");
+    checkString(d["country_alpha2"], false, field + ".country_alpha2");
+    checkBoolean(d.label_is_editable, false, field + ".label_is_editable");
+    const knownProperties = ["id","number","internal_identifier","label","company_id","enabled","vat_rate","country_alpha2","label_is_editable"];
+    const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
+    if (unknownProperty) errorHelper(unknownProperty, d, "never", false);
+    return new PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem(d);
+  }
+  private constructor(d: any) {
+    this.id = d.id;
+    this.number = d.number;
+    if ("internal_identifier" in d) this.internal_identifier = d.internal_identifier;
+    this.label = d.label;
+    this.company_id = d.company_id;
+    this.enabled = d.enabled;
+    this.vat_rate = d.vat_rate;
+    this["country_alpha2"] = d["country_alpha2"];
+    this.label_is_editable = d.label_is_editable;
   }
 }
 
