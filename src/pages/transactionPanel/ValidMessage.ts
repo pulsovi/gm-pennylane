@@ -61,7 +61,7 @@ export default class ValidMessage extends Service {
   }
 
   async loadMessage() {
-    this.debug('loadMessage', this);
+    this.log('loadMessage', this);
     this.message = '⟳';
 
     const rawTransaction = getReactProps($('.paragraph-body-m+.heading-page.mt-1'), 9).transaction;

@@ -12,7 +12,11 @@ async function main() {
     emitProxy(),
     log(),
     error => {
-      if (error) console.log('main pipeline error', error);
+      if (error) {
+        console.log('main pipeline error', error);
+        debugger;
+        process.exit(1);
+      }
       else console.log('end process');
     }
   );

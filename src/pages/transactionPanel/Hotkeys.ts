@@ -11,13 +11,13 @@ export default class TransactionPanelHotkeys extends Service {
     this.debug('handleKeydown', event);
     if (event.altKey) {
       switch (event.code) {
-      case 'KeyE': return this.filterClick('Montant', event);
+      case 'KeyE': return this.filterClick('button.ui-filters-button--size-sm.ui-filters-button:nth-of-type(3)', event);
       case 'KeyD': return this.filterClick('Date', event);
       }
     }
     if (event.ctrlKey) {
       switch (event.code) {
-      case 'KeyS': return this.saveLedgerEvents();
+      case 'KeyS': return this.save();
       }
     }
     else switch (event.code) {
@@ -27,11 +27,10 @@ export default class TransactionPanelHotkeys extends Service {
     }
   }
 
-  private async filterClick (label: string, event: KeyboardEvent) {
+  private async filterClick (selector: string, event: KeyboardEvent) {
     event.preventDefault();
-    const filterButton = $$<HTMLButtonElement>('div.dropdown button')
-      .find(button => getReactProps(button, 1).label === label);
-    if (!filterButton) this.log(`bouton "${label}" introuvable`);
+    const filterButton = $<HTMLButtonElement>(selector)
+    if (!filterButton) this.log(`bouton "${selector}" introuvable`);
 
     if (event.shiftKey) {
       $<HTMLDivElement>('div[aria-label=Effacer]', filterButton)?.click();
@@ -40,8 +39,9 @@ export default class TransactionPanelHotkeys extends Service {
 
     filterButton?.click();
 
-    const inputField = await waitElem<HTMLInputElement>(`input[aria-label=${label}]`, '', 2000);
-    if (!inputField) this.log(`champ "input[aria-label=${label}]" introuvable`);
+    const inputContainerId = filterButton.getAttribute('aria-controls');
+    const inputField = await waitElem<HTMLInputElement>(`div[id="${inputContainerId}"] input`, '', 2000);
+    if (!inputField) this.log(`champ "div[id="${inputContainerId}"] input" introuvable`);
     inputField?.focus();
   }
 
@@ -58,8 +58,18 @@ export default class TransactionPanelHotkeys extends Service {
     }
   }
 
+  private save() {
+    this.saveLedgerEvents();
+    this.confirmRules();
+  }
+
   private saveLedgerEvents () {
     this.log('saveLedgerEvents()');
     findElem<HTMLButtonElement>('button', 'Enregistrer')?.click();
+  }
+
+  private confirmRules () {
+    this.log('confirmRules()');
+    findElem<HTMLButtonElement>('button', 'Confirmer')?.click();
   }
 }
