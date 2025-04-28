@@ -1,3 +1,4 @@
+import { TypePredicate } from 'typescript';
 import Cache from './Cache.js';
 
 export default class CacheList<T> extends Cache<T[]> {
@@ -41,8 +42,12 @@ export default class CacheList<T> extends Cache<T[]> {
    * Returns the first cached element that match condition, and undefined
    * otherwise.
    */
-  public find (match: Partial<T>): T | undefined {
+  public find (match: Partial<T>): T | undefined;
+  public find <S extends T>(match: (value?: T, index?: number, obj?: T[]) => value is S): S | undefined;
+  public find (match: (value?: T, index?: number, obj?: T[]) => boolean): T | undefined;
+  public find (match: Partial<T> | ((value?: T, index?: number, obj?: T[]) => boolean)): T | undefined {
     this.load();
+    if (typeof match === 'function') return this.data.find(match);
     return this.data.find(
       item => Object.entries(match).every(
         ([key, value]) => item[key] === value
