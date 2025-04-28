@@ -28,11 +28,14 @@ export default class ArchiveGroupedDocument extends Service {
     const id = getReactProps(buttonsBlock, 4).invoiceId;
 
     buttonsBlock.insertBefore(
-      parseHTML(`<button class="archive-button ${buttonClass}">&nbsp;x&nbsp;</button>`),
+      parseHTML(`
+        <button class="archive-button ${buttonClass}">&nbsp;x&nbsp;</button>
+      `),
       buttonsBlock.firstElementChild
     );
 
     const archiveButton = buttonsBlock.querySelector<HTMLButtonElement>('.archive-button');
+    Tooltip.make({ target: archiveButton, text: 'Archiver ce justificatif' });
     archiveButton!.addEventListener('click', async () => {
       archiveButton.disabled = true;
       archiveButton.classList.add('disabled');
