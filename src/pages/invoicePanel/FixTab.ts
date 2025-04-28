@@ -53,6 +53,7 @@ export default class FixTab extends Service {
   getOrderList (): string[] {
     if (findElem('button', 'Client')) return [
       '.input-group-prepend+.input-group-append input',
+      'div[data-testid="thirdpartyAutocompleteAsyncSelect"] input',
       'input[name="invoice_number"]',
       'input[name="currency_amount"]',
       'input[placeholder="Rechercher"]',
