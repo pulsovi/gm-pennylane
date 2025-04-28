@@ -20,12 +20,14 @@ import { getGroupedDocuments, getLedgerEvents } from './api/operation.js';
 import { getThirdparty } from './api/thirdparties.js';
 import { getTransactionsList } from './api/transaction.js';
 import { findReactProp, getReact, getReactProps } from './_/react.js';
+import AutoSearchTransaction from './pages/invoicePanel/AutoSearchTransaction.js';
 import { getButtonClassName } from './_/getButtonClassName.js';
 
 last7DaysFilter();
 AddInvoiceIdColumn.start();
 AllowChangeArchivedInvoiceNumber.start();
 ArchiveGroupedDocument.start();
+AutoSearchTransaction.start();
 EntryBlocInfos.start();
 FixTab.start();
 InvoiceDisplayInfos.start();
