@@ -21,6 +21,7 @@ export interface RawStatus {
 };
 
 interface Status extends RawStatus {
+  /** timestamp de dernière verification */
   fetchedAt?: number;
   ignored?: boolean;
   wait?: string;
@@ -164,13 +165,17 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
     }
 
     // verifier les plus anciennes entrées
-    /**
-     * A ce stade toutes les entrées ont été traitées, mais rien ne garantit
-     * que les premières entrées chargées nèont pas subi de modification depuis
-     * il faudrait avoir un champ status.updatedAt et retester toutes les entrées
-     * pour lesquelles ce champ est vieux de plus de 3 jours, disons
-     */
-    this.error('TODO: vérifier les entrées qui ont été modifiée récemment');
+    const dateRef = Date.now() - (3 * 86_400_000);
+    let item = this.cache.find(cachedItem => cachedItem.fetchedAt < dateRef);
+    while (item) {
+      const status = await this.updateStatus(item);
+      if (this.isSkipped(status)) {
+        if (!status?.valid) this.log('skip', status);
+      } else {
+        yield status!;
+      }
+      item = this.cache.find(cachedItem => cachedItem.fetchedAt < dateRef);
+    }
   }
 
   private isSkipped (status: Status | null) {
@@ -267,6 +272,13 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
       localStorage.setItem(storageKey, JSON.stringify(state));
     }
 
+    const dateRef = Date.now() - (3 * 86_400_000);
+    let status = this.cache.find(item => item.fetchedAt < dateRef);
+    while (status) {
+      await this.updateStatus(status);
+      status = this.cache.find(item => item.fetchedAt < dateRef);
+    }
+
     if (state.loaded) return;
 
     // load all
@@ -310,18 +322,18 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
       `<button type="button" class="${getButtonClassName()} wait-item">\ud83d\udd52</button>`
     ));
 
-    const button = $<HTMLButtonElement>(`.wait-item`, this.container)!;
-    const tooltip = Tooltip.make({ target: button, text: '' });
+    const waitButton = $<HTMLButtonElement>(`.wait-item`, this.container)!;
+    const tooltip = Tooltip.make({ target: waitButton, text: '' });
     const updateWaitDisplay = () => {
       const status = this.cache.find({ id: this.current });
 
       if (!status?.wait || (new Date(status.wait).getTime() < Date.now())) {
-        button.style.backgroundColor = '';
+        waitButton.style.backgroundColor = '';
         tooltip.setText('Ne plus afficher pendant 3 jours');
         return;
       }
 
-      button.style.backgroundColor = 'var(--blue)';
+      waitButton.style.backgroundColor = 'var(--blue)';
       const date = new Date(status.wait).toISOString().replace('T', ' ').slice(0, 16)
           .split(' ').map(block => block.split('-').reverse().join('/')).join(' ');
       tooltip.setText(`Ignoré jusqu'à ${date}.`);
@@ -331,10 +343,10 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
 
     setInterval(() => { updateWaitDisplay(); }, 60_000);
 
-    button.addEventListener('click', () => {
+    waitButton.addEventListener('click', () => {
       this.log('waiting button clicked');
       const status = this.cache.find({ id: this.current });
-      if (!status) return;
+      if (!status) return this.log({cachedStatus: status, id: this.current });
       const wait = (status.wait && (new Date(status.wait).getTime() > Date.now())) ? ''
         : new Date(Date.now() + 3*86_400_000).toISOString();
       this.cache.updateItem({ id: this.current }, Object.assign(status, { wait }));

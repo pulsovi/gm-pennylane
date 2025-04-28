@@ -18,5 +18,5 @@ export default class Service extends Logger {
     return this.instance;
   }
 
-  init (): void | Promise<void> {};
+  protected init (): void | Promise<void> {};
 }
