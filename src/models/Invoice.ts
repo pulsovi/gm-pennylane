@@ -1,6 +1,6 @@
 import { getParam } from '../_/url.js';
 import { getInvoice, updateInvoice } from '../api/invoice.js';
-import { APIInvoice } from '../api/types';
+import { APIInvoice } from '../api/types.js';
 
 import ValidableDocument from './ValidableDocument.js';
 
@@ -8,25 +8,25 @@ export default abstract class Invoice extends ValidableDocument {
   public readonly type = 'invoice';
   private invoice: APIInvoice | Promise<APIInvoice>;
 
-  public static from (invoice: { direction: string; id: number }) {
+  public static from(invoice: { direction: string; id: number }) {
     if (invoice.direction === 'supplier') return new SupplierInvoice(invoice);
     return new CustomerInvoice(invoice);
   }
 
-  static async load (id: number) {
+  static async load(id: number) {
     const invoice = await getInvoice(id);
     if (!invoice?.id) {
-      console.log('Invoice.load: cannot load this invoice', {id, invoice, _this: this});
+      console.log('Invoice.load: cannot load this invoice', { id, invoice, _this: this });
       return null;
     }
     return this.from(invoice);
   }
 
-  async update (data: Partial<APIInvoice>) {
+  async update(data: Partial<APIInvoice>) {
     return await updateInvoice(this.id, data);
   }
 
-  async getInvoice () {
+  async getInvoice() {
     if (!this.invoice) {
       this.invoice = getInvoice(this.id).then(response => {
         if (!response) throw new Error('Impossible de charger la facture');
@@ -36,12 +36,12 @@ export default abstract class Invoice extends ValidableDocument {
     return this.invoice;
   }
 }
-Object.assign(window, {Invoice});
+Object.assign(window, { Invoice });
 
 class SupplierInvoice extends Invoice {
   public readonly direction = 'supplier';
 
-  async loadValidMessage () {
+  async loadValidMessage() {
     const current = Number(getParam(location.href, 'id'));
     const isCurrent = current === this.id;
 
@@ -52,7 +52,7 @@ class SupplierInvoice extends Invoice {
     const ledgerEvents = await this.getLedgerEvents();
     if (ledgerEvents.some(levent => levent.closed)) return 'OK';
 
-    if (!invoice) this.log('loadValidMessage', {Invoice: this, invoice});
+    if (!invoice) this.log('loadValidMessage', { Invoice: this, invoice });
 
     const doc = await this.getDocument();
     if (invoice.id === current)
@@ -91,7 +91,7 @@ class SupplierInvoice extends Invoice {
       >Ajouter un fournisseur ⓘ</a><ul style="margin:0;padding:0.8em;"><li>CHQ DÉCHIRÉ - CHQ###</li></ul>`;
     }
 
-     else if (
+    else if (
       archivedAllowed.some(allowedItem => invoice.invoice_number.startsWith(allowedItem))
     ) {
       return `<a
@@ -289,9 +289,9 @@ class CustomerInvoice extends Invoice {
         title="Le numéro de facture doit être conforme à un des modèles proposés. Cliquer ici pour plus d'informations."
         href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Don%20Manuel%20-%20num%C3%A9ro%20de%20facture"
       >Informations manquantes dans le numéro de facture ⓘ</a><ul style="margin:0;padding:0.8em;">${[
-        'CERFA n°### - Prénom Nom - JJ/MM/AAAA',
-        'CHQ n°### - Prénom Nom - JJ/MM/AAAA',
-      ].map(it => `<li>${it}</li>`).join('')}</ul>`;
+          'CERFA n°### - Prénom Nom - JJ/MM/AAAA',
+          'CHQ n°### - Prénom Nom - JJ/MM/AAAA',
+        ].map(it => `<li>${it}</li>`).join('')}</ul>`;
     }
 
     // Has transaction attached

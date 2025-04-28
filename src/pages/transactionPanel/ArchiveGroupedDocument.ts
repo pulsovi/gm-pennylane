@@ -1,7 +1,9 @@
-import { $$, getReactProps, parseHTML, upElement, waitElem, waitFunc } from "../../_";
-import Service from "../../framework/Service";
-import Invoice from "../../models/Invoice";
-import ValidMessage from "./ValidMessage";
+import { $$, getReactProps, parseHTML, upElement, waitElem, waitFunc } from '../../_/index.js';
+import { moveToDms } from '../../api/invoice.js';
+import Service from '../../framework/Service.js';
+import Tooltip from '../../framework/Tooltip.js';
+import Invoice from '../../models/Invoice.js';
+import ValidMessage from './ValidMessage.js';
 
 /** Add "Archive" button on bonded invoice in transaction pannel */
 export default class ArchiveGroupedDocument extends Service {

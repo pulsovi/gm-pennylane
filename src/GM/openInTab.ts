@@ -1,4 +1,4 @@
-import { parseHTML } from "../_";
+import { parseHTML } from '../_/index.js';
 
 export function openInTab (url: string) {
   document.body.appendChild(

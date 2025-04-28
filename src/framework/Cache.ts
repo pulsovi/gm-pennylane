@@ -1,4 +1,4 @@
-import Logger from "./Logger";
+import Logger from './Logger.js';
 
 export default abstract class Cache<T> extends Logger {
   public readonly storageKey: string;

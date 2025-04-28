@@ -1,5 +1,5 @@
-import { $, parseHTML } from "../_";
-import { uniquid } from "../_/uniquid";
+import { $, parseHTML } from '../_/index.js';
+import { uniquid } from '../_/uniquid.js';
 
 export default class Tooltip {
   private readonly id = `T${uniquid()}`;

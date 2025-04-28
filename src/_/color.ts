@@ -1,4 +1,4 @@
-import { hashString } from "./hash";
+import { hashString } from './hash.js';
 
 declare type HEX = string;
 declare type RGB = [red: number, green: number, blue: number];

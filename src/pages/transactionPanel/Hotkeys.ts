@@ -1,5 +1,5 @@
-import { $, $$, findElem, getReactProps, waitElem, waitFunc } from "../../_";
-import Service from "../../framework/Service.js"
+import { $, $$, findElem, getReactProps, waitElem, waitFunc } from '../../_/index.js';
+import Service from '../../framework/Service.js';
 
 export default class TransactionPanelHotkeys extends Service {
   async init () {

@@ -1,6 +1,6 @@
-import { $, findElem, waitElem, waitFunc } from "../../_";
-import Service from "../../framework/Service";
-import { waitPage } from "../../navigation/waitPage";
+import { $, findElem, waitElem, waitFunc } from '../../_/index.js';
+import Service from '../../framework/Service.js';
+import { waitPage } from '../../navigation/waitPage.js';
 
 export default class FixTab extends Service {
   async init () {

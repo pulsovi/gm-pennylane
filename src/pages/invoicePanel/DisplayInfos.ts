@@ -1,9 +1,10 @@
-import { $, $$, findElem, getReactProps, parseHTML, waitElem, waitFunc } from "../../_";
-import { APILedgerEvent, APIInvoice } from "../../api/types";
-import CacheStatus, { Status } from "../../framework/CacheStatus";
-import Service from "../../framework/Service";
+import { $, $$, findElem, getReactProps, parseHTML, waitElem, waitFunc } from '../../_/index.js';
+import { APILedgerEvent, APIInvoice } from '../../api/types.js';
+import CacheStatus, { Status } from '../../framework/CacheStatus.js';
+import Service from '../../framework/Service.js';
 import Invoice from "../../models/Invoice";
-import { isPage, waitPage } from "../../navigation/waitPage";
+import Invoice from '../../models/Invoice.js';
+import { isPage, waitPage } from '../../navigation/waitPage.js';
 
 /** Add infos on Invoice full page display */
 export default class InvoiceDisplayInfos extends Service {

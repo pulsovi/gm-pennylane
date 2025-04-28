@@ -1,4 +1,4 @@
-import { $, getParam, parseHTML, waitElem, waitFunc } from '../../_';
+import { $, getParam, parseHTML, waitElem, waitFunc } from '../../_/index.js';
 import Service from '../../framework/Service.js';
 import Transaction from '../../models/Transaction.js';
 import ValidMessage from './ValidMessage.js';

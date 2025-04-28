@@ -10,7 +10,7 @@ import AllowChangeArchivedInvoiceNumber from './pages/invoicePanel/AllowChangeAr
 import TransactionPanelHotkeys from './pages/transactionPanel/Hotkeys.js';
 import EntryBlocInfos from './pages/EntryBlocInfos.js';
 import AddInvoiceIdColumn from './pages/invoiceList/AddInvoiceIdColumn.js';
-import { $, $$, findElem, parseHTML } from './_/dom.js';
+import { $, $$, findElem, parseHTML, waitElem } from './_/dom.js';
 import Transaction from './models/Transaction.js';
 import Invoice from './models/Invoice.js';
 import RotateImg from './pages/transactionPanel/RotateImg.js';
@@ -19,7 +19,7 @@ import { getDocument } from './api/document.js';
 import { getGroupedDocuments, getLedgerEvents } from './api/operation.js';
 import { getThirdparty } from './api/thirdparties.js';
 import { getTransactionsList } from './api/transaction.js';
-import { getReact, getReactProps } from './_/react.js';
+import { findReactProp, getReact, getReactProps } from './_/react.js';
 
 last7DaysFilter();
 TransactionValidMessage.start();

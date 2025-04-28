@@ -3,6 +3,9 @@
         "allowSyntheticDefaultImports": true,
         "target": "ES2020",
         "types": ["vite-plugin-monkey/global"],
-        "resolveJsonModule": true
+        "resolveJsonModule": true,
+        "moduleResolution": "nodenext",
+        "module": "NodeNext",
+        "skipLibCheck": true
     }
 }

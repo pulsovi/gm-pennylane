@@ -1,9 +1,8 @@
-import { jsonClone } from '../_/json';
+import { jsonClone } from '../_/json.js';
 
 import { apiRequest } from './core.js';
+import { TransactionsEntity } from './Transaction/List.js';
 import { APITransaction, APITransactionList, APITransactionListParams } from './types.js';
-import type { TransactionsEntity } from './Transaction/List'
-
 /**
  * @return {Promise<RawTransactionMin>}    Type vérifié
  */

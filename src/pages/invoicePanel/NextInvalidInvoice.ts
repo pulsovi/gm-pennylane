@@ -1,11 +1,11 @@
-import { $, findElem, jsonClone, waitElem, waitFunc } from "../../_";
-import { getInvoiceGenerator, getInvoicesList } from "../../api/invoice";
-import { APIInvoiceListParams } from "../../api/types";
-import CacheListRecord from "../../framework/CacheListRecord";
-import type { Status } from "../../framework/CacheStatus";
-import OpenNextInvalid from "../../framework/OpenNextInvalid";
-import Invoice from "../../models/Invoice";
-import { isPage, waitPage } from "../../navigation/waitPage";
+import { $, findElem, jsonClone, waitElem, waitFunc } from '../../_/index.js';
+import { getInvoiceGenerator, getInvoicesList } from '../../api/invoice.js';
+import { APIInvoiceListParams } from '../../api/types.js';
+import CacheListRecord from '../../framework/CacheListRecord.js';
+import type { Status } from '../../framework/CacheStatus.js';
+import OpenNextInvalid from '../../framework/OpenNextInvalid.js';
+import Invoice from '../../models/Invoice.js';
+import { isPage, waitPage } from '../../navigation/waitPage.js';
 
 interface InvoiceStatus extends Status {
   direction: 'customer' | 'supplier';

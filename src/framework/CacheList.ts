@@ -1,4 +1,4 @@
-import Cache from "./Cache";
+import Cache from './Cache.js';
 
 export default class CacheList<T> extends Cache<T[]> {
   private static instances: Record<string, CacheList<unknown>> = {};

@@ -1,9 +1,9 @@
-import { findElem, waitFunc } from "../../_";
-import { getTransactionGenerator } from "../../api/transaction";
-import { APITransactionListParams } from "../../api/types";
-import CacheStatus from "../../framework/CacheStatus";
-import OpenNextInvalid, { RawStatus as Status } from "../../framework/OpenNextInvalid";
-import Transaction from "../../models/Transaction";
+import { findElem, waitFunc } from '../../_/index.js';
+import { getTransactionGenerator } from '../../api/transaction.js';
+import { APITransactionListParams } from '../../api/types.js';
+import CacheStatus from '../../framework/CacheStatus.js';
+import OpenNextInvalid, { RawStatus as Status } from '../../framework/OpenNextInvalid.js';
+import Transaction from '../../models/Transaction.js';
 
 export default class NextInvalidTransaction extends OpenNextInvalid {
   public readonly id = 'next-invalid-transaction';

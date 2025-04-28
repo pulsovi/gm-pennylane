@@ -1,4 +1,4 @@
-import Cache from "./Cache";
+import Cache from './Cache.js';
 
 export default class CacheRecord<T extends object> extends Cache<T> {
   protected parse (data: string | null): T {

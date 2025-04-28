@@ -1,8 +1,8 @@
-import { $, getReactProps } from "../../_";
-import Service from "../../framework/Service.js";
-import Invoice from "../../models/Invoice.js";
-import { waitPage } from "../../navigation/waitPage.js";
-import InvoiceDisplayInfos from "./DisplayInfos.js";
+import { $, getReactProps } from '../../_/index.js';
+import Service from '../../framework/Service.js';
+import Invoice from '../../models/Invoice.js';
+import { waitPage } from '../../navigation/waitPage.js';
+import InvoiceDisplayInfos from './DisplayInfos.js';
 
 export default class AllowChangeArchivedInvoiceNumber extends Service {
   async init () {

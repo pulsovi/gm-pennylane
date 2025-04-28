@@ -1,4 +1,4 @@
-import { sleep } from "../_/time";
+import { sleep } from '../_/time.js';
 
 let apiRequestWait: Promise<void> | null = null;
 

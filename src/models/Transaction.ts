@@ -1,11 +1,11 @@
 import type { APITransaction } from '../api/types.d.ts';
-import { getParam } from '../_';
 
 import { documentMatching } from '../api/document.js';
 import ValidableDocument from './ValidableDocument.js';
 import Document from './Document.js';
 import { getTransaction } from '../api/transaction.js';
 import { GroupedDocumentsEntity } from '../api/Document/index.js';
+import { getParam } from '../_/url.js';
 
 export default class Transaction extends ValidableDocument {
   protected _raw;

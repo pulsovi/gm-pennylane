@@ -1,4 +1,4 @@
-import CacheListRecord from "./CacheListRecord";
+import CacheListRecord from './CacheListRecord.js';
 
 export interface Status {
   createdAt: number;

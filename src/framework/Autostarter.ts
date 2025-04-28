@@ -1,7 +1,7 @@
-import { $, getButtonClassName, parseHTML, waitElem } from "../_";
-import Tooltip from "./Tooltip";
-import CacheRecord from './CacheRecord';
-import Logger from "./Logger";
+import { $, getButtonClassName, parseHTML, waitElem } from '../_/index.js';
+import Tooltip from './Tooltip.js';
+import CacheRecord from './CacheRecord.js';
+import Logger from './Logger.js';
 
 export interface AutostarterParent {
   container: ParentNode;

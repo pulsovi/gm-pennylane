@@ -1,5 +1,5 @@
-import { $, $$, parseHTML, waitElem } from "../_";
-import Service from "../framework/Service";
+import { $, parseHTML, waitElem } from '../_/dom.js';
+import Service from '../framework/Service.js';
 
 /**
  * Add infos on each entry form block

@@ -1,5 +1,5 @@
-import { contrastScore, textToColor } from "../_/color";
-import EventEmitter from "./EventEmitter";
+import { contrastScore, textToColor } from '../_/color.js';
+import EventEmitter from './EventEmitter.js';
 
 declare const GM_Pennylane_debug: boolean;
 
@@ -40,6 +40,7 @@ export default class Logger extends EventEmitter {
       ...this.getStyles().slice(0, 2),
       ...messages
     );
+
   }
 
   public debug (...messages: unknown[]): void {

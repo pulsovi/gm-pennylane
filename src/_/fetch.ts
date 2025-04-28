@@ -1,4 +1,4 @@
-import { blobToUrl } from "./blob";
+import { blobToUrl } from './blob.js';
 
 export async function fetchToDataURL (url: string): Promise<string> {
   const response = await fetch(url);

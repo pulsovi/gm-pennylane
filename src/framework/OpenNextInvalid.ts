@@ -1,13 +1,13 @@
-import { $, getParam, parseHTML } from "../_";
-import { openDocument } from "../navigation/openDocument";
-import Autostarter, { type AutostarterParent } from "./Autostarter";
-import CacheList from "./CacheList";
-import Service from "./Service";
-import Tooltip from "./Tooltip";
-import type { Spinner } from "../_/spinners";
-import { getButtonClassName } from "../_/getButtonClassName";
+import { $, getParam, parseHTML } from '../_/index.js';
+import { openDocument } from '../navigation/openDocument.js';
+import Autostarter, { type AutostarterParent } from './Autostarter.js';
+import CacheList from './CacheList.js';
+import Service from './Service.js';
+import Tooltip from './Tooltip.js';
+import type { Spinner } from '../_/spinners.js';
+import { getButtonClassName } from '../_/getButtonClassName.js';
 import styles from './openNextInvalid.css';
-import { injectStyles } from "../_/styles";
+import { injectStyles } from '../_/styles.js';
 
 injectStyles(styles);
 

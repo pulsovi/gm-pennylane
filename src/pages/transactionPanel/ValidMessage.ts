@@ -1,4 +1,4 @@
-import { $, waitElem, findElem, getReactProps, parseHTML, waitFunc, $$, getParam } from '../../_';
+import { $, waitElem, findElem, getReactProps, parseHTML, waitFunc, $$, getParam } from '../../_/index.js';
 import { APILedgerEvent } from '../../api/types.js';
 import Service from '../../framework/Service.js';
 import Transaction from '../../models/Transaction.js';

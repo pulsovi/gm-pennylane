@@ -1,4 +1,4 @@
-import { findElem, waitFunc } from "../_";
+import { findElem, waitFunc } from '../_/index.js';
 
 export type PageName = 'invoiceDetail';
 

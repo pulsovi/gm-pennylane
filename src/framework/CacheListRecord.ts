@@ -1,5 +1,5 @@
-import { getParam } from "../_/url.js";
-import CacheList from "./CacheList.js";
+import { getParam } from '../_/url.js';
+import CacheList from './CacheList.js';
 
 export default class CacheListRecord<T extends object> extends CacheList<T> {
   /**

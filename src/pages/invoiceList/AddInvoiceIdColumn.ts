@@ -1,5 +1,7 @@
-import { $, $$, findElem, getReactProps, parseHTML, waitElem, waitFunc } from "../../_"
-import Service from "../../framework/Service"
+import { $, $$, findElem, parseHTML, waitElem } from "../../_/dom.js";
+import { getReactProps } from "../../_/react.js";
+import { waitFunc } from "../../_/time.js";
+import Service from "../../framework/Service.js";
 
 export default class AddInvoiceIdColumn extends Service {
   protected readonly name = this.constructor.name;

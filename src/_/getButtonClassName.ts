@@ -1,4 +1,4 @@
-import { $, findElem } from "./dom";
+import { $, findElem } from './dom.js';
 
 let cachedClassName = '';
 

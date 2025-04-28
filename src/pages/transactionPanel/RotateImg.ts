@@ -1,6 +1,6 @@
-import { $, $$, rotateImage, parseHTML, waitFunc } from "../../_";
-import { fetchToDataURL } from "../../_/fetch";
-import Service from "../../framework/Service";
+import { $, $$, rotateImage, parseHTML, waitFunc } from '../../_/index.js';
+import { fetchToDataURL } from '../../_/fetch.js';
+import Service from '../../framework/Service.js';
 
 /**
  * Allow to rotate preview img of attachment pieces
