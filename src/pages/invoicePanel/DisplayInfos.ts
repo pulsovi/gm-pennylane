@@ -2,6 +2,7 @@ import { $, $$, findElem, getReactProps, parseHTML, waitElem, waitFunc } from '.
 import { APILedgerEvent, APIInvoice } from '../../api/types.js';
 import CacheStatus, { Status } from '../../framework/CacheStatus.js';
 import Service from '../../framework/Service.js';
+import Tooltip from '../../framework/Tooltip.js';
 import Invoice from '../../models/Invoice.js';
 import { isPage, waitPage } from '../../navigation/waitPage.js';
 
@@ -27,12 +28,30 @@ export default class InvoiceDisplayInfos extends Service {
   async init () {
     await waitPage('invoiceDetail');
 
+    this.tooltipThirdpartyId();
     this.cache = CacheStatus.getInstance(this.storageKey);
     this.cache.on('change', () => this.handleCacheChange());
     this.watchReloadHotkey();
     this.watchEventSave();
     await this.appendContainer();
     setInterval(() => { this.watch(); }, 200);
+  }
+
+  async tooltipThirdpartyId () {
+    const target = await waitElem<HTMLDivElement>('div[data-testid="thirdpartyAutocompleteAsyncSelect"]');
+    let invoice = await waitFunc(() => this.state.invoice?.getInvoice() ?? false);
+    const tooltip = Tooltip.make({ target, text: `#${invoice.thirdparty_id}` });
+    do {
+      await waitFunc(() => {
+        return $('div[data-testid="thirdpartyAutocompleteAsyncSelect"]') !== target ||
+        this.state.invoice.id !== invoice.id
+      });
+      if (this.state.invoice.id !== invoice.id) {
+        invoice = await waitFunc(() => this.state.invoice?.getInvoice() ?? false);
+        tooltip.setText(`#${invoice.thirdparty_id}`);
+      } else break;
+    } while (true);
+    this.tooltipThirdpartyId();
   }
 
   set message (text: string) {
