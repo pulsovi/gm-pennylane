@@ -2,7 +2,15 @@ import { openTabService } from './GM/openTabService.js';
 
 const code = ';(function IIFE() {'+evalContent+'})();';
 try {
-  unsafeWindow.eval(code);
+  // inject eval.ts
+  const blob = new Blob([code], { type: 'application/javascript' });
+  const url = URL.createObjectURL(blob);
+  const script = document.createElement('script');
+  script.src = url;
+  script.onload = () => { URL.revokeObjectURL(url); };
+  unsafeWindow.document.body.appendChild(script);
+
+  // start services
   openTabService();
   console.log('GM SUCCESS');
 } catch (error) {
