@@ -46,13 +46,3 @@ export function parseHTML(html) {
     template.innerHTML = html;
     return template.content;
 }
-
-Object.assign(window, { gm: {
-  $$,
-  $,
-  findElem,
-  parentElement,
-  parseHTML,
-  upElement,
-  waitElem,
-}});

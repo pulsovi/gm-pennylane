@@ -20,6 +20,7 @@ import { getGroupedDocuments, getLedgerEvents } from './api/operation.js';
 import { getThirdparty } from './api/thirdparties.js';
 import { getTransactionsList } from './api/transaction.js';
 import { findReactProp, getReact, getReactProps } from './_/react.js';
+import { getButtonClassName } from './_/getButtonClassName.js';
 
 last7DaysFilter();
 TransactionValidMessage.start();
@@ -65,11 +66,14 @@ const augmentation = {
     $$,
     $,
     findElem,
+    findReactProp,
     getReact,
     getReactProps,
     Invoice,
     parseHTML,
     Transaction,
+    waitElem: findElem,
+    getButtonClassName,
   },
 };
 Object.assign(window, augmentation);

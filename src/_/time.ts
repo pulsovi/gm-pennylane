@@ -2,6 +2,13 @@ export async function sleep (ms: number) {
   await new Promise(rs => setTimeout(rs, ms));
 }
 
+/**
+ * Get a cb function (without edge effect), run it 5 times per seconds
+ * and return its first non null result
+ *
+ * if cb return value is a Promise, the Promise fulfill value will be awaited
+ * and tested for non null value.
+ */
 export function waitFunc <T extends unknown>(cb: () => Promise<T>): Promise<Exclude<T, false>>;
 export function waitFunc <T extends unknown>(cb: () => Promise<T>, timeout: number): Promise<T | false>;
 export function waitFunc <T extends unknown>(cb: () => T): Promise<Exclude<T, false>>;

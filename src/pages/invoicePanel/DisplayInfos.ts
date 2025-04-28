@@ -2,7 +2,6 @@ import { $, $$, findElem, getReactProps, parseHTML, waitElem, waitFunc } from '.
 import { APILedgerEvent, APIInvoice } from '../../api/types.js';
 import CacheStatus, { Status } from '../../framework/CacheStatus.js';
 import Service from '../../framework/Service.js';
-import Invoice from "../../models/Invoice";
 import Invoice from '../../models/Invoice.js';
 import { isPage, waitPage } from '../../navigation/waitPage.js';
 
