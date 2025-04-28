@@ -20,6 +20,7 @@ import { getGroupedDocuments, getLedgerEvents } from './api/operation.js';
 import { getThirdparty } from './api/thirdparties.js';
 import { getTransactionsList } from './api/transaction.js';
 import { findReactProp, getReact, getReactProps } from './_/react.js';
+import TransactionPannelStyle from './pages/transactionPanel/Style.js';
 import AutoSearchTransaction from './pages/invoicePanel/AutoSearchTransaction.js';
 import { getButtonClassName } from './_/getButtonClassName.js';
 
@@ -36,6 +37,7 @@ NextInvalidTransaction.start();
 RotateImg.start();
 TransactionAddByIdButton.start();
 TransactionPanelHotkeys.start();
+TransactionPannelStyle.start();
 TransactionValidMessage.start();
 
 /*
