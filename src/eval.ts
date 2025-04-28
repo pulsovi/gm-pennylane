@@ -23,18 +23,18 @@ import { findReactProp, getReact, getReactProps } from './_/react.js';
 import { getButtonClassName } from './_/getButtonClassName.js';
 
 last7DaysFilter();
-TransactionValidMessage.start();
-TransactionAddByIdButton.start();
+AddInvoiceIdColumn.start();
+AllowChangeArchivedInvoiceNumber.start();
+ArchiveGroupedDocument.start();
+EntryBlocInfos.start();
+FixTab.start();
+InvoiceDisplayInfos.start();
 NextInvalidInvoice.start();
 NextInvalidTransaction.start();
-InvoiceDisplayInfos.start();
-ArchiveGroupedDocument.start();
-FixTab.start();
-AllowChangeArchivedInvoiceNumber.start();
-TransactionPanelHotkeys.start();
-EntryBlocInfos.start();
-AddInvoiceIdColumn.start();
 RotateImg.start();
+TransactionAddByIdButton.start();
+TransactionPanelHotkeys.start();
+TransactionValidMessage.start();
 
 /*
 async function mergeInvoices () {
