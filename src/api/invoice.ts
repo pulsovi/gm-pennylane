@@ -1,6 +1,7 @@
 import { jsonClone } from '../_/json.js';
 
 import { apiRequest } from './core.js';
+import { APIInvoiceToDMS } from './Invoice/ToDMS.js';
 import {
   APIInvoice, APIInvoiceListParams, APIInvoiceUpdateResponse, APIInvoiceList, APIInvoiceItem
 } from './types.js';
@@ -79,4 +80,13 @@ export async function findInvoice<P extends APIInvoiceListParams>(
     for (const invoice of invoices) if (await cb(invoice, parameters)) return invoice;
     parameters = Object.assign(jsonClone(parameters), { page: (parameters.page ?? 0) + 1 });
   } while (true);
+}
+
+/**
+ * Move invoice to DMS
+ */
+export async function moveToDms (id: number, destId: number): Promise<APIInvoiceToDMS> {
+  const url = `accountants/invoices/${id}/move_to_dms?parent_id=${destId}`;
+  const response = await apiRequest(url, null, 'PUT');
+  return APIInvoiceToDMS.Create({response});
 }
