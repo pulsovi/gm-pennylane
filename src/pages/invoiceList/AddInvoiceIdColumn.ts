@@ -19,6 +19,7 @@ export default class AddInvoiceIdColumn extends Service {
 
   fill (anchor: Element) {
     const table = <HTMLTableElement>anchor.closest('table');
+    if (!table) return;
     this.log("fill", table);
     const headRow = $<HTMLTableRowElement>('thead tr', table);
     $('th.id-column', headRow)?.remove();
