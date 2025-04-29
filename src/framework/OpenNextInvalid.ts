@@ -190,10 +190,7 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
    * Update status of an item given by its ID
    */
   private async updateStatus (id: number | RawStatus, value?: RawStatus|null): Promise<Status|null> {
-    if ('number' !== typeof id) {
-      value = id;
-      id = value.id;
-    }
+    if ('number' !== typeof id) { id = id.id; }
     if (!value) value = await this.getStatus(id);
     if (!value) {
       this.cache.delete({id});
