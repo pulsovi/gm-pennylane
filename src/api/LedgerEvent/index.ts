@@ -2,186 +2,229 @@
 const proxyName = 'APILedgerEvent';
 let obj: any = null;
 export class APILedgerEvent {
-  public readonly id: number;
-  public readonly balance: string;
-  public readonly plan_item_id: number;
-  public readonly lettering_id?: number | null;
-  public readonly reconciliation_id?: number | null;
-  public readonly source: string;
-  public readonly closed: boolean;
-  public readonly debit: string;
-  public readonly credit: string;
   public readonly amount: string;
+  public readonly balance: string;
+  public readonly closed: boolean;
+  public readonly credit: string;
+  public readonly debit: string;
+  public readonly id: number;
+  public readonly label: null | string;
+  public readonly lettering: null | Lettering;
+  public readonly lettering_id: null | number;
+  public readonly plan_item_id: number;
   public readonly planItem: PlanItem;
-  public readonly label?: string | null;
   public readonly readonly: boolean;
   public readonly readonlyAmounts: boolean;
-  public readonly lettering?: Lettering | null;
+  public readonly reconciliation_id: null | number;
+  public readonly source: string;
   public static Parse(d: string): APILedgerEvent {
     return APILedgerEvent.Create(JSON.parse(d));
   }
-  public static Create(d: any, field?: string): APILedgerEvent {
+  public static Create(d: any, field?: string, multiple ?: string): APILedgerEvent {
     if (!field) {
       obj = d;
       field = "root";
     }
-    if (d === null || d === undefined) {
-      throwNull2NonNull(field, d);
+    if (!d) {
+      throwNull2NonNull(field, d, multiple ?? this.name);
     } else if (typeof(d) !== 'object') {
-      throwNotObject(field, d, false);
+      throwNotObject(field, d);
     } else if (Array.isArray(d)) {
-      throwIsArray(field, d, false);
+      throwIsArray(field, d);
     }
-    checkNumber(d.id, false, field + ".id");
-    checkString(d.balance, false, field + ".balance");
-    checkNumber(d.plan_item_id, false, field + ".plan_item_id");
-    checkNumber(d.lettering_id, true, field + ".lettering_id");
-    checkNumber(d.reconciliation_id, true, field + ".reconciliation_id");
-    checkString(d.source, false, field + ".source");
-    checkBoolean(d.closed, false, field + ".closed");
-    checkString(d.debit, false, field + ".debit");
-    checkString(d.credit, false, field + ".credit");
-    checkString(d.amount, false, field + ".amount");
-    d.planItem = PlanItem.Create(d.planItem, field + ".planItem");
-    checkString(d.label, true, field + ".label");
-    checkBoolean(d.readonly, false, field + ".readonly");
-    checkBoolean(d.readonlyAmounts, false, field + ".readonlyAmounts");
-    d.lettering = Lettering.Create(d.lettering, field + ".lettering");
-    const knownProperties = ["id","balance","plan_item_id","lettering_id","reconciliation_id","source","closed","debit","credit","amount","planItem","label","readonly","readonlyAmounts","lettering"];
+    checkString(d.amount, field + ".amount");
+    checkString(d.balance, field + ".balance");
+    checkBoolean(d.closed, field + ".closed");
+    checkString(d.credit, field + ".credit");
+    checkString(d.debit, field + ".debit");
+    checkNumber(d.id, field + ".id");
+    // This will be refactored in the next release.
+    try {
+      checkNull(d.label, field + ".label", "null | string");
+    } catch (e) {
+      try {
+        checkString(d.label, field + ".label", "null | string");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+        throw e;
+      }
+    }
+    // This will be refactored in the next release.
+    try {
+      checkNull(d.lettering, field + ".lettering", "null | Lettering");
+    } catch (e) {
+      try {
+        d.lettering = Lettering.Create(d.lettering, field + ".lettering", "null | Lettering");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+        throw e;
+      }
+    }
+    // This will be refactored in the next release.
+    try {
+      checkNull(d.lettering_id, field + ".lettering_id", "null | number");
+    } catch (e) {
+      try {
+        checkNumber(d.lettering_id, field + ".lettering_id", "null | number");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+        throw e;
+      }
+    }
+    checkNumber(d.plan_item_id, field + ".plan_item_id");
+    d.planItem = PlanItem.Create(d.planItem, field + ".planItem", undefined);
+    checkBoolean(d.readonly, field + ".readonly");
+    checkBoolean(d.readonlyAmounts, field + ".readonlyAmounts");
+    // This will be refactored in the next release.
+    try {
+      checkNull(d.reconciliation_id, field + ".reconciliation_id", "null | number");
+    } catch (e) {
+      try {
+        checkNumber(d.reconciliation_id, field + ".reconciliation_id", "null | number");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+        throw e;
+      }
+    }
+    checkString(d.source, field + ".source");
+    const knownProperties = ["amount","balance","closed","credit","debit","id","label","lettering","lettering_id","plan_item_id","planItem","readonly","readonlyAmounts","reconciliation_id","source"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never", false);
+    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
     return new APILedgerEvent(d);
   }
   private constructor(d: any) {
-    this.id = d.id;
-    this.balance = d.balance;
-    this.plan_item_id = d.plan_item_id;
-    if ("lettering_id" in d) this.lettering_id = d.lettering_id;
-    if ("reconciliation_id" in d) this.reconciliation_id = d.reconciliation_id;
-    this.source = d.source;
-    this.closed = d.closed;
-    this.debit = d.debit;
-    this.credit = d.credit;
     this.amount = d.amount;
+    this.balance = d.balance;
+    this.closed = d.closed;
+    this.credit = d.credit;
+    this.debit = d.debit;
+    this.id = d.id;
+    this.label = d.label;
+    this.lettering = d.lettering;
+    this.lettering_id = d.lettering_id;
+    this.plan_item_id = d.plan_item_id;
     this.planItem = d.planItem;
-    if ("label" in d) this.label = d.label;
     this.readonly = d.readonly;
     this.readonlyAmounts = d.readonlyAmounts;
-    if ("lettering" in d) this.lettering = d.lettering;
-  }
-}
-
-export class PlanItem {
-  public readonly id: number;
-  public readonly number: string;
-  public readonly vat_rate: string;
-  public readonly "country_alpha2": string;
-  public readonly label: string;
-  public readonly enabled: boolean;
-  public static Parse(d: string): PlanItem {
-    return PlanItem.Create(JSON.parse(d));
-  }
-  public static Create(d: any, field?: string): PlanItem {
-    if (!field) {
-      obj = d;
-      field = "root";
-    }
-    if (d === null || d === undefined) {
-      throwNull2NonNull(field, d);
-    } else if (typeof(d) !== 'object') {
-      throwNotObject(field, d, false);
-    } else if (Array.isArray(d)) {
-      throwIsArray(field, d, false);
-    }
-    checkNumber(d.id, false, field + ".id");
-    checkString(d.number, false, field + ".number");
-    checkString(d.vat_rate, false, field + ".vat_rate");
-    checkString(d["country_alpha2"], false, field + ".country_alpha2");
-    checkString(d.label, false, field + ".label");
-    checkBoolean(d.enabled, false, field + ".enabled");
-    const knownProperties = ["id","number","vat_rate","country_alpha2","label","enabled"];
-    const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never", false);
-    return new PlanItem(d);
-  }
-  private constructor(d: any) {
-    this.id = d.id;
-    this.number = d.number;
-    this.vat_rate = d.vat_rate;
-    this["country_alpha2"] = d["country_alpha2"];
-    this.label = d.label;
-    this.enabled = d.enabled;
+    this.reconciliation_id = d.reconciliation_id;
+    this.source = d.source;
   }
 }
 
 export class Lettering {
-  public readonly id: number;
   public readonly balance: string;
-  public readonly min_date: string;
+  public readonly id: number;
   public readonly max_date: string;
+  public readonly min_date: string;
   public readonly plan_item_number: string;
-  public static Parse(d: string): Lettering | null {
+  public static Parse(d: string): Lettering {
     return Lettering.Create(JSON.parse(d));
   }
-  public static Create(d: any, field?: string): Lettering | null {
+  public static Create(d: any, field?: string, multiple ?: string): Lettering {
     if (!field) {
       obj = d;
       field = "root";
     }
-    if (d === null || d === undefined) {
-      return null;
+    if (!d) {
+      throwNull2NonNull(field, d, multiple ?? this.name);
     } else if (typeof(d) !== 'object') {
-      throwNotObject(field, d, true);
+      throwNotObject(field, d);
     } else if (Array.isArray(d)) {
-      throwIsArray(field, d, true);
+      throwIsArray(field, d);
     }
-    checkNumber(d.id, false, field + ".id");
-    checkString(d.balance, false, field + ".balance");
-    checkString(d.min_date, false, field + ".min_date");
-    checkString(d.max_date, false, field + ".max_date");
-    checkString(d.plan_item_number, false, field + ".plan_item_number");
-    const knownProperties = ["id","balance","min_date","max_date","plan_item_number"];
+    checkString(d.balance, field + ".balance");
+    checkNumber(d.id, field + ".id");
+    checkString(d.max_date, field + ".max_date");
+    checkString(d.min_date, field + ".min_date");
+    checkString(d.plan_item_number, field + ".plan_item_number");
+    const knownProperties = ["balance","id","max_date","min_date","plan_item_number"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never", false);
+    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
     return new Lettering(d);
   }
   private constructor(d: any) {
-    this.id = d.id;
     this.balance = d.balance;
-    this.min_date = d.min_date;
+    this.id = d.id;
     this.max_date = d.max_date;
+    this.min_date = d.min_date;
     this.plan_item_number = d.plan_item_number;
   }
 }
 
-function throwNull2NonNull(field: string, d: any): never {
-  return errorHelper(field, d, "non-nullable object", false);
-}
-function throwNotObject(field: string, d: any, nullable: boolean): never {
-  return errorHelper(field, d, "object", nullable);
-}
-function throwIsArray(field: string, d: any, nullable: boolean): never {
-  return errorHelper(field, d, "object", nullable);
-}
-function checkNumber(d: any, nullable: boolean, field: string): void {
-  if (typeof(d) !== 'number' && (!nullable || (nullable && d !== null && d !== undefined))) {
-    errorHelper(field, d, "number", nullable);
+export class PlanItem {
+  public readonly "country_alpha2": string;
+  public readonly enabled: boolean;
+  public readonly id: number;
+  public readonly label: string;
+  public readonly number: string;
+  public readonly vat_rate: string;
+  public static Parse(d: string): PlanItem {
+    return PlanItem.Create(JSON.parse(d));
+  }
+  public static Create(d: any, field?: string, multiple ?: string): PlanItem {
+    if (!field) {
+      obj = d;
+      field = "root";
+    }
+    if (!d) {
+      throwNull2NonNull(field, d, multiple ?? this.name);
+    } else if (typeof(d) !== 'object') {
+      throwNotObject(field, d);
+    } else if (Array.isArray(d)) {
+      throwIsArray(field, d);
+    }
+    checkString(d["country_alpha2"], field + ".country_alpha2");
+    checkBoolean(d.enabled, field + ".enabled");
+    checkNumber(d.id, field + ".id");
+    checkString(d.label, field + ".label");
+    checkString(d.number, field + ".number");
+    checkString(d.vat_rate, field + ".vat_rate");
+    const knownProperties = ["country_alpha2","enabled","id","label","number","vat_rate"];
+    const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
+    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    return new PlanItem(d);
+  }
+  private constructor(d: any) {
+    this["country_alpha2"] = d["country_alpha2"];
+    this.enabled = d.enabled;
+    this.id = d.id;
+    this.label = d.label;
+    this.number = d.number;
+    this.vat_rate = d.vat_rate;
   }
 }
-function checkBoolean(d: any, nullable: boolean, field: string): void {
-  if (typeof(d) !== 'boolean' && (!nullable || (nullable && d !== null && d !== undefined))) {
-    errorHelper(field, d, "boolean", nullable);
-  }
+
+function throwNull2NonNull(field: string, value: any, multiple?: string): never {
+  return errorHelper(field, value, multiple ?? "non-nullable object");
 }
-function checkString(d: any, nullable: boolean, field: string): void {
-  if (typeof(d) !== 'string' && (!nullable || (nullable && d !== null && d !== undefined))) {
-    errorHelper(field, d, "string", nullable);
-  }
+function throwNotObject(field: string, value: any, multiple?: string): never {
+  return errorHelper(field, value, multiple ?? "object");
 }
-function errorHelper(field: string, d: any, type: string, nullable: boolean): never {
-  if (nullable) {
-    type += ", null, or undefined";
+function throwIsArray(field: string, value: any, multiple?: string): never {
+  return errorHelper(field, value, multiple ?? "object");
+}
+function checkNumber(value: any, field: string, multiple?: string): void {
+  if (typeof(value) !== 'number') errorHelper(field, value, multiple ?? "number");
+}
+function checkBoolean(value: any, field: string, multiple?: string): void {
+  if (typeof(value) !== 'boolean') errorHelper(field, value, multiple ?? "boolean");
+}
+function checkString(value: any, field: string, multiple?: string): void {
+  if (typeof(value) !== 'string') errorHelper(field, value, multiple ?? "string");
+}
+function checkNull(value: any, field: string, multiple?: string): void {
+  if (value !== null) errorHelper(field, value, multiple ?? "null");
+}
+function errorHelper(field: string, d: any, type: string): never {
+  if (!type.includes(' | ')) {
+    let jsonClone = obj;
+    try {
+      jsonClone = JSON.parse(JSON.stringify(obj));
+    } catch(error) {
+      console.log(error);
+    }
+    console.log('Expected ' + type + " at " + field + " but found:\n" + JSON.stringify(d), jsonClone);
+    prompt(proxyName+':', JSON.stringify(obj));
   }
-  prompt(proxyName+':', JSON.stringify(obj));
   throw new TypeError('Expected ' + type + " at " + field + " but found:\n" + JSON.stringify(d) + "\n\nFull object:\n" + JSON.stringify(obj));
 }

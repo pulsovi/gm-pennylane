@@ -2,28 +2,31 @@
 const proxyName = 'APITransaction';
 let obj: any = null;
 export class APITransaction {
-  public static Parse(s: string): null {
+  public static Parse(s: string): never {
     return APITransaction.Create(JSON.parse(s));
   }
-  public static Create(s: any, fieldName?: string): null {
+  public static Create(s: any, fieldName?: string): never {
     if (!fieldName) {
       obj = s;
       fieldName = "root";
     }
-    checkNull(s, fieldName);
-    return s;
+    checkNever(s, fieldName);
   }
 }
 
-function checkNull(d: any, field: string): void {
-  if (d !== null && d !== undefined) {
-    errorHelper(field, d, "null or undefined", false);
-  }
+function checkNever(value: any, field: string, multiple?: string): never {
+  return errorHelper(field, value, multiple ?? "never");
 }
-function errorHelper(field: string, d: any, type: string, nullable: boolean): never {
-  if (nullable) {
-    type += ", null, or undefined";
+function errorHelper(field: string, d: any, type: string): never {
+  if (!type.includes(' | ')) {
+    let jsonClone = obj;
+    try {
+      jsonClone = JSON.parse(JSON.stringify(obj));
+    } catch(error) {
+      console.log(error);
+    }
+    console.log('Expected ' + type + " at " + field + " but found:\n" + JSON.stringify(d), jsonClone);
+    prompt(proxyName+':', JSON.stringify(obj));
   }
-  prompt(proxyName+':', JSON.stringify(obj));
   throw new TypeError('Expected ' + type + " at " + field + " but found:\n" + JSON.stringify(d) + "\n\nFull object:\n" + JSON.stringify(obj));
 }

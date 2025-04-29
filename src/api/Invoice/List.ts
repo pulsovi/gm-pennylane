@@ -2,193 +2,304 @@
 const proxyName = 'APIInvoiceList';
 let obj: any = null;
 export class APIInvoiceList {
-  public readonly invoices?: InvoicesEntity[] | null;
+  public readonly invoices: InvoicesEntity[];
   public readonly pageSize: number;
   public readonly pagination: Pagination;
   public static Parse(d: string): APIInvoiceList {
     return APIInvoiceList.Create(JSON.parse(d));
   }
-  public static Create(d: any, field?: string): APIInvoiceList {
+  public static Create(d: any, field?: string, multiple ?: string): APIInvoiceList {
     if (!field) {
       obj = d;
       field = "root";
     }
-    if (d === null || d === undefined) {
-      throwNull2NonNull(field, d);
+    if (!d) {
+      throwNull2NonNull(field, d, multiple ?? this.name);
     } else if (typeof(d) !== 'object') {
-      throwNotObject(field, d, false);
+      throwNotObject(field, d);
     } else if (Array.isArray(d)) {
-      throwIsArray(field, d, false);
+      throwIsArray(field, d);
     }
     checkArray(d.invoices, field + ".invoices");
     if (d.invoices) {
       for (let i = 0; i < d.invoices.length; i++) {
-        d.invoices[i] = InvoicesEntity.Create(d.invoices[i], field + ".invoices" + "[" + i + "]");
+        d.invoices[i] = InvoicesEntity.Create(d.invoices[i], field + ".invoices" + "[" + i + "]", undefined);
       }
     }
-    checkNumber(d.pageSize, false, field + ".pageSize");
-    d.pagination = Pagination.Create(d.pagination, field + ".pagination");
+    checkNumber(d.pageSize, field + ".pageSize");
+    d.pagination = Pagination.Create(d.pagination, field + ".pagination", undefined);
     const knownProperties = ["invoices","pageSize","pagination"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never", false);
+    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
     return new APIInvoiceList(d);
   }
   private constructor(d: any) {
-    if ("invoices" in d) this.invoices = d.invoices;
+    this.invoices = d.invoices;
     this.pageSize = d.pageSize;
     this.pagination = d.pagination;
   }
 }
 
 export class InvoicesEntity {
-  public readonly id: number;
-  public readonly type: string;
+  public readonly amount: string;
+  public readonly amount_without_tax: string;
+  public readonly approval_status: null;
+  public readonly archived: boolean;
+  public readonly checksum: string;
   public readonly company_id: number;
-  public readonly label: string;
   public readonly created_at: string;
   public readonly currency: string;
-  public readonly amount: string;
   public readonly currency_amount: string;
   public readonly currency_tax: string;
-  public readonly date?: string | null;
-  public readonly deadline?: string | null;
+  public readonly date: string | null;
+  public readonly deadline: string | null;
   public readonly direction: string;
-  public readonly invoice_number: string;
-  public readonly source: string;
-  public readonly email_from?: null;
-  public readonly gdrive_path?: string | null;
-  public readonly pusher_channel: string;
-  public readonly validation_needed: boolean;
-  public readonly payment_status: string;
-  public readonly paid: boolean;
-  public readonly amount_without_tax: string;
-  public readonly not_duplicate: boolean;
-  public readonly approval_status?: null;
-  public readonly checksum: string;
-  public readonly archived: boolean;
-  public readonly incomplete: boolean;
-  public readonly is_waiting_for_ocr: boolean;
-  public readonly status: string;
+  public readonly email_from: null;
   public readonly filename: string;
+  public readonly gdrive_path: null | string;
+  public readonly id: number;
+  public readonly incomplete: boolean;
+  public readonly invoice_lines: InvoiceLinesEntity[];
+  public readonly invoice_number: string;
   public readonly is_factur_x: boolean;
-  public readonly thirdparty?: Thirdparty | null;
-  public readonly invoice_lines?: InvoiceLinesEntity[] | null;
+  public readonly is_waiting_for_ocr: boolean;
+  public readonly label: string;
+  public readonly not_duplicate: boolean;
+  public readonly paid: boolean;
+  public readonly payment_status: string;
+  public readonly pusher_channel: string;
+  public readonly source: string;
+  public readonly status: string;
+  public readonly thirdparty: Thirdparty | null;
+  public readonly type: string;
+  public readonly validation_needed: boolean;
   public static Parse(d: string): InvoicesEntity {
     return InvoicesEntity.Create(JSON.parse(d));
   }
-  public static Create(d: any, field?: string): InvoicesEntity {
+  public static Create(d: any, field?: string, multiple ?: string): InvoicesEntity {
     if (!field) {
       obj = d;
       field = "root";
     }
-    if (d === null || d === undefined) {
-      throwNull2NonNull(field, d);
+    if (!d) {
+      throwNull2NonNull(field, d, multiple ?? this.name);
     } else if (typeof(d) !== 'object') {
-      throwNotObject(field, d, false);
+      throwNotObject(field, d);
     } else if (Array.isArray(d)) {
-      throwIsArray(field, d, false);
+      throwIsArray(field, d);
     }
-    checkNumber(d.id, false, field + ".id");
-    checkString(d.type, false, field + ".type");
-    checkNumber(d.company_id, false, field + ".company_id");
-    checkString(d.label, false, field + ".label");
-    checkString(d.created_at, false, field + ".created_at");
-    checkString(d.currency, false, field + ".currency");
-    checkString(d.amount, false, field + ".amount");
-    checkString(d.currency_amount, false, field + ".currency_amount");
-    checkString(d.currency_tax, false, field + ".currency_tax");
-    checkString(d.date, true, field + ".date");
-    checkString(d.deadline, true, field + ".deadline");
-    checkString(d.direction, false, field + ".direction");
-    checkString(d.invoice_number, false, field + ".invoice_number");
-    checkString(d.source, false, field + ".source");
-    checkNull(d.email_from, field + ".email_from");
-    checkString(d.gdrive_path, true, field + ".gdrive_path");
-    checkString(d.pusher_channel, false, field + ".pusher_channel");
-    checkBoolean(d.validation_needed, false, field + ".validation_needed");
-    checkString(d.payment_status, false, field + ".payment_status");
-    checkBoolean(d.paid, false, field + ".paid");
-    checkString(d.amount_without_tax, false, field + ".amount_without_tax");
-    checkBoolean(d.not_duplicate, false, field + ".not_duplicate");
+    checkString(d.amount, field + ".amount");
+    checkString(d.amount_without_tax, field + ".amount_without_tax");
     checkNull(d.approval_status, field + ".approval_status");
-    checkString(d.checksum, false, field + ".checksum");
-    checkBoolean(d.archived, false, field + ".archived");
-    checkBoolean(d.incomplete, false, field + ".incomplete");
-    checkBoolean(d.is_waiting_for_ocr, false, field + ".is_waiting_for_ocr");
-    checkString(d.status, false, field + ".status");
-    checkString(d.filename, false, field + ".filename");
-    checkBoolean(d.is_factur_x, false, field + ".is_factur_x");
-    d.thirdparty = Thirdparty.Create(d.thirdparty, field + ".thirdparty");
+    checkBoolean(d.archived, field + ".archived");
+    checkString(d.checksum, field + ".checksum");
+    checkNumber(d.company_id, field + ".company_id");
+    checkString(d.created_at, field + ".created_at");
+    checkString(d.currency, field + ".currency");
+    checkString(d.currency_amount, field + ".currency_amount");
+    checkString(d.currency_tax, field + ".currency_tax");
+    // This will be refactored in the next release.
+    try {
+      checkString(d.date, field + ".date", "string | null");
+    } catch (e) {
+      try {
+        checkNull(d.date, field + ".date", "string | null");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+        throw e;
+      }
+    }
+    // This will be refactored in the next release.
+    try {
+      checkString(d.deadline, field + ".deadline", "string | null");
+    } catch (e) {
+      try {
+        checkNull(d.deadline, field + ".deadline", "string | null");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+        throw e;
+      }
+    }
+    checkString(d.direction, field + ".direction");
+    checkNull(d.email_from, field + ".email_from");
+    checkString(d.filename, field + ".filename");
+    // This will be refactored in the next release.
+    try {
+      checkNull(d.gdrive_path, field + ".gdrive_path", "null | string");
+    } catch (e) {
+      try {
+        checkString(d.gdrive_path, field + ".gdrive_path", "null | string");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+        throw e;
+      }
+    }
+    checkNumber(d.id, field + ".id");
+    checkBoolean(d.incomplete, field + ".incomplete");
     checkArray(d.invoice_lines, field + ".invoice_lines");
     if (d.invoice_lines) {
       for (let i = 0; i < d.invoice_lines.length; i++) {
-        d.invoice_lines[i] = InvoiceLinesEntity.Create(d.invoice_lines[i], field + ".invoice_lines" + "[" + i + "]");
+        d.invoice_lines[i] = InvoiceLinesEntity.Create(d.invoice_lines[i], field + ".invoice_lines" + "[" + i + "]", undefined);
       }
     }
-    const knownProperties = ["id","type","company_id","label","created_at","currency","amount","currency_amount","currency_tax","date","deadline","direction","invoice_number","source","email_from","gdrive_path","pusher_channel","validation_needed","payment_status","paid","amount_without_tax","not_duplicate","approval_status","checksum","archived","incomplete","is_waiting_for_ocr","status","filename","is_factur_x","thirdparty","invoice_lines"];
+    checkString(d.invoice_number, field + ".invoice_number");
+    checkBoolean(d.is_factur_x, field + ".is_factur_x");
+    checkBoolean(d.is_waiting_for_ocr, field + ".is_waiting_for_ocr");
+    checkString(d.label, field + ".label");
+    checkBoolean(d.not_duplicate, field + ".not_duplicate");
+    checkBoolean(d.paid, field + ".paid");
+    checkString(d.payment_status, field + ".payment_status");
+    checkString(d.pusher_channel, field + ".pusher_channel");
+    checkString(d.source, field + ".source");
+    checkString(d.status, field + ".status");
+    // This will be refactored in the next release.
+    try {
+      d.thirdparty = Thirdparty.Create(d.thirdparty, field + ".thirdparty", "Thirdparty | null");
+    } catch (e) {
+      try {
+        checkNull(d.thirdparty, field + ".thirdparty", "Thirdparty | null");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+        throw e;
+      }
+    }
+    checkString(d.type, field + ".type");
+    checkBoolean(d.validation_needed, field + ".validation_needed");
+    const knownProperties = ["amount","amount_without_tax","approval_status","archived","checksum","company_id","created_at","currency","currency_amount","currency_tax","date","deadline","direction","email_from","filename","gdrive_path","id","incomplete","invoice_lines","invoice_number","is_factur_x","is_waiting_for_ocr","label","not_duplicate","paid","payment_status","pusher_channel","source","status","thirdparty","type","validation_needed"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never", false);
+    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
     return new InvoicesEntity(d);
   }
   private constructor(d: any) {
-    this.id = d.id;
-    this.type = d.type;
+    this.amount = d.amount;
+    this.amount_without_tax = d.amount_without_tax;
+    this.approval_status = d.approval_status;
+    this.archived = d.archived;
+    this.checksum = d.checksum;
     this.company_id = d.company_id;
-    this.label = d.label;
     this.created_at = d.created_at;
     this.currency = d.currency;
-    this.amount = d.amount;
     this.currency_amount = d.currency_amount;
     this.currency_tax = d.currency_tax;
-    if ("date" in d) this.date = d.date;
-    if ("deadline" in d) this.deadline = d.deadline;
+    this.date = d.date;
+    this.deadline = d.deadline;
     this.direction = d.direction;
-    this.invoice_number = d.invoice_number;
-    this.source = d.source;
-    if ("email_from" in d) this.email_from = d.email_from;
-    if ("gdrive_path" in d) this.gdrive_path = d.gdrive_path;
-    this.pusher_channel = d.pusher_channel;
-    this.validation_needed = d.validation_needed;
-    this.payment_status = d.payment_status;
-    this.paid = d.paid;
-    this.amount_without_tax = d.amount_without_tax;
-    this.not_duplicate = d.not_duplicate;
-    if ("approval_status" in d) this.approval_status = d.approval_status;
-    this.checksum = d.checksum;
-    this.archived = d.archived;
-    this.incomplete = d.incomplete;
-    this.is_waiting_for_ocr = d.is_waiting_for_ocr;
-    this.status = d.status;
+    this.email_from = d.email_from;
     this.filename = d.filename;
+    this.gdrive_path = d.gdrive_path;
+    this.id = d.id;
+    this.incomplete = d.incomplete;
+    this.invoice_lines = d.invoice_lines;
+    this.invoice_number = d.invoice_number;
     this.is_factur_x = d.is_factur_x;
-    if ("thirdparty" in d) this.thirdparty = d.thirdparty;
-    if ("invoice_lines" in d) this.invoice_lines = d.invoice_lines;
+    this.is_waiting_for_ocr = d.is_waiting_for_ocr;
+    this.label = d.label;
+    this.not_duplicate = d.not_duplicate;
+    this.paid = d.paid;
+    this.payment_status = d.payment_status;
+    this.pusher_channel = d.pusher_channel;
+    this.source = d.source;
+    this.status = d.status;
+    this.thirdparty = d.thirdparty;
+    this.type = d.type;
+    this.validation_needed = d.validation_needed;
+  }
+}
+
+export class InvoiceLinesEntity {
+  public readonly id: number;
+  public readonly pnl_plan_item: PnlPlanItem;
+  public readonly vat_rate: string;
+  public static Parse(d: string): InvoiceLinesEntity {
+    return InvoiceLinesEntity.Create(JSON.parse(d));
+  }
+  public static Create(d: any, field?: string, multiple ?: string): InvoiceLinesEntity {
+    if (!field) {
+      obj = d;
+      field = "root";
+    }
+    if (!d) {
+      throwNull2NonNull(field, d, multiple ?? this.name);
+    } else if (typeof(d) !== 'object') {
+      throwNotObject(field, d);
+    } else if (Array.isArray(d)) {
+      throwIsArray(field, d);
+    }
+    checkNumber(d.id, field + ".id");
+    d.pnl_plan_item = PnlPlanItem.Create(d.pnl_plan_item, field + ".pnl_plan_item", undefined);
+    checkString(d.vat_rate, field + ".vat_rate");
+    const knownProperties = ["id","pnl_plan_item","vat_rate"];
+    const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
+    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    return new InvoiceLinesEntity(d);
+  }
+  private constructor(d: any) {
+    this.id = d.id;
+    this.pnl_plan_item = d.pnl_plan_item;
+    this.vat_rate = d.vat_rate;
+  }
+}
+
+export class PnlPlanItem {
+  public readonly enabled: boolean;
+  public readonly id: number;
+  public readonly label: string;
+  public readonly number: string;
+  public static Parse(d: string): PnlPlanItem {
+    return PnlPlanItem.Create(JSON.parse(d));
+  }
+  public static Create(d: any, field?: string, multiple ?: string): PnlPlanItem {
+    if (!field) {
+      obj = d;
+      field = "root";
+    }
+    if (!d) {
+      throwNull2NonNull(field, d, multiple ?? this.name);
+    } else if (typeof(d) !== 'object') {
+      throwNotObject(field, d);
+    } else if (Array.isArray(d)) {
+      throwIsArray(field, d);
+    }
+    checkBoolean(d.enabled, field + ".enabled");
+    checkNumber(d.id, field + ".id");
+    checkString(d.label, field + ".label");
+    checkString(d.number, field + ".number");
+    const knownProperties = ["enabled","id","label","number"];
+    const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
+    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    return new PnlPlanItem(d);
+  }
+  private constructor(d: any) {
+    this.enabled = d.enabled;
+    this.id = d.id;
+    this.label = d.label;
+    this.number = d.number;
   }
 }
 
 export class Thirdparty {
   public readonly id: number;
   public readonly name: string;
-  public static Parse(d: string): Thirdparty | null {
+  public static Parse(d: string): Thirdparty {
     return Thirdparty.Create(JSON.parse(d));
   }
-  public static Create(d: any, field?: string): Thirdparty | null {
+  public static Create(d: any, field?: string, multiple ?: string): Thirdparty {
     if (!field) {
       obj = d;
       field = "root";
     }
-    if (d === null || d === undefined) {
-      return null;
+    if (!d) {
+      throwNull2NonNull(field, d, multiple ?? this.name);
     } else if (typeof(d) !== 'object') {
-      throwNotObject(field, d, true);
+      throwNotObject(field, d);
     } else if (Array.isArray(d)) {
-      throwIsArray(field, d, true);
+      throwIsArray(field, d);
     }
-    checkNumber(d.id, false, field + ".id");
-    checkString(d.name, false, field + ".name");
+    checkNumber(d.id, field + ".id");
+    checkString(d.name, field + ".name");
     const knownProperties = ["id","name"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never", false);
+    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
     return new Thirdparty(d);
   }
   private constructor(d: any) {
@@ -197,161 +308,86 @@ export class Thirdparty {
   }
 }
 
-export class InvoiceLinesEntity {
-  public readonly id: number;
-  public readonly vat_rate: string;
-  public readonly pnl_plan_item: PnlPlanItem;
-  public static Parse(d: string): InvoiceLinesEntity {
-    return InvoiceLinesEntity.Create(JSON.parse(d));
-  }
-  public static Create(d: any, field?: string): InvoiceLinesEntity {
-    if (!field) {
-      obj = d;
-      field = "root";
-    }
-    if (d === null || d === undefined) {
-      throwNull2NonNull(field, d);
-    } else if (typeof(d) !== 'object') {
-      throwNotObject(field, d, false);
-    } else if (Array.isArray(d)) {
-      throwIsArray(field, d, false);
-    }
-    checkNumber(d.id, false, field + ".id");
-    checkString(d.vat_rate, false, field + ".vat_rate");
-    d.pnl_plan_item = PnlPlanItem.Create(d.pnl_plan_item, field + ".pnl_plan_item");
-    const knownProperties = ["id","vat_rate","pnl_plan_item"];
-    const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never", false);
-    return new InvoiceLinesEntity(d);
-  }
-  private constructor(d: any) {
-    this.id = d.id;
-    this.vat_rate = d.vat_rate;
-    this.pnl_plan_item = d.pnl_plan_item;
-  }
-}
-
-export class PnlPlanItem {
-  public readonly id: number;
-  public readonly number: string;
-  public readonly label: string;
-  public readonly enabled: boolean;
-  public static Parse(d: string): PnlPlanItem {
-    return PnlPlanItem.Create(JSON.parse(d));
-  }
-  public static Create(d: any, field?: string): PnlPlanItem {
-    if (!field) {
-      obj = d;
-      field = "root";
-    }
-    if (d === null || d === undefined) {
-      throwNull2NonNull(field, d);
-    } else if (typeof(d) !== 'object') {
-      throwNotObject(field, d, false);
-    } else if (Array.isArray(d)) {
-      throwIsArray(field, d, false);
-    }
-    checkNumber(d.id, false, field + ".id");
-    checkString(d.number, false, field + ".number");
-    checkString(d.label, false, field + ".label");
-    checkBoolean(d.enabled, false, field + ".enabled");
-    const knownProperties = ["id","number","label","enabled"];
-    const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never", false);
-    return new PnlPlanItem(d);
-  }
-  private constructor(d: any) {
-    this.id = d.id;
-    this.number = d.number;
-    this.label = d.label;
-    this.enabled = d.enabled;
-  }
-}
-
 export class Pagination {
-  public readonly page: number;
-  public readonly pageSize: number;
-  public readonly pages: number;
-  public readonly totalEntries: number;
-  public readonly totalEntriesStr: string;
-  public readonly totalEntriesPrecision: string;
   public readonly hasNextPage: boolean;
+  public readonly page: number;
+  public readonly pages: number;
+  public readonly pageSize: number;
+  public readonly totalEntries: number;
+  public readonly totalEntriesPrecision: string;
+  public readonly totalEntriesStr: string;
   public static Parse(d: string): Pagination {
     return Pagination.Create(JSON.parse(d));
   }
-  public static Create(d: any, field?: string): Pagination {
+  public static Create(d: any, field?: string, multiple ?: string): Pagination {
     if (!field) {
       obj = d;
       field = "root";
     }
-    if (d === null || d === undefined) {
-      throwNull2NonNull(field, d);
+    if (!d) {
+      throwNull2NonNull(field, d, multiple ?? this.name);
     } else if (typeof(d) !== 'object') {
-      throwNotObject(field, d, false);
+      throwNotObject(field, d);
     } else if (Array.isArray(d)) {
-      throwIsArray(field, d, false);
+      throwIsArray(field, d);
     }
-    checkNumber(d.page, false, field + ".page");
-    checkNumber(d.pageSize, false, field + ".pageSize");
-    checkNumber(d.pages, false, field + ".pages");
-    checkNumber(d.totalEntries, false, field + ".totalEntries");
-    checkString(d.totalEntriesStr, false, field + ".totalEntriesStr");
-    checkString(d.totalEntriesPrecision, false, field + ".totalEntriesPrecision");
-    checkBoolean(d.hasNextPage, false, field + ".hasNextPage");
-    const knownProperties = ["page","pageSize","pages","totalEntries","totalEntriesStr","totalEntriesPrecision","hasNextPage"];
+    checkBoolean(d.hasNextPage, field + ".hasNextPage");
+    checkNumber(d.page, field + ".page");
+    checkNumber(d.pages, field + ".pages");
+    checkNumber(d.pageSize, field + ".pageSize");
+    checkNumber(d.totalEntries, field + ".totalEntries");
+    checkString(d.totalEntriesPrecision, field + ".totalEntriesPrecision");
+    checkString(d.totalEntriesStr, field + ".totalEntriesStr");
+    const knownProperties = ["hasNextPage","page","pages","pageSize","totalEntries","totalEntriesPrecision","totalEntriesStr"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never", false);
+    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
     return new Pagination(d);
   }
   private constructor(d: any) {
-    this.page = d.page;
-    this.pageSize = d.pageSize;
-    this.pages = d.pages;
-    this.totalEntries = d.totalEntries;
-    this.totalEntriesStr = d.totalEntriesStr;
-    this.totalEntriesPrecision = d.totalEntriesPrecision;
     this.hasNextPage = d.hasNextPage;
+    this.page = d.page;
+    this.pages = d.pages;
+    this.pageSize = d.pageSize;
+    this.totalEntries = d.totalEntries;
+    this.totalEntriesPrecision = d.totalEntriesPrecision;
+    this.totalEntriesStr = d.totalEntriesStr;
   }
 }
 
-function throwNull2NonNull(field: string, d: any): never {
-  return errorHelper(field, d, "non-nullable object", false);
+function throwNull2NonNull(field: string, value: any, multiple?: string): never {
+  return errorHelper(field, value, multiple ?? "non-nullable object");
 }
-function throwNotObject(field: string, d: any, nullable: boolean): never {
-  return errorHelper(field, d, "object", nullable);
+function throwNotObject(field: string, value: any, multiple?: string): never {
+  return errorHelper(field, value, multiple ?? "object");
 }
-function throwIsArray(field: string, d: any, nullable: boolean): never {
-  return errorHelper(field, d, "object", nullable);
+function throwIsArray(field: string, value: any, multiple?: string): never {
+  return errorHelper(field, value, multiple ?? "object");
 }
-function checkArray(d: any, field: string): void {
-  if (!Array.isArray(d) && d !== null && d !== undefined) {
-    errorHelper(field, d, "array", true);
+function checkArray(value: any, field: string, multiple?: string): void {
+  if (!Array.isArray(value)) errorHelper(field, value, multiple ?? "array");
+}
+function checkNumber(value: any, field: string, multiple?: string): void {
+  if (typeof(value) !== 'number') errorHelper(field, value, multiple ?? "number");
+}
+function checkBoolean(value: any, field: string, multiple?: string): void {
+  if (typeof(value) !== 'boolean') errorHelper(field, value, multiple ?? "boolean");
+}
+function checkString(value: any, field: string, multiple?: string): void {
+  if (typeof(value) !== 'string') errorHelper(field, value, multiple ?? "string");
+}
+function checkNull(value: any, field: string, multiple?: string): void {
+  if (value !== null) errorHelper(field, value, multiple ?? "null");
+}
+function errorHelper(field: string, d: any, type: string): never {
+  if (!type.includes(' | ')) {
+    let jsonClone = obj;
+    try {
+      jsonClone = JSON.parse(JSON.stringify(obj));
+    } catch(error) {
+      console.log(error);
+    }
+    console.log('Expected ' + type + " at " + field + " but found:\n" + JSON.stringify(d), jsonClone);
+    prompt(proxyName+':', JSON.stringify(obj));
   }
-}
-function checkNumber(d: any, nullable: boolean, field: string): void {
-  if (typeof(d) !== 'number' && (!nullable || (nullable && d !== null && d !== undefined))) {
-    errorHelper(field, d, "number", nullable);
-  }
-}
-function checkBoolean(d: any, nullable: boolean, field: string): void {
-  if (typeof(d) !== 'boolean' && (!nullable || (nullable && d !== null && d !== undefined))) {
-    errorHelper(field, d, "boolean", nullable);
-  }
-}
-function checkString(d: any, nullable: boolean, field: string): void {
-  if (typeof(d) !== 'string' && (!nullable || (nullable && d !== null && d !== undefined))) {
-    errorHelper(field, d, "string", nullable);
-  }
-}
-function checkNull(d: any, field: string): void {
-  if (d !== null && d !== undefined) {
-    errorHelper(field, d, "null or undefined", false);
-  }
-}
-function errorHelper(field: string, d: any, type: string, nullable: boolean): never {
-  if (nullable) {
-    type += ", null, or undefined";
-  }
-  prompt(proxyName+':', JSON.stringify(obj));
   throw new TypeError('Expected ' + type + " at " + field + " but found:\n" + JSON.stringify(d) + "\n\nFull object:\n" + JSON.stringify(obj));
 }

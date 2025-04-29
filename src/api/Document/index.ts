@@ -2,348 +2,630 @@
 const proxyName = 'APIDocument';
 let obj: any = null;
 export class APIDocument {
-  public readonly id: number;
-  public readonly company_id: number;
-  public readonly date?: string | null;
-  public readonly created_at: string;
-  public readonly updated_at: string;
-  public readonly archived_at?: string | null;
-  public readonly type: string;
-  public readonly source: string;
-  public readonly draft: boolean;
-  public readonly group_uuid: string;
-  public readonly gdrive_path?: string | null;
-  public readonly preview_status?: string | null;
-  public readonly pusher_channel: string;
-  public readonly email_from?: null;
-  public readonly score?: null;
-  public readonly is_waiting_details: boolean;
-  public readonly external_id: string;
-  public readonly journal_id: number;
-  public readonly grouped_at?: string | null;
-  public readonly attachment_required: boolean;
-  public readonly attachment_lost: boolean;
-  public readonly pdf_generation_status: string;
-  public readonly reversal_origin_id?: null;
-  public readonly billing_subscription_id?: null;
-  public readonly fec_pieceref: string;
-  public readonly label: string;
-  public readonly url: string;
-  public readonly method: string;
-  public readonly accounting_type: boolean;
-  public readonly archived: boolean;
-  public readonly quotes: boolean;
-  public readonly readonly: boolean;
   public readonly account_id?: number | null;
-  public readonly thirdparty_id?: number | null;
-  public readonly payment_id?: null;
+  public readonly accounting_type: boolean;
   public readonly amount: string;
+  public readonly archived: boolean;
+  public readonly archived_at: null | string;
+  public readonly attachment_lost: boolean;
+  public readonly attachment_required: boolean;
+  public readonly billing_subscription_id: null;
+  public readonly can_be_stamped_as_paid_in_pdf?: boolean;
+  public readonly company?: Company | null;
+  public readonly company_id: number;
+  public readonly complete?: boolean | null;
+  public readonly completeness?: number | null;
+  public readonly created_at: string;
+  public readonly credit_notes_amount?: string;
   public readonly currency: string;
   public readonly currency_amount: string;
-  public readonly outstanding_balance: string;
-  public readonly completeness?: number | null;
-  public readonly gross_amount?: string | null;
-  public readonly status?: string | null;
-  public readonly complete?: boolean | null;
-  public readonly company?: Company | null;
-  public readonly scored_invoices?: ScoredInvoices | null;
-  public readonly grouped_documents?: GroupedDocumentsEntity[] | null;
-  public readonly is_waiting_for_ocr?: boolean | null;
-  public readonly ocr_thirdparty_id?: number | null;
-  public readonly direction?: string | null;
+  public readonly currency_amount_before_tax?: string;
+  public readonly currency_price_before_tax?: string;
+  public readonly currency_tax?: string;
+  public readonly custom_payment_reference?: string;
+  public readonly date: string | null;
   public readonly deadline?: string | null;
-  public readonly multiplier?: number | null;
-  public readonly price_before_tax?: string | null;
-  public readonly quote_uid?: null;
-  public readonly special_mention?: null;
-  public readonly not_duplicate?: boolean | null;
-  public readonly validation_needed?: boolean | null;
-  public readonly currency_tax?: string | null;
-  public readonly currency_price_before_tax?: string | null;
-  public readonly language?: string | null;
-  public readonly payment_status?: string | null;
-  public readonly payment_method?: null;
-  public readonly invoice_number?: string | null;
-  public readonly tax?: string | null;
+  public readonly direction?: string;
+  public readonly discount?: string;
+  public readonly discount_type?: string;
+  public readonly draft: boolean;
+  public readonly email_from: null;
   public readonly estimate_status?: null;
-  public readonly iban?: string | null;
-  public readonly paid?: boolean | null;
-  public readonly future_in_days?: number | null;
-  public readonly discount?: string | null;
-  public readonly discount_type?: string | null;
+  public readonly external_id: string;
+  public readonly factor_status?: string;
+  public readonly fec_pieceref: string;
   public readonly finalized_at?: null;
-  public readonly quote_group_uuid?: string | null;
-  public readonly factor_status?: string | null;
-  public readonly currency_amount_before_tax?: string | null;
   public readonly from_estimate_id?: null;
-  public readonly credit_notes_amount?: string | null;
-  public readonly payment_reminder_enabled?: boolean | null;
-  public readonly payment_reference?: string | null;
-  public readonly is_credit_note?: boolean | null;
-  public readonly is_estimate?: boolean | null;
-  public readonly is_destroyable?: boolean | null;
-  public readonly can_be_stamped_as_paid_in_pdf?: boolean | null;
-  public readonly custom_payment_reference?: string | null;
-  public readonly scored_transactions?: null[] | null;
-  public readonly recipients?: null[] | null;
-  public readonly invoice_kind?: string | null;
-  public readonly pdf_invoice_title?: string | null;
-  public readonly pdf_invoice_free_text?: string | null;
-  public readonly pdf_invoice_free_text_enabled?: boolean | null;
-  public readonly pdf_invoice_subject?: string | null;
-  public readonly pdf_invoice_subject_enabled?: boolean | null;
-  public readonly pdf_invoice_display_products_list?: boolean | null;
-  public readonly pdf_paid_stamp?: boolean | null;
+  public readonly future_in_days?: number | null;
+  public readonly gdrive_path: null | string;
+  public readonly gross_amount?: string | null;
+  public readonly group_uuid: string;
+  public readonly grouped_at: null | string;
+  public readonly grouped_documents: GroupedDocumentsEntity[];
+  public readonly iban?: string;
+  public readonly id: number;
+  public readonly invoice_kind?: null | string;
+  public readonly invoice_number?: string;
   public readonly invoicing_detailed_source?: null;
-  public readonly manual_partial_invoices?: boolean | null;
+  public readonly is_credit_note?: boolean;
+  public readonly is_destroyable?: boolean;
+  public readonly is_estimate?: boolean;
+  public readonly is_waiting_details: boolean;
+  public readonly is_waiting_for_ocr?: boolean;
+  public readonly journal_id: number;
+  public readonly label: string;
+  public readonly language?: string;
+  public readonly manual_partial_invoices?: boolean;
+  public readonly method: string;
+  public readonly multiplier?: number;
+  public readonly not_duplicate?: boolean;
+  public readonly ocr_thirdparty_id?: null | number;
+  public readonly outstanding_balance: string;
+  public readonly paid?: boolean;
+  public readonly payment_id?: null;
+  public readonly payment_method?: null;
+  public readonly payment_reference?: string;
+  public readonly payment_reminder_enabled?: boolean;
+  public readonly payment_status?: string;
+  public readonly pdf_generation_status: string;
+  public readonly pdf_invoice_display_products_list?: boolean;
+  public readonly pdf_invoice_free_text?: string;
+  public readonly pdf_invoice_free_text_enabled?: boolean;
+  public readonly pdf_invoice_subject?: string;
+  public readonly pdf_invoice_subject_enabled?: boolean;
+  public readonly pdf_invoice_title?: string;
+  public readonly pdf_paid_stamp?: boolean;
+  public readonly preview_status: null | string;
+  public readonly price_before_tax?: string;
+  public readonly pusher_channel: string;
+  public readonly quote_group_uuid?: string;
+  public readonly quote_uid?: null;
+  public readonly quotes: boolean;
+  public readonly readonly: boolean;
+  public readonly recipients?: never[];
+  public readonly reversal_origin_id: null;
+  public readonly score: null;
+  public readonly scored_invoices?: ScoredInvoices | null;
+  public readonly scored_transactions?: never[];
+  public readonly source: string;
+  public readonly special_mention?: null;
+  public readonly status?: string | null;
+  public readonly tax?: string;
+  public readonly thirdparty_id: null | number;
+  public readonly type: string;
+  public readonly updated_at: string;
+  public readonly url: string;
+  public readonly validation_needed?: boolean;
   public static Parse(d: string): APIDocument {
     return APIDocument.Create(JSON.parse(d));
   }
-  public static Create(d: any, field?: string): APIDocument {
+  public static Create(d: any, field?: string, multiple ?: string): APIDocument {
     if (!field) {
       obj = d;
       field = "root";
     }
-    if (d === null || d === undefined) {
-      throwNull2NonNull(field, d);
+    if (!d) {
+      throwNull2NonNull(field, d, multiple ?? this.name);
     } else if (typeof(d) !== 'object') {
-      throwNotObject(field, d, false);
+      throwNotObject(field, d);
     } else if (Array.isArray(d)) {
-      throwIsArray(field, d, false);
+      throwIsArray(field, d);
     }
-    checkNumber(d.id, false, field + ".id");
-    checkNumber(d.company_id, false, field + ".company_id");
-    checkString(d.date, true, field + ".date");
-    checkString(d.created_at, false, field + ".created_at");
-    checkString(d.updated_at, false, field + ".updated_at");
-    checkString(d.archived_at, true, field + ".archived_at");
-    checkString(d.type, false, field + ".type");
-    checkString(d.source, false, field + ".source");
-    checkBoolean(d.draft, false, field + ".draft");
-    checkString(d.group_uuid, false, field + ".group_uuid");
-    checkString(d.gdrive_path, true, field + ".gdrive_path");
-    checkString(d.preview_status, true, field + ".preview_status");
-    checkString(d.pusher_channel, false, field + ".pusher_channel");
-    checkNull(d.email_from, field + ".email_from");
-    checkNull(d.score, field + ".score");
-    checkBoolean(d.is_waiting_details, false, field + ".is_waiting_details");
-    checkString(d.external_id, false, field + ".external_id");
-    checkNumber(d.journal_id, false, field + ".journal_id");
-    checkString(d.grouped_at, true, field + ".grouped_at");
-    checkBoolean(d.attachment_required, false, field + ".attachment_required");
-    checkBoolean(d.attachment_lost, false, field + ".attachment_lost");
-    checkString(d.pdf_generation_status, false, field + ".pdf_generation_status");
-    checkNull(d.reversal_origin_id, field + ".reversal_origin_id");
+    if ("account_id" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkNumber(d.account_id, field + ".account_id", "number | null");
+      } catch (e) {
+        try {
+          checkNull(d.account_id, field + ".account_id", "number | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    checkBoolean(d.accounting_type, field + ".accounting_type");
+    checkString(d.amount, field + ".amount");
+    checkBoolean(d.archived, field + ".archived");
+    // This will be refactored in the next release.
+    try {
+      checkNull(d.archived_at, field + ".archived_at", "null | string");
+    } catch (e) {
+      try {
+        checkString(d.archived_at, field + ".archived_at", "null | string");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+        throw e;
+      }
+    }
+    checkBoolean(d.attachment_lost, field + ".attachment_lost");
+    checkBoolean(d.attachment_required, field + ".attachment_required");
     checkNull(d.billing_subscription_id, field + ".billing_subscription_id");
-    checkString(d.fec_pieceref, false, field + ".fec_pieceref");
-    checkString(d.label, false, field + ".label");
-    checkString(d.url, false, field + ".url");
-    checkString(d.method, false, field + ".method");
-    checkBoolean(d.accounting_type, false, field + ".accounting_type");
-    checkBoolean(d.archived, false, field + ".archived");
-    checkBoolean(d.quotes, false, field + ".quotes");
-    checkBoolean(d.readonly, false, field + ".readonly");
-    checkNumber(d.account_id, true, field + ".account_id");
-    checkNumber(d.thirdparty_id, true, field + ".thirdparty_id");
-    checkNull(d.payment_id, field + ".payment_id");
-    checkString(d.amount, false, field + ".amount");
-    checkString(d.currency, false, field + ".currency");
-    checkString(d.currency_amount, false, field + ".currency_amount");
-    checkString(d.outstanding_balance, false, field + ".outstanding_balance");
-    checkNumber(d.completeness, true, field + ".completeness");
-    checkString(d.gross_amount, true, field + ".gross_amount");
-    checkString(d.status, true, field + ".status");
-    checkBoolean(d.complete, true, field + ".complete");
-    d.company = Company.Create(d.company, field + ".company");
-    d.scored_invoices = ScoredInvoices.Create(d.scored_invoices, field + ".scored_invoices");
+    if ("can_be_stamped_as_paid_in_pdf" in d) {
+      checkBoolean(d.can_be_stamped_as_paid_in_pdf, field + ".can_be_stamped_as_paid_in_pdf");
+    }
+    if ("company" in d) {
+      // This will be refactored in the next release.
+      try {
+        d.company = Company.Create(d.company, field + ".company", "Company | null");
+      } catch (e) {
+        try {
+          checkNull(d.company, field + ".company", "Company | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    checkNumber(d.company_id, field + ".company_id");
+    if ("complete" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkBoolean(d.complete, field + ".complete", "boolean | null");
+      } catch (e) {
+        try {
+          checkNull(d.complete, field + ".complete", "boolean | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    if ("completeness" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkNumber(d.completeness, field + ".completeness", "number | null");
+      } catch (e) {
+        try {
+          checkNull(d.completeness, field + ".completeness", "number | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    checkString(d.created_at, field + ".created_at");
+    if ("credit_notes_amount" in d) {
+      checkString(d.credit_notes_amount, field + ".credit_notes_amount");
+    }
+    checkString(d.currency, field + ".currency");
+    checkString(d.currency_amount, field + ".currency_amount");
+    if ("currency_amount_before_tax" in d) {
+      checkString(d.currency_amount_before_tax, field + ".currency_amount_before_tax");
+    }
+    if ("currency_price_before_tax" in d) {
+      checkString(d.currency_price_before_tax, field + ".currency_price_before_tax");
+    }
+    if ("currency_tax" in d) {
+      checkString(d.currency_tax, field + ".currency_tax");
+    }
+    if ("custom_payment_reference" in d) {
+      checkString(d.custom_payment_reference, field + ".custom_payment_reference");
+    }
+    // This will be refactored in the next release.
+    try {
+      checkString(d.date, field + ".date", "string | null");
+    } catch (e) {
+      try {
+        checkNull(d.date, field + ".date", "string | null");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+        throw e;
+      }
+    }
+    if ("deadline" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkString(d.deadline, field + ".deadline", "string | null");
+      } catch (e) {
+        try {
+          checkNull(d.deadline, field + ".deadline", "string | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    if ("direction" in d) {
+      checkString(d.direction, field + ".direction");
+    }
+    if ("discount" in d) {
+      checkString(d.discount, field + ".discount");
+    }
+    if ("discount_type" in d) {
+      checkString(d.discount_type, field + ".discount_type");
+    }
+    checkBoolean(d.draft, field + ".draft");
+    checkNull(d.email_from, field + ".email_from");
+    if ("estimate_status" in d) {
+      checkNull(d.estimate_status, field + ".estimate_status");
+    }
+    checkString(d.external_id, field + ".external_id");
+    if ("factor_status" in d) {
+      checkString(d.factor_status, field + ".factor_status");
+    }
+    checkString(d.fec_pieceref, field + ".fec_pieceref");
+    if ("finalized_at" in d) {
+      checkNull(d.finalized_at, field + ".finalized_at");
+    }
+    if ("from_estimate_id" in d) {
+      checkNull(d.from_estimate_id, field + ".from_estimate_id");
+    }
+    if ("future_in_days" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkNumber(d.future_in_days, field + ".future_in_days", "number | null");
+      } catch (e) {
+        try {
+          checkNull(d.future_in_days, field + ".future_in_days", "number | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    // This will be refactored in the next release.
+    try {
+      checkNull(d.gdrive_path, field + ".gdrive_path", "null | string");
+    } catch (e) {
+      try {
+        checkString(d.gdrive_path, field + ".gdrive_path", "null | string");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+        throw e;
+      }
+    }
+    if ("gross_amount" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkString(d.gross_amount, field + ".gross_amount", "string | null");
+      } catch (e) {
+        try {
+          checkNull(d.gross_amount, field + ".gross_amount", "string | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    checkString(d.group_uuid, field + ".group_uuid");
+    // This will be refactored in the next release.
+    try {
+      checkNull(d.grouped_at, field + ".grouped_at", "null | string");
+    } catch (e) {
+      try {
+        checkString(d.grouped_at, field + ".grouped_at", "null | string");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+        throw e;
+      }
+    }
     checkArray(d.grouped_documents, field + ".grouped_documents");
     if (d.grouped_documents) {
       for (let i = 0; i < d.grouped_documents.length; i++) {
-        d.grouped_documents[i] = GroupedDocumentsEntity.Create(d.grouped_documents[i], field + ".grouped_documents" + "[" + i + "]");
+        d.grouped_documents[i] = GroupedDocumentsEntity.Create(d.grouped_documents[i], field + ".grouped_documents" + "[" + i + "]", undefined);
       }
     }
-    checkBoolean(d.is_waiting_for_ocr, true, field + ".is_waiting_for_ocr");
-    checkNumber(d.ocr_thirdparty_id, true, field + ".ocr_thirdparty_id");
-    checkString(d.direction, true, field + ".direction");
-    checkString(d.deadline, true, field + ".deadline");
-    checkNumber(d.multiplier, true, field + ".multiplier");
-    checkString(d.price_before_tax, true, field + ".price_before_tax");
-    checkNull(d.quote_uid, field + ".quote_uid");
-    checkNull(d.special_mention, field + ".special_mention");
-    checkBoolean(d.not_duplicate, true, field + ".not_duplicate");
-    checkBoolean(d.validation_needed, true, field + ".validation_needed");
-    checkString(d.currency_tax, true, field + ".currency_tax");
-    checkString(d.currency_price_before_tax, true, field + ".currency_price_before_tax");
-    checkString(d.language, true, field + ".language");
-    checkString(d.payment_status, true, field + ".payment_status");
-    checkNull(d.payment_method, field + ".payment_method");
-    checkString(d.invoice_number, true, field + ".invoice_number");
-    checkString(d.tax, true, field + ".tax");
-    checkNull(d.estimate_status, field + ".estimate_status");
-    checkString(d.iban, true, field + ".iban");
-    checkBoolean(d.paid, true, field + ".paid");
-    checkNumber(d.future_in_days, true, field + ".future_in_days");
-    checkString(d.discount, true, field + ".discount");
-    checkString(d.discount_type, true, field + ".discount_type");
-    checkNull(d.finalized_at, field + ".finalized_at");
-    checkString(d.quote_group_uuid, true, field + ".quote_group_uuid");
-    checkString(d.factor_status, true, field + ".factor_status");
-    checkString(d.currency_amount_before_tax, true, field + ".currency_amount_before_tax");
-    checkNull(d.from_estimate_id, field + ".from_estimate_id");
-    checkString(d.credit_notes_amount, true, field + ".credit_notes_amount");
-    checkBoolean(d.payment_reminder_enabled, true, field + ".payment_reminder_enabled");
-    checkString(d.payment_reference, true, field + ".payment_reference");
-    checkBoolean(d.is_credit_note, true, field + ".is_credit_note");
-    checkBoolean(d.is_estimate, true, field + ".is_estimate");
-    checkBoolean(d.is_destroyable, true, field + ".is_destroyable");
-    checkBoolean(d.can_be_stamped_as_paid_in_pdf, true, field + ".can_be_stamped_as_paid_in_pdf");
-    checkString(d.custom_payment_reference, true, field + ".custom_payment_reference");
-    checkArray(d.scored_transactions, field + ".scored_transactions");
-    if (d.scored_transactions) {
-      for (let i = 0; i < d.scored_transactions.length; i++) {
-        checkNull(d.scored_transactions[i], field + ".scored_transactions" + "[" + i + "]");
+    if ("iban" in d) {
+      checkString(d.iban, field + ".iban");
+    }
+    checkNumber(d.id, field + ".id");
+    if ("invoice_kind" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkNull(d.invoice_kind, field + ".invoice_kind", "null | string");
+      } catch (e) {
+        try {
+          checkString(d.invoice_kind, field + ".invoice_kind", "null | string");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
       }
     }
-    checkArray(d.recipients, field + ".recipients");
-    if (d.recipients) {
-      for (let i = 0; i < d.recipients.length; i++) {
-        checkNull(d.recipients[i], field + ".recipients" + "[" + i + "]");
+    if ("invoice_number" in d) {
+      checkString(d.invoice_number, field + ".invoice_number");
+    }
+    if ("invoicing_detailed_source" in d) {
+      checkNull(d.invoicing_detailed_source, field + ".invoicing_detailed_source");
+    }
+    if ("is_credit_note" in d) {
+      checkBoolean(d.is_credit_note, field + ".is_credit_note");
+    }
+    if ("is_destroyable" in d) {
+      checkBoolean(d.is_destroyable, field + ".is_destroyable");
+    }
+    if ("is_estimate" in d) {
+      checkBoolean(d.is_estimate, field + ".is_estimate");
+    }
+    checkBoolean(d.is_waiting_details, field + ".is_waiting_details");
+    if ("is_waiting_for_ocr" in d) {
+      checkBoolean(d.is_waiting_for_ocr, field + ".is_waiting_for_ocr");
+    }
+    checkNumber(d.journal_id, field + ".journal_id");
+    checkString(d.label, field + ".label");
+    if ("language" in d) {
+      checkString(d.language, field + ".language");
+    }
+    if ("manual_partial_invoices" in d) {
+      checkBoolean(d.manual_partial_invoices, field + ".manual_partial_invoices");
+    }
+    checkString(d.method, field + ".method");
+    if ("multiplier" in d) {
+      checkNumber(d.multiplier, field + ".multiplier");
+    }
+    if ("not_duplicate" in d) {
+      checkBoolean(d.not_duplicate, field + ".not_duplicate");
+    }
+    if ("ocr_thirdparty_id" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkNull(d.ocr_thirdparty_id, field + ".ocr_thirdparty_id", "null | number");
+      } catch (e) {
+        try {
+          checkNumber(d.ocr_thirdparty_id, field + ".ocr_thirdparty_id", "null | number");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
       }
     }
-    checkString(d.invoice_kind, true, field + ".invoice_kind");
-    checkString(d.pdf_invoice_title, true, field + ".pdf_invoice_title");
-    checkString(d.pdf_invoice_free_text, true, field + ".pdf_invoice_free_text");
-    checkBoolean(d.pdf_invoice_free_text_enabled, true, field + ".pdf_invoice_free_text_enabled");
-    checkString(d.pdf_invoice_subject, true, field + ".pdf_invoice_subject");
-    checkBoolean(d.pdf_invoice_subject_enabled, true, field + ".pdf_invoice_subject_enabled");
-    checkBoolean(d.pdf_invoice_display_products_list, true, field + ".pdf_invoice_display_products_list");
-    checkBoolean(d.pdf_paid_stamp, true, field + ".pdf_paid_stamp");
-    checkNull(d.invoicing_detailed_source, field + ".invoicing_detailed_source");
-    checkBoolean(d.manual_partial_invoices, true, field + ".manual_partial_invoices");
-    const knownProperties = ["id","company_id","date","created_at","updated_at","archived_at","type","source","draft","group_uuid","gdrive_path","preview_status","pusher_channel","email_from","score","is_waiting_details","external_id","journal_id","grouped_at","attachment_required","attachment_lost","pdf_generation_status","reversal_origin_id","billing_subscription_id","fec_pieceref","label","url","method","accounting_type","archived","quotes","readonly","account_id","thirdparty_id","payment_id","amount","currency","currency_amount","outstanding_balance","completeness","gross_amount","status","complete","company","scored_invoices","grouped_documents","is_waiting_for_ocr","ocr_thirdparty_id","direction","deadline","multiplier","price_before_tax","quote_uid","special_mention","not_duplicate","validation_needed","currency_tax","currency_price_before_tax","language","payment_status","payment_method","invoice_number","tax","estimate_status","iban","paid","future_in_days","discount","discount_type","finalized_at","quote_group_uuid","factor_status","currency_amount_before_tax","from_estimate_id","credit_notes_amount","payment_reminder_enabled","payment_reference","is_credit_note","is_estimate","is_destroyable","can_be_stamped_as_paid_in_pdf","custom_payment_reference","scored_transactions","recipients","invoice_kind","pdf_invoice_title","pdf_invoice_free_text","pdf_invoice_free_text_enabled","pdf_invoice_subject","pdf_invoice_subject_enabled","pdf_invoice_display_products_list","pdf_paid_stamp","invoicing_detailed_source","manual_partial_invoices"];
+    checkString(d.outstanding_balance, field + ".outstanding_balance");
+    if ("paid" in d) {
+      checkBoolean(d.paid, field + ".paid");
+    }
+    if ("payment_id" in d) {
+      checkNull(d.payment_id, field + ".payment_id");
+    }
+    if ("payment_method" in d) {
+      checkNull(d.payment_method, field + ".payment_method");
+    }
+    if ("payment_reference" in d) {
+      checkString(d.payment_reference, field + ".payment_reference");
+    }
+    if ("payment_reminder_enabled" in d) {
+      checkBoolean(d.payment_reminder_enabled, field + ".payment_reminder_enabled");
+    }
+    if ("payment_status" in d) {
+      checkString(d.payment_status, field + ".payment_status");
+    }
+    checkString(d.pdf_generation_status, field + ".pdf_generation_status");
+    if ("pdf_invoice_display_products_list" in d) {
+      checkBoolean(d.pdf_invoice_display_products_list, field + ".pdf_invoice_display_products_list");
+    }
+    if ("pdf_invoice_free_text" in d) {
+      checkString(d.pdf_invoice_free_text, field + ".pdf_invoice_free_text");
+    }
+    if ("pdf_invoice_free_text_enabled" in d) {
+      checkBoolean(d.pdf_invoice_free_text_enabled, field + ".pdf_invoice_free_text_enabled");
+    }
+    if ("pdf_invoice_subject" in d) {
+      checkString(d.pdf_invoice_subject, field + ".pdf_invoice_subject");
+    }
+    if ("pdf_invoice_subject_enabled" in d) {
+      checkBoolean(d.pdf_invoice_subject_enabled, field + ".pdf_invoice_subject_enabled");
+    }
+    if ("pdf_invoice_title" in d) {
+      checkString(d.pdf_invoice_title, field + ".pdf_invoice_title");
+    }
+    if ("pdf_paid_stamp" in d) {
+      checkBoolean(d.pdf_paid_stamp, field + ".pdf_paid_stamp");
+    }
+    // This will be refactored in the next release.
+    try {
+      checkNull(d.preview_status, field + ".preview_status", "null | string");
+    } catch (e) {
+      try {
+        checkString(d.preview_status, field + ".preview_status", "null | string");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+        throw e;
+      }
+    }
+    if ("price_before_tax" in d) {
+      checkString(d.price_before_tax, field + ".price_before_tax");
+    }
+    checkString(d.pusher_channel, field + ".pusher_channel");
+    if ("quote_group_uuid" in d) {
+      checkString(d.quote_group_uuid, field + ".quote_group_uuid");
+    }
+    if ("quote_uid" in d) {
+      checkNull(d.quote_uid, field + ".quote_uid");
+    }
+    checkBoolean(d.quotes, field + ".quotes");
+    checkBoolean(d.readonly, field + ".readonly");
+    if ("recipients" in d) {
+      checkArray(d.recipients, field + ".recipients");
+      if (d.recipients) {
+        for (let i = 0; i < d.recipients.length; i++) {
+          checkNever(d.recipients[i], field + ".recipients" + "[" + i + "]");
+        }
+      }
+    }
+    checkNull(d.reversal_origin_id, field + ".reversal_origin_id");
+    checkNull(d.score, field + ".score");
+    if ("scored_invoices" in d) {
+      // This will be refactored in the next release.
+      try {
+        d.scored_invoices = ScoredInvoices.Create(d.scored_invoices, field + ".scored_invoices", "ScoredInvoices | null");
+      } catch (e) {
+        try {
+          checkNull(d.scored_invoices, field + ".scored_invoices", "ScoredInvoices | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    if ("scored_transactions" in d) {
+      checkArray(d.scored_transactions, field + ".scored_transactions");
+      if (d.scored_transactions) {
+        for (let i = 0; i < d.scored_transactions.length; i++) {
+          checkNever(d.scored_transactions[i], field + ".scored_transactions" + "[" + i + "]");
+        }
+      }
+    }
+    checkString(d.source, field + ".source");
+    if ("special_mention" in d) {
+      checkNull(d.special_mention, field + ".special_mention");
+    }
+    if ("status" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkString(d.status, field + ".status", "string | null");
+      } catch (e) {
+        try {
+          checkNull(d.status, field + ".status", "string | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    if ("tax" in d) {
+      checkString(d.tax, field + ".tax");
+    }
+    // This will be refactored in the next release.
+    try {
+      checkNull(d.thirdparty_id, field + ".thirdparty_id", "null | number");
+    } catch (e) {
+      try {
+        checkNumber(d.thirdparty_id, field + ".thirdparty_id", "null | number");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+        throw e;
+      }
+    }
+    checkString(d.type, field + ".type");
+    checkString(d.updated_at, field + ".updated_at");
+    checkString(d.url, field + ".url");
+    if ("validation_needed" in d) {
+      checkBoolean(d.validation_needed, field + ".validation_needed");
+    }
+    const knownProperties = ["account_id","accounting_type","amount","archived","archived_at","attachment_lost","attachment_required","billing_subscription_id","can_be_stamped_as_paid_in_pdf","company","company_id","complete","completeness","created_at","credit_notes_amount","currency","currency_amount","currency_amount_before_tax","currency_price_before_tax","currency_tax","custom_payment_reference","date","deadline","direction","discount","discount_type","draft","email_from","estimate_status","external_id","factor_status","fec_pieceref","finalized_at","from_estimate_id","future_in_days","gdrive_path","gross_amount","group_uuid","grouped_at","grouped_documents","iban","id","invoice_kind","invoice_number","invoicing_detailed_source","is_credit_note","is_destroyable","is_estimate","is_waiting_details","is_waiting_for_ocr","journal_id","label","language","manual_partial_invoices","method","multiplier","not_duplicate","ocr_thirdparty_id","outstanding_balance","paid","payment_id","payment_method","payment_reference","payment_reminder_enabled","payment_status","pdf_generation_status","pdf_invoice_display_products_list","pdf_invoice_free_text","pdf_invoice_free_text_enabled","pdf_invoice_subject","pdf_invoice_subject_enabled","pdf_invoice_title","pdf_paid_stamp","preview_status","price_before_tax","pusher_channel","quote_group_uuid","quote_uid","quotes","readonly","recipients","reversal_origin_id","score","scored_invoices","scored_transactions","source","special_mention","status","tax","thirdparty_id","type","updated_at","url","validation_needed"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never", false);
+    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
     return new APIDocument(d);
   }
   private constructor(d: any) {
-    this.id = d.id;
-    this.company_id = d.company_id;
-    if ("date" in d) this.date = d.date;
-    this.created_at = d.created_at;
-    this.updated_at = d.updated_at;
-    if ("archived_at" in d) this.archived_at = d.archived_at;
-    this.type = d.type;
-    this.source = d.source;
-    this.draft = d.draft;
-    this.group_uuid = d.group_uuid;
-    if ("gdrive_path" in d) this.gdrive_path = d.gdrive_path;
-    if ("preview_status" in d) this.preview_status = d.preview_status;
-    this.pusher_channel = d.pusher_channel;
-    if ("email_from" in d) this.email_from = d.email_from;
-    if ("score" in d) this.score = d.score;
-    this.is_waiting_details = d.is_waiting_details;
-    this.external_id = d.external_id;
-    this.journal_id = d.journal_id;
-    if ("grouped_at" in d) this.grouped_at = d.grouped_at;
-    this.attachment_required = d.attachment_required;
-    this.attachment_lost = d.attachment_lost;
-    this.pdf_generation_status = d.pdf_generation_status;
-    if ("reversal_origin_id" in d) this.reversal_origin_id = d.reversal_origin_id;
-    if ("billing_subscription_id" in d) this.billing_subscription_id = d.billing_subscription_id;
-    this.fec_pieceref = d.fec_pieceref;
-    this.label = d.label;
-    this.url = d.url;
-    this.method = d.method;
-    this.accounting_type = d.accounting_type;
-    this.archived = d.archived;
-    this.quotes = d.quotes;
-    this.readonly = d.readonly;
     if ("account_id" in d) this.account_id = d.account_id;
-    if ("thirdparty_id" in d) this.thirdparty_id = d.thirdparty_id;
-    if ("payment_id" in d) this.payment_id = d.payment_id;
+    this.accounting_type = d.accounting_type;
     this.amount = d.amount;
+    this.archived = d.archived;
+    this.archived_at = d.archived_at;
+    this.attachment_lost = d.attachment_lost;
+    this.attachment_required = d.attachment_required;
+    this.billing_subscription_id = d.billing_subscription_id;
+    if ("can_be_stamped_as_paid_in_pdf" in d) this.can_be_stamped_as_paid_in_pdf = d.can_be_stamped_as_paid_in_pdf;
+    if ("company" in d) this.company = d.company;
+    this.company_id = d.company_id;
+    if ("complete" in d) this.complete = d.complete;
+    if ("completeness" in d) this.completeness = d.completeness;
+    this.created_at = d.created_at;
+    if ("credit_notes_amount" in d) this.credit_notes_amount = d.credit_notes_amount;
     this.currency = d.currency;
     this.currency_amount = d.currency_amount;
-    this.outstanding_balance = d.outstanding_balance;
-    if ("completeness" in d) this.completeness = d.completeness;
-    if ("gross_amount" in d) this.gross_amount = d.gross_amount;
-    if ("status" in d) this.status = d.status;
-    if ("complete" in d) this.complete = d.complete;
-    if ("company" in d) this.company = d.company;
-    if ("scored_invoices" in d) this.scored_invoices = d.scored_invoices;
-    if ("grouped_documents" in d) this.grouped_documents = d.grouped_documents;
-    if ("is_waiting_for_ocr" in d) this.is_waiting_for_ocr = d.is_waiting_for_ocr;
-    if ("ocr_thirdparty_id" in d) this.ocr_thirdparty_id = d.ocr_thirdparty_id;
-    if ("direction" in d) this.direction = d.direction;
-    if ("deadline" in d) this.deadline = d.deadline;
-    if ("multiplier" in d) this.multiplier = d.multiplier;
-    if ("price_before_tax" in d) this.price_before_tax = d.price_before_tax;
-    if ("quote_uid" in d) this.quote_uid = d.quote_uid;
-    if ("special_mention" in d) this.special_mention = d.special_mention;
-    if ("not_duplicate" in d) this.not_duplicate = d.not_duplicate;
-    if ("validation_needed" in d) this.validation_needed = d.validation_needed;
-    if ("currency_tax" in d) this.currency_tax = d.currency_tax;
+    if ("currency_amount_before_tax" in d) this.currency_amount_before_tax = d.currency_amount_before_tax;
     if ("currency_price_before_tax" in d) this.currency_price_before_tax = d.currency_price_before_tax;
-    if ("language" in d) this.language = d.language;
-    if ("payment_status" in d) this.payment_status = d.payment_status;
-    if ("payment_method" in d) this.payment_method = d.payment_method;
-    if ("invoice_number" in d) this.invoice_number = d.invoice_number;
-    if ("tax" in d) this.tax = d.tax;
-    if ("estimate_status" in d) this.estimate_status = d.estimate_status;
-    if ("iban" in d) this.iban = d.iban;
-    if ("paid" in d) this.paid = d.paid;
-    if ("future_in_days" in d) this.future_in_days = d.future_in_days;
+    if ("currency_tax" in d) this.currency_tax = d.currency_tax;
+    if ("custom_payment_reference" in d) this.custom_payment_reference = d.custom_payment_reference;
+    this.date = d.date;
+    if ("deadline" in d) this.deadline = d.deadline;
+    if ("direction" in d) this.direction = d.direction;
     if ("discount" in d) this.discount = d.discount;
     if ("discount_type" in d) this.discount_type = d.discount_type;
-    if ("finalized_at" in d) this.finalized_at = d.finalized_at;
-    if ("quote_group_uuid" in d) this.quote_group_uuid = d.quote_group_uuid;
+    this.draft = d.draft;
+    this.email_from = d.email_from;
+    if ("estimate_status" in d) this.estimate_status = d.estimate_status;
+    this.external_id = d.external_id;
     if ("factor_status" in d) this.factor_status = d.factor_status;
-    if ("currency_amount_before_tax" in d) this.currency_amount_before_tax = d.currency_amount_before_tax;
+    this.fec_pieceref = d.fec_pieceref;
+    if ("finalized_at" in d) this.finalized_at = d.finalized_at;
     if ("from_estimate_id" in d) this.from_estimate_id = d.from_estimate_id;
-    if ("credit_notes_amount" in d) this.credit_notes_amount = d.credit_notes_amount;
-    if ("payment_reminder_enabled" in d) this.payment_reminder_enabled = d.payment_reminder_enabled;
-    if ("payment_reference" in d) this.payment_reference = d.payment_reference;
-    if ("is_credit_note" in d) this.is_credit_note = d.is_credit_note;
-    if ("is_estimate" in d) this.is_estimate = d.is_estimate;
-    if ("is_destroyable" in d) this.is_destroyable = d.is_destroyable;
-    if ("can_be_stamped_as_paid_in_pdf" in d) this.can_be_stamped_as_paid_in_pdf = d.can_be_stamped_as_paid_in_pdf;
-    if ("custom_payment_reference" in d) this.custom_payment_reference = d.custom_payment_reference;
-    if ("scored_transactions" in d) this.scored_transactions = d.scored_transactions;
-    if ("recipients" in d) this.recipients = d.recipients;
+    if ("future_in_days" in d) this.future_in_days = d.future_in_days;
+    this.gdrive_path = d.gdrive_path;
+    if ("gross_amount" in d) this.gross_amount = d.gross_amount;
+    this.group_uuid = d.group_uuid;
+    this.grouped_at = d.grouped_at;
+    this.grouped_documents = d.grouped_documents;
+    if ("iban" in d) this.iban = d.iban;
+    this.id = d.id;
     if ("invoice_kind" in d) this.invoice_kind = d.invoice_kind;
-    if ("pdf_invoice_title" in d) this.pdf_invoice_title = d.pdf_invoice_title;
+    if ("invoice_number" in d) this.invoice_number = d.invoice_number;
+    if ("invoicing_detailed_source" in d) this.invoicing_detailed_source = d.invoicing_detailed_source;
+    if ("is_credit_note" in d) this.is_credit_note = d.is_credit_note;
+    if ("is_destroyable" in d) this.is_destroyable = d.is_destroyable;
+    if ("is_estimate" in d) this.is_estimate = d.is_estimate;
+    this.is_waiting_details = d.is_waiting_details;
+    if ("is_waiting_for_ocr" in d) this.is_waiting_for_ocr = d.is_waiting_for_ocr;
+    this.journal_id = d.journal_id;
+    this.label = d.label;
+    if ("language" in d) this.language = d.language;
+    if ("manual_partial_invoices" in d) this.manual_partial_invoices = d.manual_partial_invoices;
+    this.method = d.method;
+    if ("multiplier" in d) this.multiplier = d.multiplier;
+    if ("not_duplicate" in d) this.not_duplicate = d.not_duplicate;
+    if ("ocr_thirdparty_id" in d) this.ocr_thirdparty_id = d.ocr_thirdparty_id;
+    this.outstanding_balance = d.outstanding_balance;
+    if ("paid" in d) this.paid = d.paid;
+    if ("payment_id" in d) this.payment_id = d.payment_id;
+    if ("payment_method" in d) this.payment_method = d.payment_method;
+    if ("payment_reference" in d) this.payment_reference = d.payment_reference;
+    if ("payment_reminder_enabled" in d) this.payment_reminder_enabled = d.payment_reminder_enabled;
+    if ("payment_status" in d) this.payment_status = d.payment_status;
+    this.pdf_generation_status = d.pdf_generation_status;
+    if ("pdf_invoice_display_products_list" in d) this.pdf_invoice_display_products_list = d.pdf_invoice_display_products_list;
     if ("pdf_invoice_free_text" in d) this.pdf_invoice_free_text = d.pdf_invoice_free_text;
     if ("pdf_invoice_free_text_enabled" in d) this.pdf_invoice_free_text_enabled = d.pdf_invoice_free_text_enabled;
     if ("pdf_invoice_subject" in d) this.pdf_invoice_subject = d.pdf_invoice_subject;
     if ("pdf_invoice_subject_enabled" in d) this.pdf_invoice_subject_enabled = d.pdf_invoice_subject_enabled;
-    if ("pdf_invoice_display_products_list" in d) this.pdf_invoice_display_products_list = d.pdf_invoice_display_products_list;
+    if ("pdf_invoice_title" in d) this.pdf_invoice_title = d.pdf_invoice_title;
     if ("pdf_paid_stamp" in d) this.pdf_paid_stamp = d.pdf_paid_stamp;
-    if ("invoicing_detailed_source" in d) this.invoicing_detailed_source = d.invoicing_detailed_source;
-    if ("manual_partial_invoices" in d) this.manual_partial_invoices = d.manual_partial_invoices;
+    this.preview_status = d.preview_status;
+    if ("price_before_tax" in d) this.price_before_tax = d.price_before_tax;
+    this.pusher_channel = d.pusher_channel;
+    if ("quote_group_uuid" in d) this.quote_group_uuid = d.quote_group_uuid;
+    if ("quote_uid" in d) this.quote_uid = d.quote_uid;
+    this.quotes = d.quotes;
+    this.readonly = d.readonly;
+    if ("recipients" in d) this.recipients = d.recipients;
+    this.reversal_origin_id = d.reversal_origin_id;
+    this.score = d.score;
+    if ("scored_invoices" in d) this.scored_invoices = d.scored_invoices;
+    if ("scored_transactions" in d) this.scored_transactions = d.scored_transactions;
+    this.source = d.source;
+    if ("special_mention" in d) this.special_mention = d.special_mention;
+    if ("status" in d) this.status = d.status;
+    if ("tax" in d) this.tax = d.tax;
+    this.thirdparty_id = d.thirdparty_id;
+    this.type = d.type;
+    this.updated_at = d.updated_at;
+    this.url = d.url;
+    if ("validation_needed" in d) this.validation_needed = d.validation_needed;
   }
 }
 
 export class Company {
   public readonly name: string;
-  public static Parse(d: string): Company | null {
+  public static Parse(d: string): Company {
     return Company.Create(JSON.parse(d));
   }
-  public static Create(d: any, field?: string): Company | null {
+  public static Create(d: any, field?: string, multiple ?: string): Company {
     if (!field) {
       obj = d;
       field = "root";
     }
-    if (d === null || d === undefined) {
-      return null;
+    if (!d) {
+      throwNull2NonNull(field, d, multiple ?? this.name);
     } else if (typeof(d) !== 'object') {
-      throwNotObject(field, d, true);
+      throwNotObject(field, d);
     } else if (Array.isArray(d)) {
-      throwIsArray(field, d, true);
+      throwIsArray(field, d);
     }
-    checkString(d.name, false, field + ".name");
+    checkString(d.name, field + ".name");
     const knownProperties = ["name"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never", false);
+    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
     return new Company(d);
   }
   private constructor(d: any) {
@@ -351,679 +633,1590 @@ export class Company {
   }
 }
 
-export class ScoredInvoices {
-  public static Parse(d: string): ScoredInvoices | null {
-    return ScoredInvoices.Create(JSON.parse(d));
-  }
-  public static Create(d: any, field?: string): ScoredInvoices | null {
-    if (!field) {
-      obj = d;
-      field = "root";
-    }
-    if (d === null || d === undefined) {
-      return null;
-    } else if (typeof(d) !== 'object') {
-      throwNotObject(field, d, true);
-    } else if (Array.isArray(d)) {
-      throwIsArray(field, d, true);
-    }
-    const knownProperties = [];
-    const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never", false);
-    return new ScoredInvoices(d);
-  }
-  private constructor(d: any) {
-  }
-}
-
 export class GroupedDocumentsEntity {
-  public readonly id: number;
-  public readonly company_id: number;
-  public readonly date?: string | null;
-  public readonly created_at: string;
-  public readonly updated_at: string;
-  public readonly archived_at?: string | null;
-  public readonly type: string;
-  public readonly source: string;
-  public readonly draft: boolean;
-  public readonly group_uuid: string;
-  public readonly gdrive_path?: string | null;
-  public readonly preview_status?: string | null;
-  public readonly pusher_channel: string;
-  public readonly email_from?: null;
-  public readonly score?: null;
-  public readonly is_waiting_details: boolean;
-  public readonly external_id: string;
-  public readonly journal_id: number;
-  public readonly grouped_at?: string | null;
-  public readonly attachment_required: boolean;
-  public readonly attachment_lost: boolean;
-  public readonly pdf_generation_status: string;
-  public readonly reversal_origin_id?: null;
-  public readonly billing_subscription_id?: null;
-  public readonly fec_pieceref: string;
-  public readonly label: string;
-  public readonly journal: Journal;
-  public readonly url: string;
-  public readonly method: string;
+  public readonly account?: null | Account;
+  public readonly account_id?: null | number;
+  public readonly accounting_status?: null | string;
   public readonly accounting_type: boolean;
-  public readonly preview_urls?: (string | null)[] | null;
-  public readonly archived: boolean;
-  public readonly quotes: boolean;
-  public readonly filename?: string | null;
-  public readonly has_file: boolean;
-  public readonly readonly: boolean;
-  public readonly account_id?: number | null;
-  public readonly thirdparty_id?: number | null;
-  public readonly payment_id?: null;
   public readonly amount: string;
+  public readonly archived: boolean;
+  public readonly archived_at: null | string;
+  public readonly attachment_label?: string | null;
+  public readonly attachment_lost: boolean;
+  public readonly attachment_required: boolean;
+  public readonly billing_subscription_id: null;
+  public readonly can_be_stamped_as_paid_in_pdf?: boolean | null;
+  public readonly client_comments: ClientCommentsEntityOrEstablishmentComment[];
+  public readonly company?: null | Company1;
+  public readonly company_id: number;
+  public readonly complete: boolean;
+  public readonly completeness: number;
+  public readonly created_at: string;
+  public readonly credit_notes_amount?: string | null;
   public readonly currency: string;
   public readonly currency_amount: string;
-  public readonly outstanding_balance: string;
-  public readonly completeness: number;
-  public readonly gross_amount?: string | null;
-  public readonly status?: string | null;
-  public readonly complete: boolean;
-  public readonly account?: Account | null;
-  public readonly company?: Company1 | null;
-  public readonly scored_invoices?: ScoredInvoices1 | null;
-  public readonly is_accounting_needed?: null;
-  public readonly pending: boolean;
-  public readonly hasTooManyLedgerEvents: boolean;
-  public readonly ledgerEventsCount: number;
-  public readonly ledgerEvents?: (LedgerEventsEntity | null)[] | null;
-  public readonly reconciled: boolean;
-  public readonly client_comments?: (ClientCommentsEntityOrEstablishmentComment | null)[] | null;
-  public readonly is_waiting_for_ocr?: boolean | null;
-  public readonly has_linked_quotes?: boolean | null;
-  public readonly size?: string | null;
-  public readonly embeddable_in_browser?: boolean | null;
-  public readonly ocr_thirdparty_id?: number | null;
-  public readonly direction?: string | null;
-  public readonly deadline?: string | null;
-  public readonly multiplier?: number | null;
-  public readonly price_before_tax?: string | null;
-  public readonly quote_uid?: null;
-  public readonly special_mention?: null;
-  public readonly not_duplicate?: boolean | null;
-  public readonly validation_needed?: boolean | null;
-  public readonly currency_tax?: string | null;
+  public readonly currency_amount_before_tax?: string | null;
   public readonly currency_price_before_tax?: string | null;
-  public readonly language?: string | null;
-  public readonly payment_status?: string | null;
-  public readonly payment_method?: null;
-  public readonly invoice_number?: string | null;
-  public readonly tax?: string | null;
-  public readonly estimate_status?: null;
-  public readonly iban?: string | null;
-  public readonly paid?: boolean | null;
-  public readonly future_in_days?: number | null;
+  public readonly currency_tax?: string | null;
+  public readonly current_account_plan_item?: null | PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem;
+  public readonly custom_payment_reference?: string | null;
+  public readonly date: null | string;
+  public readonly deadline?: null | string;
+  public readonly direction?: string | null;
   public readonly discount?: string | null;
   public readonly discount_type?: string | null;
-  public readonly finalized_at?: null;
-  public readonly quote_group_uuid?: string | null;
+  public readonly draft: boolean;
+  public readonly email_from: null;
+  public readonly embeddable_in_browser?: boolean | null;
+  public readonly establishment_comment?: null | EstablishmentCommentOrClientCommentsEntity;
+  public readonly estimate_status?: null;
+  public readonly external_id: string;
   public readonly factor_status?: string | null;
-  public readonly currency_amount_before_tax?: string | null;
-  public readonly from_estimate_id?: null;
-  public readonly credit_notes_amount?: string | null;
-  public readonly payment_reminder_enabled?: boolean | null;
-  public readonly payment_reference?: string | null;
-  public readonly is_credit_note?: boolean | null;
-  public readonly is_estimate?: boolean | null;
-  public readonly is_destroyable?: boolean | null;
-  public readonly can_be_stamped_as_paid_in_pdf?: boolean | null;
-  public readonly custom_payment_reference?: string | null;
-  public readonly scored_transactions?: null[] | null;
-  public readonly is_sendable?: boolean | null;
-  public readonly incomplete?: boolean | null;
-  public readonly subcomplete?: boolean | null;
-  public readonly attachment_label?: string | null;
-  public readonly accounting_status?: string | null;
-  public readonly thirdparty?: Thirdparty | null;
-  public readonly recipients?: null[] | null;
-  public readonly invoice_lines?: InvoiceLinesEntity[] | null;
-  public readonly invoice_kind?: string | null;
+  public readonly fec_pieceref: string;
   public readonly file_signed_id?: string | null;
+  public readonly filename: null | string;
+  public readonly finalized_at?: null;
+  public readonly from_estimate_id?: null;
+  public readonly future_in_days?: number | null;
+  public readonly gdrive_path: string | null;
+  public readonly gross_amount?: null | string;
+  public readonly group_uuid: string;
+  public readonly grouped_at: null | string;
+  public readonly has_file: boolean;
+  public readonly has_linked_quotes?: boolean | null;
+  public readonly hasTooManyLedgerEvents: boolean;
+  public readonly iban?: string | null;
+  public readonly id: number;
+  public readonly incomplete?: boolean | null;
+  public readonly invoice_kind?: string | null;
+  public readonly invoice_lines?: InvoiceLinesEntity[] | null;
+  public readonly invoice_number?: string | null;
+  public readonly invoicing_detailed_source?: null;
+  public readonly is_accounting_needed?: null;
+  public readonly is_credit_note?: boolean | null;
+  public readonly is_destroyable?: boolean | null;
+  public readonly is_estimate?: boolean | null;
+  public readonly is_sendable?: boolean | null;
+  public readonly is_waiting_details: boolean;
+  public readonly is_waiting_for_ocr?: boolean | null;
+  public readonly journal: Journal;
+  public readonly journal_id: number;
+  public readonly label: string;
+  public readonly language?: string | null;
+  public readonly ledgerEvents: LedgerEventsEntity[];
+  public readonly ledgerEventsCount: number;
+  public readonly manual_partial_invoices?: boolean | null;
+  public readonly method: string;
+  public readonly multiplier?: number | null;
+  public readonly not_duplicate?: boolean | null;
+  public readonly ocr_thirdparty_id?: null | number;
+  public readonly outstanding_balance: string;
   public readonly pages_count?: number | null;
-  public readonly tagged_at_ledger_events_level?: boolean | null;
-  public readonly pdf_invoice_title?: string | null;
+  public readonly paid?: boolean | null;
+  public readonly payment_id?: null;
+  public readonly payment_method?: null;
+  public readonly payment_reference?: string | null;
+  public readonly payment_reminder_enabled?: boolean | null;
+  public readonly payment_status?: string | null;
+  public readonly pdf_generation_status: string;
+  public readonly pdf_invoice_display_products_list?: boolean | null;
   public readonly pdf_invoice_free_text?: string | null;
   public readonly pdf_invoice_free_text_enabled?: boolean | null;
   public readonly pdf_invoice_subject?: string | null;
   public readonly pdf_invoice_subject_enabled?: boolean | null;
-  public readonly pdf_invoice_display_products_list?: boolean | null;
+  public readonly pdf_invoice_title?: string | null;
   public readonly pdf_paid_stamp?: boolean | null;
-  public readonly invoicing_detailed_source?: null;
-  public readonly manual_partial_invoices?: boolean | null;
-  public readonly establishment_comment?: EstablishmentComment | null;
-  public readonly current_account_plan_item?: PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem | null;
+  public readonly pending: boolean;
+  public readonly preview_status: null | string;
+  public readonly preview_urls: string[];
+  public readonly price_before_tax?: string | null;
+  public readonly pusher_channel: string;
+  public readonly quote_group_uuid?: string | null;
+  public readonly quote_uid?: null;
+  public readonly quotes: boolean;
+  public readonly readonly: boolean;
+  public readonly recipients?: never[] | null;
+  public readonly reconciled: boolean;
+  public readonly reversal_origin_id: null;
+  public readonly score: null;
+  public readonly scored_invoices?: null | ScoredInvoices1;
+  public readonly scored_transactions?: never[] | null;
+  public readonly size?: string | null;
+  public readonly source: string;
+  public readonly special_mention?: null;
+  public readonly status?: null | string;
+  public readonly subcomplete?: boolean | null;
+  public readonly tagged_at_ledger_events_level?: boolean | null;
+  public readonly tax?: string | null;
+  public readonly thirdparty?: Thirdparty | null;
+  public readonly thirdparty_id: null | number;
+  public readonly type: string;
+  public readonly updated_at: string;
+  public readonly url: string;
+  public readonly validation_needed?: boolean | null;
   public static Parse(d: string): GroupedDocumentsEntity {
     return GroupedDocumentsEntity.Create(JSON.parse(d));
   }
-  public static Create(d: any, field?: string): GroupedDocumentsEntity {
+  public static Create(d: any, field?: string, multiple ?: string): GroupedDocumentsEntity {
     if (!field) {
       obj = d;
       field = "root";
     }
-    if (d === null || d === undefined) {
-      throwNull2NonNull(field, d);
+    if (!d) {
+      throwNull2NonNull(field, d, multiple ?? this.name);
     } else if (typeof(d) !== 'object') {
-      throwNotObject(field, d, false);
+      throwNotObject(field, d);
     } else if (Array.isArray(d)) {
-      throwIsArray(field, d, false);
+      throwIsArray(field, d);
     }
-    checkNumber(d.id, false, field + ".id");
-    checkNumber(d.company_id, false, field + ".company_id");
-    checkString(d.date, true, field + ".date");
-    checkString(d.created_at, false, field + ".created_at");
-    checkString(d.updated_at, false, field + ".updated_at");
-    checkString(d.archived_at, true, field + ".archived_at");
-    checkString(d.type, false, field + ".type");
-    checkString(d.source, false, field + ".source");
-    checkBoolean(d.draft, false, field + ".draft");
-    checkString(d.group_uuid, false, field + ".group_uuid");
-    checkString(d.gdrive_path, true, field + ".gdrive_path");
-    checkString(d.preview_status, true, field + ".preview_status");
-    checkString(d.pusher_channel, false, field + ".pusher_channel");
-    checkNull(d.email_from, field + ".email_from");
-    checkNull(d.score, field + ".score");
-    checkBoolean(d.is_waiting_details, false, field + ".is_waiting_details");
-    checkString(d.external_id, false, field + ".external_id");
-    checkNumber(d.journal_id, false, field + ".journal_id");
-    checkString(d.grouped_at, true, field + ".grouped_at");
-    checkBoolean(d.attachment_required, false, field + ".attachment_required");
-    checkBoolean(d.attachment_lost, false, field + ".attachment_lost");
-    checkString(d.pdf_generation_status, false, field + ".pdf_generation_status");
-    checkNull(d.reversal_origin_id, field + ".reversal_origin_id");
+    if ("account" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkNull(d.account, field + ".account", "null | Account");
+      } catch (e) {
+        try {
+          d.account = Account.Create(d.account, field + ".account", "null | Account");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    if ("account_id" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkNull(d.account_id, field + ".account_id", "null | number");
+      } catch (e) {
+        try {
+          checkNumber(d.account_id, field + ".account_id", "null | number");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    if ("accounting_status" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkNull(d.accounting_status, field + ".accounting_status", "null | string");
+      } catch (e) {
+        try {
+          checkString(d.accounting_status, field + ".accounting_status", "null | string");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    checkBoolean(d.accounting_type, field + ".accounting_type");
+    checkString(d.amount, field + ".amount");
+    checkBoolean(d.archived, field + ".archived");
+    // This will be refactored in the next release.
+    try {
+      checkNull(d.archived_at, field + ".archived_at", "null | string");
+    } catch (e) {
+      try {
+        checkString(d.archived_at, field + ".archived_at", "null | string");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+        throw e;
+      }
+    }
+    if ("attachment_label" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkString(d.attachment_label, field + ".attachment_label", "string | null");
+      } catch (e) {
+        try {
+          checkNull(d.attachment_label, field + ".attachment_label", "string | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    checkBoolean(d.attachment_lost, field + ".attachment_lost");
+    checkBoolean(d.attachment_required, field + ".attachment_required");
     checkNull(d.billing_subscription_id, field + ".billing_subscription_id");
-    checkString(d.fec_pieceref, false, field + ".fec_pieceref");
-    checkString(d.label, false, field + ".label");
-    d.journal = Journal.Create(d.journal, field + ".journal");
-    checkString(d.url, false, field + ".url");
-    checkString(d.method, false, field + ".method");
-    checkBoolean(d.accounting_type, false, field + ".accounting_type");
-    checkArray(d.preview_urls, field + ".preview_urls");
-    if (d.preview_urls) {
-      for (let i = 0; i < d.preview_urls.length; i++) {
-        checkString(d.preview_urls[i], true, field + ".preview_urls" + "[" + i + "]");
+    if ("can_be_stamped_as_paid_in_pdf" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkBoolean(d.can_be_stamped_as_paid_in_pdf, field + ".can_be_stamped_as_paid_in_pdf", "boolean | null");
+      } catch (e) {
+        try {
+          checkNull(d.can_be_stamped_as_paid_in_pdf, field + ".can_be_stamped_as_paid_in_pdf", "boolean | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
       }
     }
-    checkBoolean(d.archived, false, field + ".archived");
-    checkBoolean(d.quotes, false, field + ".quotes");
-    checkString(d.filename, true, field + ".filename");
-    checkBoolean(d.has_file, false, field + ".has_file");
-    checkBoolean(d.readonly, false, field + ".readonly");
-    checkNumber(d.account_id, true, field + ".account_id");
-    checkNumber(d.thirdparty_id, true, field + ".thirdparty_id");
-    checkNull(d.payment_id, field + ".payment_id");
-    checkString(d.amount, false, field + ".amount");
-    checkString(d.currency, false, field + ".currency");
-    checkString(d.currency_amount, false, field + ".currency_amount");
-    checkString(d.outstanding_balance, false, field + ".outstanding_balance");
-    checkNumber(d.completeness, false, field + ".completeness");
-    checkString(d.gross_amount, true, field + ".gross_amount");
-    checkString(d.status, true, field + ".status");
-    checkBoolean(d.complete, false, field + ".complete");
-    d.account = Account.Create(d.account, field + ".account");
-    d.company = Company1.Create(d.company, field + ".company");
-    d.scored_invoices = ScoredInvoices1.Create(d.scored_invoices, field + ".scored_invoices");
-    checkNull(d.is_accounting_needed, field + ".is_accounting_needed");
-    checkBoolean(d.pending, false, field + ".pending");
-    checkBoolean(d.hasTooManyLedgerEvents, false, field + ".hasTooManyLedgerEvents");
-    checkNumber(d.ledgerEventsCount, false, field + ".ledgerEventsCount");
-    checkArray(d.ledgerEvents, field + ".ledgerEvents");
-    if (d.ledgerEvents) {
-      for (let i = 0; i < d.ledgerEvents.length; i++) {
-        d.ledgerEvents[i] = LedgerEventsEntity.Create(d.ledgerEvents[i], field + ".ledgerEvents" + "[" + i + "]");
-      }
-    }
-    checkBoolean(d.reconciled, false, field + ".reconciled");
     checkArray(d.client_comments, field + ".client_comments");
     if (d.client_comments) {
       for (let i = 0; i < d.client_comments.length; i++) {
-        d.client_comments[i] = ClientCommentsEntityOrEstablishmentComment.Create(d.client_comments[i], field + ".client_comments" + "[" + i + "]");
+        d.client_comments[i] = ClientCommentsEntityOrEstablishmentComment.Create(d.client_comments[i], field + ".client_comments" + "[" + i + "]", undefined);
       }
     }
-    checkBoolean(d.is_waiting_for_ocr, true, field + ".is_waiting_for_ocr");
-    checkBoolean(d.has_linked_quotes, true, field + ".has_linked_quotes");
-    checkString(d.size, true, field + ".size");
-    checkBoolean(d.embeddable_in_browser, true, field + ".embeddable_in_browser");
-    checkNumber(d.ocr_thirdparty_id, true, field + ".ocr_thirdparty_id");
-    checkString(d.direction, true, field + ".direction");
-    checkString(d.deadline, true, field + ".deadline");
-    checkNumber(d.multiplier, true, field + ".multiplier");
-    checkString(d.price_before_tax, true, field + ".price_before_tax");
-    checkNull(d.quote_uid, field + ".quote_uid");
-    checkNull(d.special_mention, field + ".special_mention");
-    checkBoolean(d.not_duplicate, true, field + ".not_duplicate");
-    checkBoolean(d.validation_needed, true, field + ".validation_needed");
-    checkString(d.currency_tax, true, field + ".currency_tax");
-    checkString(d.currency_price_before_tax, true, field + ".currency_price_before_tax");
-    checkString(d.language, true, field + ".language");
-    checkString(d.payment_status, true, field + ".payment_status");
-    checkNull(d.payment_method, field + ".payment_method");
-    checkString(d.invoice_number, true, field + ".invoice_number");
-    checkString(d.tax, true, field + ".tax");
-    checkNull(d.estimate_status, field + ".estimate_status");
-    checkString(d.iban, true, field + ".iban");
-    checkBoolean(d.paid, true, field + ".paid");
-    checkNumber(d.future_in_days, true, field + ".future_in_days");
-    checkString(d.discount, true, field + ".discount");
-    checkString(d.discount_type, true, field + ".discount_type");
-    checkNull(d.finalized_at, field + ".finalized_at");
-    checkString(d.quote_group_uuid, true, field + ".quote_group_uuid");
-    checkString(d.factor_status, true, field + ".factor_status");
-    checkString(d.currency_amount_before_tax, true, field + ".currency_amount_before_tax");
-    checkNull(d.from_estimate_id, field + ".from_estimate_id");
-    checkString(d.credit_notes_amount, true, field + ".credit_notes_amount");
-    checkBoolean(d.payment_reminder_enabled, true, field + ".payment_reminder_enabled");
-    checkString(d.payment_reference, true, field + ".payment_reference");
-    checkBoolean(d.is_credit_note, true, field + ".is_credit_note");
-    checkBoolean(d.is_estimate, true, field + ".is_estimate");
-    checkBoolean(d.is_destroyable, true, field + ".is_destroyable");
-    checkBoolean(d.can_be_stamped_as_paid_in_pdf, true, field + ".can_be_stamped_as_paid_in_pdf");
-    checkString(d.custom_payment_reference, true, field + ".custom_payment_reference");
-    checkArray(d.scored_transactions, field + ".scored_transactions");
-    if (d.scored_transactions) {
-      for (let i = 0; i < d.scored_transactions.length; i++) {
-        checkNull(d.scored_transactions[i], field + ".scored_transactions" + "[" + i + "]");
+    if ("company" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkNull(d.company, field + ".company", "null | Company1");
+      } catch (e) {
+        try {
+          d.company = Company1.Create(d.company, field + ".company", "null | Company1");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
       }
     }
-    checkBoolean(d.is_sendable, true, field + ".is_sendable");
-    checkBoolean(d.incomplete, true, field + ".incomplete");
-    checkBoolean(d.subcomplete, true, field + ".subcomplete");
-    checkString(d.attachment_label, true, field + ".attachment_label");
-    checkString(d.accounting_status, true, field + ".accounting_status");
-    d.thirdparty = Thirdparty.Create(d.thirdparty, field + ".thirdparty");
-    checkArray(d.recipients, field + ".recipients");
-    if (d.recipients) {
-      for (let i = 0; i < d.recipients.length; i++) {
-        checkNull(d.recipients[i], field + ".recipients" + "[" + i + "]");
+    checkNumber(d.company_id, field + ".company_id");
+    checkBoolean(d.complete, field + ".complete");
+    checkNumber(d.completeness, field + ".completeness");
+    checkString(d.created_at, field + ".created_at");
+    if ("credit_notes_amount" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkString(d.credit_notes_amount, field + ".credit_notes_amount", "string | null");
+      } catch (e) {
+        try {
+          checkNull(d.credit_notes_amount, field + ".credit_notes_amount", "string | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
       }
     }
-    checkArray(d.invoice_lines, field + ".invoice_lines");
-    if (d.invoice_lines) {
-      for (let i = 0; i < d.invoice_lines.length; i++) {
-        d.invoice_lines[i] = InvoiceLinesEntity.Create(d.invoice_lines[i], field + ".invoice_lines" + "[" + i + "]");
+    checkString(d.currency, field + ".currency");
+    checkString(d.currency_amount, field + ".currency_amount");
+    if ("currency_amount_before_tax" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkString(d.currency_amount_before_tax, field + ".currency_amount_before_tax", "string | null");
+      } catch (e) {
+        try {
+          checkNull(d.currency_amount_before_tax, field + ".currency_amount_before_tax", "string | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
       }
     }
-    checkString(d.invoice_kind, true, field + ".invoice_kind");
-    checkString(d.file_signed_id, true, field + ".file_signed_id");
-    checkNumber(d.pages_count, true, field + ".pages_count");
-    checkBoolean(d.tagged_at_ledger_events_level, true, field + ".tagged_at_ledger_events_level");
-    checkString(d.pdf_invoice_title, true, field + ".pdf_invoice_title");
-    checkString(d.pdf_invoice_free_text, true, field + ".pdf_invoice_free_text");
-    checkBoolean(d.pdf_invoice_free_text_enabled, true, field + ".pdf_invoice_free_text_enabled");
-    checkString(d.pdf_invoice_subject, true, field + ".pdf_invoice_subject");
-    checkBoolean(d.pdf_invoice_subject_enabled, true, field + ".pdf_invoice_subject_enabled");
-    checkBoolean(d.pdf_invoice_display_products_list, true, field + ".pdf_invoice_display_products_list");
-    checkBoolean(d.pdf_paid_stamp, true, field + ".pdf_paid_stamp");
-    checkNull(d.invoicing_detailed_source, field + ".invoicing_detailed_source");
-    checkBoolean(d.manual_partial_invoices, true, field + ".manual_partial_invoices");
-    d.establishment_comment = EstablishmentComment.Create(d.establishment_comment, field + ".establishment_comment");
-    d.current_account_plan_item = PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem.Create(d.current_account_plan_item, field + ".current_account_plan_item");
-    const knownProperties = ["id","company_id","date","created_at","updated_at","archived_at","type","source","draft","group_uuid","gdrive_path","preview_status","pusher_channel","email_from","score","is_waiting_details","external_id","journal_id","grouped_at","attachment_required","attachment_lost","pdf_generation_status","reversal_origin_id","billing_subscription_id","fec_pieceref","label","journal","url","method","accounting_type","preview_urls","archived","quotes","filename","has_file","readonly","account_id","thirdparty_id","payment_id","amount","currency","currency_amount","outstanding_balance","completeness","gross_amount","status","complete","account","company","scored_invoices","is_accounting_needed","pending","hasTooManyLedgerEvents","ledgerEventsCount","ledgerEvents","reconciled","client_comments","is_waiting_for_ocr","has_linked_quotes","size","embeddable_in_browser","ocr_thirdparty_id","direction","deadline","multiplier","price_before_tax","quote_uid","special_mention","not_duplicate","validation_needed","currency_tax","currency_price_before_tax","language","payment_status","payment_method","invoice_number","tax","estimate_status","iban","paid","future_in_days","discount","discount_type","finalized_at","quote_group_uuid","factor_status","currency_amount_before_tax","from_estimate_id","credit_notes_amount","payment_reminder_enabled","payment_reference","is_credit_note","is_estimate","is_destroyable","can_be_stamped_as_paid_in_pdf","custom_payment_reference","scored_transactions","is_sendable","incomplete","subcomplete","attachment_label","accounting_status","thirdparty","recipients","invoice_lines","invoice_kind","file_signed_id","pages_count","tagged_at_ledger_events_level","pdf_invoice_title","pdf_invoice_free_text","pdf_invoice_free_text_enabled","pdf_invoice_subject","pdf_invoice_subject_enabled","pdf_invoice_display_products_list","pdf_paid_stamp","invoicing_detailed_source","manual_partial_invoices","establishment_comment","current_account_plan_item"];
+    if ("currency_price_before_tax" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkString(d.currency_price_before_tax, field + ".currency_price_before_tax", "string | null");
+      } catch (e) {
+        try {
+          checkNull(d.currency_price_before_tax, field + ".currency_price_before_tax", "string | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    if ("currency_tax" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkString(d.currency_tax, field + ".currency_tax", "string | null");
+      } catch (e) {
+        try {
+          checkNull(d.currency_tax, field + ".currency_tax", "string | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    if ("current_account_plan_item" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkNull(d.current_account_plan_item, field + ".current_account_plan_item", "null | PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem");
+      } catch (e) {
+        try {
+          d.current_account_plan_item = PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem.Create(d.current_account_plan_item, field + ".current_account_plan_item", "null | PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    if ("custom_payment_reference" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkString(d.custom_payment_reference, field + ".custom_payment_reference", "string | null");
+      } catch (e) {
+        try {
+          checkNull(d.custom_payment_reference, field + ".custom_payment_reference", "string | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    // This will be refactored in the next release.
+    try {
+      checkNull(d.date, field + ".date", "null | string");
+    } catch (e) {
+      try {
+        checkString(d.date, field + ".date", "null | string");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+        throw e;
+      }
+    }
+    if ("deadline" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkNull(d.deadline, field + ".deadline", "null | string");
+      } catch (e) {
+        try {
+          checkString(d.deadline, field + ".deadline", "null | string");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    if ("direction" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkString(d.direction, field + ".direction", "string | null");
+      } catch (e) {
+        try {
+          checkNull(d.direction, field + ".direction", "string | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    if ("discount" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkString(d.discount, field + ".discount", "string | null");
+      } catch (e) {
+        try {
+          checkNull(d.discount, field + ".discount", "string | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    if ("discount_type" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkString(d.discount_type, field + ".discount_type", "string | null");
+      } catch (e) {
+        try {
+          checkNull(d.discount_type, field + ".discount_type", "string | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    checkBoolean(d.draft, field + ".draft");
+    checkNull(d.email_from, field + ".email_from");
+    if ("embeddable_in_browser" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkBoolean(d.embeddable_in_browser, field + ".embeddable_in_browser", "boolean | null");
+      } catch (e) {
+        try {
+          checkNull(d.embeddable_in_browser, field + ".embeddable_in_browser", "boolean | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    if ("establishment_comment" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkNull(d.establishment_comment, field + ".establishment_comment", "null | EstablishmentCommentOrClientCommentsEntity");
+      } catch (e) {
+        try {
+          d.establishment_comment = EstablishmentCommentOrClientCommentsEntity.Create(d.establishment_comment, field + ".establishment_comment", "null | EstablishmentCommentOrClientCommentsEntity");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    if ("estimate_status" in d) {
+      checkNull(d.estimate_status, field + ".estimate_status");
+    }
+    checkString(d.external_id, field + ".external_id");
+    if ("factor_status" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkString(d.factor_status, field + ".factor_status", "string | null");
+      } catch (e) {
+        try {
+          checkNull(d.factor_status, field + ".factor_status", "string | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    checkString(d.fec_pieceref, field + ".fec_pieceref");
+    if ("file_signed_id" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkString(d.file_signed_id, field + ".file_signed_id", "string | null");
+      } catch (e) {
+        try {
+          checkNull(d.file_signed_id, field + ".file_signed_id", "string | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    // This will be refactored in the next release.
+    try {
+      checkNull(d.filename, field + ".filename", "null | string");
+    } catch (e) {
+      try {
+        checkString(d.filename, field + ".filename", "null | string");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+        throw e;
+      }
+    }
+    if ("finalized_at" in d) {
+      checkNull(d.finalized_at, field + ".finalized_at");
+    }
+    if ("from_estimate_id" in d) {
+      checkNull(d.from_estimate_id, field + ".from_estimate_id");
+    }
+    if ("future_in_days" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkNumber(d.future_in_days, field + ".future_in_days", "number | null");
+      } catch (e) {
+        try {
+          checkNull(d.future_in_days, field + ".future_in_days", "number | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    // This will be refactored in the next release.
+    try {
+      checkString(d.gdrive_path, field + ".gdrive_path", "string | null");
+    } catch (e) {
+      try {
+        checkNull(d.gdrive_path, field + ".gdrive_path", "string | null");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+        throw e;
+      }
+    }
+    if ("gross_amount" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkNull(d.gross_amount, field + ".gross_amount", "null | string");
+      } catch (e) {
+        try {
+          checkString(d.gross_amount, field + ".gross_amount", "null | string");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    checkString(d.group_uuid, field + ".group_uuid");
+    // This will be refactored in the next release.
+    try {
+      checkNull(d.grouped_at, field + ".grouped_at", "null | string");
+    } catch (e) {
+      try {
+        checkString(d.grouped_at, field + ".grouped_at", "null | string");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+        throw e;
+      }
+    }
+    checkBoolean(d.has_file, field + ".has_file");
+    if ("has_linked_quotes" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkBoolean(d.has_linked_quotes, field + ".has_linked_quotes", "boolean | null");
+      } catch (e) {
+        try {
+          checkNull(d.has_linked_quotes, field + ".has_linked_quotes", "boolean | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    checkBoolean(d.hasTooManyLedgerEvents, field + ".hasTooManyLedgerEvents");
+    if ("iban" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkString(d.iban, field + ".iban", "string | null");
+      } catch (e) {
+        try {
+          checkNull(d.iban, field + ".iban", "string | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    checkNumber(d.id, field + ".id");
+    if ("incomplete" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkBoolean(d.incomplete, field + ".incomplete", "boolean | null");
+      } catch (e) {
+        try {
+          checkNull(d.incomplete, field + ".incomplete", "boolean | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    if ("invoice_kind" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkString(d.invoice_kind, field + ".invoice_kind", "string | null");
+      } catch (e) {
+        try {
+          checkNull(d.invoice_kind, field + ".invoice_kind", "string | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    if ("invoice_lines" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkArray(d.invoice_lines, field + ".invoice_lines", "InvoiceLinesEntity[] | null");
+        if (d.invoice_lines) {
+          for (let i = 0; i < d.invoice_lines.length; i++) {
+            d.invoice_lines[i] = InvoiceLinesEntity.Create(d.invoice_lines[i], field + ".invoice_lines" + "[" + i + "]", undefined);
+          }
+        }
+      } catch (e) {
+        try {
+          checkNull(d.invoice_lines, field + ".invoice_lines", "InvoiceLinesEntity[] | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    if ("invoice_number" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkString(d.invoice_number, field + ".invoice_number", "string | null");
+      } catch (e) {
+        try {
+          checkNull(d.invoice_number, field + ".invoice_number", "string | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    if ("invoicing_detailed_source" in d) {
+      checkNull(d.invoicing_detailed_source, field + ".invoicing_detailed_source");
+    }
+    if ("is_accounting_needed" in d) {
+      checkNull(d.is_accounting_needed, field + ".is_accounting_needed");
+    }
+    if ("is_credit_note" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkBoolean(d.is_credit_note, field + ".is_credit_note", "boolean | null");
+      } catch (e) {
+        try {
+          checkNull(d.is_credit_note, field + ".is_credit_note", "boolean | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    if ("is_destroyable" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkBoolean(d.is_destroyable, field + ".is_destroyable", "boolean | null");
+      } catch (e) {
+        try {
+          checkNull(d.is_destroyable, field + ".is_destroyable", "boolean | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    if ("is_estimate" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkBoolean(d.is_estimate, field + ".is_estimate", "boolean | null");
+      } catch (e) {
+        try {
+          checkNull(d.is_estimate, field + ".is_estimate", "boolean | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    if ("is_sendable" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkBoolean(d.is_sendable, field + ".is_sendable", "boolean | null");
+      } catch (e) {
+        try {
+          checkNull(d.is_sendable, field + ".is_sendable", "boolean | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    checkBoolean(d.is_waiting_details, field + ".is_waiting_details");
+    if ("is_waiting_for_ocr" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkBoolean(d.is_waiting_for_ocr, field + ".is_waiting_for_ocr", "boolean | null");
+      } catch (e) {
+        try {
+          checkNull(d.is_waiting_for_ocr, field + ".is_waiting_for_ocr", "boolean | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    d.journal = Journal.Create(d.journal, field + ".journal", undefined);
+    checkNumber(d.journal_id, field + ".journal_id");
+    checkString(d.label, field + ".label");
+    if ("language" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkString(d.language, field + ".language", "string | null");
+      } catch (e) {
+        try {
+          checkNull(d.language, field + ".language", "string | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    checkArray(d.ledgerEvents, field + ".ledgerEvents");
+    if (d.ledgerEvents) {
+      for (let i = 0; i < d.ledgerEvents.length; i++) {
+        d.ledgerEvents[i] = LedgerEventsEntity.Create(d.ledgerEvents[i], field + ".ledgerEvents" + "[" + i + "]", undefined);
+      }
+    }
+    checkNumber(d.ledgerEventsCount, field + ".ledgerEventsCount");
+    if ("manual_partial_invoices" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkBoolean(d.manual_partial_invoices, field + ".manual_partial_invoices", "boolean | null");
+      } catch (e) {
+        try {
+          checkNull(d.manual_partial_invoices, field + ".manual_partial_invoices", "boolean | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    checkString(d.method, field + ".method");
+    if ("multiplier" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkNumber(d.multiplier, field + ".multiplier", "number | null");
+      } catch (e) {
+        try {
+          checkNull(d.multiplier, field + ".multiplier", "number | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    if ("not_duplicate" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkBoolean(d.not_duplicate, field + ".not_duplicate", "boolean | null");
+      } catch (e) {
+        try {
+          checkNull(d.not_duplicate, field + ".not_duplicate", "boolean | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    if ("ocr_thirdparty_id" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkNull(d.ocr_thirdparty_id, field + ".ocr_thirdparty_id", "null | number");
+      } catch (e) {
+        try {
+          checkNumber(d.ocr_thirdparty_id, field + ".ocr_thirdparty_id", "null | number");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    checkString(d.outstanding_balance, field + ".outstanding_balance");
+    if ("pages_count" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkNumber(d.pages_count, field + ".pages_count", "number | null");
+      } catch (e) {
+        try {
+          checkNull(d.pages_count, field + ".pages_count", "number | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    if ("paid" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkBoolean(d.paid, field + ".paid", "boolean | null");
+      } catch (e) {
+        try {
+          checkNull(d.paid, field + ".paid", "boolean | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    if ("payment_id" in d) {
+      checkNull(d.payment_id, field + ".payment_id");
+    }
+    if ("payment_method" in d) {
+      checkNull(d.payment_method, field + ".payment_method");
+    }
+    if ("payment_reference" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkString(d.payment_reference, field + ".payment_reference", "string | null");
+      } catch (e) {
+        try {
+          checkNull(d.payment_reference, field + ".payment_reference", "string | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    if ("payment_reminder_enabled" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkBoolean(d.payment_reminder_enabled, field + ".payment_reminder_enabled", "boolean | null");
+      } catch (e) {
+        try {
+          checkNull(d.payment_reminder_enabled, field + ".payment_reminder_enabled", "boolean | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    if ("payment_status" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkString(d.payment_status, field + ".payment_status", "string | null");
+      } catch (e) {
+        try {
+          checkNull(d.payment_status, field + ".payment_status", "string | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    checkString(d.pdf_generation_status, field + ".pdf_generation_status");
+    if ("pdf_invoice_display_products_list" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkBoolean(d.pdf_invoice_display_products_list, field + ".pdf_invoice_display_products_list", "boolean | null");
+      } catch (e) {
+        try {
+          checkNull(d.pdf_invoice_display_products_list, field + ".pdf_invoice_display_products_list", "boolean | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    if ("pdf_invoice_free_text" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkString(d.pdf_invoice_free_text, field + ".pdf_invoice_free_text", "string | null");
+      } catch (e) {
+        try {
+          checkNull(d.pdf_invoice_free_text, field + ".pdf_invoice_free_text", "string | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    if ("pdf_invoice_free_text_enabled" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkBoolean(d.pdf_invoice_free_text_enabled, field + ".pdf_invoice_free_text_enabled", "boolean | null");
+      } catch (e) {
+        try {
+          checkNull(d.pdf_invoice_free_text_enabled, field + ".pdf_invoice_free_text_enabled", "boolean | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    if ("pdf_invoice_subject" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkString(d.pdf_invoice_subject, field + ".pdf_invoice_subject", "string | null");
+      } catch (e) {
+        try {
+          checkNull(d.pdf_invoice_subject, field + ".pdf_invoice_subject", "string | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    if ("pdf_invoice_subject_enabled" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkBoolean(d.pdf_invoice_subject_enabled, field + ".pdf_invoice_subject_enabled", "boolean | null");
+      } catch (e) {
+        try {
+          checkNull(d.pdf_invoice_subject_enabled, field + ".pdf_invoice_subject_enabled", "boolean | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    if ("pdf_invoice_title" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkString(d.pdf_invoice_title, field + ".pdf_invoice_title", "string | null");
+      } catch (e) {
+        try {
+          checkNull(d.pdf_invoice_title, field + ".pdf_invoice_title", "string | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    if ("pdf_paid_stamp" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkBoolean(d.pdf_paid_stamp, field + ".pdf_paid_stamp", "boolean | null");
+      } catch (e) {
+        try {
+          checkNull(d.pdf_paid_stamp, field + ".pdf_paid_stamp", "boolean | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    checkBoolean(d.pending, field + ".pending");
+    // This will be refactored in the next release.
+    try {
+      checkNull(d.preview_status, field + ".preview_status", "null | string");
+    } catch (e) {
+      try {
+        checkString(d.preview_status, field + ".preview_status", "null | string");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+        throw e;
+      }
+    }
+    checkArray(d.preview_urls, field + ".preview_urls");
+    if (d.preview_urls) {
+      for (let i = 0; i < d.preview_urls.length; i++) {
+        checkString(d.preview_urls[i], field + ".preview_urls" + "[" + i + "]");
+      }
+    }
+    if ("price_before_tax" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkString(d.price_before_tax, field + ".price_before_tax", "string | null");
+      } catch (e) {
+        try {
+          checkNull(d.price_before_tax, field + ".price_before_tax", "string | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    checkString(d.pusher_channel, field + ".pusher_channel");
+    if ("quote_group_uuid" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkString(d.quote_group_uuid, field + ".quote_group_uuid", "string | null");
+      } catch (e) {
+        try {
+          checkNull(d.quote_group_uuid, field + ".quote_group_uuid", "string | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    if ("quote_uid" in d) {
+      checkNull(d.quote_uid, field + ".quote_uid");
+    }
+    checkBoolean(d.quotes, field + ".quotes");
+    checkBoolean(d.readonly, field + ".readonly");
+    if ("recipients" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkArray(d.recipients, field + ".recipients", "never[] | null");
+        if (d.recipients) {
+          for (let i = 0; i < d.recipients.length; i++) {
+            checkNever(d.recipients[i], field + ".recipients" + "[" + i + "]");
+          }
+        }
+      } catch (e) {
+        try {
+          checkNull(d.recipients, field + ".recipients", "never[] | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    checkBoolean(d.reconciled, field + ".reconciled");
+    checkNull(d.reversal_origin_id, field + ".reversal_origin_id");
+    checkNull(d.score, field + ".score");
+    if ("scored_invoices" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkNull(d.scored_invoices, field + ".scored_invoices", "null | ScoredInvoices1");
+      } catch (e) {
+        try {
+          d.scored_invoices = ScoredInvoices1.Create(d.scored_invoices, field + ".scored_invoices", "null | ScoredInvoices1");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    if ("scored_transactions" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkArray(d.scored_transactions, field + ".scored_transactions", "never[] | null");
+        if (d.scored_transactions) {
+          for (let i = 0; i < d.scored_transactions.length; i++) {
+            checkNever(d.scored_transactions[i], field + ".scored_transactions" + "[" + i + "]");
+          }
+        }
+      } catch (e) {
+        try {
+          checkNull(d.scored_transactions, field + ".scored_transactions", "never[] | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    if ("size" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkString(d.size, field + ".size", "string | null");
+      } catch (e) {
+        try {
+          checkNull(d.size, field + ".size", "string | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    checkString(d.source, field + ".source");
+    if ("special_mention" in d) {
+      checkNull(d.special_mention, field + ".special_mention");
+    }
+    if ("status" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkNull(d.status, field + ".status", "null | string");
+      } catch (e) {
+        try {
+          checkString(d.status, field + ".status", "null | string");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    if ("subcomplete" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkBoolean(d.subcomplete, field + ".subcomplete", "boolean | null");
+      } catch (e) {
+        try {
+          checkNull(d.subcomplete, field + ".subcomplete", "boolean | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    if ("tagged_at_ledger_events_level" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkBoolean(d.tagged_at_ledger_events_level, field + ".tagged_at_ledger_events_level", "boolean | null");
+      } catch (e) {
+        try {
+          checkNull(d.tagged_at_ledger_events_level, field + ".tagged_at_ledger_events_level", "boolean | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    if ("tax" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkString(d.tax, field + ".tax", "string | null");
+      } catch (e) {
+        try {
+          checkNull(d.tax, field + ".tax", "string | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    if ("thirdparty" in d) {
+      // This will be refactored in the next release.
+      try {
+        d.thirdparty = Thirdparty.Create(d.thirdparty, field + ".thirdparty", "Thirdparty | null");
+      } catch (e) {
+        try {
+          checkNull(d.thirdparty, field + ".thirdparty", "Thirdparty | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    // This will be refactored in the next release.
+    try {
+      checkNull(d.thirdparty_id, field + ".thirdparty_id", "null | number");
+    } catch (e) {
+      try {
+        checkNumber(d.thirdparty_id, field + ".thirdparty_id", "null | number");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+        throw e;
+      }
+    }
+    checkString(d.type, field + ".type");
+    checkString(d.updated_at, field + ".updated_at");
+    checkString(d.url, field + ".url");
+    if ("validation_needed" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkBoolean(d.validation_needed, field + ".validation_needed", "boolean | null");
+      } catch (e) {
+        try {
+          checkNull(d.validation_needed, field + ".validation_needed", "boolean | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    const knownProperties = ["account","account_id","accounting_status","accounting_type","amount","archived","archived_at","attachment_label","attachment_lost","attachment_required","billing_subscription_id","can_be_stamped_as_paid_in_pdf","client_comments","company","company_id","complete","completeness","created_at","credit_notes_amount","currency","currency_amount","currency_amount_before_tax","currency_price_before_tax","currency_tax","current_account_plan_item","custom_payment_reference","date","deadline","direction","discount","discount_type","draft","email_from","embeddable_in_browser","establishment_comment","estimate_status","external_id","factor_status","fec_pieceref","file_signed_id","filename","finalized_at","from_estimate_id","future_in_days","gdrive_path","gross_amount","group_uuid","grouped_at","has_file","has_linked_quotes","hasTooManyLedgerEvents","iban","id","incomplete","invoice_kind","invoice_lines","invoice_number","invoicing_detailed_source","is_accounting_needed","is_credit_note","is_destroyable","is_estimate","is_sendable","is_waiting_details","is_waiting_for_ocr","journal","journal_id","label","language","ledgerEvents","ledgerEventsCount","manual_partial_invoices","method","multiplier","not_duplicate","ocr_thirdparty_id","outstanding_balance","pages_count","paid","payment_id","payment_method","payment_reference","payment_reminder_enabled","payment_status","pdf_generation_status","pdf_invoice_display_products_list","pdf_invoice_free_text","pdf_invoice_free_text_enabled","pdf_invoice_subject","pdf_invoice_subject_enabled","pdf_invoice_title","pdf_paid_stamp","pending","preview_status","preview_urls","price_before_tax","pusher_channel","quote_group_uuid","quote_uid","quotes","readonly","recipients","reconciled","reversal_origin_id","score","scored_invoices","scored_transactions","size","source","special_mention","status","subcomplete","tagged_at_ledger_events_level","tax","thirdparty","thirdparty_id","type","updated_at","url","validation_needed"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never", false);
+    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
     return new GroupedDocumentsEntity(d);
   }
   private constructor(d: any) {
-    this.id = d.id;
-    this.company_id = d.company_id;
-    if ("date" in d) this.date = d.date;
-    this.created_at = d.created_at;
-    this.updated_at = d.updated_at;
-    if ("archived_at" in d) this.archived_at = d.archived_at;
-    this.type = d.type;
-    this.source = d.source;
-    this.draft = d.draft;
-    this.group_uuid = d.group_uuid;
-    if ("gdrive_path" in d) this.gdrive_path = d.gdrive_path;
-    if ("preview_status" in d) this.preview_status = d.preview_status;
-    this.pusher_channel = d.pusher_channel;
-    if ("email_from" in d) this.email_from = d.email_from;
-    if ("score" in d) this.score = d.score;
-    this.is_waiting_details = d.is_waiting_details;
-    this.external_id = d.external_id;
-    this.journal_id = d.journal_id;
-    if ("grouped_at" in d) this.grouped_at = d.grouped_at;
-    this.attachment_required = d.attachment_required;
-    this.attachment_lost = d.attachment_lost;
-    this.pdf_generation_status = d.pdf_generation_status;
-    if ("reversal_origin_id" in d) this.reversal_origin_id = d.reversal_origin_id;
-    if ("billing_subscription_id" in d) this.billing_subscription_id = d.billing_subscription_id;
-    this.fec_pieceref = d.fec_pieceref;
-    this.label = d.label;
-    this.journal = d.journal;
-    this.url = d.url;
-    this.method = d.method;
-    this.accounting_type = d.accounting_type;
-    if ("preview_urls" in d) this.preview_urls = d.preview_urls;
-    this.archived = d.archived;
-    this.quotes = d.quotes;
-    if ("filename" in d) this.filename = d.filename;
-    this.has_file = d.has_file;
-    this.readonly = d.readonly;
+    if ("account" in d) this.account = d.account;
     if ("account_id" in d) this.account_id = d.account_id;
-    if ("thirdparty_id" in d) this.thirdparty_id = d.thirdparty_id;
-    if ("payment_id" in d) this.payment_id = d.payment_id;
+    if ("accounting_status" in d) this.accounting_status = d.accounting_status;
+    this.accounting_type = d.accounting_type;
     this.amount = d.amount;
+    this.archived = d.archived;
+    this.archived_at = d.archived_at;
+    if ("attachment_label" in d) this.attachment_label = d.attachment_label;
+    this.attachment_lost = d.attachment_lost;
+    this.attachment_required = d.attachment_required;
+    this.billing_subscription_id = d.billing_subscription_id;
+    if ("can_be_stamped_as_paid_in_pdf" in d) this.can_be_stamped_as_paid_in_pdf = d.can_be_stamped_as_paid_in_pdf;
+    this.client_comments = d.client_comments;
+    if ("company" in d) this.company = d.company;
+    this.company_id = d.company_id;
+    this.complete = d.complete;
+    this.completeness = d.completeness;
+    this.created_at = d.created_at;
+    if ("credit_notes_amount" in d) this.credit_notes_amount = d.credit_notes_amount;
     this.currency = d.currency;
     this.currency_amount = d.currency_amount;
-    this.outstanding_balance = d.outstanding_balance;
-    this.completeness = d.completeness;
-    if ("gross_amount" in d) this.gross_amount = d.gross_amount;
-    if ("status" in d) this.status = d.status;
-    this.complete = d.complete;
-    if ("account" in d) this.account = d.account;
-    if ("company" in d) this.company = d.company;
-    if ("scored_invoices" in d) this.scored_invoices = d.scored_invoices;
-    if ("is_accounting_needed" in d) this.is_accounting_needed = d.is_accounting_needed;
-    this.pending = d.pending;
-    this.hasTooManyLedgerEvents = d.hasTooManyLedgerEvents;
-    this.ledgerEventsCount = d.ledgerEventsCount;
-    if ("ledgerEvents" in d) this.ledgerEvents = d.ledgerEvents;
-    this.reconciled = d.reconciled;
-    if ("client_comments" in d) this.client_comments = d.client_comments;
-    if ("is_waiting_for_ocr" in d) this.is_waiting_for_ocr = d.is_waiting_for_ocr;
-    if ("has_linked_quotes" in d) this.has_linked_quotes = d.has_linked_quotes;
-    if ("size" in d) this.size = d.size;
-    if ("embeddable_in_browser" in d) this.embeddable_in_browser = d.embeddable_in_browser;
-    if ("ocr_thirdparty_id" in d) this.ocr_thirdparty_id = d.ocr_thirdparty_id;
-    if ("direction" in d) this.direction = d.direction;
-    if ("deadline" in d) this.deadline = d.deadline;
-    if ("multiplier" in d) this.multiplier = d.multiplier;
-    if ("price_before_tax" in d) this.price_before_tax = d.price_before_tax;
-    if ("quote_uid" in d) this.quote_uid = d.quote_uid;
-    if ("special_mention" in d) this.special_mention = d.special_mention;
-    if ("not_duplicate" in d) this.not_duplicate = d.not_duplicate;
-    if ("validation_needed" in d) this.validation_needed = d.validation_needed;
-    if ("currency_tax" in d) this.currency_tax = d.currency_tax;
+    if ("currency_amount_before_tax" in d) this.currency_amount_before_tax = d.currency_amount_before_tax;
     if ("currency_price_before_tax" in d) this.currency_price_before_tax = d.currency_price_before_tax;
-    if ("language" in d) this.language = d.language;
-    if ("payment_status" in d) this.payment_status = d.payment_status;
-    if ("payment_method" in d) this.payment_method = d.payment_method;
-    if ("invoice_number" in d) this.invoice_number = d.invoice_number;
-    if ("tax" in d) this.tax = d.tax;
-    if ("estimate_status" in d) this.estimate_status = d.estimate_status;
-    if ("iban" in d) this.iban = d.iban;
-    if ("paid" in d) this.paid = d.paid;
-    if ("future_in_days" in d) this.future_in_days = d.future_in_days;
+    if ("currency_tax" in d) this.currency_tax = d.currency_tax;
+    if ("current_account_plan_item" in d) this.current_account_plan_item = d.current_account_plan_item;
+    if ("custom_payment_reference" in d) this.custom_payment_reference = d.custom_payment_reference;
+    this.date = d.date;
+    if ("deadline" in d) this.deadline = d.deadline;
+    if ("direction" in d) this.direction = d.direction;
     if ("discount" in d) this.discount = d.discount;
     if ("discount_type" in d) this.discount_type = d.discount_type;
-    if ("finalized_at" in d) this.finalized_at = d.finalized_at;
-    if ("quote_group_uuid" in d) this.quote_group_uuid = d.quote_group_uuid;
+    this.draft = d.draft;
+    this.email_from = d.email_from;
+    if ("embeddable_in_browser" in d) this.embeddable_in_browser = d.embeddable_in_browser;
+    if ("establishment_comment" in d) this.establishment_comment = d.establishment_comment;
+    if ("estimate_status" in d) this.estimate_status = d.estimate_status;
+    this.external_id = d.external_id;
     if ("factor_status" in d) this.factor_status = d.factor_status;
-    if ("currency_amount_before_tax" in d) this.currency_amount_before_tax = d.currency_amount_before_tax;
-    if ("from_estimate_id" in d) this.from_estimate_id = d.from_estimate_id;
-    if ("credit_notes_amount" in d) this.credit_notes_amount = d.credit_notes_amount;
-    if ("payment_reminder_enabled" in d) this.payment_reminder_enabled = d.payment_reminder_enabled;
-    if ("payment_reference" in d) this.payment_reference = d.payment_reference;
-    if ("is_credit_note" in d) this.is_credit_note = d.is_credit_note;
-    if ("is_estimate" in d) this.is_estimate = d.is_estimate;
-    if ("is_destroyable" in d) this.is_destroyable = d.is_destroyable;
-    if ("can_be_stamped_as_paid_in_pdf" in d) this.can_be_stamped_as_paid_in_pdf = d.can_be_stamped_as_paid_in_pdf;
-    if ("custom_payment_reference" in d) this.custom_payment_reference = d.custom_payment_reference;
-    if ("scored_transactions" in d) this.scored_transactions = d.scored_transactions;
-    if ("is_sendable" in d) this.is_sendable = d.is_sendable;
-    if ("incomplete" in d) this.incomplete = d.incomplete;
-    if ("subcomplete" in d) this.subcomplete = d.subcomplete;
-    if ("attachment_label" in d) this.attachment_label = d.attachment_label;
-    if ("accounting_status" in d) this.accounting_status = d.accounting_status;
-    if ("thirdparty" in d) this.thirdparty = d.thirdparty;
-    if ("recipients" in d) this.recipients = d.recipients;
-    if ("invoice_lines" in d) this.invoice_lines = d.invoice_lines;
-    if ("invoice_kind" in d) this.invoice_kind = d.invoice_kind;
+    this.fec_pieceref = d.fec_pieceref;
     if ("file_signed_id" in d) this.file_signed_id = d.file_signed_id;
+    this.filename = d.filename;
+    if ("finalized_at" in d) this.finalized_at = d.finalized_at;
+    if ("from_estimate_id" in d) this.from_estimate_id = d.from_estimate_id;
+    if ("future_in_days" in d) this.future_in_days = d.future_in_days;
+    this.gdrive_path = d.gdrive_path;
+    if ("gross_amount" in d) this.gross_amount = d.gross_amount;
+    this.group_uuid = d.group_uuid;
+    this.grouped_at = d.grouped_at;
+    this.has_file = d.has_file;
+    if ("has_linked_quotes" in d) this.has_linked_quotes = d.has_linked_quotes;
+    this.hasTooManyLedgerEvents = d.hasTooManyLedgerEvents;
+    if ("iban" in d) this.iban = d.iban;
+    this.id = d.id;
+    if ("incomplete" in d) this.incomplete = d.incomplete;
+    if ("invoice_kind" in d) this.invoice_kind = d.invoice_kind;
+    if ("invoice_lines" in d) this.invoice_lines = d.invoice_lines;
+    if ("invoice_number" in d) this.invoice_number = d.invoice_number;
+    if ("invoicing_detailed_source" in d) this.invoicing_detailed_source = d.invoicing_detailed_source;
+    if ("is_accounting_needed" in d) this.is_accounting_needed = d.is_accounting_needed;
+    if ("is_credit_note" in d) this.is_credit_note = d.is_credit_note;
+    if ("is_destroyable" in d) this.is_destroyable = d.is_destroyable;
+    if ("is_estimate" in d) this.is_estimate = d.is_estimate;
+    if ("is_sendable" in d) this.is_sendable = d.is_sendable;
+    this.is_waiting_details = d.is_waiting_details;
+    if ("is_waiting_for_ocr" in d) this.is_waiting_for_ocr = d.is_waiting_for_ocr;
+    this.journal = d.journal;
+    this.journal_id = d.journal_id;
+    this.label = d.label;
+    if ("language" in d) this.language = d.language;
+    this.ledgerEvents = d.ledgerEvents;
+    this.ledgerEventsCount = d.ledgerEventsCount;
+    if ("manual_partial_invoices" in d) this.manual_partial_invoices = d.manual_partial_invoices;
+    this.method = d.method;
+    if ("multiplier" in d) this.multiplier = d.multiplier;
+    if ("not_duplicate" in d) this.not_duplicate = d.not_duplicate;
+    if ("ocr_thirdparty_id" in d) this.ocr_thirdparty_id = d.ocr_thirdparty_id;
+    this.outstanding_balance = d.outstanding_balance;
     if ("pages_count" in d) this.pages_count = d.pages_count;
-    if ("tagged_at_ledger_events_level" in d) this.tagged_at_ledger_events_level = d.tagged_at_ledger_events_level;
-    if ("pdf_invoice_title" in d) this.pdf_invoice_title = d.pdf_invoice_title;
+    if ("paid" in d) this.paid = d.paid;
+    if ("payment_id" in d) this.payment_id = d.payment_id;
+    if ("payment_method" in d) this.payment_method = d.payment_method;
+    if ("payment_reference" in d) this.payment_reference = d.payment_reference;
+    if ("payment_reminder_enabled" in d) this.payment_reminder_enabled = d.payment_reminder_enabled;
+    if ("payment_status" in d) this.payment_status = d.payment_status;
+    this.pdf_generation_status = d.pdf_generation_status;
+    if ("pdf_invoice_display_products_list" in d) this.pdf_invoice_display_products_list = d.pdf_invoice_display_products_list;
     if ("pdf_invoice_free_text" in d) this.pdf_invoice_free_text = d.pdf_invoice_free_text;
     if ("pdf_invoice_free_text_enabled" in d) this.pdf_invoice_free_text_enabled = d.pdf_invoice_free_text_enabled;
     if ("pdf_invoice_subject" in d) this.pdf_invoice_subject = d.pdf_invoice_subject;
     if ("pdf_invoice_subject_enabled" in d) this.pdf_invoice_subject_enabled = d.pdf_invoice_subject_enabled;
-    if ("pdf_invoice_display_products_list" in d) this.pdf_invoice_display_products_list = d.pdf_invoice_display_products_list;
+    if ("pdf_invoice_title" in d) this.pdf_invoice_title = d.pdf_invoice_title;
     if ("pdf_paid_stamp" in d) this.pdf_paid_stamp = d.pdf_paid_stamp;
-    if ("invoicing_detailed_source" in d) this.invoicing_detailed_source = d.invoicing_detailed_source;
-    if ("manual_partial_invoices" in d) this.manual_partial_invoices = d.manual_partial_invoices;
-    if ("establishment_comment" in d) this.establishment_comment = d.establishment_comment;
-    if ("current_account_plan_item" in d) this.current_account_plan_item = d.current_account_plan_item;
-  }
-}
-
-export class Journal {
-  public readonly id: number;
-  public readonly code: string;
-  public readonly label: string;
-  public static Parse(d: string): Journal {
-    return Journal.Create(JSON.parse(d));
-  }
-  public static Create(d: any, field?: string): Journal {
-    if (!field) {
-      obj = d;
-      field = "root";
-    }
-    if (d === null || d === undefined) {
-      throwNull2NonNull(field, d);
-    } else if (typeof(d) !== 'object') {
-      throwNotObject(field, d, false);
-    } else if (Array.isArray(d)) {
-      throwIsArray(field, d, false);
-    }
-    checkNumber(d.id, false, field + ".id");
-    checkString(d.code, false, field + ".code");
-    checkString(d.label, false, field + ".label");
-    const knownProperties = ["id","code","label"];
-    const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never", false);
-    return new Journal(d);
-  }
-  private constructor(d: any) {
-    this.id = d.id;
-    this.code = d.code;
-    this.label = d.label;
+    this.pending = d.pending;
+    this.preview_status = d.preview_status;
+    this.preview_urls = d.preview_urls;
+    if ("price_before_tax" in d) this.price_before_tax = d.price_before_tax;
+    this.pusher_channel = d.pusher_channel;
+    if ("quote_group_uuid" in d) this.quote_group_uuid = d.quote_group_uuid;
+    if ("quote_uid" in d) this.quote_uid = d.quote_uid;
+    this.quotes = d.quotes;
+    this.readonly = d.readonly;
+    if ("recipients" in d) this.recipients = d.recipients;
+    this.reconciled = d.reconciled;
+    this.reversal_origin_id = d.reversal_origin_id;
+    this.score = d.score;
+    if ("scored_invoices" in d) this.scored_invoices = d.scored_invoices;
+    if ("scored_transactions" in d) this.scored_transactions = d.scored_transactions;
+    if ("size" in d) this.size = d.size;
+    this.source = d.source;
+    if ("special_mention" in d) this.special_mention = d.special_mention;
+    if ("status" in d) this.status = d.status;
+    if ("subcomplete" in d) this.subcomplete = d.subcomplete;
+    if ("tagged_at_ledger_events_level" in d) this.tagged_at_ledger_events_level = d.tagged_at_ledger_events_level;
+    if ("tax" in d) this.tax = d.tax;
+    if ("thirdparty" in d) this.thirdparty = d.thirdparty;
+    this.thirdparty_id = d.thirdparty_id;
+    this.type = d.type;
+    this.updated_at = d.updated_at;
+    this.url = d.url;
+    if ("validation_needed" in d) this.validation_needed = d.validation_needed;
   }
 }
 
 export class Account {
-  public readonly id: number;
-  public readonly company_id: number;
-  public readonly name: string;
-  public readonly visible: boolean;
-  public readonly synchronized: boolean;
-  public readonly currency: string;
   public readonly balance: string;
-  public readonly currency_balance: string;
-  public readonly last_sync_http_code: number;
-  public readonly last_sync_error?: null;
-  public readonly last_sync_at: string;
-  public readonly sync_customers: boolean;
-  public readonly sync_since?: null;
-  public readonly last_successful_sync_at: string;
-  public readonly updated_at: string;
-  public readonly ledger_events_count?: null;
-  public readonly ledger_events_min_date?: null;
-  public readonly ledger_events_max_date?: null;
-  public readonly transactions_count?: null;
-  public readonly sync_attachments: boolean;
-  public readonly establishment_id: number;
-  public readonly pusher_channel: string;
-  public readonly connection: string;
-  public readonly iban?: string | null;
   public readonly bic: string;
-  public readonly use_as_default_for_vat_return: boolean;
-  public readonly method: string;
-  public readonly url: string;
-  public readonly swan: boolean;
-  public readonly swan_number?: null;
+  public readonly company_id: number;
+  public readonly connection: string | null;
+  public readonly currency: string;
+  public readonly currency_balance: string;
   public readonly establishment: Establishment;
+  public readonly establishment_id: number;
+  public readonly iban: string | null;
+  public readonly id: number;
   public readonly label: string;
+  public readonly last_successful_sync_at: string | null;
+  public readonly last_sync_at: string | null;
+  public readonly last_sync_error: null;
+  public readonly last_sync_http_code: number;
+  public readonly ledger_events_count: null;
+  public readonly ledger_events_max_date: null;
+  public readonly ledger_events_min_date: null;
   public readonly merge_url: string;
-  public static Parse(d: string): Account | null {
+  public readonly method: string;
+  public readonly name: string;
+  public readonly pusher_channel: string;
+  public readonly swan: boolean;
+  public readonly swan_number: null;
+  public readonly sync_attachments: boolean;
+  public readonly sync_customers: boolean;
+  public readonly sync_since: null;
+  public readonly synchronized: boolean;
+  public readonly transactions_count: null;
+  public readonly updated_at: string;
+  public readonly url: string;
+  public readonly use_as_default_for_vat_return: boolean;
+  public readonly visible: boolean;
+  public static Parse(d: string): Account {
     return Account.Create(JSON.parse(d));
   }
-  public static Create(d: any, field?: string): Account | null {
+  public static Create(d: any, field?: string, multiple ?: string): Account {
     if (!field) {
       obj = d;
       field = "root";
     }
-    if (d === null || d === undefined) {
-      return null;
+    if (!d) {
+      throwNull2NonNull(field, d, multiple ?? this.name);
     } else if (typeof(d) !== 'object') {
-      throwNotObject(field, d, true);
+      throwNotObject(field, d);
     } else if (Array.isArray(d)) {
-      throwIsArray(field, d, true);
+      throwIsArray(field, d);
     }
-    checkNumber(d.id, false, field + ".id");
-    checkNumber(d.company_id, false, field + ".company_id");
-    checkString(d.name, false, field + ".name");
-    checkBoolean(d.visible, false, field + ".visible");
-    checkBoolean(d.synchronized, false, field + ".synchronized");
-    checkString(d.currency, false, field + ".currency");
-    checkString(d.balance, false, field + ".balance");
-    checkString(d.currency_balance, false, field + ".currency_balance");
-    checkNumber(d.last_sync_http_code, false, field + ".last_sync_http_code");
+    checkString(d.balance, field + ".balance");
+    checkString(d.bic, field + ".bic");
+    checkNumber(d.company_id, field + ".company_id");
+    // This will be refactored in the next release.
+    try {
+      checkString(d.connection, field + ".connection", "string | null");
+    } catch (e) {
+      try {
+        checkNull(d.connection, field + ".connection", "string | null");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+        throw e;
+      }
+    }
+    checkString(d.currency, field + ".currency");
+    checkString(d.currency_balance, field + ".currency_balance");
+    d.establishment = Establishment.Create(d.establishment, field + ".establishment", undefined);
+    checkNumber(d.establishment_id, field + ".establishment_id");
+    // This will be refactored in the next release.
+    try {
+      checkString(d.iban, field + ".iban", "string | null");
+    } catch (e) {
+      try {
+        checkNull(d.iban, field + ".iban", "string | null");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+        throw e;
+      }
+    }
+    checkNumber(d.id, field + ".id");
+    checkString(d.label, field + ".label");
+    // This will be refactored in the next release.
+    try {
+      checkString(d.last_successful_sync_at, field + ".last_successful_sync_at", "string | null");
+    } catch (e) {
+      try {
+        checkNull(d.last_successful_sync_at, field + ".last_successful_sync_at", "string | null");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+        throw e;
+      }
+    }
+    // This will be refactored in the next release.
+    try {
+      checkString(d.last_sync_at, field + ".last_sync_at", "string | null");
+    } catch (e) {
+      try {
+        checkNull(d.last_sync_at, field + ".last_sync_at", "string | null");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+        throw e;
+      }
+    }
     checkNull(d.last_sync_error, field + ".last_sync_error");
-    checkString(d.last_sync_at, false, field + ".last_sync_at");
-    checkBoolean(d.sync_customers, false, field + ".sync_customers");
-    checkNull(d.sync_since, field + ".sync_since");
-    checkString(d.last_successful_sync_at, false, field + ".last_successful_sync_at");
-    checkString(d.updated_at, false, field + ".updated_at");
+    checkNumber(d.last_sync_http_code, field + ".last_sync_http_code");
     checkNull(d.ledger_events_count, field + ".ledger_events_count");
-    checkNull(d.ledger_events_min_date, field + ".ledger_events_min_date");
     checkNull(d.ledger_events_max_date, field + ".ledger_events_max_date");
-    checkNull(d.transactions_count, field + ".transactions_count");
-    checkBoolean(d.sync_attachments, false, field + ".sync_attachments");
-    checkNumber(d.establishment_id, false, field + ".establishment_id");
-    checkString(d.pusher_channel, false, field + ".pusher_channel");
-    checkString(d.connection, false, field + ".connection");
-    checkString(d.iban, true, field + ".iban");
-    checkString(d.bic, false, field + ".bic");
-    checkBoolean(d.use_as_default_for_vat_return, false, field + ".use_as_default_for_vat_return");
-    checkString(d.method, false, field + ".method");
-    checkString(d.url, false, field + ".url");
-    checkBoolean(d.swan, false, field + ".swan");
+    checkNull(d.ledger_events_min_date, field + ".ledger_events_min_date");
+    checkString(d.merge_url, field + ".merge_url");
+    checkString(d.method, field + ".method");
+    checkString(d.name, field + ".name");
+    checkString(d.pusher_channel, field + ".pusher_channel");
+    checkBoolean(d.swan, field + ".swan");
     checkNull(d.swan_number, field + ".swan_number");
-    d.establishment = Establishment.Create(d.establishment, field + ".establishment");
-    checkString(d.label, false, field + ".label");
-    checkString(d.merge_url, false, field + ".merge_url");
-    const knownProperties = ["id","company_id","name","visible","synchronized","currency","balance","currency_balance","last_sync_http_code","last_sync_error","last_sync_at","sync_customers","sync_since","last_successful_sync_at","updated_at","ledger_events_count","ledger_events_min_date","ledger_events_max_date","transactions_count","sync_attachments","establishment_id","pusher_channel","connection","iban","bic","use_as_default_for_vat_return","method","url","swan","swan_number","establishment","label","merge_url"];
+    checkBoolean(d.sync_attachments, field + ".sync_attachments");
+    checkBoolean(d.sync_customers, field + ".sync_customers");
+    checkNull(d.sync_since, field + ".sync_since");
+    checkBoolean(d.synchronized, field + ".synchronized");
+    checkNull(d.transactions_count, field + ".transactions_count");
+    checkString(d.updated_at, field + ".updated_at");
+    checkString(d.url, field + ".url");
+    checkBoolean(d.use_as_default_for_vat_return, field + ".use_as_default_for_vat_return");
+    checkBoolean(d.visible, field + ".visible");
+    const knownProperties = ["balance","bic","company_id","connection","currency","currency_balance","establishment","establishment_id","iban","id","label","last_successful_sync_at","last_sync_at","last_sync_error","last_sync_http_code","ledger_events_count","ledger_events_max_date","ledger_events_min_date","merge_url","method","name","pusher_channel","swan","swan_number","sync_attachments","sync_customers","sync_since","synchronized","transactions_count","updated_at","url","use_as_default_for_vat_return","visible"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never", false);
+    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
     return new Account(d);
   }
   private constructor(d: any) {
-    this.id = d.id;
-    this.company_id = d.company_id;
-    this.name = d.name;
-    this.visible = d.visible;
-    this.synchronized = d.synchronized;
-    this.currency = d.currency;
     this.balance = d.balance;
-    this.currency_balance = d.currency_balance;
-    this.last_sync_http_code = d.last_sync_http_code;
-    if ("last_sync_error" in d) this.last_sync_error = d.last_sync_error;
-    this.last_sync_at = d.last_sync_at;
-    this.sync_customers = d.sync_customers;
-    if ("sync_since" in d) this.sync_since = d.sync_since;
-    this.last_successful_sync_at = d.last_successful_sync_at;
-    this.updated_at = d.updated_at;
-    if ("ledger_events_count" in d) this.ledger_events_count = d.ledger_events_count;
-    if ("ledger_events_min_date" in d) this.ledger_events_min_date = d.ledger_events_min_date;
-    if ("ledger_events_max_date" in d) this.ledger_events_max_date = d.ledger_events_max_date;
-    if ("transactions_count" in d) this.transactions_count = d.transactions_count;
-    this.sync_attachments = d.sync_attachments;
-    this.establishment_id = d.establishment_id;
-    this.pusher_channel = d.pusher_channel;
-    this.connection = d.connection;
-    if ("iban" in d) this.iban = d.iban;
     this.bic = d.bic;
-    this.use_as_default_for_vat_return = d.use_as_default_for_vat_return;
-    this.method = d.method;
-    this.url = d.url;
-    this.swan = d.swan;
-    if ("swan_number" in d) this.swan_number = d.swan_number;
+    this.company_id = d.company_id;
+    this.connection = d.connection;
+    this.currency = d.currency;
+    this.currency_balance = d.currency_balance;
     this.establishment = d.establishment;
+    this.establishment_id = d.establishment_id;
+    this.iban = d.iban;
+    this.id = d.id;
     this.label = d.label;
+    this.last_successful_sync_at = d.last_successful_sync_at;
+    this.last_sync_at = d.last_sync_at;
+    this.last_sync_error = d.last_sync_error;
+    this.last_sync_http_code = d.last_sync_http_code;
+    this.ledger_events_count = d.ledger_events_count;
+    this.ledger_events_max_date = d.ledger_events_max_date;
+    this.ledger_events_min_date = d.ledger_events_min_date;
     this.merge_url = d.merge_url;
+    this.method = d.method;
+    this.name = d.name;
+    this.pusher_channel = d.pusher_channel;
+    this.swan = d.swan;
+    this.swan_number = d.swan_number;
+    this.sync_attachments = d.sync_attachments;
+    this.sync_customers = d.sync_customers;
+    this.sync_since = d.sync_since;
+    this.synchronized = d.synchronized;
+    this.transactions_count = d.transactions_count;
+    this.updated_at = d.updated_at;
+    this.url = d.url;
+    this.use_as_default_for_vat_return = d.use_as_default_for_vat_return;
+    this.visible = d.visible;
   }
 }
 
 export class Establishment {
-  public readonly id: number;
-  public readonly name: string;
   public readonly accounts_count: number;
-  public readonly budgetinsight_id?: null;
-  public readonly bridge_ids?: (number | null)[] | null;
+  public readonly bridge_ids: number[];
+  public readonly budgetinsight_id: null;
+  public readonly crm_url: string;
+  public readonly id: number;
   public readonly logo_url: string;
   public readonly method: string;
-  public readonly crm_url: string;
+  public readonly name: string;
   public static Parse(d: string): Establishment {
     return Establishment.Create(JSON.parse(d));
   }
-  public static Create(d: any, field?: string): Establishment {
+  public static Create(d: any, field?: string, multiple ?: string): Establishment {
     if (!field) {
       obj = d;
       field = "root";
     }
-    if (d === null || d === undefined) {
-      throwNull2NonNull(field, d);
+    if (!d) {
+      throwNull2NonNull(field, d, multiple ?? this.name);
     } else if (typeof(d) !== 'object') {
-      throwNotObject(field, d, false);
+      throwNotObject(field, d);
     } else if (Array.isArray(d)) {
-      throwIsArray(field, d, false);
+      throwIsArray(field, d);
     }
-    checkNumber(d.id, false, field + ".id");
-    checkString(d.name, false, field + ".name");
-    checkNumber(d.accounts_count, false, field + ".accounts_count");
-    checkNull(d.budgetinsight_id, field + ".budgetinsight_id");
+    checkNumber(d.accounts_count, field + ".accounts_count");
     checkArray(d.bridge_ids, field + ".bridge_ids");
     if (d.bridge_ids) {
       for (let i = 0; i < d.bridge_ids.length; i++) {
-        checkNumber(d.bridge_ids[i], true, field + ".bridge_ids" + "[" + i + "]");
+        checkNumber(d.bridge_ids[i], field + ".bridge_ids" + "[" + i + "]");
       }
     }
-    checkString(d.logo_url, false, field + ".logo_url");
-    checkString(d.method, false, field + ".method");
-    checkString(d.crm_url, false, field + ".crm_url");
-    const knownProperties = ["id","name","accounts_count","budgetinsight_id","bridge_ids","logo_url","method","crm_url"];
+    checkNull(d.budgetinsight_id, field + ".budgetinsight_id");
+    checkString(d.crm_url, field + ".crm_url");
+    checkNumber(d.id, field + ".id");
+    checkString(d.logo_url, field + ".logo_url");
+    checkString(d.method, field + ".method");
+    checkString(d.name, field + ".name");
+    const knownProperties = ["accounts_count","bridge_ids","budgetinsight_id","crm_url","id","logo_url","method","name"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never", false);
+    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
     return new Establishment(d);
   }
   private constructor(d: any) {
-    this.id = d.id;
-    this.name = d.name;
     this.accounts_count = d.accounts_count;
-    if ("budgetinsight_id" in d) this.budgetinsight_id = d.budgetinsight_id;
-    if ("bridge_ids" in d) this.bridge_ids = d.bridge_ids;
+    this.bridge_ids = d.bridge_ids;
+    this.budgetinsight_id = d.budgetinsight_id;
+    this.crm_url = d.crm_url;
+    this.id = d.id;
     this.logo_url = d.logo_url;
     this.method = d.method;
-    this.crm_url = d.crm_url;
+    this.name = d.name;
+  }
+}
+
+export class ClientCommentsEntityOrEstablishmentComment {
+  public readonly content: string;
+  public readonly created_at: string;
+  public readonly id: number;
+  public readonly name: string;
+  public readonly record_id: number;
+  public readonly record_type: string;
+  public readonly rich_content: null;
+  public readonly seen: boolean;
+  public readonly updated_at: string;
+  public readonly user: User;
+  public readonly user_id: number;
+  public static Parse(d: string): ClientCommentsEntityOrEstablishmentComment {
+    return ClientCommentsEntityOrEstablishmentComment.Create(JSON.parse(d));
+  }
+  public static Create(d: any, field?: string, multiple ?: string): ClientCommentsEntityOrEstablishmentComment {
+    if (!field) {
+      obj = d;
+      field = "root";
+    }
+    if (!d) {
+      throwNull2NonNull(field, d, multiple ?? this.name);
+    } else if (typeof(d) !== 'object') {
+      throwNotObject(field, d);
+    } else if (Array.isArray(d)) {
+      throwIsArray(field, d);
+    }
+    checkString(d.content, field + ".content");
+    checkString(d.created_at, field + ".created_at");
+    checkNumber(d.id, field + ".id");
+    checkString(d.name, field + ".name");
+    checkNumber(d.record_id, field + ".record_id");
+    checkString(d.record_type, field + ".record_type");
+    checkNull(d.rich_content, field + ".rich_content");
+    checkBoolean(d.seen, field + ".seen");
+    checkString(d.updated_at, field + ".updated_at");
+    d.user = User.Create(d.user, field + ".user", undefined);
+    checkNumber(d.user_id, field + ".user_id");
+    const knownProperties = ["content","created_at","id","name","record_id","record_type","rich_content","seen","updated_at","user","user_id"];
+    const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
+    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    return new ClientCommentsEntityOrEstablishmentComment(d);
+  }
+  private constructor(d: any) {
+    this.content = d.content;
+    this.created_at = d.created_at;
+    this.id = d.id;
+    this.name = d.name;
+    this.record_id = d.record_id;
+    this.record_type = d.record_type;
+    this.rich_content = d.rich_content;
+    this.seen = d.seen;
+    this.updated_at = d.updated_at;
+    this.user = d.user;
+    this.user_id = d.user_id;
+  }
+}
+
+export class User {
+  public readonly first_name: string;
+  public readonly full_name: string;
+  public readonly id: number;
+  public readonly last_name: string;
+  public readonly profile_picture_url: null;
+  public static Parse(d: string): User {
+    return User.Create(JSON.parse(d));
+  }
+  public static Create(d: any, field?: string, multiple ?: string): User {
+    if (!field) {
+      obj = d;
+      field = "root";
+    }
+    if (!d) {
+      throwNull2NonNull(field, d, multiple ?? this.name);
+    } else if (typeof(d) !== 'object') {
+      throwNotObject(field, d);
+    } else if (Array.isArray(d)) {
+      throwIsArray(field, d);
+    }
+    checkString(d.first_name, field + ".first_name");
+    checkString(d.full_name, field + ".full_name");
+    checkNumber(d.id, field + ".id");
+    checkString(d.last_name, field + ".last_name");
+    checkNull(d.profile_picture_url, field + ".profile_picture_url");
+    const knownProperties = ["first_name","full_name","id","last_name","profile_picture_url"];
+    const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
+    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    return new User(d);
+  }
+  private constructor(d: any) {
+    this.first_name = d.first_name;
+    this.full_name = d.full_name;
+    this.id = d.id;
+    this.last_name = d.last_name;
+    this.profile_picture_url = d.profile_picture_url;
   }
 }
 
 export class Company1 {
   public readonly name: string;
-  public static Parse(d: string): Company1 | null {
+  public static Parse(d: string): Company1 {
     return Company1.Create(JSON.parse(d));
   }
-  public static Create(d: any, field?: string): Company1 | null {
+  public static Create(d: any, field?: string, multiple ?: string): Company1 {
     if (!field) {
       obj = d;
       field = "root";
     }
-    if (d === null || d === undefined) {
-      return null;
+    if (!d) {
+      throwNull2NonNull(field, d, multiple ?? this.name);
     } else if (typeof(d) !== 'object') {
-      throwNotObject(field, d, true);
+      throwNotObject(field, d);
     } else if (Array.isArray(d)) {
-      throwIsArray(field, d, true);
+      throwIsArray(field, d);
     }
-    checkString(d.name, false, field + ".name");
+    checkString(d.name, field + ".name");
     const knownProperties = ["name"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never", false);
+    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
     return new Company1(d);
   }
   private constructor(d: any) {
@@ -1031,963 +2224,1161 @@ export class Company1 {
   }
 }
 
-export class ScoredInvoices1 {
-  public static Parse(d: string): ScoredInvoices1 | null {
-    return ScoredInvoices1.Create(JSON.parse(d));
+export class PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem {
+  public readonly company_id: number;
+  public readonly "country_alpha2": string;
+  public readonly enabled: boolean;
+  public readonly id: number;
+  public readonly internal_identifier: null;
+  public readonly label: string;
+  public readonly label_is_editable: boolean;
+  public readonly number: string;
+  public readonly vat_rate: string;
+  public static Parse(d: string): PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem {
+    return PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem.Create(JSON.parse(d));
   }
-  public static Create(d: any, field?: string): ScoredInvoices1 | null {
+  public static Create(d: any, field?: string, multiple ?: string): PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem {
     if (!field) {
       obj = d;
       field = "root";
     }
-    if (d === null || d === undefined) {
-      return null;
+    if (!d) {
+      throwNull2NonNull(field, d, multiple ?? this.name);
     } else if (typeof(d) !== 'object') {
-      throwNotObject(field, d, true);
+      throwNotObject(field, d);
     } else if (Array.isArray(d)) {
-      throwIsArray(field, d, true);
+      throwIsArray(field, d);
+    }
+    checkNumber(d.company_id, field + ".company_id");
+    checkString(d["country_alpha2"], field + ".country_alpha2");
+    checkBoolean(d.enabled, field + ".enabled");
+    checkNumber(d.id, field + ".id");
+    checkNull(d.internal_identifier, field + ".internal_identifier");
+    checkString(d.label, field + ".label");
+    checkBoolean(d.label_is_editable, field + ".label_is_editable");
+    checkString(d.number, field + ".number");
+    checkString(d.vat_rate, field + ".vat_rate");
+    const knownProperties = ["company_id","country_alpha2","enabled","id","internal_identifier","label","label_is_editable","number","vat_rate"];
+    const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
+    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    return new PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem(d);
+  }
+  private constructor(d: any) {
+    this.company_id = d.company_id;
+    this["country_alpha2"] = d["country_alpha2"];
+    this.enabled = d.enabled;
+    this.id = d.id;
+    this.internal_identifier = d.internal_identifier;
+    this.label = d.label;
+    this.label_is_editable = d.label_is_editable;
+    this.number = d.number;
+    this.vat_rate = d.vat_rate;
+  }
+}
+
+export class EstablishmentCommentOrClientCommentsEntity {
+  public readonly author?: null;
+  public readonly content: string;
+  public readonly created_at: string;
+  public readonly id: number;
+  public readonly name: string;
+  public readonly record_id: number;
+  public readonly record_type: string;
+  public readonly rich_content: null;
+  public readonly seen: boolean;
+  public readonly updated_at: string;
+  public readonly user: null | User;
+  public readonly user_id: null | number;
+  public static Parse(d: string): EstablishmentCommentOrClientCommentsEntity {
+    return EstablishmentCommentOrClientCommentsEntity.Create(JSON.parse(d));
+  }
+  public static Create(d: any, field?: string, multiple ?: string): EstablishmentCommentOrClientCommentsEntity {
+    if (!field) {
+      obj = d;
+      field = "root";
+    }
+    if (!d) {
+      throwNull2NonNull(field, d, multiple ?? this.name);
+    } else if (typeof(d) !== 'object') {
+      throwNotObject(field, d);
+    } else if (Array.isArray(d)) {
+      throwIsArray(field, d);
+    }
+    if ("author" in d) {
+      checkNull(d.author, field + ".author");
+    }
+    checkString(d.content, field + ".content");
+    checkString(d.created_at, field + ".created_at");
+    checkNumber(d.id, field + ".id");
+    checkString(d.name, field + ".name");
+    checkNumber(d.record_id, field + ".record_id");
+    checkString(d.record_type, field + ".record_type");
+    checkNull(d.rich_content, field + ".rich_content");
+    checkBoolean(d.seen, field + ".seen");
+    checkString(d.updated_at, field + ".updated_at");
+    // This will be refactored in the next release.
+    try {
+      checkNull(d.user, field + ".user", "null | User");
+    } catch (e) {
+      try {
+        d.user = User.Create(d.user, field + ".user", "null | User");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+        throw e;
+      }
+    }
+    // This will be refactored in the next release.
+    try {
+      checkNull(d.user_id, field + ".user_id", "null | number");
+    } catch (e) {
+      try {
+        checkNumber(d.user_id, field + ".user_id", "null | number");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+        throw e;
+      }
+    }
+    const knownProperties = ["author","content","created_at","id","name","record_id","record_type","rich_content","seen","updated_at","user","user_id"];
+    const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
+    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    return new EstablishmentCommentOrClientCommentsEntity(d);
+  }
+  private constructor(d: any) {
+    if ("author" in d) this.author = d.author;
+    this.content = d.content;
+    this.created_at = d.created_at;
+    this.id = d.id;
+    this.name = d.name;
+    this.record_id = d.record_id;
+    this.record_type = d.record_type;
+    this.rich_content = d.rich_content;
+    this.seen = d.seen;
+    this.updated_at = d.updated_at;
+    this.user = d.user;
+    this.user_id = d.user_id;
+  }
+}
+
+export class InvoiceLinesEntity {
+  public readonly advance_id: null;
+  public readonly amount: string;
+  public readonly asset_id: number | null;
+  public readonly company_id: number;
+  public readonly created_at: string;
+  public readonly currency_amount: string;
+  public readonly currency_price_before_tax: string;
+  public readonly currency_tax: string;
+  public readonly currency_unit_price_before_tax: string;
+  public readonly deferral_id: null;
+  public readonly description: string;
+  public readonly discount: string;
+  public readonly discount_type: string;
+  public readonly document_id: number;
+  public readonly global_vat: boolean;
+  public readonly id: number;
+  public readonly invoice_line_section_id: number | null;
+  public readonly label: string;
+  public readonly manual_vat_mode: boolean;
+  public readonly ocr_vat_rate: null | string;
+  public readonly pnl_plan_item: PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem1;
+  public readonly pnl_plan_item_id: number;
+  public readonly prepaid_pnl: boolean;
+  public readonly price_before_tax: string;
+  public readonly product_id: null;
+  public readonly quantity: string;
+  public readonly rank: number | null;
+  public readonly raw_currency_unit_price: string;
+  public readonly tax: string;
+  public readonly undiscounted_currency_price_before_tax: string;
+  public readonly unit: string | null;
+  public readonly vat_rate: string;
+  public static Parse(d: string): InvoiceLinesEntity {
+    return InvoiceLinesEntity.Create(JSON.parse(d));
+  }
+  public static Create(d: any, field?: string, multiple ?: string): InvoiceLinesEntity {
+    if (!field) {
+      obj = d;
+      field = "root";
+    }
+    if (!d) {
+      throwNull2NonNull(field, d, multiple ?? this.name);
+    } else if (typeof(d) !== 'object') {
+      throwNotObject(field, d);
+    } else if (Array.isArray(d)) {
+      throwIsArray(field, d);
+    }
+    checkNull(d.advance_id, field + ".advance_id");
+    checkString(d.amount, field + ".amount");
+    // This will be refactored in the next release.
+    try {
+      checkNumber(d.asset_id, field + ".asset_id", "number | null");
+    } catch (e) {
+      try {
+        checkNull(d.asset_id, field + ".asset_id", "number | null");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+        throw e;
+      }
+    }
+    checkNumber(d.company_id, field + ".company_id");
+    checkString(d.created_at, field + ".created_at");
+    checkString(d.currency_amount, field + ".currency_amount");
+    checkString(d.currency_price_before_tax, field + ".currency_price_before_tax");
+    checkString(d.currency_tax, field + ".currency_tax");
+    checkString(d.currency_unit_price_before_tax, field + ".currency_unit_price_before_tax");
+    checkNull(d.deferral_id, field + ".deferral_id");
+    checkString(d.description, field + ".description");
+    checkString(d.discount, field + ".discount");
+    checkString(d.discount_type, field + ".discount_type");
+    checkNumber(d.document_id, field + ".document_id");
+    checkBoolean(d.global_vat, field + ".global_vat");
+    checkNumber(d.id, field + ".id");
+    // This will be refactored in the next release.
+    try {
+      checkNumber(d.invoice_line_section_id, field + ".invoice_line_section_id", "number | null");
+    } catch (e) {
+      try {
+        checkNull(d.invoice_line_section_id, field + ".invoice_line_section_id", "number | null");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+        throw e;
+      }
+    }
+    checkString(d.label, field + ".label");
+    checkBoolean(d.manual_vat_mode, field + ".manual_vat_mode");
+    // This will be refactored in the next release.
+    try {
+      checkNull(d.ocr_vat_rate, field + ".ocr_vat_rate", "null | string");
+    } catch (e) {
+      try {
+        checkString(d.ocr_vat_rate, field + ".ocr_vat_rate", "null | string");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+        throw e;
+      }
+    }
+    d.pnl_plan_item = PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem1.Create(d.pnl_plan_item, field + ".pnl_plan_item", undefined);
+    checkNumber(d.pnl_plan_item_id, field + ".pnl_plan_item_id");
+    checkBoolean(d.prepaid_pnl, field + ".prepaid_pnl");
+    checkString(d.price_before_tax, field + ".price_before_tax");
+    checkNull(d.product_id, field + ".product_id");
+    checkString(d.quantity, field + ".quantity");
+    // This will be refactored in the next release.
+    try {
+      checkNumber(d.rank, field + ".rank", "number | null");
+    } catch (e) {
+      try {
+        checkNull(d.rank, field + ".rank", "number | null");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+        throw e;
+      }
+    }
+    checkString(d.raw_currency_unit_price, field + ".raw_currency_unit_price");
+    checkString(d.tax, field + ".tax");
+    checkString(d.undiscounted_currency_price_before_tax, field + ".undiscounted_currency_price_before_tax");
+    // This will be refactored in the next release.
+    try {
+      checkString(d.unit, field + ".unit", "string | null");
+    } catch (e) {
+      try {
+        checkNull(d.unit, field + ".unit", "string | null");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+        throw e;
+      }
+    }
+    checkString(d.vat_rate, field + ".vat_rate");
+    const knownProperties = ["advance_id","amount","asset_id","company_id","created_at","currency_amount","currency_price_before_tax","currency_tax","currency_unit_price_before_tax","deferral_id","description","discount","discount_type","document_id","global_vat","id","invoice_line_section_id","label","manual_vat_mode","ocr_vat_rate","pnl_plan_item","pnl_plan_item_id","prepaid_pnl","price_before_tax","product_id","quantity","rank","raw_currency_unit_price","tax","undiscounted_currency_price_before_tax","unit","vat_rate"];
+    const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
+    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    return new InvoiceLinesEntity(d);
+  }
+  private constructor(d: any) {
+    this.advance_id = d.advance_id;
+    this.amount = d.amount;
+    this.asset_id = d.asset_id;
+    this.company_id = d.company_id;
+    this.created_at = d.created_at;
+    this.currency_amount = d.currency_amount;
+    this.currency_price_before_tax = d.currency_price_before_tax;
+    this.currency_tax = d.currency_tax;
+    this.currency_unit_price_before_tax = d.currency_unit_price_before_tax;
+    this.deferral_id = d.deferral_id;
+    this.description = d.description;
+    this.discount = d.discount;
+    this.discount_type = d.discount_type;
+    this.document_id = d.document_id;
+    this.global_vat = d.global_vat;
+    this.id = d.id;
+    this.invoice_line_section_id = d.invoice_line_section_id;
+    this.label = d.label;
+    this.manual_vat_mode = d.manual_vat_mode;
+    this.ocr_vat_rate = d.ocr_vat_rate;
+    this.pnl_plan_item = d.pnl_plan_item;
+    this.pnl_plan_item_id = d.pnl_plan_item_id;
+    this.prepaid_pnl = d.prepaid_pnl;
+    this.price_before_tax = d.price_before_tax;
+    this.product_id = d.product_id;
+    this.quantity = d.quantity;
+    this.rank = d.rank;
+    this.raw_currency_unit_price = d.raw_currency_unit_price;
+    this.tax = d.tax;
+    this.undiscounted_currency_price_before_tax = d.undiscounted_currency_price_before_tax;
+    this.unit = d.unit;
+    this.vat_rate = d.vat_rate;
+  }
+}
+
+export class PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem1 {
+  public readonly company_id: number;
+  public readonly "country_alpha2": string;
+  public readonly enabled: boolean;
+  public readonly id: number;
+  public readonly internal_identifier: null | string;
+  public readonly label: string;
+  public readonly label_is_editable: boolean;
+  public readonly number: string;
+  public readonly vat_rate: string;
+  public static Parse(d: string): PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem1 {
+    return PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem1.Create(JSON.parse(d));
+  }
+  public static Create(d: any, field?: string, multiple ?: string): PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem1 {
+    if (!field) {
+      obj = d;
+      field = "root";
+    }
+    if (!d) {
+      throwNull2NonNull(field, d, multiple ?? this.name);
+    } else if (typeof(d) !== 'object') {
+      throwNotObject(field, d);
+    } else if (Array.isArray(d)) {
+      throwIsArray(field, d);
+    }
+    checkNumber(d.company_id, field + ".company_id");
+    checkString(d["country_alpha2"], field + ".country_alpha2");
+    checkBoolean(d.enabled, field + ".enabled");
+    checkNumber(d.id, field + ".id");
+    // This will be refactored in the next release.
+    try {
+      checkNull(d.internal_identifier, field + ".internal_identifier", "null | string");
+    } catch (e) {
+      try {
+        checkString(d.internal_identifier, field + ".internal_identifier", "null | string");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+        throw e;
+      }
+    }
+    checkString(d.label, field + ".label");
+    checkBoolean(d.label_is_editable, field + ".label_is_editable");
+    checkString(d.number, field + ".number");
+    checkString(d.vat_rate, field + ".vat_rate");
+    const knownProperties = ["company_id","country_alpha2","enabled","id","internal_identifier","label","label_is_editable","number","vat_rate"];
+    const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
+    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    return new PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem1(d);
+  }
+  private constructor(d: any) {
+    this.company_id = d.company_id;
+    this["country_alpha2"] = d["country_alpha2"];
+    this.enabled = d.enabled;
+    this.id = d.id;
+    this.internal_identifier = d.internal_identifier;
+    this.label = d.label;
+    this.label_is_editable = d.label_is_editable;
+    this.number = d.number;
+    this.vat_rate = d.vat_rate;
+  }
+}
+
+export class Journal {
+  public readonly code: string;
+  public readonly id: number;
+  public readonly label: string;
+  public static Parse(d: string): Journal {
+    return Journal.Create(JSON.parse(d));
+  }
+  public static Create(d: any, field?: string, multiple ?: string): Journal {
+    if (!field) {
+      obj = d;
+      field = "root";
+    }
+    if (!d) {
+      throwNull2NonNull(field, d, multiple ?? this.name);
+    } else if (typeof(d) !== 'object') {
+      throwNotObject(field, d);
+    } else if (Array.isArray(d)) {
+      throwIsArray(field, d);
+    }
+    checkString(d.code, field + ".code");
+    checkNumber(d.id, field + ".id");
+    checkString(d.label, field + ".label");
+    const knownProperties = ["code","id","label"];
+    const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
+    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    return new Journal(d);
+  }
+  private constructor(d: any) {
+    this.code = d.code;
+    this.id = d.id;
+    this.label = d.label;
+  }
+}
+
+export class LedgerEventsEntity {
+  public readonly balance: string;
+  public readonly company_id: number;
+  public readonly created_at: string;
+  public readonly credit: string;
+  public readonly date: string;
+  public readonly debit: string;
+  public readonly document_id: number;
+  public readonly document_label?: string;
+  public readonly id: number;
+  public readonly label: string | null;
+  public readonly lettering?: Lettering | null;
+  public readonly lettering_id: number | null;
+  public readonly plan_item_id: number;
+  public readonly planItem: PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem2;
+  public readonly processed_label?: string;
+  public readonly readonly: boolean;
+  public readonly readonlyAmounts: boolean;
+  public readonly reallocation?: Reallocation | null;
+  public readonly reallocation_id: null | number;
+  public readonly reconciliation_id: number | null;
+  public readonly source: string;
+  public static Parse(d: string): LedgerEventsEntity {
+    return LedgerEventsEntity.Create(JSON.parse(d));
+  }
+  public static Create(d: any, field?: string, multiple ?: string): LedgerEventsEntity {
+    if (!field) {
+      obj = d;
+      field = "root";
+    }
+    if (!d) {
+      throwNull2NonNull(field, d, multiple ?? this.name);
+    } else if (typeof(d) !== 'object') {
+      throwNotObject(field, d);
+    } else if (Array.isArray(d)) {
+      throwIsArray(field, d);
+    }
+    checkString(d.balance, field + ".balance");
+    checkNumber(d.company_id, field + ".company_id");
+    checkString(d.created_at, field + ".created_at");
+    checkString(d.credit, field + ".credit");
+    checkString(d.date, field + ".date");
+    checkString(d.debit, field + ".debit");
+    checkNumber(d.document_id, field + ".document_id");
+    if ("document_label" in d) {
+      checkString(d.document_label, field + ".document_label");
+    }
+    checkNumber(d.id, field + ".id");
+    // This will be refactored in the next release.
+    try {
+      checkString(d.label, field + ".label", "string | null");
+    } catch (e) {
+      try {
+        checkNull(d.label, field + ".label", "string | null");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+        throw e;
+      }
+    }
+    if ("lettering" in d) {
+      // This will be refactored in the next release.
+      try {
+        d.lettering = Lettering.Create(d.lettering, field + ".lettering", "Lettering | null");
+      } catch (e) {
+        try {
+          checkNull(d.lettering, field + ".lettering", "Lettering | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    // This will be refactored in the next release.
+    try {
+      checkNumber(d.lettering_id, field + ".lettering_id", "number | null");
+    } catch (e) {
+      try {
+        checkNull(d.lettering_id, field + ".lettering_id", "number | null");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+        throw e;
+      }
+    }
+    checkNumber(d.plan_item_id, field + ".plan_item_id");
+    d.planItem = PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem2.Create(d.planItem, field + ".planItem", undefined);
+    if ("processed_label" in d) {
+      checkString(d.processed_label, field + ".processed_label");
+    }
+    checkBoolean(d.readonly, field + ".readonly");
+    checkBoolean(d.readonlyAmounts, field + ".readonlyAmounts");
+    if ("reallocation" in d) {
+      // This will be refactored in the next release.
+      try {
+        d.reallocation = Reallocation.Create(d.reallocation, field + ".reallocation", "Reallocation | null");
+      } catch (e) {
+        try {
+          checkNull(d.reallocation, field + ".reallocation", "Reallocation | null");
+        } catch (e) {
+          prompt(proxyName+':', JSON.stringify(obj));
+          throw e;
+        }
+      }
+    }
+    // This will be refactored in the next release.
+    try {
+      checkNull(d.reallocation_id, field + ".reallocation_id", "null | number");
+    } catch (e) {
+      try {
+        checkNumber(d.reallocation_id, field + ".reallocation_id", "null | number");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+        throw e;
+      }
+    }
+    // This will be refactored in the next release.
+    try {
+      checkNumber(d.reconciliation_id, field + ".reconciliation_id", "number | null");
+    } catch (e) {
+      try {
+        checkNull(d.reconciliation_id, field + ".reconciliation_id", "number | null");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+        throw e;
+      }
+    }
+    checkString(d.source, field + ".source");
+    const knownProperties = ["balance","company_id","created_at","credit","date","debit","document_id","document_label","id","label","lettering","lettering_id","plan_item_id","planItem","processed_label","readonly","readonlyAmounts","reallocation","reallocation_id","reconciliation_id","source"];
+    const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
+    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    return new LedgerEventsEntity(d);
+  }
+  private constructor(d: any) {
+    this.balance = d.balance;
+    this.company_id = d.company_id;
+    this.created_at = d.created_at;
+    this.credit = d.credit;
+    this.date = d.date;
+    this.debit = d.debit;
+    this.document_id = d.document_id;
+    if ("document_label" in d) this.document_label = d.document_label;
+    this.id = d.id;
+    this.label = d.label;
+    if ("lettering" in d) this.lettering = d.lettering;
+    this.lettering_id = d.lettering_id;
+    this.plan_item_id = d.plan_item_id;
+    this.planItem = d.planItem;
+    if ("processed_label" in d) this.processed_label = d.processed_label;
+    this.readonly = d.readonly;
+    this.readonlyAmounts = d.readonlyAmounts;
+    if ("reallocation" in d) this.reallocation = d.reallocation;
+    this.reallocation_id = d.reallocation_id;
+    this.reconciliation_id = d.reconciliation_id;
+    this.source = d.source;
+  }
+}
+
+export class Lettering {
+  public readonly balance: string;
+  public readonly id: number;
+  public readonly plan_item_number: string;
+  public static Parse(d: string): Lettering {
+    return Lettering.Create(JSON.parse(d));
+  }
+  public static Create(d: any, field?: string, multiple ?: string): Lettering {
+    if (!field) {
+      obj = d;
+      field = "root";
+    }
+    if (!d) {
+      throwNull2NonNull(field, d, multiple ?? this.name);
+    } else if (typeof(d) !== 'object') {
+      throwNotObject(field, d);
+    } else if (Array.isArray(d)) {
+      throwIsArray(field, d);
+    }
+    checkString(d.balance, field + ".balance");
+    checkNumber(d.id, field + ".id");
+    checkString(d.plan_item_number, field + ".plan_item_number");
+    const knownProperties = ["balance","id","plan_item_number"];
+    const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
+    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    return new Lettering(d);
+  }
+  private constructor(d: any) {
+    this.balance = d.balance;
+    this.id = d.id;
+    this.plan_item_number = d.plan_item_number;
+  }
+}
+
+export class PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem2 {
+  public readonly company_id: number;
+  public readonly "country_alpha2": string;
+  public readonly enabled: boolean;
+  public readonly id: number;
+  public readonly internal_identifier: null | string;
+  public readonly label: string;
+  public readonly label_is_editable: boolean;
+  public readonly number: string;
+  public readonly vat_rate: string;
+  public static Parse(d: string): PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem2 {
+    return PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem2.Create(JSON.parse(d));
+  }
+  public static Create(d: any, field?: string, multiple ?: string): PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem2 {
+    if (!field) {
+      obj = d;
+      field = "root";
+    }
+    if (!d) {
+      throwNull2NonNull(field, d, multiple ?? this.name);
+    } else if (typeof(d) !== 'object') {
+      throwNotObject(field, d);
+    } else if (Array.isArray(d)) {
+      throwIsArray(field, d);
+    }
+    checkNumber(d.company_id, field + ".company_id");
+    checkString(d["country_alpha2"], field + ".country_alpha2");
+    checkBoolean(d.enabled, field + ".enabled");
+    checkNumber(d.id, field + ".id");
+    // This will be refactored in the next release.
+    try {
+      checkNull(d.internal_identifier, field + ".internal_identifier", "null | string");
+    } catch (e) {
+      try {
+        checkString(d.internal_identifier, field + ".internal_identifier", "null | string");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+        throw e;
+      }
+    }
+    checkString(d.label, field + ".label");
+    checkBoolean(d.label_is_editable, field + ".label_is_editable");
+    checkString(d.number, field + ".number");
+    checkString(d.vat_rate, field + ".vat_rate");
+    const knownProperties = ["company_id","country_alpha2","enabled","id","internal_identifier","label","label_is_editable","number","vat_rate"];
+    const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
+    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    return new PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem2(d);
+  }
+  private constructor(d: any) {
+    this.company_id = d.company_id;
+    this["country_alpha2"] = d["country_alpha2"];
+    this.enabled = d.enabled;
+    this.id = d.id;
+    this.internal_identifier = d.internal_identifier;
+    this.label = d.label;
+    this.label_is_editable = d.label_is_editable;
+    this.number = d.number;
+    this.vat_rate = d.vat_rate;
+  }
+}
+
+export class Reallocation {
+  public readonly created_at: string;
+  public readonly fromPlanItem: PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem3;
+  public readonly id: number;
+  public static Parse(d: string): Reallocation {
+    return Reallocation.Create(JSON.parse(d));
+  }
+  public static Create(d: any, field?: string, multiple ?: string): Reallocation {
+    if (!field) {
+      obj = d;
+      field = "root";
+    }
+    if (!d) {
+      throwNull2NonNull(field, d, multiple ?? this.name);
+    } else if (typeof(d) !== 'object') {
+      throwNotObject(field, d);
+    } else if (Array.isArray(d)) {
+      throwIsArray(field, d);
+    }
+    checkString(d.created_at, field + ".created_at");
+    d.fromPlanItem = PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem3.Create(d.fromPlanItem, field + ".fromPlanItem", undefined);
+    checkNumber(d.id, field + ".id");
+    const knownProperties = ["created_at","fromPlanItem","id"];
+    const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
+    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    return new Reallocation(d);
+  }
+  private constructor(d: any) {
+    this.created_at = d.created_at;
+    this.fromPlanItem = d.fromPlanItem;
+    this.id = d.id;
+  }
+}
+
+export class PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem3 {
+  public readonly company_id: number;
+  public readonly "country_alpha2": string;
+  public readonly enabled: boolean;
+  public readonly id: number;
+  public readonly internal_identifier: null;
+  public readonly label: string;
+  public readonly label_is_editable: boolean;
+  public readonly number: string;
+  public readonly vat_rate: string;
+  public static Parse(d: string): PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem3 {
+    return PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem3.Create(JSON.parse(d));
+  }
+  public static Create(d: any, field?: string, multiple ?: string): PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem3 {
+    if (!field) {
+      obj = d;
+      field = "root";
+    }
+    if (!d) {
+      throwNull2NonNull(field, d, multiple ?? this.name);
+    } else if (typeof(d) !== 'object') {
+      throwNotObject(field, d);
+    } else if (Array.isArray(d)) {
+      throwIsArray(field, d);
+    }
+    checkNumber(d.company_id, field + ".company_id");
+    checkString(d["country_alpha2"], field + ".country_alpha2");
+    checkBoolean(d.enabled, field + ".enabled");
+    checkNumber(d.id, field + ".id");
+    checkNull(d.internal_identifier, field + ".internal_identifier");
+    checkString(d.label, field + ".label");
+    checkBoolean(d.label_is_editable, field + ".label_is_editable");
+    checkString(d.number, field + ".number");
+    checkString(d.vat_rate, field + ".vat_rate");
+    const knownProperties = ["company_id","country_alpha2","enabled","id","internal_identifier","label","label_is_editable","number","vat_rate"];
+    const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
+    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    return new PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem3(d);
+  }
+  private constructor(d: any) {
+    this.company_id = d.company_id;
+    this["country_alpha2"] = d["country_alpha2"];
+    this.enabled = d.enabled;
+    this.id = d.id;
+    this.internal_identifier = d.internal_identifier;
+    this.label = d.label;
+    this.label_is_editable = d.label_is_editable;
+    this.number = d.number;
+    this.vat_rate = d.vat_rate;
+  }
+}
+
+export class ScoredInvoices1 {
+  public static Parse(d: string): ScoredInvoices1 {
+    return ScoredInvoices1.Create(JSON.parse(d));
+  }
+  public static Create(d: any, field?: string, multiple ?: string): ScoredInvoices1 {
+    if (!field) {
+      obj = d;
+      field = "root";
+    }
+    if (!d) {
+      throwNull2NonNull(field, d, multiple ?? this.name);
+    } else if (typeof(d) !== 'object') {
+      throwNotObject(field, d);
+    } else if (Array.isArray(d)) {
+      throwIsArray(field, d);
     }
     const knownProperties = [];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never", false);
+    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
     return new ScoredInvoices1(d);
   }
   private constructor(d: any) {
   }
 }
 
-export class LedgerEventsEntity {
-  public readonly id: number;
-  public readonly company_id: number;
-  public readonly plan_item_id: number;
-  public readonly document_id: number;
-  public readonly created_at: string;
-  public readonly reconciliation_id?: number | null;
-  public readonly source: string;
-  public readonly lettering_id?: number | null;
-  public readonly reallocation_id?: number | null;
-  public readonly debit: string;
-  public readonly credit: string;
-  public readonly balance: string;
-  public readonly date: string;
-  public readonly planItem: PlanItemOrPnlPlanItem;
-  public readonly readonly: boolean;
-  public readonly readonlyAmounts: boolean;
-  public readonly label?: string | null;
-  public readonly lettering?: Lettering | null;
-  public readonly reallocation?: Reallocation | null;
-  public static Parse(d: string): LedgerEventsEntity | null {
-    return LedgerEventsEntity.Create(JSON.parse(d));
-  }
-  public static Create(d: any, field?: string): LedgerEventsEntity | null {
-    if (!field) {
-      obj = d;
-      field = "root";
-    }
-    if (d === null || d === undefined) {
-      return null;
-    } else if (typeof(d) !== 'object') {
-      throwNotObject(field, d, true);
-    } else if (Array.isArray(d)) {
-      throwIsArray(field, d, true);
-    }
-    checkNumber(d.id, false, field + ".id");
-    checkNumber(d.company_id, false, field + ".company_id");
-    checkNumber(d.plan_item_id, false, field + ".plan_item_id");
-    checkNumber(d.document_id, false, field + ".document_id");
-    checkString(d.created_at, false, field + ".created_at");
-    checkNumber(d.reconciliation_id, true, field + ".reconciliation_id");
-    checkString(d.source, false, field + ".source");
-    checkNumber(d.lettering_id, true, field + ".lettering_id");
-    checkNumber(d.reallocation_id, true, field + ".reallocation_id");
-    checkString(d.debit, false, field + ".debit");
-    checkString(d.credit, false, field + ".credit");
-    checkString(d.balance, false, field + ".balance");
-    checkString(d.date, false, field + ".date");
-    d.planItem = PlanItemOrPnlPlanItem.Create(d.planItem, field + ".planItem");
-    checkBoolean(d.readonly, false, field + ".readonly");
-    checkBoolean(d.readonlyAmounts, false, field + ".readonlyAmounts");
-    checkString(d.label, true, field + ".label");
-    d.lettering = Lettering.Create(d.lettering, field + ".lettering");
-    d.reallocation = Reallocation.Create(d.reallocation, field + ".reallocation");
-    const knownProperties = ["id","company_id","plan_item_id","document_id","created_at","reconciliation_id","source","lettering_id","reallocation_id","debit","credit","balance","date","planItem","readonly","readonlyAmounts","label","lettering","reallocation"];
-    const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never", false);
-    return new LedgerEventsEntity(d);
-  }
-  private constructor(d: any) {
-    this.id = d.id;
-    this.company_id = d.company_id;
-    this.plan_item_id = d.plan_item_id;
-    this.document_id = d.document_id;
-    this.created_at = d.created_at;
-    if ("reconciliation_id" in d) this.reconciliation_id = d.reconciliation_id;
-    this.source = d.source;
-    if ("lettering_id" in d) this.lettering_id = d.lettering_id;
-    if ("reallocation_id" in d) this.reallocation_id = d.reallocation_id;
-    this.debit = d.debit;
-    this.credit = d.credit;
-    this.balance = d.balance;
-    this.date = d.date;
-    this.planItem = d.planItem;
-    this.readonly = d.readonly;
-    this.readonlyAmounts = d.readonlyAmounts;
-    if ("label" in d) this.label = d.label;
-    if ("lettering" in d) this.lettering = d.lettering;
-    if ("reallocation" in d) this.reallocation = d.reallocation;
-  }
-}
-
-export class PlanItemOrPnlPlanItem {
-  public readonly id: number;
-  public readonly number: string;
-  public readonly internal_identifier?: string | null;
-  public readonly label: string;
-  public readonly company_id: number;
-  public readonly enabled: boolean;
-  public readonly vat_rate: string;
-  public readonly "country_alpha2": string;
-  public readonly label_is_editable: boolean;
-  public static Parse(d: string): PlanItemOrPnlPlanItem {
-    return PlanItemOrPnlPlanItem.Create(JSON.parse(d));
-  }
-  public static Create(d: any, field?: string): PlanItemOrPnlPlanItem {
-    if (!field) {
-      obj = d;
-      field = "root";
-    }
-    if (d === null || d === undefined) {
-      throwNull2NonNull(field, d);
-    } else if (typeof(d) !== 'object') {
-      throwNotObject(field, d, false);
-    } else if (Array.isArray(d)) {
-      throwIsArray(field, d, false);
-    }
-    checkNumber(d.id, false, field + ".id");
-    checkString(d.number, false, field + ".number");
-    checkString(d.internal_identifier, true, field + ".internal_identifier");
-    checkString(d.label, false, field + ".label");
-    checkNumber(d.company_id, false, field + ".company_id");
-    checkBoolean(d.enabled, false, field + ".enabled");
-    checkString(d.vat_rate, false, field + ".vat_rate");
-    checkString(d["country_alpha2"], false, field + ".country_alpha2");
-    checkBoolean(d.label_is_editable, false, field + ".label_is_editable");
-    const knownProperties = ["id","number","internal_identifier","label","company_id","enabled","vat_rate","country_alpha2","label_is_editable"];
-    const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never", false);
-    return new PlanItemOrPnlPlanItem(d);
-  }
-  private constructor(d: any) {
-    this.id = d.id;
-    this.number = d.number;
-    if ("internal_identifier" in d) this.internal_identifier = d.internal_identifier;
-    this.label = d.label;
-    this.company_id = d.company_id;
-    this.enabled = d.enabled;
-    this.vat_rate = d.vat_rate;
-    this["country_alpha2"] = d["country_alpha2"];
-    this.label_is_editable = d.label_is_editable;
-  }
-}
-
-export class Lettering {
-  public readonly id: number;
-  public readonly balance: string;
-  public readonly plan_item_number: string;
-  public static Parse(d: string): Lettering | null {
-    return Lettering.Create(JSON.parse(d));
-  }
-  public static Create(d: any, field?: string): Lettering | null {
-    if (!field) {
-      obj = d;
-      field = "root";
-    }
-    if (d === null || d === undefined) {
-      return null;
-    } else if (typeof(d) !== 'object') {
-      throwNotObject(field, d, true);
-    } else if (Array.isArray(d)) {
-      throwIsArray(field, d, true);
-    }
-    checkNumber(d.id, false, field + ".id");
-    checkString(d.balance, false, field + ".balance");
-    checkString(d.plan_item_number, false, field + ".plan_item_number");
-    const knownProperties = ["id","balance","plan_item_number"];
-    const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never", false);
-    return new Lettering(d);
-  }
-  private constructor(d: any) {
-    this.id = d.id;
-    this.balance = d.balance;
-    this.plan_item_number = d.plan_item_number;
-  }
-}
-
-export class Reallocation {
-  public readonly id: number;
-  public readonly created_at: string;
-  public readonly fromPlanItem: PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem1;
-  public static Parse(d: string): Reallocation | null {
-    return Reallocation.Create(JSON.parse(d));
-  }
-  public static Create(d: any, field?: string): Reallocation | null {
-    if (!field) {
-      obj = d;
-      field = "root";
-    }
-    if (d === null || d === undefined) {
-      return null;
-    } else if (typeof(d) !== 'object') {
-      throwNotObject(field, d, true);
-    } else if (Array.isArray(d)) {
-      throwIsArray(field, d, true);
-    }
-    checkNumber(d.id, false, field + ".id");
-    checkString(d.created_at, false, field + ".created_at");
-    d.fromPlanItem = PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem1.Create(d.fromPlanItem, field + ".fromPlanItem");
-    const knownProperties = ["id","created_at","fromPlanItem"];
-    const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never", false);
-    return new Reallocation(d);
-  }
-  private constructor(d: any) {
-    this.id = d.id;
-    this.created_at = d.created_at;
-    this.fromPlanItem = d.fromPlanItem;
-  }
-}
-
-export class PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem1 {
-  public readonly id: number;
-  public readonly number: string;
-  public readonly internal_identifier?: null;
-  public readonly label: string;
-  public readonly company_id: number;
-  public readonly enabled: boolean;
-  public readonly vat_rate: string;
-  public readonly "country_alpha2": string;
-  public readonly label_is_editable: boolean;
-  public static Parse(d: string): PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem1 {
-    return PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem1.Create(JSON.parse(d));
-  }
-  public static Create(d: any, field?: string): PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem1 {
-    if (!field) {
-      obj = d;
-      field = "root";
-    }
-    if (d === null || d === undefined) {
-      throwNull2NonNull(field, d);
-    } else if (typeof(d) !== 'object') {
-      throwNotObject(field, d, false);
-    } else if (Array.isArray(d)) {
-      throwIsArray(field, d, false);
-    }
-    checkNumber(d.id, false, field + ".id");
-    checkString(d.number, false, field + ".number");
-    checkNull(d.internal_identifier, field + ".internal_identifier");
-    checkString(d.label, false, field + ".label");
-    checkNumber(d.company_id, false, field + ".company_id");
-    checkBoolean(d.enabled, false, field + ".enabled");
-    checkString(d.vat_rate, false, field + ".vat_rate");
-    checkString(d["country_alpha2"], false, field + ".country_alpha2");
-    checkBoolean(d.label_is_editable, false, field + ".label_is_editable");
-    const knownProperties = ["id","number","internal_identifier","label","company_id","enabled","vat_rate","country_alpha2","label_is_editable"];
-    const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never", false);
-    return new PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem1(d);
-  }
-  private constructor(d: any) {
-    this.id = d.id;
-    this.number = d.number;
-    if ("internal_identifier" in d) this.internal_identifier = d.internal_identifier;
-    this.label = d.label;
-    this.company_id = d.company_id;
-    this.enabled = d.enabled;
-    this.vat_rate = d.vat_rate;
-    this["country_alpha2"] = d["country_alpha2"];
-    this.label_is_editable = d.label_is_editable;
-  }
-}
-
-export class ClientCommentsEntityOrEstablishmentComment {
-  public readonly id: number;
-  public readonly name: string;
-  public readonly content: string;
-  public readonly created_at: string;
-  public readonly seen: boolean;
-  public readonly record_type: string;
-  public readonly record_id: number;
-  public readonly updated_at: string;
-  public readonly user_id: number;
-  public readonly rich_content?: null;
-  public readonly user: User;
-  public static Parse(d: string): ClientCommentsEntityOrEstablishmentComment | null {
-    return ClientCommentsEntityOrEstablishmentComment.Create(JSON.parse(d));
-  }
-  public static Create(d: any, field?: string): ClientCommentsEntityOrEstablishmentComment | null {
-    if (!field) {
-      obj = d;
-      field = "root";
-    }
-    if (d === null || d === undefined) {
-      return null;
-    } else if (typeof(d) !== 'object') {
-      throwNotObject(field, d, true);
-    } else if (Array.isArray(d)) {
-      throwIsArray(field, d, true);
-    }
-    checkNumber(d.id, false, field + ".id");
-    checkString(d.name, false, field + ".name");
-    checkString(d.content, false, field + ".content");
-    checkString(d.created_at, false, field + ".created_at");
-    checkBoolean(d.seen, false, field + ".seen");
-    checkString(d.record_type, false, field + ".record_type");
-    checkNumber(d.record_id, false, field + ".record_id");
-    checkString(d.updated_at, false, field + ".updated_at");
-    checkNumber(d.user_id, false, field + ".user_id");
-    checkNull(d.rich_content, field + ".rich_content");
-    d.user = User.Create(d.user, field + ".user");
-    const knownProperties = ["id","name","content","created_at","seen","record_type","record_id","updated_at","user_id","rich_content","user"];
-    const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never", false);
-    return new ClientCommentsEntityOrEstablishmentComment(d);
-  }
-  private constructor(d: any) {
-    this.id = d.id;
-    this.name = d.name;
-    this.content = d.content;
-    this.created_at = d.created_at;
-    this.seen = d.seen;
-    this.record_type = d.record_type;
-    this.record_id = d.record_id;
-    this.updated_at = d.updated_at;
-    this.user_id = d.user_id;
-    if ("rich_content" in d) this.rich_content = d.rich_content;
-    this.user = d.user;
-  }
-}
-
-export class User {
-  public readonly id: number;
-  public readonly first_name: string;
-  public readonly last_name: string;
-  public readonly full_name: string;
-  public readonly profile_picture_url?: null;
-  public static Parse(d: string): User {
-    return User.Create(JSON.parse(d));
-  }
-  public static Create(d: any, field?: string): User {
-    if (!field) {
-      obj = d;
-      field = "root";
-    }
-    if (d === null || d === undefined) {
-      throwNull2NonNull(field, d);
-    } else if (typeof(d) !== 'object') {
-      throwNotObject(field, d, false);
-    } else if (Array.isArray(d)) {
-      throwIsArray(field, d, false);
-    }
-    checkNumber(d.id, false, field + ".id");
-    checkString(d.first_name, false, field + ".first_name");
-    checkString(d.last_name, false, field + ".last_name");
-    checkString(d.full_name, false, field + ".full_name");
-    checkNull(d.profile_picture_url, field + ".profile_picture_url");
-    const knownProperties = ["id","first_name","last_name","full_name","profile_picture_url"];
-    const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never", false);
-    return new User(d);
-  }
-  private constructor(d: any) {
-    this.id = d.id;
-    this.first_name = d.first_name;
-    this.last_name = d.last_name;
-    this.full_name = d.full_name;
-    if ("profile_picture_url" in d) this.profile_picture_url = d.profile_picture_url;
-  }
-}
-
 export class Thirdparty {
-  public readonly id: number;
-  public readonly known_supplier_id?: number | null;
-  public readonly company_id: number;
-  public readonly name: string;
-  public readonly role: string;
+  public readonly activity_code: string;
+  public readonly activity_nomenclature: string;
   public readonly address: string;
-  public readonly postal_code: string;
+  public readonly address_additional_info: string;
+  public readonly admin_city_code: null;
+  public readonly balance: null;
+  public readonly billing_bank: null;
+  public readonly billing_bic: null;
+  public readonly billing_footer_invoice_id: null;
+  public readonly billing_footer_invoice_label: null;
+  public readonly billing_iban: null;
+  public readonly billing_language: string;
   public readonly city: string;
+  public readonly company_id: number;
+  public readonly complete: boolean;
+  public readonly country: null | string;
   public readonly "country_alpha2": string;
-  public readonly vat_number: string;
-  public readonly search_terms?: string[] | null;
-  public readonly emails?: null[] | null;
-  public readonly reg_no: string;
-  public readonly phone: string;
-  public readonly first_name: string;
-  public readonly recurrent: boolean;
-  public readonly last_name: string;
-  public readonly gender?: null;
-  public readonly payment_conditions: string;
+  public readonly credits: null;
+  public readonly current_mandate: null;
   public readonly customer_type: string;
+  public readonly debits: null;
+  public readonly delivery_address: string;
+  public readonly delivery_address_additional_info: string;
+  public readonly delivery_city: string;
+  public readonly delivery_country: null;
+  public readonly "delivery_country_alpha2": string;
+  public readonly delivery_postal_code: string;
   public readonly disable_pending_vat: boolean;
+  public readonly display_name: null;
+  public readonly emails: never[];
+  public readonly establishment_no: null | string;
+  public readonly estimate_count: null;
+  public readonly first_name: string;
   public readonly force_pending_vat: boolean;
-  public readonly gocardless_id?: null;
+  public readonly gender: null;
+  public readonly gocardless_id: null;
+  public readonly iban: string;
+  public readonly id: number;
+  public readonly invoice_count: null;
+  public readonly invoice_dump_id: null;
   public readonly invoices_auto_generated: boolean;
   public readonly invoices_auto_validated: boolean;
-  public readonly billing_iban?: null;
-  public readonly billing_bic?: null;
-  public readonly billing_bank?: null;
-  public readonly recipient: string;
-  public readonly billing_language: string;
-  public readonly iban: string;
-  public readonly stripe_id?: null;
-  public readonly invoice_dump_id?: null;
-  public readonly delivery_address: string;
-  public readonly delivery_postal_code: string;
-  public readonly delivery_city: string;
-  public readonly "delivery_country_alpha2": string;
-  public readonly reference: string;
+  public readonly known_supplier_id: null | number;
+  public readonly last_name: string;
+  public readonly ledger_events_count: null;
   public readonly legal_form_code: string;
-  public readonly activity_nomenclature: string;
-  public readonly activity_code: string;
-  public readonly billing_footer_invoice_id?: null;
-  public readonly plan_item_id: number;
-  public readonly rule_enabled: boolean;
-  public readonly supplier_payment_method?: null;
-  public readonly supplier_payment_method_last_updated_at?: string | null;
-  public readonly notes: string;
-  public readonly admin_city_code?: null;
-  public readonly establishment_no?: string | null;
-  public readonly address_additional_info: string;
-  public readonly delivery_address_additional_info: string;
-  public readonly vat_rate?: string | null;
-  public readonly pnl_plan_item_id?: number | null;
-  public readonly source_id: string;
-  public readonly country?: string | null;
-  public readonly delivery_country?: null;
-  public readonly complete: boolean;
-  public readonly url: string;
   public readonly method: string;
-  public readonly billing_footer_invoice_label?: null;
-  public readonly display_name?: null;
-  public readonly debits?: null;
-  public readonly credits?: null;
-  public readonly balance?: null;
-  public readonly invoice_count?: null;
-  public readonly purchase_request_count?: null;
-  public readonly estimate_count?: null;
-  public readonly turnover?: null;
-  public readonly ledger_events_count?: null;
-  public readonly plan_item?: null;
-  public readonly pnl_plan_item?: null;
-  public readonly current_mandate?: null;
+  public readonly name: string;
+  public readonly notes: string;
+  public readonly notes_comment: null;
+  public readonly payment_conditions: string;
+  public readonly phone: string;
+  public readonly plan_item: null;
+  public readonly plan_item_attributes: null;
+  public readonly plan_item_id: number;
+  public readonly pnl_plan_item: null;
+  public readonly pnl_plan_item_id: number | null;
+  public readonly postal_code: string;
+  public readonly purchase_request_count: null;
   public readonly received_a_mandate_request: boolean;
-  public readonly notes_comment?: null;
-  public readonly plan_item_attributes?: null;
-  public readonly tags?: null[] | null;
-  public static Parse(d: string): Thirdparty | null {
+  public readonly recipient: string;
+  public readonly recurrent: boolean;
+  public readonly reference: string;
+  public readonly reg_no: string;
+  public readonly role: string;
+  public readonly rule_enabled: boolean;
+  public readonly search_terms: string[];
+  public readonly source_id: string;
+  public readonly stripe_id: null;
+  public readonly supplier_payment_method: null;
+  public readonly supplier_payment_method_last_updated_at: string | null;
+  public readonly tags: never[];
+  public readonly turnover: null;
+  public readonly url: string;
+  public readonly vat_number: string;
+  public readonly vat_rate: string | null;
+  public static Parse(d: string): Thirdparty {
     return Thirdparty.Create(JSON.parse(d));
   }
-  public static Create(d: any, field?: string): Thirdparty | null {
+  public static Create(d: any, field?: string, multiple ?: string): Thirdparty {
     if (!field) {
       obj = d;
       field = "root";
     }
-    if (d === null || d === undefined) {
-      return null;
+    if (!d) {
+      throwNull2NonNull(field, d, multiple ?? this.name);
     } else if (typeof(d) !== 'object') {
-      throwNotObject(field, d, true);
+      throwNotObject(field, d);
     } else if (Array.isArray(d)) {
-      throwIsArray(field, d, true);
+      throwIsArray(field, d);
     }
-    checkNumber(d.id, false, field + ".id");
-    checkNumber(d.known_supplier_id, true, field + ".known_supplier_id");
-    checkNumber(d.company_id, false, field + ".company_id");
-    checkString(d.name, false, field + ".name");
-    checkString(d.role, false, field + ".role");
-    checkString(d.address, false, field + ".address");
-    checkString(d.postal_code, false, field + ".postal_code");
-    checkString(d.city, false, field + ".city");
-    checkString(d["country_alpha2"], false, field + ".country_alpha2");
-    checkString(d.vat_number, false, field + ".vat_number");
-    checkArray(d.search_terms, field + ".search_terms");
-    if (d.search_terms) {
-      for (let i = 0; i < d.search_terms.length; i++) {
-        checkString(d.search_terms[i], false, field + ".search_terms" + "[" + i + "]");
+    checkString(d.activity_code, field + ".activity_code");
+    checkString(d.activity_nomenclature, field + ".activity_nomenclature");
+    checkString(d.address, field + ".address");
+    checkString(d.address_additional_info, field + ".address_additional_info");
+    checkNull(d.admin_city_code, field + ".admin_city_code");
+    checkNull(d.balance, field + ".balance");
+    checkNull(d.billing_bank, field + ".billing_bank");
+    checkNull(d.billing_bic, field + ".billing_bic");
+    checkNull(d.billing_footer_invoice_id, field + ".billing_footer_invoice_id");
+    checkNull(d.billing_footer_invoice_label, field + ".billing_footer_invoice_label");
+    checkNull(d.billing_iban, field + ".billing_iban");
+    checkString(d.billing_language, field + ".billing_language");
+    checkString(d.city, field + ".city");
+    checkNumber(d.company_id, field + ".company_id");
+    checkBoolean(d.complete, field + ".complete");
+    // This will be refactored in the next release.
+    try {
+      checkNull(d.country, field + ".country", "null | string");
+    } catch (e) {
+      try {
+        checkString(d.country, field + ".country", "null | string");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+        throw e;
       }
     }
+    checkString(d["country_alpha2"], field + ".country_alpha2");
+    checkNull(d.credits, field + ".credits");
+    checkNull(d.current_mandate, field + ".current_mandate");
+    checkString(d.customer_type, field + ".customer_type");
+    checkNull(d.debits, field + ".debits");
+    checkString(d.delivery_address, field + ".delivery_address");
+    checkString(d.delivery_address_additional_info, field + ".delivery_address_additional_info");
+    checkString(d.delivery_city, field + ".delivery_city");
+    checkNull(d.delivery_country, field + ".delivery_country");
+    checkString(d["delivery_country_alpha2"], field + ".delivery_country_alpha2");
+    checkString(d.delivery_postal_code, field + ".delivery_postal_code");
+    checkBoolean(d.disable_pending_vat, field + ".disable_pending_vat");
+    checkNull(d.display_name, field + ".display_name");
     checkArray(d.emails, field + ".emails");
     if (d.emails) {
       for (let i = 0; i < d.emails.length; i++) {
-        checkNull(d.emails[i], field + ".emails" + "[" + i + "]");
+        checkNever(d.emails[i], field + ".emails" + "[" + i + "]");
       }
     }
-    checkString(d.reg_no, false, field + ".reg_no");
-    checkString(d.phone, false, field + ".phone");
-    checkString(d.first_name, false, field + ".first_name");
-    checkBoolean(d.recurrent, false, field + ".recurrent");
-    checkString(d.last_name, false, field + ".last_name");
-    checkNull(d.gender, field + ".gender");
-    checkString(d.payment_conditions, false, field + ".payment_conditions");
-    checkString(d.customer_type, false, field + ".customer_type");
-    checkBoolean(d.disable_pending_vat, false, field + ".disable_pending_vat");
-    checkBoolean(d.force_pending_vat, false, field + ".force_pending_vat");
-    checkNull(d.gocardless_id, field + ".gocardless_id");
-    checkBoolean(d.invoices_auto_generated, false, field + ".invoices_auto_generated");
-    checkBoolean(d.invoices_auto_validated, false, field + ".invoices_auto_validated");
-    checkNull(d.billing_iban, field + ".billing_iban");
-    checkNull(d.billing_bic, field + ".billing_bic");
-    checkNull(d.billing_bank, field + ".billing_bank");
-    checkString(d.recipient, false, field + ".recipient");
-    checkString(d.billing_language, false, field + ".billing_language");
-    checkString(d.iban, false, field + ".iban");
-    checkNull(d.stripe_id, field + ".stripe_id");
-    checkNull(d.invoice_dump_id, field + ".invoice_dump_id");
-    checkString(d.delivery_address, false, field + ".delivery_address");
-    checkString(d.delivery_postal_code, false, field + ".delivery_postal_code");
-    checkString(d.delivery_city, false, field + ".delivery_city");
-    checkString(d["delivery_country_alpha2"], false, field + ".delivery_country_alpha2");
-    checkString(d.reference, false, field + ".reference");
-    checkString(d.legal_form_code, false, field + ".legal_form_code");
-    checkString(d.activity_nomenclature, false, field + ".activity_nomenclature");
-    checkString(d.activity_code, false, field + ".activity_code");
-    checkNull(d.billing_footer_invoice_id, field + ".billing_footer_invoice_id");
-    checkNumber(d.plan_item_id, false, field + ".plan_item_id");
-    checkBoolean(d.rule_enabled, false, field + ".rule_enabled");
-    checkNull(d.supplier_payment_method, field + ".supplier_payment_method");
-    checkString(d.supplier_payment_method_last_updated_at, true, field + ".supplier_payment_method_last_updated_at");
-    checkString(d.notes, false, field + ".notes");
-    checkNull(d.admin_city_code, field + ".admin_city_code");
-    checkString(d.establishment_no, true, field + ".establishment_no");
-    checkString(d.address_additional_info, false, field + ".address_additional_info");
-    checkString(d.delivery_address_additional_info, false, field + ".delivery_address_additional_info");
-    checkString(d.vat_rate, true, field + ".vat_rate");
-    checkNumber(d.pnl_plan_item_id, true, field + ".pnl_plan_item_id");
-    checkString(d.source_id, false, field + ".source_id");
-    checkString(d.country, true, field + ".country");
-    checkNull(d.delivery_country, field + ".delivery_country");
-    checkBoolean(d.complete, false, field + ".complete");
-    checkString(d.url, false, field + ".url");
-    checkString(d.method, false, field + ".method");
-    checkNull(d.billing_footer_invoice_label, field + ".billing_footer_invoice_label");
-    checkNull(d.display_name, field + ".display_name");
-    checkNull(d.debits, field + ".debits");
-    checkNull(d.credits, field + ".credits");
-    checkNull(d.balance, field + ".balance");
-    checkNull(d.invoice_count, field + ".invoice_count");
-    checkNull(d.purchase_request_count, field + ".purchase_request_count");
+    // This will be refactored in the next release.
+    try {
+      checkNull(d.establishment_no, field + ".establishment_no", "null | string");
+    } catch (e) {
+      try {
+        checkString(d.establishment_no, field + ".establishment_no", "null | string");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+        throw e;
+      }
+    }
     checkNull(d.estimate_count, field + ".estimate_count");
-    checkNull(d.turnover, field + ".turnover");
+    checkString(d.first_name, field + ".first_name");
+    checkBoolean(d.force_pending_vat, field + ".force_pending_vat");
+    checkNull(d.gender, field + ".gender");
+    checkNull(d.gocardless_id, field + ".gocardless_id");
+    checkString(d.iban, field + ".iban");
+    checkNumber(d.id, field + ".id");
+    checkNull(d.invoice_count, field + ".invoice_count");
+    checkNull(d.invoice_dump_id, field + ".invoice_dump_id");
+    checkBoolean(d.invoices_auto_generated, field + ".invoices_auto_generated");
+    checkBoolean(d.invoices_auto_validated, field + ".invoices_auto_validated");
+    // This will be refactored in the next release.
+    try {
+      checkNull(d.known_supplier_id, field + ".known_supplier_id", "null | number");
+    } catch (e) {
+      try {
+        checkNumber(d.known_supplier_id, field + ".known_supplier_id", "null | number");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+        throw e;
+      }
+    }
+    checkString(d.last_name, field + ".last_name");
     checkNull(d.ledger_events_count, field + ".ledger_events_count");
-    checkNull(d.plan_item, field + ".plan_item");
-    checkNull(d.pnl_plan_item, field + ".pnl_plan_item");
-    checkNull(d.current_mandate, field + ".current_mandate");
-    checkBoolean(d.received_a_mandate_request, false, field + ".received_a_mandate_request");
+    checkString(d.legal_form_code, field + ".legal_form_code");
+    checkString(d.method, field + ".method");
+    checkString(d.name, field + ".name");
+    checkString(d.notes, field + ".notes");
     checkNull(d.notes_comment, field + ".notes_comment");
+    checkString(d.payment_conditions, field + ".payment_conditions");
+    checkString(d.phone, field + ".phone");
+    checkNull(d.plan_item, field + ".plan_item");
     checkNull(d.plan_item_attributes, field + ".plan_item_attributes");
+    checkNumber(d.plan_item_id, field + ".plan_item_id");
+    checkNull(d.pnl_plan_item, field + ".pnl_plan_item");
+    // This will be refactored in the next release.
+    try {
+      checkNumber(d.pnl_plan_item_id, field + ".pnl_plan_item_id", "number | null");
+    } catch (e) {
+      try {
+        checkNull(d.pnl_plan_item_id, field + ".pnl_plan_item_id", "number | null");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+        throw e;
+      }
+    }
+    checkString(d.postal_code, field + ".postal_code");
+    checkNull(d.purchase_request_count, field + ".purchase_request_count");
+    checkBoolean(d.received_a_mandate_request, field + ".received_a_mandate_request");
+    checkString(d.recipient, field + ".recipient");
+    checkBoolean(d.recurrent, field + ".recurrent");
+    checkString(d.reference, field + ".reference");
+    checkString(d.reg_no, field + ".reg_no");
+    checkString(d.role, field + ".role");
+    checkBoolean(d.rule_enabled, field + ".rule_enabled");
+    checkArray(d.search_terms, field + ".search_terms");
+    if (d.search_terms) {
+      for (let i = 0; i < d.search_terms.length; i++) {
+        checkString(d.search_terms[i], field + ".search_terms" + "[" + i + "]");
+      }
+    }
+    checkString(d.source_id, field + ".source_id");
+    checkNull(d.stripe_id, field + ".stripe_id");
+    checkNull(d.supplier_payment_method, field + ".supplier_payment_method");
+    // This will be refactored in the next release.
+    try {
+      checkString(d.supplier_payment_method_last_updated_at, field + ".supplier_payment_method_last_updated_at", "string | null");
+    } catch (e) {
+      try {
+        checkNull(d.supplier_payment_method_last_updated_at, field + ".supplier_payment_method_last_updated_at", "string | null");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+        throw e;
+      }
+    }
     checkArray(d.tags, field + ".tags");
     if (d.tags) {
       for (let i = 0; i < d.tags.length; i++) {
-        checkNull(d.tags[i], field + ".tags" + "[" + i + "]");
+        checkNever(d.tags[i], field + ".tags" + "[" + i + "]");
       }
     }
-    const knownProperties = ["id","known_supplier_id","company_id","name","role","address","postal_code","city","country_alpha2","vat_number","search_terms","emails","reg_no","phone","first_name","recurrent","last_name","gender","payment_conditions","customer_type","disable_pending_vat","force_pending_vat","gocardless_id","invoices_auto_generated","invoices_auto_validated","billing_iban","billing_bic","billing_bank","recipient","billing_language","iban","stripe_id","invoice_dump_id","delivery_address","delivery_postal_code","delivery_city","delivery_country_alpha2","reference","legal_form_code","activity_nomenclature","activity_code","billing_footer_invoice_id","plan_item_id","rule_enabled","supplier_payment_method","supplier_payment_method_last_updated_at","notes","admin_city_code","establishment_no","address_additional_info","delivery_address_additional_info","vat_rate","pnl_plan_item_id","source_id","country","delivery_country","complete","url","method","billing_footer_invoice_label","display_name","debits","credits","balance","invoice_count","purchase_request_count","estimate_count","turnover","ledger_events_count","plan_item","pnl_plan_item","current_mandate","received_a_mandate_request","notes_comment","plan_item_attributes","tags"];
+    checkNull(d.turnover, field + ".turnover");
+    checkString(d.url, field + ".url");
+    checkString(d.vat_number, field + ".vat_number");
+    // This will be refactored in the next release.
+    try {
+      checkString(d.vat_rate, field + ".vat_rate", "string | null");
+    } catch (e) {
+      try {
+        checkNull(d.vat_rate, field + ".vat_rate", "string | null");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+        throw e;
+      }
+    }
+    const knownProperties = ["activity_code","activity_nomenclature","address","address_additional_info","admin_city_code","balance","billing_bank","billing_bic","billing_footer_invoice_id","billing_footer_invoice_label","billing_iban","billing_language","city","company_id","complete","country","country_alpha2","credits","current_mandate","customer_type","debits","delivery_address","delivery_address_additional_info","delivery_city","delivery_country","delivery_country_alpha2","delivery_postal_code","disable_pending_vat","display_name","emails","establishment_no","estimate_count","first_name","force_pending_vat","gender","gocardless_id","iban","id","invoice_count","invoice_dump_id","invoices_auto_generated","invoices_auto_validated","known_supplier_id","last_name","ledger_events_count","legal_form_code","method","name","notes","notes_comment","payment_conditions","phone","plan_item","plan_item_attributes","plan_item_id","pnl_plan_item","pnl_plan_item_id","postal_code","purchase_request_count","received_a_mandate_request","recipient","recurrent","reference","reg_no","role","rule_enabled","search_terms","source_id","stripe_id","supplier_payment_method","supplier_payment_method_last_updated_at","tags","turnover","url","vat_number","vat_rate"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never", false);
+    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
     return new Thirdparty(d);
   }
   private constructor(d: any) {
-    this.id = d.id;
-    if ("known_supplier_id" in d) this.known_supplier_id = d.known_supplier_id;
-    this.company_id = d.company_id;
-    this.name = d.name;
-    this.role = d.role;
+    this.activity_code = d.activity_code;
+    this.activity_nomenclature = d.activity_nomenclature;
     this.address = d.address;
-    this.postal_code = d.postal_code;
+    this.address_additional_info = d.address_additional_info;
+    this.admin_city_code = d.admin_city_code;
+    this.balance = d.balance;
+    this.billing_bank = d.billing_bank;
+    this.billing_bic = d.billing_bic;
+    this.billing_footer_invoice_id = d.billing_footer_invoice_id;
+    this.billing_footer_invoice_label = d.billing_footer_invoice_label;
+    this.billing_iban = d.billing_iban;
+    this.billing_language = d.billing_language;
     this.city = d.city;
+    this.company_id = d.company_id;
+    this.complete = d.complete;
+    this.country = d.country;
     this["country_alpha2"] = d["country_alpha2"];
-    this.vat_number = d.vat_number;
-    if ("search_terms" in d) this.search_terms = d.search_terms;
-    if ("emails" in d) this.emails = d.emails;
-    this.reg_no = d.reg_no;
-    this.phone = d.phone;
-    this.first_name = d.first_name;
-    this.recurrent = d.recurrent;
-    this.last_name = d.last_name;
-    if ("gender" in d) this.gender = d.gender;
-    this.payment_conditions = d.payment_conditions;
+    this.credits = d.credits;
+    this.current_mandate = d.current_mandate;
     this.customer_type = d.customer_type;
+    this.debits = d.debits;
+    this.delivery_address = d.delivery_address;
+    this.delivery_address_additional_info = d.delivery_address_additional_info;
+    this.delivery_city = d.delivery_city;
+    this.delivery_country = d.delivery_country;
+    this["delivery_country_alpha2"] = d["delivery_country_alpha2"];
+    this.delivery_postal_code = d.delivery_postal_code;
     this.disable_pending_vat = d.disable_pending_vat;
+    this.display_name = d.display_name;
+    this.emails = d.emails;
+    this.establishment_no = d.establishment_no;
+    this.estimate_count = d.estimate_count;
+    this.first_name = d.first_name;
     this.force_pending_vat = d.force_pending_vat;
-    if ("gocardless_id" in d) this.gocardless_id = d.gocardless_id;
+    this.gender = d.gender;
+    this.gocardless_id = d.gocardless_id;
+    this.iban = d.iban;
+    this.id = d.id;
+    this.invoice_count = d.invoice_count;
+    this.invoice_dump_id = d.invoice_dump_id;
     this.invoices_auto_generated = d.invoices_auto_generated;
     this.invoices_auto_validated = d.invoices_auto_validated;
-    if ("billing_iban" in d) this.billing_iban = d.billing_iban;
-    if ("billing_bic" in d) this.billing_bic = d.billing_bic;
-    if ("billing_bank" in d) this.billing_bank = d.billing_bank;
-    this.recipient = d.recipient;
-    this.billing_language = d.billing_language;
-    this.iban = d.iban;
-    if ("stripe_id" in d) this.stripe_id = d.stripe_id;
-    if ("invoice_dump_id" in d) this.invoice_dump_id = d.invoice_dump_id;
-    this.delivery_address = d.delivery_address;
-    this.delivery_postal_code = d.delivery_postal_code;
-    this.delivery_city = d.delivery_city;
-    this["delivery_country_alpha2"] = d["delivery_country_alpha2"];
-    this.reference = d.reference;
-    this.legal_form_code = d.legal_form_code;
-    this.activity_nomenclature = d.activity_nomenclature;
-    this.activity_code = d.activity_code;
-    if ("billing_footer_invoice_id" in d) this.billing_footer_invoice_id = d.billing_footer_invoice_id;
-    this.plan_item_id = d.plan_item_id;
-    this.rule_enabled = d.rule_enabled;
-    if ("supplier_payment_method" in d) this.supplier_payment_method = d.supplier_payment_method;
-    if ("supplier_payment_method_last_updated_at" in d) this.supplier_payment_method_last_updated_at = d.supplier_payment_method_last_updated_at;
-    this.notes = d.notes;
-    if ("admin_city_code" in d) this.admin_city_code = d.admin_city_code;
-    if ("establishment_no" in d) this.establishment_no = d.establishment_no;
-    this.address_additional_info = d.address_additional_info;
-    this.delivery_address_additional_info = d.delivery_address_additional_info;
-    if ("vat_rate" in d) this.vat_rate = d.vat_rate;
-    if ("pnl_plan_item_id" in d) this.pnl_plan_item_id = d.pnl_plan_item_id;
-    this.source_id = d.source_id;
-    if ("country" in d) this.country = d.country;
-    if ("delivery_country" in d) this.delivery_country = d.delivery_country;
-    this.complete = d.complete;
-    this.url = d.url;
-    this.method = d.method;
-    if ("billing_footer_invoice_label" in d) this.billing_footer_invoice_label = d.billing_footer_invoice_label;
-    if ("display_name" in d) this.display_name = d.display_name;
-    if ("debits" in d) this.debits = d.debits;
-    if ("credits" in d) this.credits = d.credits;
-    if ("balance" in d) this.balance = d.balance;
-    if ("invoice_count" in d) this.invoice_count = d.invoice_count;
-    if ("purchase_request_count" in d) this.purchase_request_count = d.purchase_request_count;
-    if ("estimate_count" in d) this.estimate_count = d.estimate_count;
-    if ("turnover" in d) this.turnover = d.turnover;
-    if ("ledger_events_count" in d) this.ledger_events_count = d.ledger_events_count;
-    if ("plan_item" in d) this.plan_item = d.plan_item;
-    if ("pnl_plan_item" in d) this.pnl_plan_item = d.pnl_plan_item;
-    if ("current_mandate" in d) this.current_mandate = d.current_mandate;
-    this.received_a_mandate_request = d.received_a_mandate_request;
-    if ("notes_comment" in d) this.notes_comment = d.notes_comment;
-    if ("plan_item_attributes" in d) this.plan_item_attributes = d.plan_item_attributes;
-    if ("tags" in d) this.tags = d.tags;
-  }
-}
-
-export class InvoiceLinesEntity {
-  public readonly id: number;
-  public readonly price_before_tax: string;
-  public readonly amount: string;
-  public readonly tax: string;
-  public readonly label: string;
-  public readonly description: string;
-  public readonly pnl_plan_item_id: number;
-  public readonly product_id?: null;
-  public readonly quantity: string;
-  public readonly unit?: string | null;
-  public readonly created_at: string;
-  public readonly currency_amount: string;
-  public readonly currency_tax: string;
-  public readonly currency_price_before_tax: string;
-  public readonly rank?: number | null;
-  public readonly prepaid_pnl: boolean;
-  public readonly ocr_vat_rate?: string | null;
-  public readonly document_id: number;
-  public readonly discount: string;
-  public readonly discount_type: string;
-  public readonly company_id: number;
-  public readonly asset_id?: number | null;
-  public readonly deferral_id?: null;
-  public readonly advance_id?: null;
-  public readonly raw_currency_unit_price: string;
-  public readonly undiscounted_currency_price_before_tax: string;
-  public readonly manual_vat_mode: boolean;
-  public readonly invoice_line_section_id?: number | null;
-  public readonly global_vat: boolean;
-  public readonly vat_rate: string;
-  public readonly pnl_plan_item: PlanItemOrPnlPlanItem;
-  public readonly currency_unit_price_before_tax: string;
-  public static Parse(d: string): InvoiceLinesEntity {
-    return InvoiceLinesEntity.Create(JSON.parse(d));
-  }
-  public static Create(d: any, field?: string): InvoiceLinesEntity {
-    if (!field) {
-      obj = d;
-      field = "root";
-    }
-    if (d === null || d === undefined) {
-      throwNull2NonNull(field, d);
-    } else if (typeof(d) !== 'object') {
-      throwNotObject(field, d, false);
-    } else if (Array.isArray(d)) {
-      throwIsArray(field, d, false);
-    }
-    checkNumber(d.id, false, field + ".id");
-    checkString(d.price_before_tax, false, field + ".price_before_tax");
-    checkString(d.amount, false, field + ".amount");
-    checkString(d.tax, false, field + ".tax");
-    checkString(d.label, false, field + ".label");
-    checkString(d.description, false, field + ".description");
-    checkNumber(d.pnl_plan_item_id, false, field + ".pnl_plan_item_id");
-    checkNull(d.product_id, field + ".product_id");
-    checkString(d.quantity, false, field + ".quantity");
-    checkString(d.unit, true, field + ".unit");
-    checkString(d.created_at, false, field + ".created_at");
-    checkString(d.currency_amount, false, field + ".currency_amount");
-    checkString(d.currency_tax, false, field + ".currency_tax");
-    checkString(d.currency_price_before_tax, false, field + ".currency_price_before_tax");
-    checkNumber(d.rank, true, field + ".rank");
-    checkBoolean(d.prepaid_pnl, false, field + ".prepaid_pnl");
-    checkString(d.ocr_vat_rate, true, field + ".ocr_vat_rate");
-    checkNumber(d.document_id, false, field + ".document_id");
-    checkString(d.discount, false, field + ".discount");
-    checkString(d.discount_type, false, field + ".discount_type");
-    checkNumber(d.company_id, false, field + ".company_id");
-    checkNumber(d.asset_id, true, field + ".asset_id");
-    checkNull(d.deferral_id, field + ".deferral_id");
-    checkNull(d.advance_id, field + ".advance_id");
-    checkString(d.raw_currency_unit_price, false, field + ".raw_currency_unit_price");
-    checkString(d.undiscounted_currency_price_before_tax, false, field + ".undiscounted_currency_price_before_tax");
-    checkBoolean(d.manual_vat_mode, false, field + ".manual_vat_mode");
-    checkNumber(d.invoice_line_section_id, true, field + ".invoice_line_section_id");
-    checkBoolean(d.global_vat, false, field + ".global_vat");
-    checkString(d.vat_rate, false, field + ".vat_rate");
-    d.pnl_plan_item = PlanItemOrPnlPlanItem.Create(d.pnl_plan_item, field + ".pnl_plan_item");
-    checkString(d.currency_unit_price_before_tax, false, field + ".currency_unit_price_before_tax");
-    const knownProperties = ["id","price_before_tax","amount","tax","label","description","pnl_plan_item_id","product_id","quantity","unit","created_at","currency_amount","currency_tax","currency_price_before_tax","rank","prepaid_pnl","ocr_vat_rate","document_id","discount","discount_type","company_id","asset_id","deferral_id","advance_id","raw_currency_unit_price","undiscounted_currency_price_before_tax","manual_vat_mode","invoice_line_section_id","global_vat","vat_rate","pnl_plan_item","currency_unit_price_before_tax"];
-    const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never", false);
-    return new InvoiceLinesEntity(d);
-  }
-  private constructor(d: any) {
-    this.id = d.id;
-    this.price_before_tax = d.price_before_tax;
-    this.amount = d.amount;
-    this.tax = d.tax;
-    this.label = d.label;
-    this.description = d.description;
-    this.pnl_plan_item_id = d.pnl_plan_item_id;
-    if ("product_id" in d) this.product_id = d.product_id;
-    this.quantity = d.quantity;
-    if ("unit" in d) this.unit = d.unit;
-    this.created_at = d.created_at;
-    this.currency_amount = d.currency_amount;
-    this.currency_tax = d.currency_tax;
-    this.currency_price_before_tax = d.currency_price_before_tax;
-    if ("rank" in d) this.rank = d.rank;
-    this.prepaid_pnl = d.prepaid_pnl;
-    if ("ocr_vat_rate" in d) this.ocr_vat_rate = d.ocr_vat_rate;
-    this.document_id = d.document_id;
-    this.discount = d.discount;
-    this.discount_type = d.discount_type;
-    this.company_id = d.company_id;
-    if ("asset_id" in d) this.asset_id = d.asset_id;
-    if ("deferral_id" in d) this.deferral_id = d.deferral_id;
-    if ("advance_id" in d) this.advance_id = d.advance_id;
-    this.raw_currency_unit_price = d.raw_currency_unit_price;
-    this.undiscounted_currency_price_before_tax = d.undiscounted_currency_price_before_tax;
-    this.manual_vat_mode = d.manual_vat_mode;
-    if ("invoice_line_section_id" in d) this.invoice_line_section_id = d.invoice_line_section_id;
-    this.global_vat = d.global_vat;
-    this.vat_rate = d.vat_rate;
-    this.pnl_plan_item = d.pnl_plan_item;
-    this.currency_unit_price_before_tax = d.currency_unit_price_before_tax;
-  }
-}
-
-export class EstablishmentComment {
-  public readonly id: number;
-  public readonly name: string;
-  public readonly content: string;
-  public readonly created_at: string;
-  public readonly seen: boolean;
-  public readonly record_type: string;
-  public readonly record_id: number;
-  public readonly updated_at: string;
-  public readonly user_id?: number | null;
-  public readonly rich_content?: null;
-  public readonly user?: User1 | null;
-  public readonly author?: null;
-  public static Parse(d: string): EstablishmentComment | null {
-    return EstablishmentComment.Create(JSON.parse(d));
-  }
-  public static Create(d: any, field?: string): EstablishmentComment | null {
-    if (!field) {
-      obj = d;
-      field = "root";
-    }
-    if (d === null || d === undefined) {
-      return null;
-    } else if (typeof(d) !== 'object') {
-      throwNotObject(field, d, true);
-    } else if (Array.isArray(d)) {
-      throwIsArray(field, d, true);
-    }
-    checkNumber(d.id, false, field + ".id");
-    checkString(d.name, false, field + ".name");
-    checkString(d.content, false, field + ".content");
-    checkString(d.created_at, false, field + ".created_at");
-    checkBoolean(d.seen, false, field + ".seen");
-    checkString(d.record_type, false, field + ".record_type");
-    checkNumber(d.record_id, false, field + ".record_id");
-    checkString(d.updated_at, false, field + ".updated_at");
-    checkNumber(d.user_id, true, field + ".user_id");
-    checkNull(d.rich_content, field + ".rich_content");
-    d.user = User1.Create(d.user, field + ".user");
-    checkNull(d.author, field + ".author");
-    const knownProperties = ["id","name","content","created_at","seen","record_type","record_id","updated_at","user_id","rich_content","user","author"];
-    const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never", false);
-    return new EstablishmentComment(d);
-  }
-  private constructor(d: any) {
-    this.id = d.id;
-    this.name = d.name;
-    this.content = d.content;
-    this.created_at = d.created_at;
-    this.seen = d.seen;
-    this.record_type = d.record_type;
-    this.record_id = d.record_id;
-    this.updated_at = d.updated_at;
-    if ("user_id" in d) this.user_id = d.user_id;
-    if ("rich_content" in d) this.rich_content = d.rich_content;
-    if ("user" in d) this.user = d.user;
-    if ("author" in d) this.author = d.author;
-  }
-}
-
-export class User1 {
-  public readonly id: number;
-  public readonly first_name: string;
-  public readonly last_name: string;
-  public readonly full_name: string;
-  public readonly profile_picture_url?: null;
-  public static Parse(d: string): User1 | null {
-    return User1.Create(JSON.parse(d));
-  }
-  public static Create(d: any, field?: string): User1 | null {
-    if (!field) {
-      obj = d;
-      field = "root";
-    }
-    if (d === null || d === undefined) {
-      return null;
-    } else if (typeof(d) !== 'object') {
-      throwNotObject(field, d, true);
-    } else if (Array.isArray(d)) {
-      throwIsArray(field, d, true);
-    }
-    checkNumber(d.id, false, field + ".id");
-    checkString(d.first_name, false, field + ".first_name");
-    checkString(d.last_name, false, field + ".last_name");
-    checkString(d.full_name, false, field + ".full_name");
-    checkNull(d.profile_picture_url, field + ".profile_picture_url");
-    const knownProperties = ["id","first_name","last_name","full_name","profile_picture_url"];
-    const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never", false);
-    return new User1(d);
-  }
-  private constructor(d: any) {
-    this.id = d.id;
-    this.first_name = d.first_name;
+    this.known_supplier_id = d.known_supplier_id;
     this.last_name = d.last_name;
-    this.full_name = d.full_name;
-    if ("profile_picture_url" in d) this.profile_picture_url = d.profile_picture_url;
+    this.ledger_events_count = d.ledger_events_count;
+    this.legal_form_code = d.legal_form_code;
+    this.method = d.method;
+    this.name = d.name;
+    this.notes = d.notes;
+    this.notes_comment = d.notes_comment;
+    this.payment_conditions = d.payment_conditions;
+    this.phone = d.phone;
+    this.plan_item = d.plan_item;
+    this.plan_item_attributes = d.plan_item_attributes;
+    this.plan_item_id = d.plan_item_id;
+    this.pnl_plan_item = d.pnl_plan_item;
+    this.pnl_plan_item_id = d.pnl_plan_item_id;
+    this.postal_code = d.postal_code;
+    this.purchase_request_count = d.purchase_request_count;
+    this.received_a_mandate_request = d.received_a_mandate_request;
+    this.recipient = d.recipient;
+    this.recurrent = d.recurrent;
+    this.reference = d.reference;
+    this.reg_no = d.reg_no;
+    this.role = d.role;
+    this.rule_enabled = d.rule_enabled;
+    this.search_terms = d.search_terms;
+    this.source_id = d.source_id;
+    this.stripe_id = d.stripe_id;
+    this.supplier_payment_method = d.supplier_payment_method;
+    this.supplier_payment_method_last_updated_at = d.supplier_payment_method_last_updated_at;
+    this.tags = d.tags;
+    this.turnover = d.turnover;
+    this.url = d.url;
+    this.vat_number = d.vat_number;
+    this.vat_rate = d.vat_rate;
   }
 }
 
-export class PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem {
-  public readonly id: number;
-  public readonly number: string;
-  public readonly internal_identifier?: null;
-  public readonly label: string;
-  public readonly company_id: number;
-  public readonly enabled: boolean;
-  public readonly vat_rate: string;
-  public readonly "country_alpha2": string;
-  public readonly label_is_editable: boolean;
-  public static Parse(d: string): PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem | null {
-    return PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem.Create(JSON.parse(d));
+export class ScoredInvoices {
+  public static Parse(d: string): ScoredInvoices {
+    return ScoredInvoices.Create(JSON.parse(d));
   }
-  public static Create(d: any, field?: string): PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem | null {
+  public static Create(d: any, field?: string, multiple ?: string): ScoredInvoices {
     if (!field) {
       obj = d;
       field = "root";
     }
-    if (d === null || d === undefined) {
-      return null;
+    if (!d) {
+      throwNull2NonNull(field, d, multiple ?? this.name);
     } else if (typeof(d) !== 'object') {
-      throwNotObject(field, d, true);
+      throwNotObject(field, d);
     } else if (Array.isArray(d)) {
-      throwIsArray(field, d, true);
+      throwIsArray(field, d);
     }
-    checkNumber(d.id, false, field + ".id");
-    checkString(d.number, false, field + ".number");
-    checkNull(d.internal_identifier, field + ".internal_identifier");
-    checkString(d.label, false, field + ".label");
-    checkNumber(d.company_id, false, field + ".company_id");
-    checkBoolean(d.enabled, false, field + ".enabled");
-    checkString(d.vat_rate, false, field + ".vat_rate");
-    checkString(d["country_alpha2"], false, field + ".country_alpha2");
-    checkBoolean(d.label_is_editable, false, field + ".label_is_editable");
-    const knownProperties = ["id","number","internal_identifier","label","company_id","enabled","vat_rate","country_alpha2","label_is_editable"];
+    const knownProperties = [];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never", false);
-    return new PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem(d);
+    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    return new ScoredInvoices(d);
   }
   private constructor(d: any) {
-    this.id = d.id;
-    this.number = d.number;
-    if ("internal_identifier" in d) this.internal_identifier = d.internal_identifier;
-    this.label = d.label;
-    this.company_id = d.company_id;
-    this.enabled = d.enabled;
-    this.vat_rate = d.vat_rate;
-    this["country_alpha2"] = d["country_alpha2"];
-    this.label_is_editable = d.label_is_editable;
   }
 }
 
-function throwNull2NonNull(field: string, d: any): never {
-  return errorHelper(field, d, "non-nullable object", false);
+function throwNull2NonNull(field: string, value: any, multiple?: string): never {
+  return errorHelper(field, value, multiple ?? "non-nullable object");
 }
-function throwNotObject(field: string, d: any, nullable: boolean): never {
-  return errorHelper(field, d, "object", nullable);
+function throwNotObject(field: string, value: any, multiple?: string): never {
+  return errorHelper(field, value, multiple ?? "object");
 }
-function throwIsArray(field: string, d: any, nullable: boolean): never {
-  return errorHelper(field, d, "object", nullable);
+function throwIsArray(field: string, value: any, multiple?: string): never {
+  return errorHelper(field, value, multiple ?? "object");
 }
-function checkArray(d: any, field: string): void {
-  if (!Array.isArray(d) && d !== null && d !== undefined) {
-    errorHelper(field, d, "array", true);
+function checkArray(value: any, field: string, multiple?: string): void {
+  if (!Array.isArray(value)) errorHelper(field, value, multiple ?? "array");
+}
+function checkNumber(value: any, field: string, multiple?: string): void {
+  if (typeof(value) !== 'number') errorHelper(field, value, multiple ?? "number");
+}
+function checkBoolean(value: any, field: string, multiple?: string): void {
+  if (typeof(value) !== 'boolean') errorHelper(field, value, multiple ?? "boolean");
+}
+function checkString(value: any, field: string, multiple?: string): void {
+  if (typeof(value) !== 'string') errorHelper(field, value, multiple ?? "string");
+}
+function checkNull(value: any, field: string, multiple?: string): void {
+  if (value !== null) errorHelper(field, value, multiple ?? "null");
+}
+function checkNever(value: any, field: string, multiple?: string): never {
+  return errorHelper(field, value, multiple ?? "never");
+}
+function errorHelper(field: string, d: any, type: string): never {
+  if (!type.includes(' | ')) {
+    let jsonClone = obj;
+    try {
+      jsonClone = JSON.parse(JSON.stringify(obj));
+    } catch(error) {
+      console.log(error);
+    }
+    console.log('Expected ' + type + " at " + field + " but found:\n" + JSON.stringify(d), jsonClone);
+    prompt(proxyName+':', JSON.stringify(obj));
   }
-}
-function checkNumber(d: any, nullable: boolean, field: string): void {
-  if (typeof(d) !== 'number' && (!nullable || (nullable && d !== null && d !== undefined))) {
-    errorHelper(field, d, "number", nullable);
-  }
-}
-function checkBoolean(d: any, nullable: boolean, field: string): void {
-  if (typeof(d) !== 'boolean' && (!nullable || (nullable && d !== null && d !== undefined))) {
-    errorHelper(field, d, "boolean", nullable);
-  }
-}
-function checkString(d: any, nullable: boolean, field: string): void {
-  if (typeof(d) !== 'string' && (!nullable || (nullable && d !== null && d !== undefined))) {
-    errorHelper(field, d, "string", nullable);
-  }
-}
-function checkNull(d: any, field: string): void {
-  if (d !== null && d !== undefined) {
-    errorHelper(field, d, "null or undefined", false);
-  }
-}
-function errorHelper(field: string, d: any, type: string, nullable: boolean): never {
-  if (nullable) {
-    type += ", null, or undefined";
-  }
-  prompt(proxyName+':', JSON.stringify(obj));
   throw new TypeError('Expected ' + type + " at " + field + " but found:\n" + JSON.stringify(d) + "\n\nFull object:\n" + JSON.stringify(obj));
 }
