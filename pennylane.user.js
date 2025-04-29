@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name     Pennylane
-// @version  0.1.23
+// @version  0.1.25
 // @grant    unsafeWindow
 // @grant    GM.openInTab
 // @match    https://app.pennylane.com/companies/*
@@ -80,12 +80,6 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "function findElem(selector, content) {\n" +
 "    return $$(selector).find(el => !content || el.textContent === content) ?? null;\n" +
 "}\n" +
-"function parentElement(child, steps = 1) {\n" +
-"    let parent = child;\n" +
-"    for (let i = 0; i < steps; ++i)\n" +
-"        parent = parent?.parentElement;\n" +
-"    return parent;\n" +
-"}\n" +
 "function upElement(elem, upCount) {\n" +
 "    let retval = elem;\n" +
 "    for (let i = 0; i < upCount; ++i)\n" +
@@ -104,16 +98,13 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    template.innerHTML = html;\n" +
 "    return template.content;\n" +
 "}\n" +
-"Object.assign(window, { gm: {\n" +
-"        $$,\n" +
-"        $,\n" +
-"        findElem,\n" +
-"        parentElement,\n" +
-"        parseHTML,\n" +
-"        upElement,\n" +
-"        waitElem,\n" +
-"    } });\n" +
 "\n" +
+"/**\n" +
+" * Find the React component that rendered the given element.\n" +
+" * @param elem The element to find the React component for.\n" +
+" * @param up The number of levels up the component tree to traverse.\n" +
+" * @returns The React component that rendered the given element.\n" +
+" */\n" +
 "function getReact(elem, up = 0) {\n" +
 "    if (!elem)\n" +
 "        return null;\n" +
@@ -127,8 +118,32 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        component = component.return;\n" +
 "    return component;\n" +
 "}\n" +
+"/**\n" +
+" * Find the React props that rendered the given element.\n" +
+" * @param elem The element to find the React props for.\n" +
+" * @param up The number of levels up the component tree to traverse.\n" +
+" * @returns The React props that rendered the given element.\n" +
+" */\n" +
 "function getReactProps(elem, up = 0) {\n" +
 "    return getReact(elem, up)?.memoizedProps;\n" +
+"}\n" +
+"/**\n" +
+" * Find the level of the component tree which have given props by name and returns the prop value.\n" +
+" * @param elem The element to find the React props for.\n" +
+" * @param propName The prop to find.\n" +
+" * @returns The level of the component tree which have given props by name.\n" +
+" */\n" +
+"function findReactProp(elem, propName) {\n" +
+"    let i = 0;\n" +
+"    while (elem) {\n" +
+"        const props = getReactProps(elem, i);\n" +
+"        if (!props)\n" +
+"            break;\n" +
+"        if (props && propName in props)\n" +
+"            return i;\n" +
+"        ++i;\n" +
+"    }\n" +
+"    return null;\n" +
 "}\n" +
 "\n" +
 "function getParam(url, paramName) {\n" +
@@ -311,12 +326,15 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "class Logger extends EventEmitter {\n" +
 "    constructor(name) {\n" +
 "        super();\n" +
-"        const background = textToColor(name ?? this.constructor.name);\n" +
-"        const foreground = contrastScore(background, '#ffffff') > contrastScore(background, '#000000')\n" +
-"            ? '#ffffff' : '#000000';\n" +
-"        this.logColor = { bg: background, fg: foreground };\n" +
+"        this.logggerName = name;\n" +
 "    }\n" +
 "    getStyles() {\n" +
+"        if (!('logColor' in this)) {\n" +
+"            const background = textToColor(this.logggerName ?? this.constructor.name);\n" +
+"            const foreground = contrastScore(background, '#ffffff') > contrastScore(background, '#000000')\n" +
+"                ? '#ffffff' : '#000000';\n" +
+"            this.logColor = { bg: background, fg: foreground };\n" +
+"        }\n" +
 "        return [\n" +
 "            'background: #0b0b31; color: #fff; padding: 0.1em .3em; border-radius: 0.3em 0 0 0.3em;',\n" +
 "            `background: ${this.logColor.bg}; color: ${this.logColor.fg}; padding: 0.1em .3em; border-radius: 0 0.3em 0.3em 0;`,\n" +
@@ -382,10 +400,13 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        apiRequestWait = sleep(3000).then(() => { apiRequestWait = null; });\n" +
 "        return apiRequest(endpoint, data, method);\n" +
 "    }\n" +
-"    if (response.status === 429\n" +
-"        && await response.clone().text() === \"You made too many requests. Time to take a break?\") {\n" +
-"        apiRequestWait = sleep(1000).then(() => { apiRequestWait = null; });\n" +
-"        return apiRequest(endpoint, data, method);\n" +
+"    if (response.status === 204) {\n" +
+"        console.log('API Request: pas de contenu', { endpoint, data, method });\n" +
+"        return null;\n" +
+"    }\n" +
+"    if (response.status === 404) {\n" +
+"        console.log('API Request: page introuvable', { endpoint, data, method });\n" +
+"        return null;\n" +
 "    }\n" +
 "    if (response.status === 422) {\n" +
 "        const message = (await response.clone().json()).message;\n" +
@@ -394,13 +415,14 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            return null;\n" +
 "        }\n" +
 "    }\n" +
-"    if (response.status === 404) {\n" +
-"        console.log('API Request: page introuvable', { endpoint, data, method });\n" +
-"        return null;\n" +
+"    if (response.status === 429\n" +
+"        && await response.clone().text() === \"You made too many requests. Time to take a break?\") {\n" +
+"        apiRequestWait = sleep(1000).then(() => { apiRequestWait = null; });\n" +
+"        return apiRequest(endpoint, data, method);\n" +
 "    }\n" +
 "    if (response.status !== 200) {\n" +
 "        console.log('apiRequest response status is not 200', { response });\n" +
-"        throw new Error('Todo : améliorer le message ci-dessus');\n" +
+"        throw new Error('Todo : Créer un gestionnaire pour le code error status = ' + response.status);\n" +
 "    }\n" +
 "    return response;\n" +
 "}\n" +
@@ -411,287 +433,565 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "Object.assign(window, { apiRequest });\n" +
 "\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
-"const proxyName$a = 'APIDocument';\n" +
-"let obj$a = null;\n" +
+"const proxyName$b = 'APIDocument';\n" +
+"let obj$b = null;\n" +
 "class APIDocument {\n" +
 "    static Parse(d) {\n" +
 "        return APIDocument.Create(JSON.parse(d));\n" +
 "    }\n" +
-"    static Create(d, field) {\n" +
+"    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$a = d;\n" +
+"            obj$b = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            throwNull2NonNull$9(field, d);\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$a(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$9(field, d, false);\n" +
+"            throwNotObject$a(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$9(field, d, false);\n" +
+"            throwIsArray$a(field, d);\n" +
 "        }\n" +
-"        checkNumber$8(d.id, false, field + \".id\");\n" +
-"        checkNumber$8(d.company_id, false, field + \".company_id\");\n" +
-"        checkString$9(d.date, true, field + \".date\");\n" +
-"        checkString$9(d.created_at, false, field + \".created_at\");\n" +
-"        checkString$9(d.updated_at, false, field + \".updated_at\");\n" +
-"        checkString$9(d.archived_at, true, field + \".archived_at\");\n" +
-"        checkString$9(d.type, false, field + \".type\");\n" +
-"        checkString$9(d.source, false, field + \".source\");\n" +
-"        checkBoolean$7(d.draft, false, field + \".draft\");\n" +
-"        checkString$9(d.group_uuid, false, field + \".group_uuid\");\n" +
-"        checkString$9(d.gdrive_path, true, field + \".gdrive_path\");\n" +
-"        checkString$9(d.preview_status, true, field + \".preview_status\");\n" +
-"        checkString$9(d.pusher_channel, false, field + \".pusher_channel\");\n" +
-"        checkNull$5(d.email_from, field + \".email_from\");\n" +
-"        checkNull$5(d.score, field + \".score\");\n" +
-"        checkBoolean$7(d.is_waiting_details, false, field + \".is_waiting_details\");\n" +
-"        checkString$9(d.external_id, false, field + \".external_id\");\n" +
-"        checkNumber$8(d.journal_id, false, field + \".journal_id\");\n" +
-"        checkString$9(d.grouped_at, true, field + \".grouped_at\");\n" +
-"        checkBoolean$7(d.attachment_required, false, field + \".attachment_required\");\n" +
-"        checkBoolean$7(d.attachment_lost, false, field + \".attachment_lost\");\n" +
-"        checkString$9(d.pdf_generation_status, false, field + \".pdf_generation_status\");\n" +
-"        checkNull$5(d.reversal_origin_id, field + \".reversal_origin_id\");\n" +
-"        checkNull$5(d.billing_subscription_id, field + \".billing_subscription_id\");\n" +
-"        checkString$9(d.fec_pieceref, false, field + \".fec_pieceref\");\n" +
-"        checkString$9(d.label, false, field + \".label\");\n" +
-"        checkString$9(d.url, false, field + \".url\");\n" +
-"        checkString$9(d.method, false, field + \".method\");\n" +
-"        checkBoolean$7(d.accounting_type, false, field + \".accounting_type\");\n" +
-"        checkBoolean$7(d.archived, false, field + \".archived\");\n" +
-"        checkBoolean$7(d.quotes, false, field + \".quotes\");\n" +
-"        checkBoolean$7(d.readonly, false, field + \".readonly\");\n" +
-"        checkNumber$8(d.account_id, true, field + \".account_id\");\n" +
-"        checkNumber$8(d.thirdparty_id, true, field + \".thirdparty_id\");\n" +
-"        checkNull$5(d.payment_id, field + \".payment_id\");\n" +
-"        checkString$9(d.amount, false, field + \".amount\");\n" +
-"        checkString$9(d.currency, false, field + \".currency\");\n" +
-"        checkString$9(d.currency_amount, false, field + \".currency_amount\");\n" +
-"        checkString$9(d.outstanding_balance, false, field + \".outstanding_balance\");\n" +
-"        checkNumber$8(d.completeness, true, field + \".completeness\");\n" +
-"        checkString$9(d.gross_amount, true, field + \".gross_amount\");\n" +
-"        checkString$9(d.status, true, field + \".status\");\n" +
-"        checkBoolean$7(d.complete, true, field + \".complete\");\n" +
-"        d.company = Company.Create(d.company, field + \".company\");\n" +
-"        d.scored_invoices = ScoredInvoices.Create(d.scored_invoices, field + \".scored_invoices\");\n" +
+"        if (\"account_id\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkNumber$8(d.account_id, field + \".account_id\", \"number | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.account_id, field + \".account_id\", \"number | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        checkBoolean$7(d.accounting_type, field + \".accounting_type\");\n" +
+"        checkString$9(d.amount, field + \".amount\");\n" +
+"        checkBoolean$7(d.archived, field + \".archived\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$7(d.archived_at, field + \".archived_at\", \"null | string\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkString$9(d.archived_at, field + \".archived_at\", \"null | string\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        checkBoolean$7(d.attachment_lost, field + \".attachment_lost\");\n" +
+"        checkBoolean$7(d.attachment_required, field + \".attachment_required\");\n" +
+"        checkNull$7(d.billing_subscription_id, field + \".billing_subscription_id\");\n" +
+"        if (\"can_be_stamped_as_paid_in_pdf\" in d) {\n" +
+"            checkBoolean$7(d.can_be_stamped_as_paid_in_pdf, field + \".can_be_stamped_as_paid_in_pdf\");\n" +
+"        }\n" +
+"        if (\"company\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                d.company = Company.Create(d.company, field + \".company\", \"Company | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.company, field + \".company\", \"Company | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        checkNumber$8(d.company_id, field + \".company_id\");\n" +
+"        if (\"complete\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkBoolean$7(d.complete, field + \".complete\", \"boolean | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.complete, field + \".complete\", \"boolean | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"completeness\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkNumber$8(d.completeness, field + \".completeness\", \"number | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.completeness, field + \".completeness\", \"number | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        checkString$9(d.created_at, field + \".created_at\");\n" +
+"        if (\"credit_notes_amount\" in d) {\n" +
+"            checkString$9(d.credit_notes_amount, field + \".credit_notes_amount\");\n" +
+"        }\n" +
+"        checkString$9(d.currency, field + \".currency\");\n" +
+"        checkString$9(d.currency_amount, field + \".currency_amount\");\n" +
+"        if (\"currency_amount_before_tax\" in d) {\n" +
+"            checkString$9(d.currency_amount_before_tax, field + \".currency_amount_before_tax\");\n" +
+"        }\n" +
+"        if (\"currency_price_before_tax\" in d) {\n" +
+"            checkString$9(d.currency_price_before_tax, field + \".currency_price_before_tax\");\n" +
+"        }\n" +
+"        if (\"currency_tax\" in d) {\n" +
+"            checkString$9(d.currency_tax, field + \".currency_tax\");\n" +
+"        }\n" +
+"        if (\"custom_payment_reference\" in d) {\n" +
+"            checkString$9(d.custom_payment_reference, field + \".custom_payment_reference\");\n" +
+"        }\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkString$9(d.date, field + \".date\", \"string | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$7(d.date, field + \".date\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"deadline\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkString$9(d.deadline, field + \".deadline\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.deadline, field + \".deadline\", \"string | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"direction\" in d) {\n" +
+"            checkString$9(d.direction, field + \".direction\");\n" +
+"        }\n" +
+"        if (\"discount\" in d) {\n" +
+"            checkString$9(d.discount, field + \".discount\");\n" +
+"        }\n" +
+"        if (\"discount_type\" in d) {\n" +
+"            checkString$9(d.discount_type, field + \".discount_type\");\n" +
+"        }\n" +
+"        checkBoolean$7(d.draft, field + \".draft\");\n" +
+"        checkNull$7(d.email_from, field + \".email_from\");\n" +
+"        if (\"estimate_status\" in d) {\n" +
+"            checkNull$7(d.estimate_status, field + \".estimate_status\");\n" +
+"        }\n" +
+"        checkString$9(d.external_id, field + \".external_id\");\n" +
+"        if (\"factor_status\" in d) {\n" +
+"            checkString$9(d.factor_status, field + \".factor_status\");\n" +
+"        }\n" +
+"        checkString$9(d.fec_pieceref, field + \".fec_pieceref\");\n" +
+"        if (\"finalized_at\" in d) {\n" +
+"            checkNull$7(d.finalized_at, field + \".finalized_at\");\n" +
+"        }\n" +
+"        if (\"from_estimate_id\" in d) {\n" +
+"            checkNull$7(d.from_estimate_id, field + \".from_estimate_id\");\n" +
+"        }\n" +
+"        if (\"future_in_days\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkNumber$8(d.future_in_days, field + \".future_in_days\", \"number | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.future_in_days, field + \".future_in_days\", \"number | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$7(d.gdrive_path, field + \".gdrive_path\", \"null | string\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkString$9(d.gdrive_path, field + \".gdrive_path\", \"null | string\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"gross_amount\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkString$9(d.gross_amount, field + \".gross_amount\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.gross_amount, field + \".gross_amount\", \"string | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        checkString$9(d.group_uuid, field + \".group_uuid\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$7(d.grouped_at, field + \".grouped_at\", \"null | string\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkString$9(d.grouped_at, field + \".grouped_at\", \"null | string\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
 "        checkArray$5(d.grouped_documents, field + \".grouped_documents\");\n" +
 "        if (d.grouped_documents) {\n" +
 "            for (let i = 0; i < d.grouped_documents.length; i++) {\n" +
-"                d.grouped_documents[i] = GroupedDocumentsEntity.Create(d.grouped_documents[i], field + \".grouped_documents\" + \"[\" + i + \"]\");\n" +
+"                d.grouped_documents[i] = GroupedDocumentsEntity.Create(d.grouped_documents[i], field + \".grouped_documents\" + \"[\" + i + \"]\", undefined);\n" +
 "            }\n" +
 "        }\n" +
-"        checkBoolean$7(d.is_waiting_for_ocr, true, field + \".is_waiting_for_ocr\");\n" +
-"        checkNumber$8(d.ocr_thirdparty_id, true, field + \".ocr_thirdparty_id\");\n" +
-"        checkString$9(d.direction, true, field + \".direction\");\n" +
-"        checkString$9(d.deadline, true, field + \".deadline\");\n" +
-"        checkNumber$8(d.multiplier, true, field + \".multiplier\");\n" +
-"        checkString$9(d.price_before_tax, true, field + \".price_before_tax\");\n" +
-"        checkNull$5(d.quote_uid, field + \".quote_uid\");\n" +
-"        checkNull$5(d.special_mention, field + \".special_mention\");\n" +
-"        checkBoolean$7(d.not_duplicate, true, field + \".not_duplicate\");\n" +
-"        checkBoolean$7(d.validation_needed, true, field + \".validation_needed\");\n" +
-"        checkString$9(d.currency_tax, true, field + \".currency_tax\");\n" +
-"        checkString$9(d.currency_price_before_tax, true, field + \".currency_price_before_tax\");\n" +
-"        checkString$9(d.language, true, field + \".language\");\n" +
-"        checkString$9(d.payment_status, true, field + \".payment_status\");\n" +
-"        checkNull$5(d.payment_method, field + \".payment_method\");\n" +
-"        checkString$9(d.invoice_number, true, field + \".invoice_number\");\n" +
-"        checkString$9(d.tax, true, field + \".tax\");\n" +
-"        checkNull$5(d.estimate_status, field + \".estimate_status\");\n" +
-"        checkString$9(d.iban, true, field + \".iban\");\n" +
-"        checkBoolean$7(d.paid, true, field + \".paid\");\n" +
-"        checkNumber$8(d.future_in_days, true, field + \".future_in_days\");\n" +
-"        checkString$9(d.discount, true, field + \".discount\");\n" +
-"        checkString$9(d.discount_type, true, field + \".discount_type\");\n" +
-"        checkNull$5(d.finalized_at, field + \".finalized_at\");\n" +
-"        checkString$9(d.quote_group_uuid, true, field + \".quote_group_uuid\");\n" +
-"        checkString$9(d.factor_status, true, field + \".factor_status\");\n" +
-"        checkString$9(d.currency_amount_before_tax, true, field + \".currency_amount_before_tax\");\n" +
-"        checkNull$5(d.from_estimate_id, field + \".from_estimate_id\");\n" +
-"        checkString$9(d.credit_notes_amount, true, field + \".credit_notes_amount\");\n" +
-"        checkBoolean$7(d.payment_reminder_enabled, true, field + \".payment_reminder_enabled\");\n" +
-"        checkString$9(d.payment_reference, true, field + \".payment_reference\");\n" +
-"        checkBoolean$7(d.is_credit_note, true, field + \".is_credit_note\");\n" +
-"        checkBoolean$7(d.is_estimate, true, field + \".is_estimate\");\n" +
-"        checkBoolean$7(d.is_destroyable, true, field + \".is_destroyable\");\n" +
-"        checkBoolean$7(d.can_be_stamped_as_paid_in_pdf, true, field + \".can_be_stamped_as_paid_in_pdf\");\n" +
-"        checkString$9(d.custom_payment_reference, true, field + \".custom_payment_reference\");\n" +
-"        checkArray$5(d.scored_transactions, field + \".scored_transactions\");\n" +
-"        if (d.scored_transactions) {\n" +
-"            for (let i = 0; i < d.scored_transactions.length; i++) {\n" +
-"                checkNull$5(d.scored_transactions[i], field + \".scored_transactions\" + \"[\" + i + \"]\");\n" +
+"        if (\"iban\" in d) {\n" +
+"            checkString$9(d.iban, field + \".iban\");\n" +
+"        }\n" +
+"        checkNumber$8(d.id, field + \".id\");\n" +
+"        if (\"invoice_kind\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkNull$7(d.invoice_kind, field + \".invoice_kind\", \"null | string\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkString$9(d.invoice_kind, field + \".invoice_kind\", \"null | string\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkArray$5(d.recipients, field + \".recipients\");\n" +
-"        if (d.recipients) {\n" +
-"            for (let i = 0; i < d.recipients.length; i++) {\n" +
-"                checkNull$5(d.recipients[i], field + \".recipients\" + \"[\" + i + \"]\");\n" +
+"        if (\"invoice_number\" in d) {\n" +
+"            checkString$9(d.invoice_number, field + \".invoice_number\");\n" +
+"        }\n" +
+"        if (\"invoicing_detailed_source\" in d) {\n" +
+"            checkNull$7(d.invoicing_detailed_source, field + \".invoicing_detailed_source\");\n" +
+"        }\n" +
+"        if (\"is_credit_note\" in d) {\n" +
+"            checkBoolean$7(d.is_credit_note, field + \".is_credit_note\");\n" +
+"        }\n" +
+"        if (\"is_destroyable\" in d) {\n" +
+"            checkBoolean$7(d.is_destroyable, field + \".is_destroyable\");\n" +
+"        }\n" +
+"        if (\"is_estimate\" in d) {\n" +
+"            checkBoolean$7(d.is_estimate, field + \".is_estimate\");\n" +
+"        }\n" +
+"        checkBoolean$7(d.is_waiting_details, field + \".is_waiting_details\");\n" +
+"        if (\"is_waiting_for_ocr\" in d) {\n" +
+"            checkBoolean$7(d.is_waiting_for_ocr, field + \".is_waiting_for_ocr\");\n" +
+"        }\n" +
+"        checkNumber$8(d.journal_id, field + \".journal_id\");\n" +
+"        checkString$9(d.label, field + \".label\");\n" +
+"        if (\"language\" in d) {\n" +
+"            checkString$9(d.language, field + \".language\");\n" +
+"        }\n" +
+"        if (\"manual_partial_invoices\" in d) {\n" +
+"            checkBoolean$7(d.manual_partial_invoices, field + \".manual_partial_invoices\");\n" +
+"        }\n" +
+"        checkString$9(d.method, field + \".method\");\n" +
+"        if (\"multiplier\" in d) {\n" +
+"            checkNumber$8(d.multiplier, field + \".multiplier\");\n" +
+"        }\n" +
+"        if (\"not_duplicate\" in d) {\n" +
+"            checkBoolean$7(d.not_duplicate, field + \".not_duplicate\");\n" +
+"        }\n" +
+"        if (\"ocr_thirdparty_id\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkNull$7(d.ocr_thirdparty_id, field + \".ocr_thirdparty_id\", \"null | number\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNumber$8(d.ocr_thirdparty_id, field + \".ocr_thirdparty_id\", \"null | number\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkString$9(d.invoice_kind, true, field + \".invoice_kind\");\n" +
-"        checkString$9(d.pdf_invoice_title, true, field + \".pdf_invoice_title\");\n" +
-"        checkString$9(d.pdf_invoice_free_text, true, field + \".pdf_invoice_free_text\");\n" +
-"        checkBoolean$7(d.pdf_invoice_free_text_enabled, true, field + \".pdf_invoice_free_text_enabled\");\n" +
-"        checkString$9(d.pdf_invoice_subject, true, field + \".pdf_invoice_subject\");\n" +
-"        checkBoolean$7(d.pdf_invoice_subject_enabled, true, field + \".pdf_invoice_subject_enabled\");\n" +
-"        checkBoolean$7(d.pdf_invoice_display_products_list, true, field + \".pdf_invoice_display_products_list\");\n" +
-"        checkBoolean$7(d.pdf_paid_stamp, true, field + \".pdf_paid_stamp\");\n" +
-"        checkNull$5(d.invoicing_detailed_source, field + \".invoicing_detailed_source\");\n" +
-"        checkBoolean$7(d.manual_partial_invoices, true, field + \".manual_partial_invoices\");\n" +
-"        const knownProperties = [\"id\", \"company_id\", \"date\", \"created_at\", \"updated_at\", \"archived_at\", \"type\", \"source\", \"draft\", \"group_uuid\", \"gdrive_path\", \"preview_status\", \"pusher_channel\", \"email_from\", \"score\", \"is_waiting_details\", \"external_id\", \"journal_id\", \"grouped_at\", \"attachment_required\", \"attachment_lost\", \"pdf_generation_status\", \"reversal_origin_id\", \"billing_subscription_id\", \"fec_pieceref\", \"label\", \"url\", \"method\", \"accounting_type\", \"archived\", \"quotes\", \"readonly\", \"account_id\", \"thirdparty_id\", \"payment_id\", \"amount\", \"currency\", \"currency_amount\", \"outstanding_balance\", \"completeness\", \"gross_amount\", \"status\", \"complete\", \"company\", \"scored_invoices\", \"grouped_documents\", \"is_waiting_for_ocr\", \"ocr_thirdparty_id\", \"direction\", \"deadline\", \"multiplier\", \"price_before_tax\", \"quote_uid\", \"special_mention\", \"not_duplicate\", \"validation_needed\", \"currency_tax\", \"currency_price_before_tax\", \"language\", \"payment_status\", \"payment_method\", \"invoice_number\", \"tax\", \"estimate_status\", \"iban\", \"paid\", \"future_in_days\", \"discount\", \"discount_type\", \"finalized_at\", \"quote_group_uuid\", \"factor_status\", \"currency_amount_before_tax\", \"from_estimate_id\", \"credit_notes_amount\", \"payment_reminder_enabled\", \"payment_reference\", \"is_credit_note\", \"is_estimate\", \"is_destroyable\", \"can_be_stamped_as_paid_in_pdf\", \"custom_payment_reference\", \"scored_transactions\", \"recipients\", \"invoice_kind\", \"pdf_invoice_title\", \"pdf_invoice_free_text\", \"pdf_invoice_free_text_enabled\", \"pdf_invoice_subject\", \"pdf_invoice_subject_enabled\", \"pdf_invoice_display_products_list\", \"pdf_paid_stamp\", \"invoicing_detailed_source\", \"manual_partial_invoices\"];\n" +
+"        checkString$9(d.outstanding_balance, field + \".outstanding_balance\");\n" +
+"        if (\"paid\" in d) {\n" +
+"            checkBoolean$7(d.paid, field + \".paid\");\n" +
+"        }\n" +
+"        if (\"payment_id\" in d) {\n" +
+"            checkNull$7(d.payment_id, field + \".payment_id\");\n" +
+"        }\n" +
+"        if (\"payment_method\" in d) {\n" +
+"            checkNull$7(d.payment_method, field + \".payment_method\");\n" +
+"        }\n" +
+"        if (\"payment_reference\" in d) {\n" +
+"            checkString$9(d.payment_reference, field + \".payment_reference\");\n" +
+"        }\n" +
+"        if (\"payment_reminder_enabled\" in d) {\n" +
+"            checkBoolean$7(d.payment_reminder_enabled, field + \".payment_reminder_enabled\");\n" +
+"        }\n" +
+"        if (\"payment_status\" in d) {\n" +
+"            checkString$9(d.payment_status, field + \".payment_status\");\n" +
+"        }\n" +
+"        checkString$9(d.pdf_generation_status, field + \".pdf_generation_status\");\n" +
+"        if (\"pdf_invoice_display_products_list\" in d) {\n" +
+"            checkBoolean$7(d.pdf_invoice_display_products_list, field + \".pdf_invoice_display_products_list\");\n" +
+"        }\n" +
+"        if (\"pdf_invoice_free_text\" in d) {\n" +
+"            checkString$9(d.pdf_invoice_free_text, field + \".pdf_invoice_free_text\");\n" +
+"        }\n" +
+"        if (\"pdf_invoice_free_text_enabled\" in d) {\n" +
+"            checkBoolean$7(d.pdf_invoice_free_text_enabled, field + \".pdf_invoice_free_text_enabled\");\n" +
+"        }\n" +
+"        if (\"pdf_invoice_subject\" in d) {\n" +
+"            checkString$9(d.pdf_invoice_subject, field + \".pdf_invoice_subject\");\n" +
+"        }\n" +
+"        if (\"pdf_invoice_subject_enabled\" in d) {\n" +
+"            checkBoolean$7(d.pdf_invoice_subject_enabled, field + \".pdf_invoice_subject_enabled\");\n" +
+"        }\n" +
+"        if (\"pdf_invoice_title\" in d) {\n" +
+"            checkString$9(d.pdf_invoice_title, field + \".pdf_invoice_title\");\n" +
+"        }\n" +
+"        if (\"pdf_paid_stamp\" in d) {\n" +
+"            checkBoolean$7(d.pdf_paid_stamp, field + \".pdf_paid_stamp\");\n" +
+"        }\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$7(d.preview_status, field + \".preview_status\", \"null | string\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkString$9(d.preview_status, field + \".preview_status\", \"null | string\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"price_before_tax\" in d) {\n" +
+"            checkString$9(d.price_before_tax, field + \".price_before_tax\");\n" +
+"        }\n" +
+"        checkString$9(d.pusher_channel, field + \".pusher_channel\");\n" +
+"        if (\"quote_group_uuid\" in d) {\n" +
+"            checkString$9(d.quote_group_uuid, field + \".quote_group_uuid\");\n" +
+"        }\n" +
+"        if (\"quote_uid\" in d) {\n" +
+"            checkNull$7(d.quote_uid, field + \".quote_uid\");\n" +
+"        }\n" +
+"        checkBoolean$7(d.quotes, field + \".quotes\");\n" +
+"        checkBoolean$7(d.readonly, field + \".readonly\");\n" +
+"        if (\"recipients\" in d) {\n" +
+"            checkArray$5(d.recipients, field + \".recipients\");\n" +
+"            if (d.recipients) {\n" +
+"                for (let i = 0; i < d.recipients.length; i++) {\n" +
+"                    checkNever$3(d.recipients[i], field + \".recipients\" + \"[\" + i + \"]\");\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        checkNull$7(d.reversal_origin_id, field + \".reversal_origin_id\");\n" +
+"        checkNull$7(d.score, field + \".score\");\n" +
+"        if (\"scored_invoices\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                d.scored_invoices = ScoredInvoices.Create(d.scored_invoices, field + \".scored_invoices\", \"ScoredInvoices | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.scored_invoices, field + \".scored_invoices\", \"ScoredInvoices | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"scored_transactions\" in d) {\n" +
+"            checkArray$5(d.scored_transactions, field + \".scored_transactions\");\n" +
+"            if (d.scored_transactions) {\n" +
+"                for (let i = 0; i < d.scored_transactions.length; i++) {\n" +
+"                    checkNever$3(d.scored_transactions[i], field + \".scored_transactions\" + \"[\" + i + \"]\");\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        checkString$9(d.source, field + \".source\");\n" +
+"        if (\"special_mention\" in d) {\n" +
+"            checkNull$7(d.special_mention, field + \".special_mention\");\n" +
+"        }\n" +
+"        if (\"status\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkString$9(d.status, field + \".status\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.status, field + \".status\", \"string | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"tax\" in d) {\n" +
+"            checkString$9(d.tax, field + \".tax\");\n" +
+"        }\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$7(d.thirdparty_id, field + \".thirdparty_id\", \"null | number\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNumber$8(d.thirdparty_id, field + \".thirdparty_id\", \"null | number\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        checkString$9(d.type, field + \".type\");\n" +
+"        checkString$9(d.updated_at, field + \".updated_at\");\n" +
+"        checkString$9(d.url, field + \".url\");\n" +
+"        if (\"validation_needed\" in d) {\n" +
+"            checkBoolean$7(d.validation_needed, field + \".validation_needed\");\n" +
+"        }\n" +
+"        const knownProperties = [\"account_id\", \"accounting_type\", \"amount\", \"archived\", \"archived_at\", \"attachment_lost\", \"attachment_required\", \"billing_subscription_id\", \"can_be_stamped_as_paid_in_pdf\", \"company\", \"company_id\", \"complete\", \"completeness\", \"created_at\", \"credit_notes_amount\", \"currency\", \"currency_amount\", \"currency_amount_before_tax\", \"currency_price_before_tax\", \"currency_tax\", \"custom_payment_reference\", \"date\", \"deadline\", \"direction\", \"discount\", \"discount_type\", \"draft\", \"email_from\", \"estimate_status\", \"external_id\", \"factor_status\", \"fec_pieceref\", \"finalized_at\", \"from_estimate_id\", \"future_in_days\", \"gdrive_path\", \"gross_amount\", \"group_uuid\", \"grouped_at\", \"grouped_documents\", \"iban\", \"id\", \"invoice_kind\", \"invoice_number\", \"invoicing_detailed_source\", \"is_credit_note\", \"is_destroyable\", \"is_estimate\", \"is_waiting_details\", \"is_waiting_for_ocr\", \"journal_id\", \"label\", \"language\", \"manual_partial_invoices\", \"method\", \"multiplier\", \"not_duplicate\", \"ocr_thirdparty_id\", \"outstanding_balance\", \"paid\", \"payment_id\", \"payment_method\", \"payment_reference\", \"payment_reminder_enabled\", \"payment_status\", \"pdf_generation_status\", \"pdf_invoice_display_products_list\", \"pdf_invoice_free_text\", \"pdf_invoice_free_text_enabled\", \"pdf_invoice_subject\", \"pdf_invoice_subject_enabled\", \"pdf_invoice_title\", \"pdf_paid_stamp\", \"preview_status\", \"price_before_tax\", \"pusher_channel\", \"quote_group_uuid\", \"quote_uid\", \"quotes\", \"readonly\", \"recipients\", \"reversal_origin_id\", \"score\", \"scored_invoices\", \"scored_transactions\", \"source\", \"special_mention\", \"status\", \"tax\", \"thirdparty_id\", \"type\", \"updated_at\", \"url\", \"validation_needed\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$a(unknownProperty, d, \"never\", false);\n" +
+"            errorHelper$b(unknownProperty, d, \"never (unknown property)\");\n" +
 "        return new APIDocument(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
-"        this.id = d.id;\n" +
-"        this.company_id = d.company_id;\n" +
-"        if (\"date\" in d)\n" +
-"            this.date = d.date;\n" +
-"        this.created_at = d.created_at;\n" +
-"        this.updated_at = d.updated_at;\n" +
-"        if (\"archived_at\" in d)\n" +
-"            this.archived_at = d.archived_at;\n" +
-"        this.type = d.type;\n" +
-"        this.source = d.source;\n" +
-"        this.draft = d.draft;\n" +
-"        this.group_uuid = d.group_uuid;\n" +
-"        if (\"gdrive_path\" in d)\n" +
-"            this.gdrive_path = d.gdrive_path;\n" +
-"        if (\"preview_status\" in d)\n" +
-"            this.preview_status = d.preview_status;\n" +
-"        this.pusher_channel = d.pusher_channel;\n" +
-"        if (\"email_from\" in d)\n" +
-"            this.email_from = d.email_from;\n" +
-"        if (\"score\" in d)\n" +
-"            this.score = d.score;\n" +
-"        this.is_waiting_details = d.is_waiting_details;\n" +
-"        this.external_id = d.external_id;\n" +
-"        this.journal_id = d.journal_id;\n" +
-"        if (\"grouped_at\" in d)\n" +
-"            this.grouped_at = d.grouped_at;\n" +
-"        this.attachment_required = d.attachment_required;\n" +
-"        this.attachment_lost = d.attachment_lost;\n" +
-"        this.pdf_generation_status = d.pdf_generation_status;\n" +
-"        if (\"reversal_origin_id\" in d)\n" +
-"            this.reversal_origin_id = d.reversal_origin_id;\n" +
-"        if (\"billing_subscription_id\" in d)\n" +
-"            this.billing_subscription_id = d.billing_subscription_id;\n" +
-"        this.fec_pieceref = d.fec_pieceref;\n" +
-"        this.label = d.label;\n" +
-"        this.url = d.url;\n" +
-"        this.method = d.method;\n" +
-"        this.accounting_type = d.accounting_type;\n" +
-"        this.archived = d.archived;\n" +
-"        this.quotes = d.quotes;\n" +
-"        this.readonly = d.readonly;\n" +
 "        if (\"account_id\" in d)\n" +
 "            this.account_id = d.account_id;\n" +
-"        if (\"thirdparty_id\" in d)\n" +
-"            this.thirdparty_id = d.thirdparty_id;\n" +
-"        if (\"payment_id\" in d)\n" +
-"            this.payment_id = d.payment_id;\n" +
+"        this.accounting_type = d.accounting_type;\n" +
 "        this.amount = d.amount;\n" +
-"        this.currency = d.currency;\n" +
-"        this.currency_amount = d.currency_amount;\n" +
-"        this.outstanding_balance = d.outstanding_balance;\n" +
-"        if (\"completeness\" in d)\n" +
-"            this.completeness = d.completeness;\n" +
-"        if (\"gross_amount\" in d)\n" +
-"            this.gross_amount = d.gross_amount;\n" +
-"        if (\"status\" in d)\n" +
-"            this.status = d.status;\n" +
-"        if (\"complete\" in d)\n" +
-"            this.complete = d.complete;\n" +
+"        this.archived = d.archived;\n" +
+"        this.archived_at = d.archived_at;\n" +
+"        this.attachment_lost = d.attachment_lost;\n" +
+"        this.attachment_required = d.attachment_required;\n" +
+"        this.billing_subscription_id = d.billing_subscription_id;\n" +
+"        if (\"can_be_stamped_as_paid_in_pdf\" in d)\n" +
+"            this.can_be_stamped_as_paid_in_pdf = d.can_be_stamped_as_paid_in_pdf;\n" +
 "        if (\"company\" in d)\n" +
 "            this.company = d.company;\n" +
-"        if (\"scored_invoices\" in d)\n" +
-"            this.scored_invoices = d.scored_invoices;\n" +
-"        if (\"grouped_documents\" in d)\n" +
-"            this.grouped_documents = d.grouped_documents;\n" +
-"        if (\"is_waiting_for_ocr\" in d)\n" +
-"            this.is_waiting_for_ocr = d.is_waiting_for_ocr;\n" +
-"        if (\"ocr_thirdparty_id\" in d)\n" +
-"            this.ocr_thirdparty_id = d.ocr_thirdparty_id;\n" +
-"        if (\"direction\" in d)\n" +
-"            this.direction = d.direction;\n" +
-"        if (\"deadline\" in d)\n" +
-"            this.deadline = d.deadline;\n" +
-"        if (\"multiplier\" in d)\n" +
-"            this.multiplier = d.multiplier;\n" +
-"        if (\"price_before_tax\" in d)\n" +
-"            this.price_before_tax = d.price_before_tax;\n" +
-"        if (\"quote_uid\" in d)\n" +
-"            this.quote_uid = d.quote_uid;\n" +
-"        if (\"special_mention\" in d)\n" +
-"            this.special_mention = d.special_mention;\n" +
-"        if (\"not_duplicate\" in d)\n" +
-"            this.not_duplicate = d.not_duplicate;\n" +
-"        if (\"validation_needed\" in d)\n" +
-"            this.validation_needed = d.validation_needed;\n" +
-"        if (\"currency_tax\" in d)\n" +
-"            this.currency_tax = d.currency_tax;\n" +
+"        this.company_id = d.company_id;\n" +
+"        if (\"complete\" in d)\n" +
+"            this.complete = d.complete;\n" +
+"        if (\"completeness\" in d)\n" +
+"            this.completeness = d.completeness;\n" +
+"        this.created_at = d.created_at;\n" +
+"        if (\"credit_notes_amount\" in d)\n" +
+"            this.credit_notes_amount = d.credit_notes_amount;\n" +
+"        this.currency = d.currency;\n" +
+"        this.currency_amount = d.currency_amount;\n" +
+"        if (\"currency_amount_before_tax\" in d)\n" +
+"            this.currency_amount_before_tax = d.currency_amount_before_tax;\n" +
 "        if (\"currency_price_before_tax\" in d)\n" +
 "            this.currency_price_before_tax = d.currency_price_before_tax;\n" +
-"        if (\"language\" in d)\n" +
-"            this.language = d.language;\n" +
-"        if (\"payment_status\" in d)\n" +
-"            this.payment_status = d.payment_status;\n" +
-"        if (\"payment_method\" in d)\n" +
-"            this.payment_method = d.payment_method;\n" +
-"        if (\"invoice_number\" in d)\n" +
-"            this.invoice_number = d.invoice_number;\n" +
-"        if (\"tax\" in d)\n" +
-"            this.tax = d.tax;\n" +
-"        if (\"estimate_status\" in d)\n" +
-"            this.estimate_status = d.estimate_status;\n" +
-"        if (\"iban\" in d)\n" +
-"            this.iban = d.iban;\n" +
-"        if (\"paid\" in d)\n" +
-"            this.paid = d.paid;\n" +
-"        if (\"future_in_days\" in d)\n" +
-"            this.future_in_days = d.future_in_days;\n" +
+"        if (\"currency_tax\" in d)\n" +
+"            this.currency_tax = d.currency_tax;\n" +
+"        if (\"custom_payment_reference\" in d)\n" +
+"            this.custom_payment_reference = d.custom_payment_reference;\n" +
+"        this.date = d.date;\n" +
+"        if (\"deadline\" in d)\n" +
+"            this.deadline = d.deadline;\n" +
+"        if (\"direction\" in d)\n" +
+"            this.direction = d.direction;\n" +
 "        if (\"discount\" in d)\n" +
 "            this.discount = d.discount;\n" +
 "        if (\"discount_type\" in d)\n" +
 "            this.discount_type = d.discount_type;\n" +
-"        if (\"finalized_at\" in d)\n" +
-"            this.finalized_at = d.finalized_at;\n" +
-"        if (\"quote_group_uuid\" in d)\n" +
-"            this.quote_group_uuid = d.quote_group_uuid;\n" +
+"        this.draft = d.draft;\n" +
+"        this.email_from = d.email_from;\n" +
+"        if (\"estimate_status\" in d)\n" +
+"            this.estimate_status = d.estimate_status;\n" +
+"        this.external_id = d.external_id;\n" +
 "        if (\"factor_status\" in d)\n" +
 "            this.factor_status = d.factor_status;\n" +
-"        if (\"currency_amount_before_tax\" in d)\n" +
-"            this.currency_amount_before_tax = d.currency_amount_before_tax;\n" +
+"        this.fec_pieceref = d.fec_pieceref;\n" +
+"        if (\"finalized_at\" in d)\n" +
+"            this.finalized_at = d.finalized_at;\n" +
 "        if (\"from_estimate_id\" in d)\n" +
 "            this.from_estimate_id = d.from_estimate_id;\n" +
-"        if (\"credit_notes_amount\" in d)\n" +
-"            this.credit_notes_amount = d.credit_notes_amount;\n" +
-"        if (\"payment_reminder_enabled\" in d)\n" +
-"            this.payment_reminder_enabled = d.payment_reminder_enabled;\n" +
-"        if (\"payment_reference\" in d)\n" +
-"            this.payment_reference = d.payment_reference;\n" +
-"        if (\"is_credit_note\" in d)\n" +
-"            this.is_credit_note = d.is_credit_note;\n" +
-"        if (\"is_estimate\" in d)\n" +
-"            this.is_estimate = d.is_estimate;\n" +
-"        if (\"is_destroyable\" in d)\n" +
-"            this.is_destroyable = d.is_destroyable;\n" +
-"        if (\"can_be_stamped_as_paid_in_pdf\" in d)\n" +
-"            this.can_be_stamped_as_paid_in_pdf = d.can_be_stamped_as_paid_in_pdf;\n" +
-"        if (\"custom_payment_reference\" in d)\n" +
-"            this.custom_payment_reference = d.custom_payment_reference;\n" +
-"        if (\"scored_transactions\" in d)\n" +
-"            this.scored_transactions = d.scored_transactions;\n" +
-"        if (\"recipients\" in d)\n" +
-"            this.recipients = d.recipients;\n" +
+"        if (\"future_in_days\" in d)\n" +
+"            this.future_in_days = d.future_in_days;\n" +
+"        this.gdrive_path = d.gdrive_path;\n" +
+"        if (\"gross_amount\" in d)\n" +
+"            this.gross_amount = d.gross_amount;\n" +
+"        this.group_uuid = d.group_uuid;\n" +
+"        this.grouped_at = d.grouped_at;\n" +
+"        this.grouped_documents = d.grouped_documents;\n" +
+"        if (\"iban\" in d)\n" +
+"            this.iban = d.iban;\n" +
+"        this.id = d.id;\n" +
 "        if (\"invoice_kind\" in d)\n" +
 "            this.invoice_kind = d.invoice_kind;\n" +
-"        if (\"pdf_invoice_title\" in d)\n" +
-"            this.pdf_invoice_title = d.pdf_invoice_title;\n" +
+"        if (\"invoice_number\" in d)\n" +
+"            this.invoice_number = d.invoice_number;\n" +
+"        if (\"invoicing_detailed_source\" in d)\n" +
+"            this.invoicing_detailed_source = d.invoicing_detailed_source;\n" +
+"        if (\"is_credit_note\" in d)\n" +
+"            this.is_credit_note = d.is_credit_note;\n" +
+"        if (\"is_destroyable\" in d)\n" +
+"            this.is_destroyable = d.is_destroyable;\n" +
+"        if (\"is_estimate\" in d)\n" +
+"            this.is_estimate = d.is_estimate;\n" +
+"        this.is_waiting_details = d.is_waiting_details;\n" +
+"        if (\"is_waiting_for_ocr\" in d)\n" +
+"            this.is_waiting_for_ocr = d.is_waiting_for_ocr;\n" +
+"        this.journal_id = d.journal_id;\n" +
+"        this.label = d.label;\n" +
+"        if (\"language\" in d)\n" +
+"            this.language = d.language;\n" +
+"        if (\"manual_partial_invoices\" in d)\n" +
+"            this.manual_partial_invoices = d.manual_partial_invoices;\n" +
+"        this.method = d.method;\n" +
+"        if (\"multiplier\" in d)\n" +
+"            this.multiplier = d.multiplier;\n" +
+"        if (\"not_duplicate\" in d)\n" +
+"            this.not_duplicate = d.not_duplicate;\n" +
+"        if (\"ocr_thirdparty_id\" in d)\n" +
+"            this.ocr_thirdparty_id = d.ocr_thirdparty_id;\n" +
+"        this.outstanding_balance = d.outstanding_balance;\n" +
+"        if (\"paid\" in d)\n" +
+"            this.paid = d.paid;\n" +
+"        if (\"payment_id\" in d)\n" +
+"            this.payment_id = d.payment_id;\n" +
+"        if (\"payment_method\" in d)\n" +
+"            this.payment_method = d.payment_method;\n" +
+"        if (\"payment_reference\" in d)\n" +
+"            this.payment_reference = d.payment_reference;\n" +
+"        if (\"payment_reminder_enabled\" in d)\n" +
+"            this.payment_reminder_enabled = d.payment_reminder_enabled;\n" +
+"        if (\"payment_status\" in d)\n" +
+"            this.payment_status = d.payment_status;\n" +
+"        this.pdf_generation_status = d.pdf_generation_status;\n" +
+"        if (\"pdf_invoice_display_products_list\" in d)\n" +
+"            this.pdf_invoice_display_products_list = d.pdf_invoice_display_products_list;\n" +
 "        if (\"pdf_invoice_free_text\" in d)\n" +
 "            this.pdf_invoice_free_text = d.pdf_invoice_free_text;\n" +
 "        if (\"pdf_invoice_free_text_enabled\" in d)\n" +
@@ -700,432 +1000,1354 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            this.pdf_invoice_subject = d.pdf_invoice_subject;\n" +
 "        if (\"pdf_invoice_subject_enabled\" in d)\n" +
 "            this.pdf_invoice_subject_enabled = d.pdf_invoice_subject_enabled;\n" +
-"        if (\"pdf_invoice_display_products_list\" in d)\n" +
-"            this.pdf_invoice_display_products_list = d.pdf_invoice_display_products_list;\n" +
+"        if (\"pdf_invoice_title\" in d)\n" +
+"            this.pdf_invoice_title = d.pdf_invoice_title;\n" +
 "        if (\"pdf_paid_stamp\" in d)\n" +
 "            this.pdf_paid_stamp = d.pdf_paid_stamp;\n" +
-"        if (\"invoicing_detailed_source\" in d)\n" +
-"            this.invoicing_detailed_source = d.invoicing_detailed_source;\n" +
-"        if (\"manual_partial_invoices\" in d)\n" +
-"            this.manual_partial_invoices = d.manual_partial_invoices;\n" +
+"        this.preview_status = d.preview_status;\n" +
+"        if (\"price_before_tax\" in d)\n" +
+"            this.price_before_tax = d.price_before_tax;\n" +
+"        this.pusher_channel = d.pusher_channel;\n" +
+"        if (\"quote_group_uuid\" in d)\n" +
+"            this.quote_group_uuid = d.quote_group_uuid;\n" +
+"        if (\"quote_uid\" in d)\n" +
+"            this.quote_uid = d.quote_uid;\n" +
+"        this.quotes = d.quotes;\n" +
+"        this.readonly = d.readonly;\n" +
+"        if (\"recipients\" in d)\n" +
+"            this.recipients = d.recipients;\n" +
+"        this.reversal_origin_id = d.reversal_origin_id;\n" +
+"        this.score = d.score;\n" +
+"        if (\"scored_invoices\" in d)\n" +
+"            this.scored_invoices = d.scored_invoices;\n" +
+"        if (\"scored_transactions\" in d)\n" +
+"            this.scored_transactions = d.scored_transactions;\n" +
+"        this.source = d.source;\n" +
+"        if (\"special_mention\" in d)\n" +
+"            this.special_mention = d.special_mention;\n" +
+"        if (\"status\" in d)\n" +
+"            this.status = d.status;\n" +
+"        if (\"tax\" in d)\n" +
+"            this.tax = d.tax;\n" +
+"        this.thirdparty_id = d.thirdparty_id;\n" +
+"        this.type = d.type;\n" +
+"        this.updated_at = d.updated_at;\n" +
+"        this.url = d.url;\n" +
+"        if (\"validation_needed\" in d)\n" +
+"            this.validation_needed = d.validation_needed;\n" +
 "    }\n" +
 "}\n" +
 "class Company {\n" +
 "    static Parse(d) {\n" +
 "        return Company.Create(JSON.parse(d));\n" +
 "    }\n" +
-"    static Create(d, field) {\n" +
+"    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$a = d;\n" +
+"            obj$b = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            return null;\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$a(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$9(field, d, true);\n" +
+"            throwNotObject$a(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$9(field, d, true);\n" +
+"            throwIsArray$a(field, d);\n" +
 "        }\n" +
-"        checkString$9(d.name, false, field + \".name\");\n" +
+"        checkString$9(d.name, field + \".name\");\n" +
 "        const knownProperties = [\"name\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$a(unknownProperty, d, \"never\", false);\n" +
+"            errorHelper$b(unknownProperty, d, \"never (unknown property)\");\n" +
 "        return new Company(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
 "        this.name = d.name;\n" +
 "    }\n" +
 "}\n" +
-"class ScoredInvoices {\n" +
-"    static Parse(d) {\n" +
-"        return ScoredInvoices.Create(JSON.parse(d));\n" +
-"    }\n" +
-"    static Create(d, field) {\n" +
-"        if (!field) {\n" +
-"            obj$a = d;\n" +
-"            field = \"root\";\n" +
-"        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            return null;\n" +
-"        }\n" +
-"        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$9(field, d, true);\n" +
-"        }\n" +
-"        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$9(field, d, true);\n" +
-"        }\n" +
-"        const knownProperties = [];\n" +
-"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
-"        if (unknownProperty)\n" +
-"            errorHelper$a(unknownProperty, d, \"never\", false);\n" +
-"        return new ScoredInvoices(d);\n" +
-"    }\n" +
-"    constructor(d) {\n" +
-"    }\n" +
-"}\n" +
 "class GroupedDocumentsEntity {\n" +
 "    static Parse(d) {\n" +
 "        return GroupedDocumentsEntity.Create(JSON.parse(d));\n" +
 "    }\n" +
-"    static Create(d, field) {\n" +
+"    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$a = d;\n" +
+"            obj$b = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            throwNull2NonNull$9(field, d);\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$a(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$9(field, d, false);\n" +
+"            throwNotObject$a(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$9(field, d, false);\n" +
+"            throwIsArray$a(field, d);\n" +
 "        }\n" +
-"        checkNumber$8(d.id, false, field + \".id\");\n" +
-"        checkNumber$8(d.company_id, false, field + \".company_id\");\n" +
-"        checkString$9(d.date, true, field + \".date\");\n" +
-"        checkString$9(d.created_at, false, field + \".created_at\");\n" +
-"        checkString$9(d.updated_at, false, field + \".updated_at\");\n" +
-"        checkString$9(d.archived_at, true, field + \".archived_at\");\n" +
-"        checkString$9(d.type, false, field + \".type\");\n" +
-"        checkString$9(d.source, false, field + \".source\");\n" +
-"        checkBoolean$7(d.draft, false, field + \".draft\");\n" +
-"        checkString$9(d.group_uuid, false, field + \".group_uuid\");\n" +
-"        checkString$9(d.gdrive_path, true, field + \".gdrive_path\");\n" +
-"        checkString$9(d.preview_status, true, field + \".preview_status\");\n" +
-"        checkString$9(d.pusher_channel, false, field + \".pusher_channel\");\n" +
-"        checkNull$5(d.email_from, field + \".email_from\");\n" +
-"        checkNull$5(d.score, field + \".score\");\n" +
-"        checkBoolean$7(d.is_waiting_details, false, field + \".is_waiting_details\");\n" +
-"        checkString$9(d.external_id, false, field + \".external_id\");\n" +
-"        checkNumber$8(d.journal_id, false, field + \".journal_id\");\n" +
-"        checkString$9(d.grouped_at, true, field + \".grouped_at\");\n" +
-"        checkBoolean$7(d.attachment_required, false, field + \".attachment_required\");\n" +
-"        checkBoolean$7(d.attachment_lost, false, field + \".attachment_lost\");\n" +
-"        checkString$9(d.pdf_generation_status, false, field + \".pdf_generation_status\");\n" +
-"        checkNull$5(d.reversal_origin_id, field + \".reversal_origin_id\");\n" +
-"        checkNull$5(d.billing_subscription_id, field + \".billing_subscription_id\");\n" +
-"        checkString$9(d.fec_pieceref, false, field + \".fec_pieceref\");\n" +
-"        checkString$9(d.label, false, field + \".label\");\n" +
-"        d.journal = Journal$1.Create(d.journal, field + \".journal\");\n" +
-"        checkString$9(d.url, false, field + \".url\");\n" +
-"        checkString$9(d.method, false, field + \".method\");\n" +
-"        checkBoolean$7(d.accounting_type, false, field + \".accounting_type\");\n" +
-"        checkArray$5(d.preview_urls, field + \".preview_urls\");\n" +
-"        if (d.preview_urls) {\n" +
-"            for (let i = 0; i < d.preview_urls.length; i++) {\n" +
-"                checkString$9(d.preview_urls[i], true, field + \".preview_urls\" + \"[\" + i + \"]\");\n" +
+"        if (\"account\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkNull$7(d.account, field + \".account\", \"null | Account\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    d.account = Account.Create(d.account, field + \".account\", \"null | Account\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkBoolean$7(d.archived, false, field + \".archived\");\n" +
-"        checkBoolean$7(d.quotes, false, field + \".quotes\");\n" +
-"        checkString$9(d.filename, true, field + \".filename\");\n" +
-"        checkBoolean$7(d.has_file, false, field + \".has_file\");\n" +
-"        checkBoolean$7(d.readonly, false, field + \".readonly\");\n" +
-"        checkNumber$8(d.account_id, true, field + \".account_id\");\n" +
-"        checkNumber$8(d.thirdparty_id, true, field + \".thirdparty_id\");\n" +
-"        checkNull$5(d.payment_id, field + \".payment_id\");\n" +
-"        checkString$9(d.amount, false, field + \".amount\");\n" +
-"        checkString$9(d.currency, false, field + \".currency\");\n" +
-"        checkString$9(d.currency_amount, false, field + \".currency_amount\");\n" +
-"        checkString$9(d.outstanding_balance, false, field + \".outstanding_balance\");\n" +
-"        checkNumber$8(d.completeness, false, field + \".completeness\");\n" +
-"        checkString$9(d.gross_amount, true, field + \".gross_amount\");\n" +
-"        checkString$9(d.status, true, field + \".status\");\n" +
-"        checkBoolean$7(d.complete, false, field + \".complete\");\n" +
-"        d.account = Account.Create(d.account, field + \".account\");\n" +
-"        d.company = Company1.Create(d.company, field + \".company\");\n" +
-"        d.scored_invoices = ScoredInvoices1.Create(d.scored_invoices, field + \".scored_invoices\");\n" +
-"        checkNull$5(d.is_accounting_needed, field + \".is_accounting_needed\");\n" +
-"        checkBoolean$7(d.pending, false, field + \".pending\");\n" +
-"        checkBoolean$7(d.hasTooManyLedgerEvents, false, field + \".hasTooManyLedgerEvents\");\n" +
-"        checkNumber$8(d.ledgerEventsCount, false, field + \".ledgerEventsCount\");\n" +
-"        checkArray$5(d.ledgerEvents, field + \".ledgerEvents\");\n" +
-"        if (d.ledgerEvents) {\n" +
-"            for (let i = 0; i < d.ledgerEvents.length; i++) {\n" +
-"                d.ledgerEvents[i] = LedgerEventsEntity.Create(d.ledgerEvents[i], field + \".ledgerEvents\" + \"[\" + i + \"]\");\n" +
+"        if (\"account_id\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkNull$7(d.account_id, field + \".account_id\", \"null | number\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNumber$8(d.account_id, field + \".account_id\", \"null | number\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkBoolean$7(d.reconciled, false, field + \".reconciled\");\n" +
+"        if (\"accounting_status\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkNull$7(d.accounting_status, field + \".accounting_status\", \"null | string\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkString$9(d.accounting_status, field + \".accounting_status\", \"null | string\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        checkBoolean$7(d.accounting_type, field + \".accounting_type\");\n" +
+"        checkString$9(d.amount, field + \".amount\");\n" +
+"        checkBoolean$7(d.archived, field + \".archived\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$7(d.archived_at, field + \".archived_at\", \"null | string\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkString$9(d.archived_at, field + \".archived_at\", \"null | string\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"attachment_label\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkString$9(d.attachment_label, field + \".attachment_label\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.attachment_label, field + \".attachment_label\", \"string | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        checkBoolean$7(d.attachment_lost, field + \".attachment_lost\");\n" +
+"        checkBoolean$7(d.attachment_required, field + \".attachment_required\");\n" +
+"        checkNull$7(d.billing_subscription_id, field + \".billing_subscription_id\");\n" +
+"        if (\"can_be_stamped_as_paid_in_pdf\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkBoolean$7(d.can_be_stamped_as_paid_in_pdf, field + \".can_be_stamped_as_paid_in_pdf\", \"boolean | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.can_be_stamped_as_paid_in_pdf, field + \".can_be_stamped_as_paid_in_pdf\", \"boolean | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
 "        checkArray$5(d.client_comments, field + \".client_comments\");\n" +
 "        if (d.client_comments) {\n" +
 "            for (let i = 0; i < d.client_comments.length; i++) {\n" +
-"                d.client_comments[i] = ClientCommentsEntityOrEstablishmentComment.Create(d.client_comments[i], field + \".client_comments\" + \"[\" + i + \"]\");\n" +
+"                d.client_comments[i] = ClientCommentsEntityOrEstablishmentComment.Create(d.client_comments[i], field + \".client_comments\" + \"[\" + i + \"]\", undefined);\n" +
 "            }\n" +
 "        }\n" +
-"        checkBoolean$7(d.is_waiting_for_ocr, true, field + \".is_waiting_for_ocr\");\n" +
-"        checkBoolean$7(d.has_linked_quotes, true, field + \".has_linked_quotes\");\n" +
-"        checkString$9(d.size, true, field + \".size\");\n" +
-"        checkBoolean$7(d.embeddable_in_browser, true, field + \".embeddable_in_browser\");\n" +
-"        checkNumber$8(d.ocr_thirdparty_id, true, field + \".ocr_thirdparty_id\");\n" +
-"        checkString$9(d.direction, true, field + \".direction\");\n" +
-"        checkString$9(d.deadline, true, field + \".deadline\");\n" +
-"        checkNumber$8(d.multiplier, true, field + \".multiplier\");\n" +
-"        checkString$9(d.price_before_tax, true, field + \".price_before_tax\");\n" +
-"        checkNull$5(d.quote_uid, field + \".quote_uid\");\n" +
-"        checkNull$5(d.special_mention, field + \".special_mention\");\n" +
-"        checkBoolean$7(d.not_duplicate, true, field + \".not_duplicate\");\n" +
-"        checkBoolean$7(d.validation_needed, true, field + \".validation_needed\");\n" +
-"        checkString$9(d.currency_tax, true, field + \".currency_tax\");\n" +
-"        checkString$9(d.currency_price_before_tax, true, field + \".currency_price_before_tax\");\n" +
-"        checkString$9(d.language, true, field + \".language\");\n" +
-"        checkString$9(d.payment_status, true, field + \".payment_status\");\n" +
-"        checkNull$5(d.payment_method, field + \".payment_method\");\n" +
-"        checkString$9(d.invoice_number, true, field + \".invoice_number\");\n" +
-"        checkString$9(d.tax, true, field + \".tax\");\n" +
-"        checkNull$5(d.estimate_status, field + \".estimate_status\");\n" +
-"        checkString$9(d.iban, true, field + \".iban\");\n" +
-"        checkBoolean$7(d.paid, true, field + \".paid\");\n" +
-"        checkNumber$8(d.future_in_days, true, field + \".future_in_days\");\n" +
-"        checkString$9(d.discount, true, field + \".discount\");\n" +
-"        checkString$9(d.discount_type, true, field + \".discount_type\");\n" +
-"        checkNull$5(d.finalized_at, field + \".finalized_at\");\n" +
-"        checkString$9(d.quote_group_uuid, true, field + \".quote_group_uuid\");\n" +
-"        checkString$9(d.factor_status, true, field + \".factor_status\");\n" +
-"        checkString$9(d.currency_amount_before_tax, true, field + \".currency_amount_before_tax\");\n" +
-"        checkNull$5(d.from_estimate_id, field + \".from_estimate_id\");\n" +
-"        checkString$9(d.credit_notes_amount, true, field + \".credit_notes_amount\");\n" +
-"        checkBoolean$7(d.payment_reminder_enabled, true, field + \".payment_reminder_enabled\");\n" +
-"        checkString$9(d.payment_reference, true, field + \".payment_reference\");\n" +
-"        checkBoolean$7(d.is_credit_note, true, field + \".is_credit_note\");\n" +
-"        checkBoolean$7(d.is_estimate, true, field + \".is_estimate\");\n" +
-"        checkBoolean$7(d.is_destroyable, true, field + \".is_destroyable\");\n" +
-"        checkBoolean$7(d.can_be_stamped_as_paid_in_pdf, true, field + \".can_be_stamped_as_paid_in_pdf\");\n" +
-"        checkString$9(d.custom_payment_reference, true, field + \".custom_payment_reference\");\n" +
-"        checkArray$5(d.scored_transactions, field + \".scored_transactions\");\n" +
-"        if (d.scored_transactions) {\n" +
-"            for (let i = 0; i < d.scored_transactions.length; i++) {\n" +
-"                checkNull$5(d.scored_transactions[i], field + \".scored_transactions\" + \"[\" + i + \"]\");\n" +
+"        if (\"company\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkNull$7(d.company, field + \".company\", \"null | Company1\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    d.company = Company1.Create(d.company, field + \".company\", \"null | Company1\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkBoolean$7(d.is_sendable, true, field + \".is_sendable\");\n" +
-"        checkBoolean$7(d.incomplete, true, field + \".incomplete\");\n" +
-"        checkBoolean$7(d.subcomplete, true, field + \".subcomplete\");\n" +
-"        checkString$9(d.attachment_label, true, field + \".attachment_label\");\n" +
-"        checkString$9(d.accounting_status, true, field + \".accounting_status\");\n" +
-"        d.thirdparty = Thirdparty$2.Create(d.thirdparty, field + \".thirdparty\");\n" +
-"        checkArray$5(d.recipients, field + \".recipients\");\n" +
-"        if (d.recipients) {\n" +
-"            for (let i = 0; i < d.recipients.length; i++) {\n" +
-"                checkNull$5(d.recipients[i], field + \".recipients\" + \"[\" + i + \"]\");\n" +
+"        checkNumber$8(d.company_id, field + \".company_id\");\n" +
+"        checkBoolean$7(d.complete, field + \".complete\");\n" +
+"        checkNumber$8(d.completeness, field + \".completeness\");\n" +
+"        checkString$9(d.created_at, field + \".created_at\");\n" +
+"        if (\"credit_notes_amount\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkString$9(d.credit_notes_amount, field + \".credit_notes_amount\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.credit_notes_amount, field + \".credit_notes_amount\", \"string | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkArray$5(d.invoice_lines, field + \".invoice_lines\");\n" +
-"        if (d.invoice_lines) {\n" +
-"            for (let i = 0; i < d.invoice_lines.length; i++) {\n" +
-"                d.invoice_lines[i] = InvoiceLinesEntity$2.Create(d.invoice_lines[i], field + \".invoice_lines\" + \"[\" + i + \"]\");\n" +
+"        checkString$9(d.currency, field + \".currency\");\n" +
+"        checkString$9(d.currency_amount, field + \".currency_amount\");\n" +
+"        if (\"currency_amount_before_tax\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkString$9(d.currency_amount_before_tax, field + \".currency_amount_before_tax\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.currency_amount_before_tax, field + \".currency_amount_before_tax\", \"string | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkString$9(d.invoice_kind, true, field + \".invoice_kind\");\n" +
-"        checkString$9(d.file_signed_id, true, field + \".file_signed_id\");\n" +
-"        checkNumber$8(d.pages_count, true, field + \".pages_count\");\n" +
-"        checkBoolean$7(d.tagged_at_ledger_events_level, true, field + \".tagged_at_ledger_events_level\");\n" +
-"        checkString$9(d.pdf_invoice_title, true, field + \".pdf_invoice_title\");\n" +
-"        checkString$9(d.pdf_invoice_free_text, true, field + \".pdf_invoice_free_text\");\n" +
-"        checkBoolean$7(d.pdf_invoice_free_text_enabled, true, field + \".pdf_invoice_free_text_enabled\");\n" +
-"        checkString$9(d.pdf_invoice_subject, true, field + \".pdf_invoice_subject\");\n" +
-"        checkBoolean$7(d.pdf_invoice_subject_enabled, true, field + \".pdf_invoice_subject_enabled\");\n" +
-"        checkBoolean$7(d.pdf_invoice_display_products_list, true, field + \".pdf_invoice_display_products_list\");\n" +
-"        checkBoolean$7(d.pdf_paid_stamp, true, field + \".pdf_paid_stamp\");\n" +
-"        checkNull$5(d.invoicing_detailed_source, field + \".invoicing_detailed_source\");\n" +
-"        checkBoolean$7(d.manual_partial_invoices, true, field + \".manual_partial_invoices\");\n" +
-"        d.establishment_comment = EstablishmentComment.Create(d.establishment_comment, field + \".establishment_comment\");\n" +
-"        d.current_account_plan_item = PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem.Create(d.current_account_plan_item, field + \".current_account_plan_item\");\n" +
-"        const knownProperties = [\"id\", \"company_id\", \"date\", \"created_at\", \"updated_at\", \"archived_at\", \"type\", \"source\", \"draft\", \"group_uuid\", \"gdrive_path\", \"preview_status\", \"pusher_channel\", \"email_from\", \"score\", \"is_waiting_details\", \"external_id\", \"journal_id\", \"grouped_at\", \"attachment_required\", \"attachment_lost\", \"pdf_generation_status\", \"reversal_origin_id\", \"billing_subscription_id\", \"fec_pieceref\", \"label\", \"journal\", \"url\", \"method\", \"accounting_type\", \"preview_urls\", \"archived\", \"quotes\", \"filename\", \"has_file\", \"readonly\", \"account_id\", \"thirdparty_id\", \"payment_id\", \"amount\", \"currency\", \"currency_amount\", \"outstanding_balance\", \"completeness\", \"gross_amount\", \"status\", \"complete\", \"account\", \"company\", \"scored_invoices\", \"is_accounting_needed\", \"pending\", \"hasTooManyLedgerEvents\", \"ledgerEventsCount\", \"ledgerEvents\", \"reconciled\", \"client_comments\", \"is_waiting_for_ocr\", \"has_linked_quotes\", \"size\", \"embeddable_in_browser\", \"ocr_thirdparty_id\", \"direction\", \"deadline\", \"multiplier\", \"price_before_tax\", \"quote_uid\", \"special_mention\", \"not_duplicate\", \"validation_needed\", \"currency_tax\", \"currency_price_before_tax\", \"language\", \"payment_status\", \"payment_method\", \"invoice_number\", \"tax\", \"estimate_status\", \"iban\", \"paid\", \"future_in_days\", \"discount\", \"discount_type\", \"finalized_at\", \"quote_group_uuid\", \"factor_status\", \"currency_amount_before_tax\", \"from_estimate_id\", \"credit_notes_amount\", \"payment_reminder_enabled\", \"payment_reference\", \"is_credit_note\", \"is_estimate\", \"is_destroyable\", \"can_be_stamped_as_paid_in_pdf\", \"custom_payment_reference\", \"scored_transactions\", \"is_sendable\", \"incomplete\", \"subcomplete\", \"attachment_label\", \"accounting_status\", \"thirdparty\", \"recipients\", \"invoice_lines\", \"invoice_kind\", \"file_signed_id\", \"pages_count\", \"tagged_at_ledger_events_level\", \"pdf_invoice_title\", \"pdf_invoice_free_text\", \"pdf_invoice_free_text_enabled\", \"pdf_invoice_subject\", \"pdf_invoice_subject_enabled\", \"pdf_invoice_display_products_list\", \"pdf_paid_stamp\", \"invoicing_detailed_source\", \"manual_partial_invoices\", \"establishment_comment\", \"current_account_plan_item\"];\n" +
+"        if (\"currency_price_before_tax\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkString$9(d.currency_price_before_tax, field + \".currency_price_before_tax\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.currency_price_before_tax, field + \".currency_price_before_tax\", \"string | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"currency_tax\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkString$9(d.currency_tax, field + \".currency_tax\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.currency_tax, field + \".currency_tax\", \"string | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"current_account_plan_item\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkNull$7(d.current_account_plan_item, field + \".current_account_plan_item\", \"null | PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    d.current_account_plan_item = PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem.Create(d.current_account_plan_item, field + \".current_account_plan_item\", \"null | PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"custom_payment_reference\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkString$9(d.custom_payment_reference, field + \".custom_payment_reference\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.custom_payment_reference, field + \".custom_payment_reference\", \"string | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$7(d.date, field + \".date\", \"null | string\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkString$9(d.date, field + \".date\", \"null | string\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"deadline\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkNull$7(d.deadline, field + \".deadline\", \"null | string\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkString$9(d.deadline, field + \".deadline\", \"null | string\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"direction\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkString$9(d.direction, field + \".direction\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.direction, field + \".direction\", \"string | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"discount\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkString$9(d.discount, field + \".discount\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.discount, field + \".discount\", \"string | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"discount_type\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkString$9(d.discount_type, field + \".discount_type\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.discount_type, field + \".discount_type\", \"string | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        checkBoolean$7(d.draft, field + \".draft\");\n" +
+"        checkNull$7(d.email_from, field + \".email_from\");\n" +
+"        if (\"embeddable_in_browser\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkBoolean$7(d.embeddable_in_browser, field + \".embeddable_in_browser\", \"boolean | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.embeddable_in_browser, field + \".embeddable_in_browser\", \"boolean | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"establishment_comment\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkNull$7(d.establishment_comment, field + \".establishment_comment\", \"null | EstablishmentCommentOrClientCommentsEntity\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    d.establishment_comment = EstablishmentCommentOrClientCommentsEntity.Create(d.establishment_comment, field + \".establishment_comment\", \"null | EstablishmentCommentOrClientCommentsEntity\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"estimate_status\" in d) {\n" +
+"            checkNull$7(d.estimate_status, field + \".estimate_status\");\n" +
+"        }\n" +
+"        checkString$9(d.external_id, field + \".external_id\");\n" +
+"        if (\"factor_status\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkString$9(d.factor_status, field + \".factor_status\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.factor_status, field + \".factor_status\", \"string | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        checkString$9(d.fec_pieceref, field + \".fec_pieceref\");\n" +
+"        if (\"file_signed_id\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkString$9(d.file_signed_id, field + \".file_signed_id\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.file_signed_id, field + \".file_signed_id\", \"string | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$7(d.filename, field + \".filename\", \"null | string\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkString$9(d.filename, field + \".filename\", \"null | string\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"finalized_at\" in d) {\n" +
+"            checkNull$7(d.finalized_at, field + \".finalized_at\");\n" +
+"        }\n" +
+"        if (\"from_estimate_id\" in d) {\n" +
+"            checkNull$7(d.from_estimate_id, field + \".from_estimate_id\");\n" +
+"        }\n" +
+"        if (\"future_in_days\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkNumber$8(d.future_in_days, field + \".future_in_days\", \"number | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.future_in_days, field + \".future_in_days\", \"number | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkString$9(d.gdrive_path, field + \".gdrive_path\", \"string | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$7(d.gdrive_path, field + \".gdrive_path\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"gross_amount\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkNull$7(d.gross_amount, field + \".gross_amount\", \"null | string\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkString$9(d.gross_amount, field + \".gross_amount\", \"null | string\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        checkString$9(d.group_uuid, field + \".group_uuid\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$7(d.grouped_at, field + \".grouped_at\", \"null | string\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkString$9(d.grouped_at, field + \".grouped_at\", \"null | string\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        checkBoolean$7(d.has_file, field + \".has_file\");\n" +
+"        if (\"has_linked_quotes\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkBoolean$7(d.has_linked_quotes, field + \".has_linked_quotes\", \"boolean | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.has_linked_quotes, field + \".has_linked_quotes\", \"boolean | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        checkBoolean$7(d.hasTooManyLedgerEvents, field + \".hasTooManyLedgerEvents\");\n" +
+"        if (\"iban\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkString$9(d.iban, field + \".iban\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.iban, field + \".iban\", \"string | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        checkNumber$8(d.id, field + \".id\");\n" +
+"        if (\"incomplete\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkBoolean$7(d.incomplete, field + \".incomplete\", \"boolean | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.incomplete, field + \".incomplete\", \"boolean | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"invoice_kind\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkString$9(d.invoice_kind, field + \".invoice_kind\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.invoice_kind, field + \".invoice_kind\", \"string | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"invoice_lines\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkArray$5(d.invoice_lines, field + \".invoice_lines\", \"InvoiceLinesEntity[] | null\");\n" +
+"                if (d.invoice_lines) {\n" +
+"                    for (let i = 0; i < d.invoice_lines.length; i++) {\n" +
+"                        d.invoice_lines[i] = InvoiceLinesEntity$2.Create(d.invoice_lines[i], field + \".invoice_lines\" + \"[\" + i + \"]\", undefined);\n" +
+"                    }\n" +
+"                }\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.invoice_lines, field + \".invoice_lines\", \"InvoiceLinesEntity[] | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"invoice_number\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkString$9(d.invoice_number, field + \".invoice_number\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.invoice_number, field + \".invoice_number\", \"string | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"invoicing_detailed_source\" in d) {\n" +
+"            checkNull$7(d.invoicing_detailed_source, field + \".invoicing_detailed_source\");\n" +
+"        }\n" +
+"        if (\"is_accounting_needed\" in d) {\n" +
+"            checkNull$7(d.is_accounting_needed, field + \".is_accounting_needed\");\n" +
+"        }\n" +
+"        if (\"is_credit_note\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkBoolean$7(d.is_credit_note, field + \".is_credit_note\", \"boolean | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.is_credit_note, field + \".is_credit_note\", \"boolean | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"is_destroyable\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkBoolean$7(d.is_destroyable, field + \".is_destroyable\", \"boolean | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.is_destroyable, field + \".is_destroyable\", \"boolean | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"is_estimate\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkBoolean$7(d.is_estimate, field + \".is_estimate\", \"boolean | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.is_estimate, field + \".is_estimate\", \"boolean | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"is_sendable\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkBoolean$7(d.is_sendable, field + \".is_sendable\", \"boolean | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.is_sendable, field + \".is_sendable\", \"boolean | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        checkBoolean$7(d.is_waiting_details, field + \".is_waiting_details\");\n" +
+"        if (\"is_waiting_for_ocr\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkBoolean$7(d.is_waiting_for_ocr, field + \".is_waiting_for_ocr\", \"boolean | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.is_waiting_for_ocr, field + \".is_waiting_for_ocr\", \"boolean | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        d.journal = Journal$1.Create(d.journal, field + \".journal\", undefined);\n" +
+"        checkNumber$8(d.journal_id, field + \".journal_id\");\n" +
+"        checkString$9(d.label, field + \".label\");\n" +
+"        if (\"language\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkString$9(d.language, field + \".language\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.language, field + \".language\", \"string | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        checkArray$5(d.ledgerEvents, field + \".ledgerEvents\");\n" +
+"        if (d.ledgerEvents) {\n" +
+"            for (let i = 0; i < d.ledgerEvents.length; i++) {\n" +
+"                d.ledgerEvents[i] = LedgerEventsEntity.Create(d.ledgerEvents[i], field + \".ledgerEvents\" + \"[\" + i + \"]\", undefined);\n" +
+"            }\n" +
+"        }\n" +
+"        checkNumber$8(d.ledgerEventsCount, field + \".ledgerEventsCount\");\n" +
+"        if (\"manual_partial_invoices\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkBoolean$7(d.manual_partial_invoices, field + \".manual_partial_invoices\", \"boolean | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.manual_partial_invoices, field + \".manual_partial_invoices\", \"boolean | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        checkString$9(d.method, field + \".method\");\n" +
+"        if (\"multiplier\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkNumber$8(d.multiplier, field + \".multiplier\", \"number | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.multiplier, field + \".multiplier\", \"number | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"not_duplicate\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkBoolean$7(d.not_duplicate, field + \".not_duplicate\", \"boolean | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.not_duplicate, field + \".not_duplicate\", \"boolean | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"ocr_thirdparty_id\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkNull$7(d.ocr_thirdparty_id, field + \".ocr_thirdparty_id\", \"null | number\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNumber$8(d.ocr_thirdparty_id, field + \".ocr_thirdparty_id\", \"null | number\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        checkString$9(d.outstanding_balance, field + \".outstanding_balance\");\n" +
+"        if (\"pages_count\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkNumber$8(d.pages_count, field + \".pages_count\", \"number | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.pages_count, field + \".pages_count\", \"number | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"paid\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkBoolean$7(d.paid, field + \".paid\", \"boolean | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.paid, field + \".paid\", \"boolean | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"payment_id\" in d) {\n" +
+"            checkNull$7(d.payment_id, field + \".payment_id\");\n" +
+"        }\n" +
+"        if (\"payment_method\" in d) {\n" +
+"            checkNull$7(d.payment_method, field + \".payment_method\");\n" +
+"        }\n" +
+"        if (\"payment_reference\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkString$9(d.payment_reference, field + \".payment_reference\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.payment_reference, field + \".payment_reference\", \"string | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"payment_reminder_enabled\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkBoolean$7(d.payment_reminder_enabled, field + \".payment_reminder_enabled\", \"boolean | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.payment_reminder_enabled, field + \".payment_reminder_enabled\", \"boolean | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"payment_status\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkString$9(d.payment_status, field + \".payment_status\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.payment_status, field + \".payment_status\", \"string | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        checkString$9(d.pdf_generation_status, field + \".pdf_generation_status\");\n" +
+"        if (\"pdf_invoice_display_products_list\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkBoolean$7(d.pdf_invoice_display_products_list, field + \".pdf_invoice_display_products_list\", \"boolean | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.pdf_invoice_display_products_list, field + \".pdf_invoice_display_products_list\", \"boolean | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"pdf_invoice_free_text\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkString$9(d.pdf_invoice_free_text, field + \".pdf_invoice_free_text\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.pdf_invoice_free_text, field + \".pdf_invoice_free_text\", \"string | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"pdf_invoice_free_text_enabled\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkBoolean$7(d.pdf_invoice_free_text_enabled, field + \".pdf_invoice_free_text_enabled\", \"boolean | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.pdf_invoice_free_text_enabled, field + \".pdf_invoice_free_text_enabled\", \"boolean | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"pdf_invoice_subject\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkString$9(d.pdf_invoice_subject, field + \".pdf_invoice_subject\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.pdf_invoice_subject, field + \".pdf_invoice_subject\", \"string | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"pdf_invoice_subject_enabled\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkBoolean$7(d.pdf_invoice_subject_enabled, field + \".pdf_invoice_subject_enabled\", \"boolean | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.pdf_invoice_subject_enabled, field + \".pdf_invoice_subject_enabled\", \"boolean | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"pdf_invoice_title\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkString$9(d.pdf_invoice_title, field + \".pdf_invoice_title\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.pdf_invoice_title, field + \".pdf_invoice_title\", \"string | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"pdf_paid_stamp\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkBoolean$7(d.pdf_paid_stamp, field + \".pdf_paid_stamp\", \"boolean | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.pdf_paid_stamp, field + \".pdf_paid_stamp\", \"boolean | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        checkBoolean$7(d.pending, field + \".pending\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$7(d.preview_status, field + \".preview_status\", \"null | string\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkString$9(d.preview_status, field + \".preview_status\", \"null | string\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        checkArray$5(d.preview_urls, field + \".preview_urls\");\n" +
+"        if (d.preview_urls) {\n" +
+"            for (let i = 0; i < d.preview_urls.length; i++) {\n" +
+"                checkString$9(d.preview_urls[i], field + \".preview_urls\" + \"[\" + i + \"]\");\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"price_before_tax\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkString$9(d.price_before_tax, field + \".price_before_tax\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.price_before_tax, field + \".price_before_tax\", \"string | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        checkString$9(d.pusher_channel, field + \".pusher_channel\");\n" +
+"        if (\"quote_group_uuid\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkString$9(d.quote_group_uuid, field + \".quote_group_uuid\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.quote_group_uuid, field + \".quote_group_uuid\", \"string | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"quote_uid\" in d) {\n" +
+"            checkNull$7(d.quote_uid, field + \".quote_uid\");\n" +
+"        }\n" +
+"        checkBoolean$7(d.quotes, field + \".quotes\");\n" +
+"        checkBoolean$7(d.readonly, field + \".readonly\");\n" +
+"        if (\"recipients\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkArray$5(d.recipients, field + \".recipients\", \"never[] | null\");\n" +
+"                if (d.recipients) {\n" +
+"                    for (let i = 0; i < d.recipients.length; i++) {\n" +
+"                        checkNever$3(d.recipients[i], field + \".recipients\" + \"[\" + i + \"]\");\n" +
+"                    }\n" +
+"                }\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.recipients, field + \".recipients\", \"never[] | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        checkBoolean$7(d.reconciled, field + \".reconciled\");\n" +
+"        checkNull$7(d.reversal_origin_id, field + \".reversal_origin_id\");\n" +
+"        checkNull$7(d.score, field + \".score\");\n" +
+"        if (\"scored_invoices\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkNull$7(d.scored_invoices, field + \".scored_invoices\", \"null | ScoredInvoices1\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    d.scored_invoices = ScoredInvoices1.Create(d.scored_invoices, field + \".scored_invoices\", \"null | ScoredInvoices1\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"scored_transactions\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkArray$5(d.scored_transactions, field + \".scored_transactions\", \"never[] | null\");\n" +
+"                if (d.scored_transactions) {\n" +
+"                    for (let i = 0; i < d.scored_transactions.length; i++) {\n" +
+"                        checkNever$3(d.scored_transactions[i], field + \".scored_transactions\" + \"[\" + i + \"]\");\n" +
+"                    }\n" +
+"                }\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.scored_transactions, field + \".scored_transactions\", \"never[] | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"size\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkString$9(d.size, field + \".size\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.size, field + \".size\", \"string | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        checkString$9(d.source, field + \".source\");\n" +
+"        if (\"special_mention\" in d) {\n" +
+"            checkNull$7(d.special_mention, field + \".special_mention\");\n" +
+"        }\n" +
+"        if (\"status\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkNull$7(d.status, field + \".status\", \"null | string\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkString$9(d.status, field + \".status\", \"null | string\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"subcomplete\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkBoolean$7(d.subcomplete, field + \".subcomplete\", \"boolean | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.subcomplete, field + \".subcomplete\", \"boolean | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"tagged_at_ledger_events_level\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkBoolean$7(d.tagged_at_ledger_events_level, field + \".tagged_at_ledger_events_level\", \"boolean | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.tagged_at_ledger_events_level, field + \".tagged_at_ledger_events_level\", \"boolean | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"tax\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkString$9(d.tax, field + \".tax\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.tax, field + \".tax\", \"string | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"thirdparty\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                d.thirdparty = Thirdparty$2.Create(d.thirdparty, field + \".thirdparty\", \"Thirdparty | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.thirdparty, field + \".thirdparty\", \"Thirdparty | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$7(d.thirdparty_id, field + \".thirdparty_id\", \"null | number\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNumber$8(d.thirdparty_id, field + \".thirdparty_id\", \"null | number\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        checkString$9(d.type, field + \".type\");\n" +
+"        checkString$9(d.updated_at, field + \".updated_at\");\n" +
+"        checkString$9(d.url, field + \".url\");\n" +
+"        if (\"validation_needed\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkBoolean$7(d.validation_needed, field + \".validation_needed\", \"boolean | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.validation_needed, field + \".validation_needed\", \"boolean | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        const knownProperties = [\"account\", \"account_id\", \"accounting_status\", \"accounting_type\", \"amount\", \"archived\", \"archived_at\", \"attachment_label\", \"attachment_lost\", \"attachment_required\", \"billing_subscription_id\", \"can_be_stamped_as_paid_in_pdf\", \"client_comments\", \"company\", \"company_id\", \"complete\", \"completeness\", \"created_at\", \"credit_notes_amount\", \"currency\", \"currency_amount\", \"currency_amount_before_tax\", \"currency_price_before_tax\", \"currency_tax\", \"current_account_plan_item\", \"custom_payment_reference\", \"date\", \"deadline\", \"direction\", \"discount\", \"discount_type\", \"draft\", \"email_from\", \"embeddable_in_browser\", \"establishment_comment\", \"estimate_status\", \"external_id\", \"factor_status\", \"fec_pieceref\", \"file_signed_id\", \"filename\", \"finalized_at\", \"from_estimate_id\", \"future_in_days\", \"gdrive_path\", \"gross_amount\", \"group_uuid\", \"grouped_at\", \"has_file\", \"has_linked_quotes\", \"hasTooManyLedgerEvents\", \"iban\", \"id\", \"incomplete\", \"invoice_kind\", \"invoice_lines\", \"invoice_number\", \"invoicing_detailed_source\", \"is_accounting_needed\", \"is_credit_note\", \"is_destroyable\", \"is_estimate\", \"is_sendable\", \"is_waiting_details\", \"is_waiting_for_ocr\", \"journal\", \"journal_id\", \"label\", \"language\", \"ledgerEvents\", \"ledgerEventsCount\", \"manual_partial_invoices\", \"method\", \"multiplier\", \"not_duplicate\", \"ocr_thirdparty_id\", \"outstanding_balance\", \"pages_count\", \"paid\", \"payment_id\", \"payment_method\", \"payment_reference\", \"payment_reminder_enabled\", \"payment_status\", \"pdf_generation_status\", \"pdf_invoice_display_products_list\", \"pdf_invoice_free_text\", \"pdf_invoice_free_text_enabled\", \"pdf_invoice_subject\", \"pdf_invoice_subject_enabled\", \"pdf_invoice_title\", \"pdf_paid_stamp\", \"pending\", \"preview_status\", \"preview_urls\", \"price_before_tax\", \"pusher_channel\", \"quote_group_uuid\", \"quote_uid\", \"quotes\", \"readonly\", \"recipients\", \"reconciled\", \"reversal_origin_id\", \"score\", \"scored_invoices\", \"scored_transactions\", \"size\", \"source\", \"special_mention\", \"status\", \"subcomplete\", \"tagged_at_ledger_events_level\", \"tax\", \"thirdparty\", \"thirdparty_id\", \"type\", \"updated_at\", \"url\", \"validation_needed\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$a(unknownProperty, d, \"never\", false);\n" +
+"            errorHelper$b(unknownProperty, d, \"never (unknown property)\");\n" +
 "        return new GroupedDocumentsEntity(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
-"        this.id = d.id;\n" +
-"        this.company_id = d.company_id;\n" +
-"        if (\"date\" in d)\n" +
-"            this.date = d.date;\n" +
-"        this.created_at = d.created_at;\n" +
-"        this.updated_at = d.updated_at;\n" +
-"        if (\"archived_at\" in d)\n" +
-"            this.archived_at = d.archived_at;\n" +
-"        this.type = d.type;\n" +
-"        this.source = d.source;\n" +
-"        this.draft = d.draft;\n" +
-"        this.group_uuid = d.group_uuid;\n" +
-"        if (\"gdrive_path\" in d)\n" +
-"            this.gdrive_path = d.gdrive_path;\n" +
-"        if (\"preview_status\" in d)\n" +
-"            this.preview_status = d.preview_status;\n" +
-"        this.pusher_channel = d.pusher_channel;\n" +
-"        if (\"email_from\" in d)\n" +
-"            this.email_from = d.email_from;\n" +
-"        if (\"score\" in d)\n" +
-"            this.score = d.score;\n" +
-"        this.is_waiting_details = d.is_waiting_details;\n" +
-"        this.external_id = d.external_id;\n" +
-"        this.journal_id = d.journal_id;\n" +
-"        if (\"grouped_at\" in d)\n" +
-"            this.grouped_at = d.grouped_at;\n" +
-"        this.attachment_required = d.attachment_required;\n" +
-"        this.attachment_lost = d.attachment_lost;\n" +
-"        this.pdf_generation_status = d.pdf_generation_status;\n" +
-"        if (\"reversal_origin_id\" in d)\n" +
-"            this.reversal_origin_id = d.reversal_origin_id;\n" +
-"        if (\"billing_subscription_id\" in d)\n" +
-"            this.billing_subscription_id = d.billing_subscription_id;\n" +
-"        this.fec_pieceref = d.fec_pieceref;\n" +
-"        this.label = d.label;\n" +
-"        this.journal = d.journal;\n" +
-"        this.url = d.url;\n" +
-"        this.method = d.method;\n" +
-"        this.accounting_type = d.accounting_type;\n" +
-"        if (\"preview_urls\" in d)\n" +
-"            this.preview_urls = d.preview_urls;\n" +
-"        this.archived = d.archived;\n" +
-"        this.quotes = d.quotes;\n" +
-"        if (\"filename\" in d)\n" +
-"            this.filename = d.filename;\n" +
-"        this.has_file = d.has_file;\n" +
-"        this.readonly = d.readonly;\n" +
-"        if (\"account_id\" in d)\n" +
-"            this.account_id = d.account_id;\n" +
-"        if (\"thirdparty_id\" in d)\n" +
-"            this.thirdparty_id = d.thirdparty_id;\n" +
-"        if (\"payment_id\" in d)\n" +
-"            this.payment_id = d.payment_id;\n" +
-"        this.amount = d.amount;\n" +
-"        this.currency = d.currency;\n" +
-"        this.currency_amount = d.currency_amount;\n" +
-"        this.outstanding_balance = d.outstanding_balance;\n" +
-"        this.completeness = d.completeness;\n" +
-"        if (\"gross_amount\" in d)\n" +
-"            this.gross_amount = d.gross_amount;\n" +
-"        if (\"status\" in d)\n" +
-"            this.status = d.status;\n" +
-"        this.complete = d.complete;\n" +
 "        if (\"account\" in d)\n" +
 "            this.account = d.account;\n" +
+"        if (\"account_id\" in d)\n" +
+"            this.account_id = d.account_id;\n" +
+"        if (\"accounting_status\" in d)\n" +
+"            this.accounting_status = d.accounting_status;\n" +
+"        this.accounting_type = d.accounting_type;\n" +
+"        this.amount = d.amount;\n" +
+"        this.archived = d.archived;\n" +
+"        this.archived_at = d.archived_at;\n" +
+"        if (\"attachment_label\" in d)\n" +
+"            this.attachment_label = d.attachment_label;\n" +
+"        this.attachment_lost = d.attachment_lost;\n" +
+"        this.attachment_required = d.attachment_required;\n" +
+"        this.billing_subscription_id = d.billing_subscription_id;\n" +
+"        if (\"can_be_stamped_as_paid_in_pdf\" in d)\n" +
+"            this.can_be_stamped_as_paid_in_pdf = d.can_be_stamped_as_paid_in_pdf;\n" +
+"        this.client_comments = d.client_comments;\n" +
 "        if (\"company\" in d)\n" +
 "            this.company = d.company;\n" +
-"        if (\"scored_invoices\" in d)\n" +
-"            this.scored_invoices = d.scored_invoices;\n" +
-"        if (\"is_accounting_needed\" in d)\n" +
-"            this.is_accounting_needed = d.is_accounting_needed;\n" +
-"        this.pending = d.pending;\n" +
-"        this.hasTooManyLedgerEvents = d.hasTooManyLedgerEvents;\n" +
-"        this.ledgerEventsCount = d.ledgerEventsCount;\n" +
-"        if (\"ledgerEvents\" in d)\n" +
-"            this.ledgerEvents = d.ledgerEvents;\n" +
-"        this.reconciled = d.reconciled;\n" +
-"        if (\"client_comments\" in d)\n" +
-"            this.client_comments = d.client_comments;\n" +
-"        if (\"is_waiting_for_ocr\" in d)\n" +
-"            this.is_waiting_for_ocr = d.is_waiting_for_ocr;\n" +
-"        if (\"has_linked_quotes\" in d)\n" +
-"            this.has_linked_quotes = d.has_linked_quotes;\n" +
-"        if (\"size\" in d)\n" +
-"            this.size = d.size;\n" +
-"        if (\"embeddable_in_browser\" in d)\n" +
-"            this.embeddable_in_browser = d.embeddable_in_browser;\n" +
-"        if (\"ocr_thirdparty_id\" in d)\n" +
-"            this.ocr_thirdparty_id = d.ocr_thirdparty_id;\n" +
-"        if (\"direction\" in d)\n" +
-"            this.direction = d.direction;\n" +
-"        if (\"deadline\" in d)\n" +
-"            this.deadline = d.deadline;\n" +
-"        if (\"multiplier\" in d)\n" +
-"            this.multiplier = d.multiplier;\n" +
-"        if (\"price_before_tax\" in d)\n" +
-"            this.price_before_tax = d.price_before_tax;\n" +
-"        if (\"quote_uid\" in d)\n" +
-"            this.quote_uid = d.quote_uid;\n" +
-"        if (\"special_mention\" in d)\n" +
-"            this.special_mention = d.special_mention;\n" +
-"        if (\"not_duplicate\" in d)\n" +
-"            this.not_duplicate = d.not_duplicate;\n" +
-"        if (\"validation_needed\" in d)\n" +
-"            this.validation_needed = d.validation_needed;\n" +
-"        if (\"currency_tax\" in d)\n" +
-"            this.currency_tax = d.currency_tax;\n" +
+"        this.company_id = d.company_id;\n" +
+"        this.complete = d.complete;\n" +
+"        this.completeness = d.completeness;\n" +
+"        this.created_at = d.created_at;\n" +
+"        if (\"credit_notes_amount\" in d)\n" +
+"            this.credit_notes_amount = d.credit_notes_amount;\n" +
+"        this.currency = d.currency;\n" +
+"        this.currency_amount = d.currency_amount;\n" +
+"        if (\"currency_amount_before_tax\" in d)\n" +
+"            this.currency_amount_before_tax = d.currency_amount_before_tax;\n" +
 "        if (\"currency_price_before_tax\" in d)\n" +
 "            this.currency_price_before_tax = d.currency_price_before_tax;\n" +
-"        if (\"language\" in d)\n" +
-"            this.language = d.language;\n" +
-"        if (\"payment_status\" in d)\n" +
-"            this.payment_status = d.payment_status;\n" +
-"        if (\"payment_method\" in d)\n" +
-"            this.payment_method = d.payment_method;\n" +
-"        if (\"invoice_number\" in d)\n" +
-"            this.invoice_number = d.invoice_number;\n" +
-"        if (\"tax\" in d)\n" +
-"            this.tax = d.tax;\n" +
-"        if (\"estimate_status\" in d)\n" +
-"            this.estimate_status = d.estimate_status;\n" +
-"        if (\"iban\" in d)\n" +
-"            this.iban = d.iban;\n" +
-"        if (\"paid\" in d)\n" +
-"            this.paid = d.paid;\n" +
-"        if (\"future_in_days\" in d)\n" +
-"            this.future_in_days = d.future_in_days;\n" +
+"        if (\"currency_tax\" in d)\n" +
+"            this.currency_tax = d.currency_tax;\n" +
+"        if (\"current_account_plan_item\" in d)\n" +
+"            this.current_account_plan_item = d.current_account_plan_item;\n" +
+"        if (\"custom_payment_reference\" in d)\n" +
+"            this.custom_payment_reference = d.custom_payment_reference;\n" +
+"        this.date = d.date;\n" +
+"        if (\"deadline\" in d)\n" +
+"            this.deadline = d.deadline;\n" +
+"        if (\"direction\" in d)\n" +
+"            this.direction = d.direction;\n" +
 "        if (\"discount\" in d)\n" +
 "            this.discount = d.discount;\n" +
 "        if (\"discount_type\" in d)\n" +
 "            this.discount_type = d.discount_type;\n" +
-"        if (\"finalized_at\" in d)\n" +
-"            this.finalized_at = d.finalized_at;\n" +
-"        if (\"quote_group_uuid\" in d)\n" +
-"            this.quote_group_uuid = d.quote_group_uuid;\n" +
+"        this.draft = d.draft;\n" +
+"        this.email_from = d.email_from;\n" +
+"        if (\"embeddable_in_browser\" in d)\n" +
+"            this.embeddable_in_browser = d.embeddable_in_browser;\n" +
+"        if (\"establishment_comment\" in d)\n" +
+"            this.establishment_comment = d.establishment_comment;\n" +
+"        if (\"estimate_status\" in d)\n" +
+"            this.estimate_status = d.estimate_status;\n" +
+"        this.external_id = d.external_id;\n" +
 "        if (\"factor_status\" in d)\n" +
 "            this.factor_status = d.factor_status;\n" +
-"        if (\"currency_amount_before_tax\" in d)\n" +
-"            this.currency_amount_before_tax = d.currency_amount_before_tax;\n" +
-"        if (\"from_estimate_id\" in d)\n" +
-"            this.from_estimate_id = d.from_estimate_id;\n" +
-"        if (\"credit_notes_amount\" in d)\n" +
-"            this.credit_notes_amount = d.credit_notes_amount;\n" +
-"        if (\"payment_reminder_enabled\" in d)\n" +
-"            this.payment_reminder_enabled = d.payment_reminder_enabled;\n" +
-"        if (\"payment_reference\" in d)\n" +
-"            this.payment_reference = d.payment_reference;\n" +
-"        if (\"is_credit_note\" in d)\n" +
-"            this.is_credit_note = d.is_credit_note;\n" +
-"        if (\"is_estimate\" in d)\n" +
-"            this.is_estimate = d.is_estimate;\n" +
-"        if (\"is_destroyable\" in d)\n" +
-"            this.is_destroyable = d.is_destroyable;\n" +
-"        if (\"can_be_stamped_as_paid_in_pdf\" in d)\n" +
-"            this.can_be_stamped_as_paid_in_pdf = d.can_be_stamped_as_paid_in_pdf;\n" +
-"        if (\"custom_payment_reference\" in d)\n" +
-"            this.custom_payment_reference = d.custom_payment_reference;\n" +
-"        if (\"scored_transactions\" in d)\n" +
-"            this.scored_transactions = d.scored_transactions;\n" +
-"        if (\"is_sendable\" in d)\n" +
-"            this.is_sendable = d.is_sendable;\n" +
-"        if (\"incomplete\" in d)\n" +
-"            this.incomplete = d.incomplete;\n" +
-"        if (\"subcomplete\" in d)\n" +
-"            this.subcomplete = d.subcomplete;\n" +
-"        if (\"attachment_label\" in d)\n" +
-"            this.attachment_label = d.attachment_label;\n" +
-"        if (\"accounting_status\" in d)\n" +
-"            this.accounting_status = d.accounting_status;\n" +
-"        if (\"thirdparty\" in d)\n" +
-"            this.thirdparty = d.thirdparty;\n" +
-"        if (\"recipients\" in d)\n" +
-"            this.recipients = d.recipients;\n" +
-"        if (\"invoice_lines\" in d)\n" +
-"            this.invoice_lines = d.invoice_lines;\n" +
-"        if (\"invoice_kind\" in d)\n" +
-"            this.invoice_kind = d.invoice_kind;\n" +
+"        this.fec_pieceref = d.fec_pieceref;\n" +
 "        if (\"file_signed_id\" in d)\n" +
 "            this.file_signed_id = d.file_signed_id;\n" +
+"        this.filename = d.filename;\n" +
+"        if (\"finalized_at\" in d)\n" +
+"            this.finalized_at = d.finalized_at;\n" +
+"        if (\"from_estimate_id\" in d)\n" +
+"            this.from_estimate_id = d.from_estimate_id;\n" +
+"        if (\"future_in_days\" in d)\n" +
+"            this.future_in_days = d.future_in_days;\n" +
+"        this.gdrive_path = d.gdrive_path;\n" +
+"        if (\"gross_amount\" in d)\n" +
+"            this.gross_amount = d.gross_amount;\n" +
+"        this.group_uuid = d.group_uuid;\n" +
+"        this.grouped_at = d.grouped_at;\n" +
+"        this.has_file = d.has_file;\n" +
+"        if (\"has_linked_quotes\" in d)\n" +
+"            this.has_linked_quotes = d.has_linked_quotes;\n" +
+"        this.hasTooManyLedgerEvents = d.hasTooManyLedgerEvents;\n" +
+"        if (\"iban\" in d)\n" +
+"            this.iban = d.iban;\n" +
+"        this.id = d.id;\n" +
+"        if (\"incomplete\" in d)\n" +
+"            this.incomplete = d.incomplete;\n" +
+"        if (\"invoice_kind\" in d)\n" +
+"            this.invoice_kind = d.invoice_kind;\n" +
+"        if (\"invoice_lines\" in d)\n" +
+"            this.invoice_lines = d.invoice_lines;\n" +
+"        if (\"invoice_number\" in d)\n" +
+"            this.invoice_number = d.invoice_number;\n" +
+"        if (\"invoicing_detailed_source\" in d)\n" +
+"            this.invoicing_detailed_source = d.invoicing_detailed_source;\n" +
+"        if (\"is_accounting_needed\" in d)\n" +
+"            this.is_accounting_needed = d.is_accounting_needed;\n" +
+"        if (\"is_credit_note\" in d)\n" +
+"            this.is_credit_note = d.is_credit_note;\n" +
+"        if (\"is_destroyable\" in d)\n" +
+"            this.is_destroyable = d.is_destroyable;\n" +
+"        if (\"is_estimate\" in d)\n" +
+"            this.is_estimate = d.is_estimate;\n" +
+"        if (\"is_sendable\" in d)\n" +
+"            this.is_sendable = d.is_sendable;\n" +
+"        this.is_waiting_details = d.is_waiting_details;\n" +
+"        if (\"is_waiting_for_ocr\" in d)\n" +
+"            this.is_waiting_for_ocr = d.is_waiting_for_ocr;\n" +
+"        this.journal = d.journal;\n" +
+"        this.journal_id = d.journal_id;\n" +
+"        this.label = d.label;\n" +
+"        if (\"language\" in d)\n" +
+"            this.language = d.language;\n" +
+"        this.ledgerEvents = d.ledgerEvents;\n" +
+"        this.ledgerEventsCount = d.ledgerEventsCount;\n" +
+"        if (\"manual_partial_invoices\" in d)\n" +
+"            this.manual_partial_invoices = d.manual_partial_invoices;\n" +
+"        this.method = d.method;\n" +
+"        if (\"multiplier\" in d)\n" +
+"            this.multiplier = d.multiplier;\n" +
+"        if (\"not_duplicate\" in d)\n" +
+"            this.not_duplicate = d.not_duplicate;\n" +
+"        if (\"ocr_thirdparty_id\" in d)\n" +
+"            this.ocr_thirdparty_id = d.ocr_thirdparty_id;\n" +
+"        this.outstanding_balance = d.outstanding_balance;\n" +
 "        if (\"pages_count\" in d)\n" +
 "            this.pages_count = d.pages_count;\n" +
-"        if (\"tagged_at_ledger_events_level\" in d)\n" +
-"            this.tagged_at_ledger_events_level = d.tagged_at_ledger_events_level;\n" +
-"        if (\"pdf_invoice_title\" in d)\n" +
-"            this.pdf_invoice_title = d.pdf_invoice_title;\n" +
+"        if (\"paid\" in d)\n" +
+"            this.paid = d.paid;\n" +
+"        if (\"payment_id\" in d)\n" +
+"            this.payment_id = d.payment_id;\n" +
+"        if (\"payment_method\" in d)\n" +
+"            this.payment_method = d.payment_method;\n" +
+"        if (\"payment_reference\" in d)\n" +
+"            this.payment_reference = d.payment_reference;\n" +
+"        if (\"payment_reminder_enabled\" in d)\n" +
+"            this.payment_reminder_enabled = d.payment_reminder_enabled;\n" +
+"        if (\"payment_status\" in d)\n" +
+"            this.payment_status = d.payment_status;\n" +
+"        this.pdf_generation_status = d.pdf_generation_status;\n" +
+"        if (\"pdf_invoice_display_products_list\" in d)\n" +
+"            this.pdf_invoice_display_products_list = d.pdf_invoice_display_products_list;\n" +
 "        if (\"pdf_invoice_free_text\" in d)\n" +
 "            this.pdf_invoice_free_text = d.pdf_invoice_free_text;\n" +
 "        if (\"pdf_invoice_free_text_enabled\" in d)\n" +
@@ -1134,1092 +2356,1419 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            this.pdf_invoice_subject = d.pdf_invoice_subject;\n" +
 "        if (\"pdf_invoice_subject_enabled\" in d)\n" +
 "            this.pdf_invoice_subject_enabled = d.pdf_invoice_subject_enabled;\n" +
-"        if (\"pdf_invoice_display_products_list\" in d)\n" +
-"            this.pdf_invoice_display_products_list = d.pdf_invoice_display_products_list;\n" +
+"        if (\"pdf_invoice_title\" in d)\n" +
+"            this.pdf_invoice_title = d.pdf_invoice_title;\n" +
 "        if (\"pdf_paid_stamp\" in d)\n" +
 "            this.pdf_paid_stamp = d.pdf_paid_stamp;\n" +
-"        if (\"invoicing_detailed_source\" in d)\n" +
-"            this.invoicing_detailed_source = d.invoicing_detailed_source;\n" +
-"        if (\"manual_partial_invoices\" in d)\n" +
-"            this.manual_partial_invoices = d.manual_partial_invoices;\n" +
-"        if (\"establishment_comment\" in d)\n" +
-"            this.establishment_comment = d.establishment_comment;\n" +
-"        if (\"current_account_plan_item\" in d)\n" +
-"            this.current_account_plan_item = d.current_account_plan_item;\n" +
+"        this.pending = d.pending;\n" +
+"        this.preview_status = d.preview_status;\n" +
+"        this.preview_urls = d.preview_urls;\n" +
+"        if (\"price_before_tax\" in d)\n" +
+"            this.price_before_tax = d.price_before_tax;\n" +
+"        this.pusher_channel = d.pusher_channel;\n" +
+"        if (\"quote_group_uuid\" in d)\n" +
+"            this.quote_group_uuid = d.quote_group_uuid;\n" +
+"        if (\"quote_uid\" in d)\n" +
+"            this.quote_uid = d.quote_uid;\n" +
+"        this.quotes = d.quotes;\n" +
+"        this.readonly = d.readonly;\n" +
+"        if (\"recipients\" in d)\n" +
+"            this.recipients = d.recipients;\n" +
+"        this.reconciled = d.reconciled;\n" +
+"        this.reversal_origin_id = d.reversal_origin_id;\n" +
+"        this.score = d.score;\n" +
+"        if (\"scored_invoices\" in d)\n" +
+"            this.scored_invoices = d.scored_invoices;\n" +
+"        if (\"scored_transactions\" in d)\n" +
+"            this.scored_transactions = d.scored_transactions;\n" +
+"        if (\"size\" in d)\n" +
+"            this.size = d.size;\n" +
+"        this.source = d.source;\n" +
+"        if (\"special_mention\" in d)\n" +
+"            this.special_mention = d.special_mention;\n" +
+"        if (\"status\" in d)\n" +
+"            this.status = d.status;\n" +
+"        if (\"subcomplete\" in d)\n" +
+"            this.subcomplete = d.subcomplete;\n" +
+"        if (\"tagged_at_ledger_events_level\" in d)\n" +
+"            this.tagged_at_ledger_events_level = d.tagged_at_ledger_events_level;\n" +
+"        if (\"tax\" in d)\n" +
+"            this.tax = d.tax;\n" +
+"        if (\"thirdparty\" in d)\n" +
+"            this.thirdparty = d.thirdparty;\n" +
+"        this.thirdparty_id = d.thirdparty_id;\n" +
+"        this.type = d.type;\n" +
+"        this.updated_at = d.updated_at;\n" +
+"        this.url = d.url;\n" +
+"        if (\"validation_needed\" in d)\n" +
+"            this.validation_needed = d.validation_needed;\n" +
 "    }\n" +
 "}\n" +
-"let Journal$1 = class Journal {\n" +
-"    static Parse(d) {\n" +
-"        return Journal.Create(JSON.parse(d));\n" +
-"    }\n" +
-"    static Create(d, field) {\n" +
-"        if (!field) {\n" +
-"            obj$a = d;\n" +
-"            field = \"root\";\n" +
-"        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            throwNull2NonNull$9(field, d);\n" +
-"        }\n" +
-"        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$9(field, d, false);\n" +
-"        }\n" +
-"        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$9(field, d, false);\n" +
-"        }\n" +
-"        checkNumber$8(d.id, false, field + \".id\");\n" +
-"        checkString$9(d.code, false, field + \".code\");\n" +
-"        checkString$9(d.label, false, field + \".label\");\n" +
-"        const knownProperties = [\"id\", \"code\", \"label\"];\n" +
-"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
-"        if (unknownProperty)\n" +
-"            errorHelper$a(unknownProperty, d, \"never\", false);\n" +
-"        return new Journal(d);\n" +
-"    }\n" +
-"    constructor(d) {\n" +
-"        this.id = d.id;\n" +
-"        this.code = d.code;\n" +
-"        this.label = d.label;\n" +
-"    }\n" +
-"};\n" +
 "class Account {\n" +
 "    static Parse(d) {\n" +
 "        return Account.Create(JSON.parse(d));\n" +
 "    }\n" +
-"    static Create(d, field) {\n" +
+"    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$a = d;\n" +
+"            obj$b = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            return null;\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$a(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$9(field, d, true);\n" +
+"            throwNotObject$a(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$9(field, d, true);\n" +
+"            throwIsArray$a(field, d);\n" +
 "        }\n" +
-"        checkNumber$8(d.id, false, field + \".id\");\n" +
-"        checkNumber$8(d.company_id, false, field + \".company_id\");\n" +
-"        checkString$9(d.name, false, field + \".name\");\n" +
-"        checkBoolean$7(d.visible, false, field + \".visible\");\n" +
-"        checkBoolean$7(d.synchronized, false, field + \".synchronized\");\n" +
-"        checkString$9(d.currency, false, field + \".currency\");\n" +
-"        checkString$9(d.balance, false, field + \".balance\");\n" +
-"        checkString$9(d.currency_balance, false, field + \".currency_balance\");\n" +
-"        checkNumber$8(d.last_sync_http_code, false, field + \".last_sync_http_code\");\n" +
-"        checkNull$5(d.last_sync_error, field + \".last_sync_error\");\n" +
-"        checkString$9(d.last_sync_at, false, field + \".last_sync_at\");\n" +
-"        checkBoolean$7(d.sync_customers, false, field + \".sync_customers\");\n" +
-"        checkNull$5(d.sync_since, field + \".sync_since\");\n" +
-"        checkString$9(d.last_successful_sync_at, false, field + \".last_successful_sync_at\");\n" +
-"        checkString$9(d.updated_at, false, field + \".updated_at\");\n" +
-"        checkNull$5(d.ledger_events_count, field + \".ledger_events_count\");\n" +
-"        checkNull$5(d.ledger_events_min_date, field + \".ledger_events_min_date\");\n" +
-"        checkNull$5(d.ledger_events_max_date, field + \".ledger_events_max_date\");\n" +
-"        checkNull$5(d.transactions_count, field + \".transactions_count\");\n" +
-"        checkBoolean$7(d.sync_attachments, false, field + \".sync_attachments\");\n" +
-"        checkNumber$8(d.establishment_id, false, field + \".establishment_id\");\n" +
-"        checkString$9(d.pusher_channel, false, field + \".pusher_channel\");\n" +
-"        checkString$9(d.connection, false, field + \".connection\");\n" +
-"        checkString$9(d.iban, true, field + \".iban\");\n" +
-"        checkString$9(d.bic, false, field + \".bic\");\n" +
-"        checkBoolean$7(d.use_as_default_for_vat_return, false, field + \".use_as_default_for_vat_return\");\n" +
-"        checkString$9(d.method, false, field + \".method\");\n" +
-"        checkString$9(d.url, false, field + \".url\");\n" +
-"        checkBoolean$7(d.swan, false, field + \".swan\");\n" +
-"        checkNull$5(d.swan_number, field + \".swan_number\");\n" +
-"        d.establishment = Establishment.Create(d.establishment, field + \".establishment\");\n" +
-"        checkString$9(d.label, false, field + \".label\");\n" +
-"        checkString$9(d.merge_url, false, field + \".merge_url\");\n" +
-"        const knownProperties = [\"id\", \"company_id\", \"name\", \"visible\", \"synchronized\", \"currency\", \"balance\", \"currency_balance\", \"last_sync_http_code\", \"last_sync_error\", \"last_sync_at\", \"sync_customers\", \"sync_since\", \"last_successful_sync_at\", \"updated_at\", \"ledger_events_count\", \"ledger_events_min_date\", \"ledger_events_max_date\", \"transactions_count\", \"sync_attachments\", \"establishment_id\", \"pusher_channel\", \"connection\", \"iban\", \"bic\", \"use_as_default_for_vat_return\", \"method\", \"url\", \"swan\", \"swan_number\", \"establishment\", \"label\", \"merge_url\"];\n" +
+"        checkString$9(d.balance, field + \".balance\");\n" +
+"        checkString$9(d.bic, field + \".bic\");\n" +
+"        checkNumber$8(d.company_id, field + \".company_id\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkString$9(d.connection, field + \".connection\", \"string | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$7(d.connection, field + \".connection\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        checkString$9(d.currency, field + \".currency\");\n" +
+"        checkString$9(d.currency_balance, field + \".currency_balance\");\n" +
+"        d.establishment = Establishment.Create(d.establishment, field + \".establishment\", undefined);\n" +
+"        checkNumber$8(d.establishment_id, field + \".establishment_id\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkString$9(d.iban, field + \".iban\", \"string | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$7(d.iban, field + \".iban\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        checkNumber$8(d.id, field + \".id\");\n" +
+"        checkString$9(d.label, field + \".label\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkString$9(d.last_successful_sync_at, field + \".last_successful_sync_at\", \"string | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$7(d.last_successful_sync_at, field + \".last_successful_sync_at\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkString$9(d.last_sync_at, field + \".last_sync_at\", \"string | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$7(d.last_sync_at, field + \".last_sync_at\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        checkNull$7(d.last_sync_error, field + \".last_sync_error\");\n" +
+"        checkNumber$8(d.last_sync_http_code, field + \".last_sync_http_code\");\n" +
+"        checkNull$7(d.ledger_events_count, field + \".ledger_events_count\");\n" +
+"        checkNull$7(d.ledger_events_max_date, field + \".ledger_events_max_date\");\n" +
+"        checkNull$7(d.ledger_events_min_date, field + \".ledger_events_min_date\");\n" +
+"        checkString$9(d.merge_url, field + \".merge_url\");\n" +
+"        checkString$9(d.method, field + \".method\");\n" +
+"        checkString$9(d.name, field + \".name\");\n" +
+"        checkString$9(d.pusher_channel, field + \".pusher_channel\");\n" +
+"        checkBoolean$7(d.swan, field + \".swan\");\n" +
+"        checkNull$7(d.swan_number, field + \".swan_number\");\n" +
+"        checkBoolean$7(d.sync_attachments, field + \".sync_attachments\");\n" +
+"        checkBoolean$7(d.sync_customers, field + \".sync_customers\");\n" +
+"        checkNull$7(d.sync_since, field + \".sync_since\");\n" +
+"        checkBoolean$7(d.synchronized, field + \".synchronized\");\n" +
+"        checkNull$7(d.transactions_count, field + \".transactions_count\");\n" +
+"        checkString$9(d.updated_at, field + \".updated_at\");\n" +
+"        checkString$9(d.url, field + \".url\");\n" +
+"        checkBoolean$7(d.use_as_default_for_vat_return, field + \".use_as_default_for_vat_return\");\n" +
+"        checkBoolean$7(d.visible, field + \".visible\");\n" +
+"        const knownProperties = [\"balance\", \"bic\", \"company_id\", \"connection\", \"currency\", \"currency_balance\", \"establishment\", \"establishment_id\", \"iban\", \"id\", \"label\", \"last_successful_sync_at\", \"last_sync_at\", \"last_sync_error\", \"last_sync_http_code\", \"ledger_events_count\", \"ledger_events_max_date\", \"ledger_events_min_date\", \"merge_url\", \"method\", \"name\", \"pusher_channel\", \"swan\", \"swan_number\", \"sync_attachments\", \"sync_customers\", \"sync_since\", \"synchronized\", \"transactions_count\", \"updated_at\", \"url\", \"use_as_default_for_vat_return\", \"visible\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$a(unknownProperty, d, \"never\", false);\n" +
+"            errorHelper$b(unknownProperty, d, \"never (unknown property)\");\n" +
 "        return new Account(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
-"        this.id = d.id;\n" +
-"        this.company_id = d.company_id;\n" +
-"        this.name = d.name;\n" +
-"        this.visible = d.visible;\n" +
-"        this.synchronized = d.synchronized;\n" +
-"        this.currency = d.currency;\n" +
 "        this.balance = d.balance;\n" +
-"        this.currency_balance = d.currency_balance;\n" +
-"        this.last_sync_http_code = d.last_sync_http_code;\n" +
-"        if (\"last_sync_error\" in d)\n" +
-"            this.last_sync_error = d.last_sync_error;\n" +
-"        this.last_sync_at = d.last_sync_at;\n" +
-"        this.sync_customers = d.sync_customers;\n" +
-"        if (\"sync_since\" in d)\n" +
-"            this.sync_since = d.sync_since;\n" +
-"        this.last_successful_sync_at = d.last_successful_sync_at;\n" +
-"        this.updated_at = d.updated_at;\n" +
-"        if (\"ledger_events_count\" in d)\n" +
-"            this.ledger_events_count = d.ledger_events_count;\n" +
-"        if (\"ledger_events_min_date\" in d)\n" +
-"            this.ledger_events_min_date = d.ledger_events_min_date;\n" +
-"        if (\"ledger_events_max_date\" in d)\n" +
-"            this.ledger_events_max_date = d.ledger_events_max_date;\n" +
-"        if (\"transactions_count\" in d)\n" +
-"            this.transactions_count = d.transactions_count;\n" +
-"        this.sync_attachments = d.sync_attachments;\n" +
-"        this.establishment_id = d.establishment_id;\n" +
-"        this.pusher_channel = d.pusher_channel;\n" +
-"        this.connection = d.connection;\n" +
-"        if (\"iban\" in d)\n" +
-"            this.iban = d.iban;\n" +
 "        this.bic = d.bic;\n" +
-"        this.use_as_default_for_vat_return = d.use_as_default_for_vat_return;\n" +
-"        this.method = d.method;\n" +
-"        this.url = d.url;\n" +
-"        this.swan = d.swan;\n" +
-"        if (\"swan_number\" in d)\n" +
-"            this.swan_number = d.swan_number;\n" +
+"        this.company_id = d.company_id;\n" +
+"        this.connection = d.connection;\n" +
+"        this.currency = d.currency;\n" +
+"        this.currency_balance = d.currency_balance;\n" +
 "        this.establishment = d.establishment;\n" +
+"        this.establishment_id = d.establishment_id;\n" +
+"        this.iban = d.iban;\n" +
+"        this.id = d.id;\n" +
 "        this.label = d.label;\n" +
+"        this.last_successful_sync_at = d.last_successful_sync_at;\n" +
+"        this.last_sync_at = d.last_sync_at;\n" +
+"        this.last_sync_error = d.last_sync_error;\n" +
+"        this.last_sync_http_code = d.last_sync_http_code;\n" +
+"        this.ledger_events_count = d.ledger_events_count;\n" +
+"        this.ledger_events_max_date = d.ledger_events_max_date;\n" +
+"        this.ledger_events_min_date = d.ledger_events_min_date;\n" +
 "        this.merge_url = d.merge_url;\n" +
+"        this.method = d.method;\n" +
+"        this.name = d.name;\n" +
+"        this.pusher_channel = d.pusher_channel;\n" +
+"        this.swan = d.swan;\n" +
+"        this.swan_number = d.swan_number;\n" +
+"        this.sync_attachments = d.sync_attachments;\n" +
+"        this.sync_customers = d.sync_customers;\n" +
+"        this.sync_since = d.sync_since;\n" +
+"        this.synchronized = d.synchronized;\n" +
+"        this.transactions_count = d.transactions_count;\n" +
+"        this.updated_at = d.updated_at;\n" +
+"        this.url = d.url;\n" +
+"        this.use_as_default_for_vat_return = d.use_as_default_for_vat_return;\n" +
+"        this.visible = d.visible;\n" +
 "    }\n" +
 "}\n" +
 "class Establishment {\n" +
 "    static Parse(d) {\n" +
 "        return Establishment.Create(JSON.parse(d));\n" +
 "    }\n" +
-"    static Create(d, field) {\n" +
+"    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$a = d;\n" +
+"            obj$b = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            throwNull2NonNull$9(field, d);\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$a(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$9(field, d, false);\n" +
+"            throwNotObject$a(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$9(field, d, false);\n" +
+"            throwIsArray$a(field, d);\n" +
 "        }\n" +
-"        checkNumber$8(d.id, false, field + \".id\");\n" +
-"        checkString$9(d.name, false, field + \".name\");\n" +
-"        checkNumber$8(d.accounts_count, false, field + \".accounts_count\");\n" +
-"        checkNull$5(d.budgetinsight_id, field + \".budgetinsight_id\");\n" +
+"        checkNumber$8(d.accounts_count, field + \".accounts_count\");\n" +
 "        checkArray$5(d.bridge_ids, field + \".bridge_ids\");\n" +
 "        if (d.bridge_ids) {\n" +
 "            for (let i = 0; i < d.bridge_ids.length; i++) {\n" +
-"                checkNumber$8(d.bridge_ids[i], true, field + \".bridge_ids\" + \"[\" + i + \"]\");\n" +
+"                checkNumber$8(d.bridge_ids[i], field + \".bridge_ids\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
-"        checkString$9(d.logo_url, false, field + \".logo_url\");\n" +
-"        checkString$9(d.method, false, field + \".method\");\n" +
-"        checkString$9(d.crm_url, false, field + \".crm_url\");\n" +
-"        const knownProperties = [\"id\", \"name\", \"accounts_count\", \"budgetinsight_id\", \"bridge_ids\", \"logo_url\", \"method\", \"crm_url\"];\n" +
+"        checkNull$7(d.budgetinsight_id, field + \".budgetinsight_id\");\n" +
+"        checkString$9(d.crm_url, field + \".crm_url\");\n" +
+"        checkNumber$8(d.id, field + \".id\");\n" +
+"        checkString$9(d.logo_url, field + \".logo_url\");\n" +
+"        checkString$9(d.method, field + \".method\");\n" +
+"        checkString$9(d.name, field + \".name\");\n" +
+"        const knownProperties = [\"accounts_count\", \"bridge_ids\", \"budgetinsight_id\", \"crm_url\", \"id\", \"logo_url\", \"method\", \"name\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$a(unknownProperty, d, \"never\", false);\n" +
+"            errorHelper$b(unknownProperty, d, \"never (unknown property)\");\n" +
 "        return new Establishment(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
-"        this.id = d.id;\n" +
-"        this.name = d.name;\n" +
 "        this.accounts_count = d.accounts_count;\n" +
-"        if (\"budgetinsight_id\" in d)\n" +
-"            this.budgetinsight_id = d.budgetinsight_id;\n" +
-"        if (\"bridge_ids\" in d)\n" +
-"            this.bridge_ids = d.bridge_ids;\n" +
+"        this.bridge_ids = d.bridge_ids;\n" +
+"        this.budgetinsight_id = d.budgetinsight_id;\n" +
+"        this.crm_url = d.crm_url;\n" +
+"        this.id = d.id;\n" +
 "        this.logo_url = d.logo_url;\n" +
 "        this.method = d.method;\n" +
-"        this.crm_url = d.crm_url;\n" +
-"    }\n" +
-"}\n" +
-"class Company1 {\n" +
-"    static Parse(d) {\n" +
-"        return Company1.Create(JSON.parse(d));\n" +
-"    }\n" +
-"    static Create(d, field) {\n" +
-"        if (!field) {\n" +
-"            obj$a = d;\n" +
-"            field = \"root\";\n" +
-"        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            return null;\n" +
-"        }\n" +
-"        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$9(field, d, true);\n" +
-"        }\n" +
-"        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$9(field, d, true);\n" +
-"        }\n" +
-"        checkString$9(d.name, false, field + \".name\");\n" +
-"        const knownProperties = [\"name\"];\n" +
-"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
-"        if (unknownProperty)\n" +
-"            errorHelper$a(unknownProperty, d, \"never\", false);\n" +
-"        return new Company1(d);\n" +
-"    }\n" +
-"    constructor(d) {\n" +
 "        this.name = d.name;\n" +
-"    }\n" +
-"}\n" +
-"class ScoredInvoices1 {\n" +
-"    static Parse(d) {\n" +
-"        return ScoredInvoices1.Create(JSON.parse(d));\n" +
-"    }\n" +
-"    static Create(d, field) {\n" +
-"        if (!field) {\n" +
-"            obj$a = d;\n" +
-"            field = \"root\";\n" +
-"        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            return null;\n" +
-"        }\n" +
-"        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$9(field, d, true);\n" +
-"        }\n" +
-"        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$9(field, d, true);\n" +
-"        }\n" +
-"        const knownProperties = [];\n" +
-"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
-"        if (unknownProperty)\n" +
-"            errorHelper$a(unknownProperty, d, \"never\", false);\n" +
-"        return new ScoredInvoices1(d);\n" +
-"    }\n" +
-"    constructor(d) {\n" +
-"    }\n" +
-"}\n" +
-"class LedgerEventsEntity {\n" +
-"    static Parse(d) {\n" +
-"        return LedgerEventsEntity.Create(JSON.parse(d));\n" +
-"    }\n" +
-"    static Create(d, field) {\n" +
-"        if (!field) {\n" +
-"            obj$a = d;\n" +
-"            field = \"root\";\n" +
-"        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            return null;\n" +
-"        }\n" +
-"        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$9(field, d, true);\n" +
-"        }\n" +
-"        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$9(field, d, true);\n" +
-"        }\n" +
-"        checkNumber$8(d.id, false, field + \".id\");\n" +
-"        checkNumber$8(d.company_id, false, field + \".company_id\");\n" +
-"        checkNumber$8(d.plan_item_id, false, field + \".plan_item_id\");\n" +
-"        checkNumber$8(d.document_id, false, field + \".document_id\");\n" +
-"        checkString$9(d.created_at, false, field + \".created_at\");\n" +
-"        checkNumber$8(d.reconciliation_id, true, field + \".reconciliation_id\");\n" +
-"        checkString$9(d.source, false, field + \".source\");\n" +
-"        checkNumber$8(d.lettering_id, true, field + \".lettering_id\");\n" +
-"        checkNumber$8(d.reallocation_id, true, field + \".reallocation_id\");\n" +
-"        checkString$9(d.debit, false, field + \".debit\");\n" +
-"        checkString$9(d.credit, false, field + \".credit\");\n" +
-"        checkString$9(d.balance, false, field + \".balance\");\n" +
-"        checkString$9(d.date, false, field + \".date\");\n" +
-"        d.planItem = PlanItemOrPnlPlanItem$1.Create(d.planItem, field + \".planItem\");\n" +
-"        checkBoolean$7(d.readonly, false, field + \".readonly\");\n" +
-"        checkBoolean$7(d.readonlyAmounts, false, field + \".readonlyAmounts\");\n" +
-"        checkString$9(d.label, true, field + \".label\");\n" +
-"        d.lettering = Lettering$1.Create(d.lettering, field + \".lettering\");\n" +
-"        d.reallocation = Reallocation.Create(d.reallocation, field + \".reallocation\");\n" +
-"        const knownProperties = [\"id\", \"company_id\", \"plan_item_id\", \"document_id\", \"created_at\", \"reconciliation_id\", \"source\", \"lettering_id\", \"reallocation_id\", \"debit\", \"credit\", \"balance\", \"date\", \"planItem\", \"readonly\", \"readonlyAmounts\", \"label\", \"lettering\", \"reallocation\"];\n" +
-"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
-"        if (unknownProperty)\n" +
-"            errorHelper$a(unknownProperty, d, \"never\", false);\n" +
-"        return new LedgerEventsEntity(d);\n" +
-"    }\n" +
-"    constructor(d) {\n" +
-"        this.id = d.id;\n" +
-"        this.company_id = d.company_id;\n" +
-"        this.plan_item_id = d.plan_item_id;\n" +
-"        this.document_id = d.document_id;\n" +
-"        this.created_at = d.created_at;\n" +
-"        if (\"reconciliation_id\" in d)\n" +
-"            this.reconciliation_id = d.reconciliation_id;\n" +
-"        this.source = d.source;\n" +
-"        if (\"lettering_id\" in d)\n" +
-"            this.lettering_id = d.lettering_id;\n" +
-"        if (\"reallocation_id\" in d)\n" +
-"            this.reallocation_id = d.reallocation_id;\n" +
-"        this.debit = d.debit;\n" +
-"        this.credit = d.credit;\n" +
-"        this.balance = d.balance;\n" +
-"        this.date = d.date;\n" +
-"        this.planItem = d.planItem;\n" +
-"        this.readonly = d.readonly;\n" +
-"        this.readonlyAmounts = d.readonlyAmounts;\n" +
-"        if (\"label\" in d)\n" +
-"            this.label = d.label;\n" +
-"        if (\"lettering\" in d)\n" +
-"            this.lettering = d.lettering;\n" +
-"        if (\"reallocation\" in d)\n" +
-"            this.reallocation = d.reallocation;\n" +
-"    }\n" +
-"}\n" +
-"let PlanItemOrPnlPlanItem$1 = class PlanItemOrPnlPlanItem {\n" +
-"    static Parse(d) {\n" +
-"        return PlanItemOrPnlPlanItem.Create(JSON.parse(d));\n" +
-"    }\n" +
-"    static Create(d, field) {\n" +
-"        if (!field) {\n" +
-"            obj$a = d;\n" +
-"            field = \"root\";\n" +
-"        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            throwNull2NonNull$9(field, d);\n" +
-"        }\n" +
-"        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$9(field, d, false);\n" +
-"        }\n" +
-"        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$9(field, d, false);\n" +
-"        }\n" +
-"        checkNumber$8(d.id, false, field + \".id\");\n" +
-"        checkString$9(d.number, false, field + \".number\");\n" +
-"        checkString$9(d.internal_identifier, true, field + \".internal_identifier\");\n" +
-"        checkString$9(d.label, false, field + \".label\");\n" +
-"        checkNumber$8(d.company_id, false, field + \".company_id\");\n" +
-"        checkBoolean$7(d.enabled, false, field + \".enabled\");\n" +
-"        checkString$9(d.vat_rate, false, field + \".vat_rate\");\n" +
-"        checkString$9(d[\"country_alpha2\"], false, field + \".country_alpha2\");\n" +
-"        checkBoolean$7(d.label_is_editable, false, field + \".label_is_editable\");\n" +
-"        const knownProperties = [\"id\", \"number\", \"internal_identifier\", \"label\", \"company_id\", \"enabled\", \"vat_rate\", \"country_alpha2\", \"label_is_editable\"];\n" +
-"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
-"        if (unknownProperty)\n" +
-"            errorHelper$a(unknownProperty, d, \"never\", false);\n" +
-"        return new PlanItemOrPnlPlanItem(d);\n" +
-"    }\n" +
-"    constructor(d) {\n" +
-"        this.id = d.id;\n" +
-"        this.number = d.number;\n" +
-"        if (\"internal_identifier\" in d)\n" +
-"            this.internal_identifier = d.internal_identifier;\n" +
-"        this.label = d.label;\n" +
-"        this.company_id = d.company_id;\n" +
-"        this.enabled = d.enabled;\n" +
-"        this.vat_rate = d.vat_rate;\n" +
-"        this[\"country_alpha2\"] = d[\"country_alpha2\"];\n" +
-"        this.label_is_editable = d.label_is_editable;\n" +
-"    }\n" +
-"};\n" +
-"let Lettering$1 = class Lettering {\n" +
-"    static Parse(d) {\n" +
-"        return Lettering.Create(JSON.parse(d));\n" +
-"    }\n" +
-"    static Create(d, field) {\n" +
-"        if (!field) {\n" +
-"            obj$a = d;\n" +
-"            field = \"root\";\n" +
-"        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            return null;\n" +
-"        }\n" +
-"        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$9(field, d, true);\n" +
-"        }\n" +
-"        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$9(field, d, true);\n" +
-"        }\n" +
-"        checkNumber$8(d.id, false, field + \".id\");\n" +
-"        checkString$9(d.balance, false, field + \".balance\");\n" +
-"        checkString$9(d.plan_item_number, false, field + \".plan_item_number\");\n" +
-"        const knownProperties = [\"id\", \"balance\", \"plan_item_number\"];\n" +
-"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
-"        if (unknownProperty)\n" +
-"            errorHelper$a(unknownProperty, d, \"never\", false);\n" +
-"        return new Lettering(d);\n" +
-"    }\n" +
-"    constructor(d) {\n" +
-"        this.id = d.id;\n" +
-"        this.balance = d.balance;\n" +
-"        this.plan_item_number = d.plan_item_number;\n" +
-"    }\n" +
-"};\n" +
-"class Reallocation {\n" +
-"    static Parse(d) {\n" +
-"        return Reallocation.Create(JSON.parse(d));\n" +
-"    }\n" +
-"    static Create(d, field) {\n" +
-"        if (!field) {\n" +
-"            obj$a = d;\n" +
-"            field = \"root\";\n" +
-"        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            return null;\n" +
-"        }\n" +
-"        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$9(field, d, true);\n" +
-"        }\n" +
-"        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$9(field, d, true);\n" +
-"        }\n" +
-"        checkNumber$8(d.id, false, field + \".id\");\n" +
-"        checkString$9(d.created_at, false, field + \".created_at\");\n" +
-"        d.fromPlanItem = PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem1.Create(d.fromPlanItem, field + \".fromPlanItem\");\n" +
-"        const knownProperties = [\"id\", \"created_at\", \"fromPlanItem\"];\n" +
-"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
-"        if (unknownProperty)\n" +
-"            errorHelper$a(unknownProperty, d, \"never\", false);\n" +
-"        return new Reallocation(d);\n" +
-"    }\n" +
-"    constructor(d) {\n" +
-"        this.id = d.id;\n" +
-"        this.created_at = d.created_at;\n" +
-"        this.fromPlanItem = d.fromPlanItem;\n" +
-"    }\n" +
-"}\n" +
-"class PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem1 {\n" +
-"    static Parse(d) {\n" +
-"        return PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem1.Create(JSON.parse(d));\n" +
-"    }\n" +
-"    static Create(d, field) {\n" +
-"        if (!field) {\n" +
-"            obj$a = d;\n" +
-"            field = \"root\";\n" +
-"        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            throwNull2NonNull$9(field, d);\n" +
-"        }\n" +
-"        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$9(field, d, false);\n" +
-"        }\n" +
-"        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$9(field, d, false);\n" +
-"        }\n" +
-"        checkNumber$8(d.id, false, field + \".id\");\n" +
-"        checkString$9(d.number, false, field + \".number\");\n" +
-"        checkNull$5(d.internal_identifier, field + \".internal_identifier\");\n" +
-"        checkString$9(d.label, false, field + \".label\");\n" +
-"        checkNumber$8(d.company_id, false, field + \".company_id\");\n" +
-"        checkBoolean$7(d.enabled, false, field + \".enabled\");\n" +
-"        checkString$9(d.vat_rate, false, field + \".vat_rate\");\n" +
-"        checkString$9(d[\"country_alpha2\"], false, field + \".country_alpha2\");\n" +
-"        checkBoolean$7(d.label_is_editable, false, field + \".label_is_editable\");\n" +
-"        const knownProperties = [\"id\", \"number\", \"internal_identifier\", \"label\", \"company_id\", \"enabled\", \"vat_rate\", \"country_alpha2\", \"label_is_editable\"];\n" +
-"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
-"        if (unknownProperty)\n" +
-"            errorHelper$a(unknownProperty, d, \"never\", false);\n" +
-"        return new PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem1(d);\n" +
-"    }\n" +
-"    constructor(d) {\n" +
-"        this.id = d.id;\n" +
-"        this.number = d.number;\n" +
-"        if (\"internal_identifier\" in d)\n" +
-"            this.internal_identifier = d.internal_identifier;\n" +
-"        this.label = d.label;\n" +
-"        this.company_id = d.company_id;\n" +
-"        this.enabled = d.enabled;\n" +
-"        this.vat_rate = d.vat_rate;\n" +
-"        this[\"country_alpha2\"] = d[\"country_alpha2\"];\n" +
-"        this.label_is_editable = d.label_is_editable;\n" +
 "    }\n" +
 "}\n" +
 "class ClientCommentsEntityOrEstablishmentComment {\n" +
 "    static Parse(d) {\n" +
 "        return ClientCommentsEntityOrEstablishmentComment.Create(JSON.parse(d));\n" +
 "    }\n" +
-"    static Create(d, field) {\n" +
+"    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$a = d;\n" +
+"            obj$b = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            return null;\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$a(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$9(field, d, true);\n" +
+"            throwNotObject$a(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$9(field, d, true);\n" +
+"            throwIsArray$a(field, d);\n" +
 "        }\n" +
-"        checkNumber$8(d.id, false, field + \".id\");\n" +
-"        checkString$9(d.name, false, field + \".name\");\n" +
-"        checkString$9(d.content, false, field + \".content\");\n" +
-"        checkString$9(d.created_at, false, field + \".created_at\");\n" +
-"        checkBoolean$7(d.seen, false, field + \".seen\");\n" +
-"        checkString$9(d.record_type, false, field + \".record_type\");\n" +
-"        checkNumber$8(d.record_id, false, field + \".record_id\");\n" +
-"        checkString$9(d.updated_at, false, field + \".updated_at\");\n" +
-"        checkNumber$8(d.user_id, false, field + \".user_id\");\n" +
-"        checkNull$5(d.rich_content, field + \".rich_content\");\n" +
-"        d.user = User.Create(d.user, field + \".user\");\n" +
-"        const knownProperties = [\"id\", \"name\", \"content\", \"created_at\", \"seen\", \"record_type\", \"record_id\", \"updated_at\", \"user_id\", \"rich_content\", \"user\"];\n" +
+"        checkString$9(d.content, field + \".content\");\n" +
+"        checkString$9(d.created_at, field + \".created_at\");\n" +
+"        checkNumber$8(d.id, field + \".id\");\n" +
+"        checkString$9(d.name, field + \".name\");\n" +
+"        checkNumber$8(d.record_id, field + \".record_id\");\n" +
+"        checkString$9(d.record_type, field + \".record_type\");\n" +
+"        checkNull$7(d.rich_content, field + \".rich_content\");\n" +
+"        checkBoolean$7(d.seen, field + \".seen\");\n" +
+"        checkString$9(d.updated_at, field + \".updated_at\");\n" +
+"        d.user = User.Create(d.user, field + \".user\", undefined);\n" +
+"        checkNumber$8(d.user_id, field + \".user_id\");\n" +
+"        const knownProperties = [\"content\", \"created_at\", \"id\", \"name\", \"record_id\", \"record_type\", \"rich_content\", \"seen\", \"updated_at\", \"user\", \"user_id\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$a(unknownProperty, d, \"never\", false);\n" +
+"            errorHelper$b(unknownProperty, d, \"never (unknown property)\");\n" +
 "        return new ClientCommentsEntityOrEstablishmentComment(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
-"        this.id = d.id;\n" +
-"        this.name = d.name;\n" +
 "        this.content = d.content;\n" +
 "        this.created_at = d.created_at;\n" +
-"        this.seen = d.seen;\n" +
-"        this.record_type = d.record_type;\n" +
+"        this.id = d.id;\n" +
+"        this.name = d.name;\n" +
 "        this.record_id = d.record_id;\n" +
+"        this.record_type = d.record_type;\n" +
+"        this.rich_content = d.rich_content;\n" +
+"        this.seen = d.seen;\n" +
 "        this.updated_at = d.updated_at;\n" +
-"        this.user_id = d.user_id;\n" +
-"        if (\"rich_content\" in d)\n" +
-"            this.rich_content = d.rich_content;\n" +
 "        this.user = d.user;\n" +
+"        this.user_id = d.user_id;\n" +
 "    }\n" +
 "}\n" +
 "class User {\n" +
 "    static Parse(d) {\n" +
 "        return User.Create(JSON.parse(d));\n" +
 "    }\n" +
-"    static Create(d, field) {\n" +
+"    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$a = d;\n" +
+"            obj$b = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            throwNull2NonNull$9(field, d);\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$a(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$9(field, d, false);\n" +
+"            throwNotObject$a(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$9(field, d, false);\n" +
+"            throwIsArray$a(field, d);\n" +
 "        }\n" +
-"        checkNumber$8(d.id, false, field + \".id\");\n" +
-"        checkString$9(d.first_name, false, field + \".first_name\");\n" +
-"        checkString$9(d.last_name, false, field + \".last_name\");\n" +
-"        checkString$9(d.full_name, false, field + \".full_name\");\n" +
-"        checkNull$5(d.profile_picture_url, field + \".profile_picture_url\");\n" +
-"        const knownProperties = [\"id\", \"first_name\", \"last_name\", \"full_name\", \"profile_picture_url\"];\n" +
+"        checkString$9(d.first_name, field + \".first_name\");\n" +
+"        checkString$9(d.full_name, field + \".full_name\");\n" +
+"        checkNumber$8(d.id, field + \".id\");\n" +
+"        checkString$9(d.last_name, field + \".last_name\");\n" +
+"        checkNull$7(d.profile_picture_url, field + \".profile_picture_url\");\n" +
+"        const knownProperties = [\"first_name\", \"full_name\", \"id\", \"last_name\", \"profile_picture_url\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$a(unknownProperty, d, \"never\", false);\n" +
+"            errorHelper$b(unknownProperty, d, \"never (unknown property)\");\n" +
 "        return new User(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
-"        this.id = d.id;\n" +
 "        this.first_name = d.first_name;\n" +
-"        this.last_name = d.last_name;\n" +
 "        this.full_name = d.full_name;\n" +
-"        if (\"profile_picture_url\" in d)\n" +
-"            this.profile_picture_url = d.profile_picture_url;\n" +
+"        this.id = d.id;\n" +
+"        this.last_name = d.last_name;\n" +
+"        this.profile_picture_url = d.profile_picture_url;\n" +
 "    }\n" +
 "}\n" +
-"let Thirdparty$2 = class Thirdparty {\n" +
+"class Company1 {\n" +
 "    static Parse(d) {\n" +
-"        return Thirdparty.Create(JSON.parse(d));\n" +
+"        return Company1.Create(JSON.parse(d));\n" +
 "    }\n" +
-"    static Create(d, field) {\n" +
+"    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$a = d;\n" +
+"            obj$b = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            return null;\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$a(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$9(field, d, true);\n" +
+"            throwNotObject$a(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$9(field, d, true);\n" +
+"            throwIsArray$a(field, d);\n" +
 "        }\n" +
-"        checkNumber$8(d.id, false, field + \".id\");\n" +
-"        checkNumber$8(d.known_supplier_id, true, field + \".known_supplier_id\");\n" +
-"        checkNumber$8(d.company_id, false, field + \".company_id\");\n" +
-"        checkString$9(d.name, false, field + \".name\");\n" +
-"        checkString$9(d.role, false, field + \".role\");\n" +
-"        checkString$9(d.address, false, field + \".address\");\n" +
-"        checkString$9(d.postal_code, false, field + \".postal_code\");\n" +
-"        checkString$9(d.city, false, field + \".city\");\n" +
-"        checkString$9(d[\"country_alpha2\"], false, field + \".country_alpha2\");\n" +
-"        checkString$9(d.vat_number, false, field + \".vat_number\");\n" +
-"        checkArray$5(d.search_terms, field + \".search_terms\");\n" +
-"        if (d.search_terms) {\n" +
-"            for (let i = 0; i < d.search_terms.length; i++) {\n" +
-"                checkString$9(d.search_terms[i], false, field + \".search_terms\" + \"[\" + i + \"]\");\n" +
-"            }\n" +
-"        }\n" +
-"        checkArray$5(d.emails, field + \".emails\");\n" +
-"        if (d.emails) {\n" +
-"            for (let i = 0; i < d.emails.length; i++) {\n" +
-"                checkNull$5(d.emails[i], field + \".emails\" + \"[\" + i + \"]\");\n" +
-"            }\n" +
-"        }\n" +
-"        checkString$9(d.reg_no, false, field + \".reg_no\");\n" +
-"        checkString$9(d.phone, false, field + \".phone\");\n" +
-"        checkString$9(d.first_name, false, field + \".first_name\");\n" +
-"        checkBoolean$7(d.recurrent, false, field + \".recurrent\");\n" +
-"        checkString$9(d.last_name, false, field + \".last_name\");\n" +
-"        checkNull$5(d.gender, field + \".gender\");\n" +
-"        checkString$9(d.payment_conditions, false, field + \".payment_conditions\");\n" +
-"        checkString$9(d.customer_type, false, field + \".customer_type\");\n" +
-"        checkBoolean$7(d.disable_pending_vat, false, field + \".disable_pending_vat\");\n" +
-"        checkBoolean$7(d.force_pending_vat, false, field + \".force_pending_vat\");\n" +
-"        checkNull$5(d.gocardless_id, field + \".gocardless_id\");\n" +
-"        checkBoolean$7(d.invoices_auto_generated, false, field + \".invoices_auto_generated\");\n" +
-"        checkBoolean$7(d.invoices_auto_validated, false, field + \".invoices_auto_validated\");\n" +
-"        checkNull$5(d.billing_iban, field + \".billing_iban\");\n" +
-"        checkNull$5(d.billing_bic, field + \".billing_bic\");\n" +
-"        checkNull$5(d.billing_bank, field + \".billing_bank\");\n" +
-"        checkString$9(d.recipient, false, field + \".recipient\");\n" +
-"        checkString$9(d.billing_language, false, field + \".billing_language\");\n" +
-"        checkString$9(d.iban, false, field + \".iban\");\n" +
-"        checkNull$5(d.stripe_id, field + \".stripe_id\");\n" +
-"        checkNull$5(d.invoice_dump_id, field + \".invoice_dump_id\");\n" +
-"        checkString$9(d.delivery_address, false, field + \".delivery_address\");\n" +
-"        checkString$9(d.delivery_postal_code, false, field + \".delivery_postal_code\");\n" +
-"        checkString$9(d.delivery_city, false, field + \".delivery_city\");\n" +
-"        checkString$9(d[\"delivery_country_alpha2\"], false, field + \".delivery_country_alpha2\");\n" +
-"        checkString$9(d.reference, false, field + \".reference\");\n" +
-"        checkString$9(d.legal_form_code, false, field + \".legal_form_code\");\n" +
-"        checkString$9(d.activity_nomenclature, false, field + \".activity_nomenclature\");\n" +
-"        checkString$9(d.activity_code, false, field + \".activity_code\");\n" +
-"        checkNull$5(d.billing_footer_invoice_id, field + \".billing_footer_invoice_id\");\n" +
-"        checkNumber$8(d.plan_item_id, false, field + \".plan_item_id\");\n" +
-"        checkBoolean$7(d.rule_enabled, false, field + \".rule_enabled\");\n" +
-"        checkNull$5(d.supplier_payment_method, field + \".supplier_payment_method\");\n" +
-"        checkString$9(d.supplier_payment_method_last_updated_at, true, field + \".supplier_payment_method_last_updated_at\");\n" +
-"        checkString$9(d.notes, false, field + \".notes\");\n" +
-"        checkNull$5(d.admin_city_code, field + \".admin_city_code\");\n" +
-"        checkString$9(d.establishment_no, true, field + \".establishment_no\");\n" +
-"        checkString$9(d.address_additional_info, false, field + \".address_additional_info\");\n" +
-"        checkString$9(d.delivery_address_additional_info, false, field + \".delivery_address_additional_info\");\n" +
-"        checkString$9(d.vat_rate, true, field + \".vat_rate\");\n" +
-"        checkNumber$8(d.pnl_plan_item_id, true, field + \".pnl_plan_item_id\");\n" +
-"        checkString$9(d.source_id, false, field + \".source_id\");\n" +
-"        checkString$9(d.country, true, field + \".country\");\n" +
-"        checkNull$5(d.delivery_country, field + \".delivery_country\");\n" +
-"        checkBoolean$7(d.complete, false, field + \".complete\");\n" +
-"        checkString$9(d.url, false, field + \".url\");\n" +
-"        checkString$9(d.method, false, field + \".method\");\n" +
-"        checkNull$5(d.billing_footer_invoice_label, field + \".billing_footer_invoice_label\");\n" +
-"        checkNull$5(d.display_name, field + \".display_name\");\n" +
-"        checkNull$5(d.debits, field + \".debits\");\n" +
-"        checkNull$5(d.credits, field + \".credits\");\n" +
-"        checkNull$5(d.balance, field + \".balance\");\n" +
-"        checkNull$5(d.invoice_count, field + \".invoice_count\");\n" +
-"        checkNull$5(d.purchase_request_count, field + \".purchase_request_count\");\n" +
-"        checkNull$5(d.estimate_count, field + \".estimate_count\");\n" +
-"        checkNull$5(d.turnover, field + \".turnover\");\n" +
-"        checkNull$5(d.ledger_events_count, field + \".ledger_events_count\");\n" +
-"        checkNull$5(d.plan_item, field + \".plan_item\");\n" +
-"        checkNull$5(d.pnl_plan_item, field + \".pnl_plan_item\");\n" +
-"        checkNull$5(d.current_mandate, field + \".current_mandate\");\n" +
-"        checkBoolean$7(d.received_a_mandate_request, false, field + \".received_a_mandate_request\");\n" +
-"        checkNull$5(d.notes_comment, field + \".notes_comment\");\n" +
-"        checkNull$5(d.plan_item_attributes, field + \".plan_item_attributes\");\n" +
-"        checkArray$5(d.tags, field + \".tags\");\n" +
-"        if (d.tags) {\n" +
-"            for (let i = 0; i < d.tags.length; i++) {\n" +
-"                checkNull$5(d.tags[i], field + \".tags\" + \"[\" + i + \"]\");\n" +
-"            }\n" +
-"        }\n" +
-"        const knownProperties = [\"id\", \"known_supplier_id\", \"company_id\", \"name\", \"role\", \"address\", \"postal_code\", \"city\", \"country_alpha2\", \"vat_number\", \"search_terms\", \"emails\", \"reg_no\", \"phone\", \"first_name\", \"recurrent\", \"last_name\", \"gender\", \"payment_conditions\", \"customer_type\", \"disable_pending_vat\", \"force_pending_vat\", \"gocardless_id\", \"invoices_auto_generated\", \"invoices_auto_validated\", \"billing_iban\", \"billing_bic\", \"billing_bank\", \"recipient\", \"billing_language\", \"iban\", \"stripe_id\", \"invoice_dump_id\", \"delivery_address\", \"delivery_postal_code\", \"delivery_city\", \"delivery_country_alpha2\", \"reference\", \"legal_form_code\", \"activity_nomenclature\", \"activity_code\", \"billing_footer_invoice_id\", \"plan_item_id\", \"rule_enabled\", \"supplier_payment_method\", \"supplier_payment_method_last_updated_at\", \"notes\", \"admin_city_code\", \"establishment_no\", \"address_additional_info\", \"delivery_address_additional_info\", \"vat_rate\", \"pnl_plan_item_id\", \"source_id\", \"country\", \"delivery_country\", \"complete\", \"url\", \"method\", \"billing_footer_invoice_label\", \"display_name\", \"debits\", \"credits\", \"balance\", \"invoice_count\", \"purchase_request_count\", \"estimate_count\", \"turnover\", \"ledger_events_count\", \"plan_item\", \"pnl_plan_item\", \"current_mandate\", \"received_a_mandate_request\", \"notes_comment\", \"plan_item_attributes\", \"tags\"];\n" +
+"        checkString$9(d.name, field + \".name\");\n" +
+"        const knownProperties = [\"name\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$a(unknownProperty, d, \"never\", false);\n" +
-"        return new Thirdparty(d);\n" +
+"            errorHelper$b(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new Company1(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
-"        this.id = d.id;\n" +
-"        if (\"known_supplier_id\" in d)\n" +
-"            this.known_supplier_id = d.known_supplier_id;\n" +
-"        this.company_id = d.company_id;\n" +
 "        this.name = d.name;\n" +
-"        this.role = d.role;\n" +
-"        this.address = d.address;\n" +
-"        this.postal_code = d.postal_code;\n" +
-"        this.city = d.city;\n" +
-"        this[\"country_alpha2\"] = d[\"country_alpha2\"];\n" +
-"        this.vat_number = d.vat_number;\n" +
-"        if (\"search_terms\" in d)\n" +
-"            this.search_terms = d.search_terms;\n" +
-"        if (\"emails\" in d)\n" +
-"            this.emails = d.emails;\n" +
-"        this.reg_no = d.reg_no;\n" +
-"        this.phone = d.phone;\n" +
-"        this.first_name = d.first_name;\n" +
-"        this.recurrent = d.recurrent;\n" +
-"        this.last_name = d.last_name;\n" +
-"        if (\"gender\" in d)\n" +
-"            this.gender = d.gender;\n" +
-"        this.payment_conditions = d.payment_conditions;\n" +
-"        this.customer_type = d.customer_type;\n" +
-"        this.disable_pending_vat = d.disable_pending_vat;\n" +
-"        this.force_pending_vat = d.force_pending_vat;\n" +
-"        if (\"gocardless_id\" in d)\n" +
-"            this.gocardless_id = d.gocardless_id;\n" +
-"        this.invoices_auto_generated = d.invoices_auto_generated;\n" +
-"        this.invoices_auto_validated = d.invoices_auto_validated;\n" +
-"        if (\"billing_iban\" in d)\n" +
-"            this.billing_iban = d.billing_iban;\n" +
-"        if (\"billing_bic\" in d)\n" +
-"            this.billing_bic = d.billing_bic;\n" +
-"        if (\"billing_bank\" in d)\n" +
-"            this.billing_bank = d.billing_bank;\n" +
-"        this.recipient = d.recipient;\n" +
-"        this.billing_language = d.billing_language;\n" +
-"        this.iban = d.iban;\n" +
-"        if (\"stripe_id\" in d)\n" +
-"            this.stripe_id = d.stripe_id;\n" +
-"        if (\"invoice_dump_id\" in d)\n" +
-"            this.invoice_dump_id = d.invoice_dump_id;\n" +
-"        this.delivery_address = d.delivery_address;\n" +
-"        this.delivery_postal_code = d.delivery_postal_code;\n" +
-"        this.delivery_city = d.delivery_city;\n" +
-"        this[\"delivery_country_alpha2\"] = d[\"delivery_country_alpha2\"];\n" +
-"        this.reference = d.reference;\n" +
-"        this.legal_form_code = d.legal_form_code;\n" +
-"        this.activity_nomenclature = d.activity_nomenclature;\n" +
-"        this.activity_code = d.activity_code;\n" +
-"        if (\"billing_footer_invoice_id\" in d)\n" +
-"            this.billing_footer_invoice_id = d.billing_footer_invoice_id;\n" +
-"        this.plan_item_id = d.plan_item_id;\n" +
-"        this.rule_enabled = d.rule_enabled;\n" +
-"        if (\"supplier_payment_method\" in d)\n" +
-"            this.supplier_payment_method = d.supplier_payment_method;\n" +
-"        if (\"supplier_payment_method_last_updated_at\" in d)\n" +
-"            this.supplier_payment_method_last_updated_at = d.supplier_payment_method_last_updated_at;\n" +
-"        this.notes = d.notes;\n" +
-"        if (\"admin_city_code\" in d)\n" +
-"            this.admin_city_code = d.admin_city_code;\n" +
-"        if (\"establishment_no\" in d)\n" +
-"            this.establishment_no = d.establishment_no;\n" +
-"        this.address_additional_info = d.address_additional_info;\n" +
-"        this.delivery_address_additional_info = d.delivery_address_additional_info;\n" +
-"        if (\"vat_rate\" in d)\n" +
-"            this.vat_rate = d.vat_rate;\n" +
-"        if (\"pnl_plan_item_id\" in d)\n" +
-"            this.pnl_plan_item_id = d.pnl_plan_item_id;\n" +
-"        this.source_id = d.source_id;\n" +
-"        if (\"country\" in d)\n" +
-"            this.country = d.country;\n" +
-"        if (\"delivery_country\" in d)\n" +
-"            this.delivery_country = d.delivery_country;\n" +
-"        this.complete = d.complete;\n" +
-"        this.url = d.url;\n" +
-"        this.method = d.method;\n" +
-"        if (\"billing_footer_invoice_label\" in d)\n" +
-"            this.billing_footer_invoice_label = d.billing_footer_invoice_label;\n" +
-"        if (\"display_name\" in d)\n" +
-"            this.display_name = d.display_name;\n" +
-"        if (\"debits\" in d)\n" +
-"            this.debits = d.debits;\n" +
-"        if (\"credits\" in d)\n" +
-"            this.credits = d.credits;\n" +
-"        if (\"balance\" in d)\n" +
-"            this.balance = d.balance;\n" +
-"        if (\"invoice_count\" in d)\n" +
-"            this.invoice_count = d.invoice_count;\n" +
-"        if (\"purchase_request_count\" in d)\n" +
-"            this.purchase_request_count = d.purchase_request_count;\n" +
-"        if (\"estimate_count\" in d)\n" +
-"            this.estimate_count = d.estimate_count;\n" +
-"        if (\"turnover\" in d)\n" +
-"            this.turnover = d.turnover;\n" +
-"        if (\"ledger_events_count\" in d)\n" +
-"            this.ledger_events_count = d.ledger_events_count;\n" +
-"        if (\"plan_item\" in d)\n" +
-"            this.plan_item = d.plan_item;\n" +
-"        if (\"pnl_plan_item\" in d)\n" +
-"            this.pnl_plan_item = d.pnl_plan_item;\n" +
-"        if (\"current_mandate\" in d)\n" +
-"            this.current_mandate = d.current_mandate;\n" +
-"        this.received_a_mandate_request = d.received_a_mandate_request;\n" +
-"        if (\"notes_comment\" in d)\n" +
-"            this.notes_comment = d.notes_comment;\n" +
-"        if (\"plan_item_attributes\" in d)\n" +
-"            this.plan_item_attributes = d.plan_item_attributes;\n" +
-"        if (\"tags\" in d)\n" +
-"            this.tags = d.tags;\n" +
-"    }\n" +
-"};\n" +
-"let InvoiceLinesEntity$2 = class InvoiceLinesEntity {\n" +
-"    static Parse(d) {\n" +
-"        return InvoiceLinesEntity.Create(JSON.parse(d));\n" +
-"    }\n" +
-"    static Create(d, field) {\n" +
-"        if (!field) {\n" +
-"            obj$a = d;\n" +
-"            field = \"root\";\n" +
-"        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            throwNull2NonNull$9(field, d);\n" +
-"        }\n" +
-"        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$9(field, d, false);\n" +
-"        }\n" +
-"        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$9(field, d, false);\n" +
-"        }\n" +
-"        checkNumber$8(d.id, false, field + \".id\");\n" +
-"        checkString$9(d.price_before_tax, false, field + \".price_before_tax\");\n" +
-"        checkString$9(d.amount, false, field + \".amount\");\n" +
-"        checkString$9(d.tax, false, field + \".tax\");\n" +
-"        checkString$9(d.label, false, field + \".label\");\n" +
-"        checkString$9(d.description, false, field + \".description\");\n" +
-"        checkNumber$8(d.pnl_plan_item_id, false, field + \".pnl_plan_item_id\");\n" +
-"        checkNull$5(d.product_id, field + \".product_id\");\n" +
-"        checkString$9(d.quantity, false, field + \".quantity\");\n" +
-"        checkString$9(d.unit, true, field + \".unit\");\n" +
-"        checkString$9(d.created_at, false, field + \".created_at\");\n" +
-"        checkString$9(d.currency_amount, false, field + \".currency_amount\");\n" +
-"        checkString$9(d.currency_tax, false, field + \".currency_tax\");\n" +
-"        checkString$9(d.currency_price_before_tax, false, field + \".currency_price_before_tax\");\n" +
-"        checkNumber$8(d.rank, true, field + \".rank\");\n" +
-"        checkBoolean$7(d.prepaid_pnl, false, field + \".prepaid_pnl\");\n" +
-"        checkString$9(d.ocr_vat_rate, true, field + \".ocr_vat_rate\");\n" +
-"        checkNumber$8(d.document_id, false, field + \".document_id\");\n" +
-"        checkString$9(d.discount, false, field + \".discount\");\n" +
-"        checkString$9(d.discount_type, false, field + \".discount_type\");\n" +
-"        checkNumber$8(d.company_id, false, field + \".company_id\");\n" +
-"        checkNumber$8(d.asset_id, true, field + \".asset_id\");\n" +
-"        checkNull$5(d.deferral_id, field + \".deferral_id\");\n" +
-"        checkNull$5(d.advance_id, field + \".advance_id\");\n" +
-"        checkString$9(d.raw_currency_unit_price, false, field + \".raw_currency_unit_price\");\n" +
-"        checkString$9(d.undiscounted_currency_price_before_tax, false, field + \".undiscounted_currency_price_before_tax\");\n" +
-"        checkBoolean$7(d.manual_vat_mode, false, field + \".manual_vat_mode\");\n" +
-"        checkNumber$8(d.invoice_line_section_id, true, field + \".invoice_line_section_id\");\n" +
-"        checkBoolean$7(d.global_vat, false, field + \".global_vat\");\n" +
-"        checkString$9(d.vat_rate, false, field + \".vat_rate\");\n" +
-"        d.pnl_plan_item = PlanItemOrPnlPlanItem$1.Create(d.pnl_plan_item, field + \".pnl_plan_item\");\n" +
-"        checkString$9(d.currency_unit_price_before_tax, false, field + \".currency_unit_price_before_tax\");\n" +
-"        const knownProperties = [\"id\", \"price_before_tax\", \"amount\", \"tax\", \"label\", \"description\", \"pnl_plan_item_id\", \"product_id\", \"quantity\", \"unit\", \"created_at\", \"currency_amount\", \"currency_tax\", \"currency_price_before_tax\", \"rank\", \"prepaid_pnl\", \"ocr_vat_rate\", \"document_id\", \"discount\", \"discount_type\", \"company_id\", \"asset_id\", \"deferral_id\", \"advance_id\", \"raw_currency_unit_price\", \"undiscounted_currency_price_before_tax\", \"manual_vat_mode\", \"invoice_line_section_id\", \"global_vat\", \"vat_rate\", \"pnl_plan_item\", \"currency_unit_price_before_tax\"];\n" +
-"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
-"        if (unknownProperty)\n" +
-"            errorHelper$a(unknownProperty, d, \"never\", false);\n" +
-"        return new InvoiceLinesEntity(d);\n" +
-"    }\n" +
-"    constructor(d) {\n" +
-"        this.id = d.id;\n" +
-"        this.price_before_tax = d.price_before_tax;\n" +
-"        this.amount = d.amount;\n" +
-"        this.tax = d.tax;\n" +
-"        this.label = d.label;\n" +
-"        this.description = d.description;\n" +
-"        this.pnl_plan_item_id = d.pnl_plan_item_id;\n" +
-"        if (\"product_id\" in d)\n" +
-"            this.product_id = d.product_id;\n" +
-"        this.quantity = d.quantity;\n" +
-"        if (\"unit\" in d)\n" +
-"            this.unit = d.unit;\n" +
-"        this.created_at = d.created_at;\n" +
-"        this.currency_amount = d.currency_amount;\n" +
-"        this.currency_tax = d.currency_tax;\n" +
-"        this.currency_price_before_tax = d.currency_price_before_tax;\n" +
-"        if (\"rank\" in d)\n" +
-"            this.rank = d.rank;\n" +
-"        this.prepaid_pnl = d.prepaid_pnl;\n" +
-"        if (\"ocr_vat_rate\" in d)\n" +
-"            this.ocr_vat_rate = d.ocr_vat_rate;\n" +
-"        this.document_id = d.document_id;\n" +
-"        this.discount = d.discount;\n" +
-"        this.discount_type = d.discount_type;\n" +
-"        this.company_id = d.company_id;\n" +
-"        if (\"asset_id\" in d)\n" +
-"            this.asset_id = d.asset_id;\n" +
-"        if (\"deferral_id\" in d)\n" +
-"            this.deferral_id = d.deferral_id;\n" +
-"        if (\"advance_id\" in d)\n" +
-"            this.advance_id = d.advance_id;\n" +
-"        this.raw_currency_unit_price = d.raw_currency_unit_price;\n" +
-"        this.undiscounted_currency_price_before_tax = d.undiscounted_currency_price_before_tax;\n" +
-"        this.manual_vat_mode = d.manual_vat_mode;\n" +
-"        if (\"invoice_line_section_id\" in d)\n" +
-"            this.invoice_line_section_id = d.invoice_line_section_id;\n" +
-"        this.global_vat = d.global_vat;\n" +
-"        this.vat_rate = d.vat_rate;\n" +
-"        this.pnl_plan_item = d.pnl_plan_item;\n" +
-"        this.currency_unit_price_before_tax = d.currency_unit_price_before_tax;\n" +
-"    }\n" +
-"};\n" +
-"class EstablishmentComment {\n" +
-"    static Parse(d) {\n" +
-"        return EstablishmentComment.Create(JSON.parse(d));\n" +
-"    }\n" +
-"    static Create(d, field) {\n" +
-"        if (!field) {\n" +
-"            obj$a = d;\n" +
-"            field = \"root\";\n" +
-"        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            return null;\n" +
-"        }\n" +
-"        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$9(field, d, true);\n" +
-"        }\n" +
-"        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$9(field, d, true);\n" +
-"        }\n" +
-"        checkNumber$8(d.id, false, field + \".id\");\n" +
-"        checkString$9(d.name, false, field + \".name\");\n" +
-"        checkString$9(d.content, false, field + \".content\");\n" +
-"        checkString$9(d.created_at, false, field + \".created_at\");\n" +
-"        checkBoolean$7(d.seen, false, field + \".seen\");\n" +
-"        checkString$9(d.record_type, false, field + \".record_type\");\n" +
-"        checkNumber$8(d.record_id, false, field + \".record_id\");\n" +
-"        checkString$9(d.updated_at, false, field + \".updated_at\");\n" +
-"        checkNumber$8(d.user_id, true, field + \".user_id\");\n" +
-"        checkNull$5(d.rich_content, field + \".rich_content\");\n" +
-"        d.user = User1.Create(d.user, field + \".user\");\n" +
-"        checkNull$5(d.author, field + \".author\");\n" +
-"        const knownProperties = [\"id\", \"name\", \"content\", \"created_at\", \"seen\", \"record_type\", \"record_id\", \"updated_at\", \"user_id\", \"rich_content\", \"user\", \"author\"];\n" +
-"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
-"        if (unknownProperty)\n" +
-"            errorHelper$a(unknownProperty, d, \"never\", false);\n" +
-"        return new EstablishmentComment(d);\n" +
-"    }\n" +
-"    constructor(d) {\n" +
-"        this.id = d.id;\n" +
-"        this.name = d.name;\n" +
-"        this.content = d.content;\n" +
-"        this.created_at = d.created_at;\n" +
-"        this.seen = d.seen;\n" +
-"        this.record_type = d.record_type;\n" +
-"        this.record_id = d.record_id;\n" +
-"        this.updated_at = d.updated_at;\n" +
-"        if (\"user_id\" in d)\n" +
-"            this.user_id = d.user_id;\n" +
-"        if (\"rich_content\" in d)\n" +
-"            this.rich_content = d.rich_content;\n" +
-"        if (\"user\" in d)\n" +
-"            this.user = d.user;\n" +
-"        if (\"author\" in d)\n" +
-"            this.author = d.author;\n" +
-"    }\n" +
-"}\n" +
-"class User1 {\n" +
-"    static Parse(d) {\n" +
-"        return User1.Create(JSON.parse(d));\n" +
-"    }\n" +
-"    static Create(d, field) {\n" +
-"        if (!field) {\n" +
-"            obj$a = d;\n" +
-"            field = \"root\";\n" +
-"        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            return null;\n" +
-"        }\n" +
-"        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$9(field, d, true);\n" +
-"        }\n" +
-"        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$9(field, d, true);\n" +
-"        }\n" +
-"        checkNumber$8(d.id, false, field + \".id\");\n" +
-"        checkString$9(d.first_name, false, field + \".first_name\");\n" +
-"        checkString$9(d.last_name, false, field + \".last_name\");\n" +
-"        checkString$9(d.full_name, false, field + \".full_name\");\n" +
-"        checkNull$5(d.profile_picture_url, field + \".profile_picture_url\");\n" +
-"        const knownProperties = [\"id\", \"first_name\", \"last_name\", \"full_name\", \"profile_picture_url\"];\n" +
-"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
-"        if (unknownProperty)\n" +
-"            errorHelper$a(unknownProperty, d, \"never\", false);\n" +
-"        return new User1(d);\n" +
-"    }\n" +
-"    constructor(d) {\n" +
-"        this.id = d.id;\n" +
-"        this.first_name = d.first_name;\n" +
-"        this.last_name = d.last_name;\n" +
-"        this.full_name = d.full_name;\n" +
-"        if (\"profile_picture_url\" in d)\n" +
-"            this.profile_picture_url = d.profile_picture_url;\n" +
 "    }\n" +
 "}\n" +
 "class PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem {\n" +
 "    static Parse(d) {\n" +
 "        return PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem.Create(JSON.parse(d));\n" +
 "    }\n" +
-"    static Create(d, field) {\n" +
+"    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$a = d;\n" +
+"            obj$b = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            return null;\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$a(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$9(field, d, true);\n" +
+"            throwNotObject$a(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$9(field, d, true);\n" +
+"            throwIsArray$a(field, d);\n" +
 "        }\n" +
-"        checkNumber$8(d.id, false, field + \".id\");\n" +
-"        checkString$9(d.number, false, field + \".number\");\n" +
-"        checkNull$5(d.internal_identifier, field + \".internal_identifier\");\n" +
-"        checkString$9(d.label, false, field + \".label\");\n" +
-"        checkNumber$8(d.company_id, false, field + \".company_id\");\n" +
-"        checkBoolean$7(d.enabled, false, field + \".enabled\");\n" +
-"        checkString$9(d.vat_rate, false, field + \".vat_rate\");\n" +
-"        checkString$9(d[\"country_alpha2\"], false, field + \".country_alpha2\");\n" +
-"        checkBoolean$7(d.label_is_editable, false, field + \".label_is_editable\");\n" +
-"        const knownProperties = [\"id\", \"number\", \"internal_identifier\", \"label\", \"company_id\", \"enabled\", \"vat_rate\", \"country_alpha2\", \"label_is_editable\"];\n" +
+"        checkNumber$8(d.company_id, field + \".company_id\");\n" +
+"        checkString$9(d[\"country_alpha2\"], field + \".country_alpha2\");\n" +
+"        checkBoolean$7(d.enabled, field + \".enabled\");\n" +
+"        checkNumber$8(d.id, field + \".id\");\n" +
+"        checkNull$7(d.internal_identifier, field + \".internal_identifier\");\n" +
+"        checkString$9(d.label, field + \".label\");\n" +
+"        checkBoolean$7(d.label_is_editable, field + \".label_is_editable\");\n" +
+"        checkString$9(d.number, field + \".number\");\n" +
+"        checkString$9(d.vat_rate, field + \".vat_rate\");\n" +
+"        const knownProperties = [\"company_id\", \"country_alpha2\", \"enabled\", \"id\", \"internal_identifier\", \"label\", \"label_is_editable\", \"number\", \"vat_rate\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$a(unknownProperty, d, \"never\", false);\n" +
+"            errorHelper$b(unknownProperty, d, \"never (unknown property)\");\n" +
 "        return new PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
-"        this.id = d.id;\n" +
-"        this.number = d.number;\n" +
-"        if (\"internal_identifier\" in d)\n" +
-"            this.internal_identifier = d.internal_identifier;\n" +
-"        this.label = d.label;\n" +
 "        this.company_id = d.company_id;\n" +
-"        this.enabled = d.enabled;\n" +
-"        this.vat_rate = d.vat_rate;\n" +
 "        this[\"country_alpha2\"] = d[\"country_alpha2\"];\n" +
+"        this.enabled = d.enabled;\n" +
+"        this.id = d.id;\n" +
+"        this.internal_identifier = d.internal_identifier;\n" +
+"        this.label = d.label;\n" +
 "        this.label_is_editable = d.label_is_editable;\n" +
+"        this.number = d.number;\n" +
+"        this.vat_rate = d.vat_rate;\n" +
 "    }\n" +
 "}\n" +
-"function throwNull2NonNull$9(field, d) {\n" +
-"    return errorHelper$a(field, d, \"non-nullable object\", false);\n" +
-"}\n" +
-"function throwNotObject$9(field, d, nullable) {\n" +
-"    return errorHelper$a(field, d, \"object\", nullable);\n" +
-"}\n" +
-"function throwIsArray$9(field, d, nullable) {\n" +
-"    return errorHelper$a(field, d, \"object\", nullable);\n" +
-"}\n" +
-"function checkArray$5(d, field) {\n" +
-"    if (!Array.isArray(d) && d !== null && d !== undefined) {\n" +
-"        errorHelper$a(field, d, \"array\", true);\n" +
+"class EstablishmentCommentOrClientCommentsEntity {\n" +
+"    static Parse(d) {\n" +
+"        return EstablishmentCommentOrClientCommentsEntity.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$b = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$a(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$a(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$a(field, d);\n" +
+"        }\n" +
+"        if (\"author\" in d) {\n" +
+"            checkNull$7(d.author, field + \".author\");\n" +
+"        }\n" +
+"        checkString$9(d.content, field + \".content\");\n" +
+"        checkString$9(d.created_at, field + \".created_at\");\n" +
+"        checkNumber$8(d.id, field + \".id\");\n" +
+"        checkString$9(d.name, field + \".name\");\n" +
+"        checkNumber$8(d.record_id, field + \".record_id\");\n" +
+"        checkString$9(d.record_type, field + \".record_type\");\n" +
+"        checkNull$7(d.rich_content, field + \".rich_content\");\n" +
+"        checkBoolean$7(d.seen, field + \".seen\");\n" +
+"        checkString$9(d.updated_at, field + \".updated_at\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$7(d.user, field + \".user\", \"null | User\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                d.user = User.Create(d.user, field + \".user\", \"null | User\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$7(d.user_id, field + \".user_id\", \"null | number\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNumber$8(d.user_id, field + \".user_id\", \"null | number\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        const knownProperties = [\"author\", \"content\", \"created_at\", \"id\", \"name\", \"record_id\", \"record_type\", \"rich_content\", \"seen\", \"updated_at\", \"user\", \"user_id\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$b(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new EstablishmentCommentOrClientCommentsEntity(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        if (\"author\" in d)\n" +
+"            this.author = d.author;\n" +
+"        this.content = d.content;\n" +
+"        this.created_at = d.created_at;\n" +
+"        this.id = d.id;\n" +
+"        this.name = d.name;\n" +
+"        this.record_id = d.record_id;\n" +
+"        this.record_type = d.record_type;\n" +
+"        this.rich_content = d.rich_content;\n" +
+"        this.seen = d.seen;\n" +
+"        this.updated_at = d.updated_at;\n" +
+"        this.user = d.user;\n" +
+"        this.user_id = d.user_id;\n" +
 "    }\n" +
 "}\n" +
-"function checkNumber$8(d, nullable, field) {\n" +
-"    if (typeof (d) !== 'number' && (!nullable || (nullable && d !== null && d !== undefined))) {\n" +
-"        errorHelper$a(field, d, \"number\", nullable);\n" +
+"let InvoiceLinesEntity$2 = class InvoiceLinesEntity {\n" +
+"    static Parse(d) {\n" +
+"        return InvoiceLinesEntity.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$b = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$a(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$a(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$a(field, d);\n" +
+"        }\n" +
+"        checkNull$7(d.advance_id, field + \".advance_id\");\n" +
+"        checkString$9(d.amount, field + \".amount\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNumber$8(d.asset_id, field + \".asset_id\", \"number | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$7(d.asset_id, field + \".asset_id\", \"number | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        checkNumber$8(d.company_id, field + \".company_id\");\n" +
+"        checkString$9(d.created_at, field + \".created_at\");\n" +
+"        checkString$9(d.currency_amount, field + \".currency_amount\");\n" +
+"        checkString$9(d.currency_price_before_tax, field + \".currency_price_before_tax\");\n" +
+"        checkString$9(d.currency_tax, field + \".currency_tax\");\n" +
+"        checkString$9(d.currency_unit_price_before_tax, field + \".currency_unit_price_before_tax\");\n" +
+"        checkNull$7(d.deferral_id, field + \".deferral_id\");\n" +
+"        checkString$9(d.description, field + \".description\");\n" +
+"        checkString$9(d.discount, field + \".discount\");\n" +
+"        checkString$9(d.discount_type, field + \".discount_type\");\n" +
+"        checkNumber$8(d.document_id, field + \".document_id\");\n" +
+"        checkBoolean$7(d.global_vat, field + \".global_vat\");\n" +
+"        checkNumber$8(d.id, field + \".id\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNumber$8(d.invoice_line_section_id, field + \".invoice_line_section_id\", \"number | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$7(d.invoice_line_section_id, field + \".invoice_line_section_id\", \"number | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        checkString$9(d.label, field + \".label\");\n" +
+"        checkBoolean$7(d.manual_vat_mode, field + \".manual_vat_mode\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$7(d.ocr_vat_rate, field + \".ocr_vat_rate\", \"null | string\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkString$9(d.ocr_vat_rate, field + \".ocr_vat_rate\", \"null | string\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        d.pnl_plan_item = PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem1.Create(d.pnl_plan_item, field + \".pnl_plan_item\", undefined);\n" +
+"        checkNumber$8(d.pnl_plan_item_id, field + \".pnl_plan_item_id\");\n" +
+"        checkBoolean$7(d.prepaid_pnl, field + \".prepaid_pnl\");\n" +
+"        checkString$9(d.price_before_tax, field + \".price_before_tax\");\n" +
+"        checkNull$7(d.product_id, field + \".product_id\");\n" +
+"        checkString$9(d.quantity, field + \".quantity\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNumber$8(d.rank, field + \".rank\", \"number | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$7(d.rank, field + \".rank\", \"number | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        checkString$9(d.raw_currency_unit_price, field + \".raw_currency_unit_price\");\n" +
+"        checkString$9(d.tax, field + \".tax\");\n" +
+"        checkString$9(d.undiscounted_currency_price_before_tax, field + \".undiscounted_currency_price_before_tax\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkString$9(d.unit, field + \".unit\", \"string | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$7(d.unit, field + \".unit\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        checkString$9(d.vat_rate, field + \".vat_rate\");\n" +
+"        const knownProperties = [\"advance_id\", \"amount\", \"asset_id\", \"company_id\", \"created_at\", \"currency_amount\", \"currency_price_before_tax\", \"currency_tax\", \"currency_unit_price_before_tax\", \"deferral_id\", \"description\", \"discount\", \"discount_type\", \"document_id\", \"global_vat\", \"id\", \"invoice_line_section_id\", \"label\", \"manual_vat_mode\", \"ocr_vat_rate\", \"pnl_plan_item\", \"pnl_plan_item_id\", \"prepaid_pnl\", \"price_before_tax\", \"product_id\", \"quantity\", \"rank\", \"raw_currency_unit_price\", \"tax\", \"undiscounted_currency_price_before_tax\", \"unit\", \"vat_rate\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$b(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new InvoiceLinesEntity(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.advance_id = d.advance_id;\n" +
+"        this.amount = d.amount;\n" +
+"        this.asset_id = d.asset_id;\n" +
+"        this.company_id = d.company_id;\n" +
+"        this.created_at = d.created_at;\n" +
+"        this.currency_amount = d.currency_amount;\n" +
+"        this.currency_price_before_tax = d.currency_price_before_tax;\n" +
+"        this.currency_tax = d.currency_tax;\n" +
+"        this.currency_unit_price_before_tax = d.currency_unit_price_before_tax;\n" +
+"        this.deferral_id = d.deferral_id;\n" +
+"        this.description = d.description;\n" +
+"        this.discount = d.discount;\n" +
+"        this.discount_type = d.discount_type;\n" +
+"        this.document_id = d.document_id;\n" +
+"        this.global_vat = d.global_vat;\n" +
+"        this.id = d.id;\n" +
+"        this.invoice_line_section_id = d.invoice_line_section_id;\n" +
+"        this.label = d.label;\n" +
+"        this.manual_vat_mode = d.manual_vat_mode;\n" +
+"        this.ocr_vat_rate = d.ocr_vat_rate;\n" +
+"        this.pnl_plan_item = d.pnl_plan_item;\n" +
+"        this.pnl_plan_item_id = d.pnl_plan_item_id;\n" +
+"        this.prepaid_pnl = d.prepaid_pnl;\n" +
+"        this.price_before_tax = d.price_before_tax;\n" +
+"        this.product_id = d.product_id;\n" +
+"        this.quantity = d.quantity;\n" +
+"        this.rank = d.rank;\n" +
+"        this.raw_currency_unit_price = d.raw_currency_unit_price;\n" +
+"        this.tax = d.tax;\n" +
+"        this.undiscounted_currency_price_before_tax = d.undiscounted_currency_price_before_tax;\n" +
+"        this.unit = d.unit;\n" +
+"        this.vat_rate = d.vat_rate;\n" +
+"    }\n" +
+"};\n" +
+"class PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem1 {\n" +
+"    static Parse(d) {\n" +
+"        return PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem1.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$b = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$a(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$a(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$a(field, d);\n" +
+"        }\n" +
+"        checkNumber$8(d.company_id, field + \".company_id\");\n" +
+"        checkString$9(d[\"country_alpha2\"], field + \".country_alpha2\");\n" +
+"        checkBoolean$7(d.enabled, field + \".enabled\");\n" +
+"        checkNumber$8(d.id, field + \".id\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$7(d.internal_identifier, field + \".internal_identifier\", \"null | string\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkString$9(d.internal_identifier, field + \".internal_identifier\", \"null | string\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        checkString$9(d.label, field + \".label\");\n" +
+"        checkBoolean$7(d.label_is_editable, field + \".label_is_editable\");\n" +
+"        checkString$9(d.number, field + \".number\");\n" +
+"        checkString$9(d.vat_rate, field + \".vat_rate\");\n" +
+"        const knownProperties = [\"company_id\", \"country_alpha2\", \"enabled\", \"id\", \"internal_identifier\", \"label\", \"label_is_editable\", \"number\", \"vat_rate\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$b(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem1(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.company_id = d.company_id;\n" +
+"        this[\"country_alpha2\"] = d[\"country_alpha2\"];\n" +
+"        this.enabled = d.enabled;\n" +
+"        this.id = d.id;\n" +
+"        this.internal_identifier = d.internal_identifier;\n" +
+"        this.label = d.label;\n" +
+"        this.label_is_editable = d.label_is_editable;\n" +
+"        this.number = d.number;\n" +
+"        this.vat_rate = d.vat_rate;\n" +
 "    }\n" +
 "}\n" +
-"function checkBoolean$7(d, nullable, field) {\n" +
-"    if (typeof (d) !== 'boolean' && (!nullable || (nullable && d !== null && d !== undefined))) {\n" +
-"        errorHelper$a(field, d, \"boolean\", nullable);\n" +
+"let Journal$1 = class Journal {\n" +
+"    static Parse(d) {\n" +
+"        return Journal.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$b = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$a(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$a(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$a(field, d);\n" +
+"        }\n" +
+"        checkString$9(d.code, field + \".code\");\n" +
+"        checkNumber$8(d.id, field + \".id\");\n" +
+"        checkString$9(d.label, field + \".label\");\n" +
+"        const knownProperties = [\"code\", \"id\", \"label\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$b(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new Journal(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.code = d.code;\n" +
+"        this.id = d.id;\n" +
+"        this.label = d.label;\n" +
+"    }\n" +
+"};\n" +
+"class LedgerEventsEntity {\n" +
+"    static Parse(d) {\n" +
+"        return LedgerEventsEntity.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$b = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$a(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$a(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$a(field, d);\n" +
+"        }\n" +
+"        checkString$9(d.balance, field + \".balance\");\n" +
+"        checkNumber$8(d.company_id, field + \".company_id\");\n" +
+"        checkString$9(d.created_at, field + \".created_at\");\n" +
+"        checkString$9(d.credit, field + \".credit\");\n" +
+"        checkString$9(d.date, field + \".date\");\n" +
+"        checkString$9(d.debit, field + \".debit\");\n" +
+"        checkNumber$8(d.document_id, field + \".document_id\");\n" +
+"        if (\"document_label\" in d) {\n" +
+"            checkString$9(d.document_label, field + \".document_label\");\n" +
+"        }\n" +
+"        checkNumber$8(d.id, field + \".id\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkString$9(d.label, field + \".label\", \"string | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$7(d.label, field + \".label\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"lettering\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                d.lettering = Lettering$1.Create(d.lettering, field + \".lettering\", \"Lettering | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.lettering, field + \".lettering\", \"Lettering | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNumber$8(d.lettering_id, field + \".lettering_id\", \"number | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$7(d.lettering_id, field + \".lettering_id\", \"number | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        checkNumber$8(d.plan_item_id, field + \".plan_item_id\");\n" +
+"        d.planItem = PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem2.Create(d.planItem, field + \".planItem\", undefined);\n" +
+"        if (\"processed_label\" in d) {\n" +
+"            checkString$9(d.processed_label, field + \".processed_label\");\n" +
+"        }\n" +
+"        checkBoolean$7(d.readonly, field + \".readonly\");\n" +
+"        checkBoolean$7(d.readonlyAmounts, field + \".readonlyAmounts\");\n" +
+"        if (\"reallocation\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                d.reallocation = Reallocation.Create(d.reallocation, field + \".reallocation\", \"Reallocation | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$7(d.reallocation, field + \".reallocation\", \"Reallocation | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                    throw e;\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$7(d.reallocation_id, field + \".reallocation_id\", \"null | number\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNumber$8(d.reallocation_id, field + \".reallocation_id\", \"null | number\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNumber$8(d.reconciliation_id, field + \".reconciliation_id\", \"number | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$7(d.reconciliation_id, field + \".reconciliation_id\", \"number | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        checkString$9(d.source, field + \".source\");\n" +
+"        const knownProperties = [\"balance\", \"company_id\", \"created_at\", \"credit\", \"date\", \"debit\", \"document_id\", \"document_label\", \"id\", \"label\", \"lettering\", \"lettering_id\", \"plan_item_id\", \"planItem\", \"processed_label\", \"readonly\", \"readonlyAmounts\", \"reallocation\", \"reallocation_id\", \"reconciliation_id\", \"source\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$b(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new LedgerEventsEntity(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.balance = d.balance;\n" +
+"        this.company_id = d.company_id;\n" +
+"        this.created_at = d.created_at;\n" +
+"        this.credit = d.credit;\n" +
+"        this.date = d.date;\n" +
+"        this.debit = d.debit;\n" +
+"        this.document_id = d.document_id;\n" +
+"        if (\"document_label\" in d)\n" +
+"            this.document_label = d.document_label;\n" +
+"        this.id = d.id;\n" +
+"        this.label = d.label;\n" +
+"        if (\"lettering\" in d)\n" +
+"            this.lettering = d.lettering;\n" +
+"        this.lettering_id = d.lettering_id;\n" +
+"        this.plan_item_id = d.plan_item_id;\n" +
+"        this.planItem = d.planItem;\n" +
+"        if (\"processed_label\" in d)\n" +
+"            this.processed_label = d.processed_label;\n" +
+"        this.readonly = d.readonly;\n" +
+"        this.readonlyAmounts = d.readonlyAmounts;\n" +
+"        if (\"reallocation\" in d)\n" +
+"            this.reallocation = d.reallocation;\n" +
+"        this.reallocation_id = d.reallocation_id;\n" +
+"        this.reconciliation_id = d.reconciliation_id;\n" +
+"        this.source = d.source;\n" +
 "    }\n" +
 "}\n" +
-"function checkString$9(d, nullable, field) {\n" +
-"    if (typeof (d) !== 'string' && (!nullable || (nullable && d !== null && d !== undefined))) {\n" +
-"        errorHelper$a(field, d, \"string\", nullable);\n" +
+"let Lettering$1 = class Lettering {\n" +
+"    static Parse(d) {\n" +
+"        return Lettering.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$b = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$a(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$a(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$a(field, d);\n" +
+"        }\n" +
+"        checkString$9(d.balance, field + \".balance\");\n" +
+"        checkNumber$8(d.id, field + \".id\");\n" +
+"        checkString$9(d.plan_item_number, field + \".plan_item_number\");\n" +
+"        const knownProperties = [\"balance\", \"id\", \"plan_item_number\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$b(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new Lettering(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.balance = d.balance;\n" +
+"        this.id = d.id;\n" +
+"        this.plan_item_number = d.plan_item_number;\n" +
+"    }\n" +
+"};\n" +
+"class PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem2 {\n" +
+"    static Parse(d) {\n" +
+"        return PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem2.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$b = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$a(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$a(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$a(field, d);\n" +
+"        }\n" +
+"        checkNumber$8(d.company_id, field + \".company_id\");\n" +
+"        checkString$9(d[\"country_alpha2\"], field + \".country_alpha2\");\n" +
+"        checkBoolean$7(d.enabled, field + \".enabled\");\n" +
+"        checkNumber$8(d.id, field + \".id\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$7(d.internal_identifier, field + \".internal_identifier\", \"null | string\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkString$9(d.internal_identifier, field + \".internal_identifier\", \"null | string\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        checkString$9(d.label, field + \".label\");\n" +
+"        checkBoolean$7(d.label_is_editable, field + \".label_is_editable\");\n" +
+"        checkString$9(d.number, field + \".number\");\n" +
+"        checkString$9(d.vat_rate, field + \".vat_rate\");\n" +
+"        const knownProperties = [\"company_id\", \"country_alpha2\", \"enabled\", \"id\", \"internal_identifier\", \"label\", \"label_is_editable\", \"number\", \"vat_rate\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$b(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem2(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.company_id = d.company_id;\n" +
+"        this[\"country_alpha2\"] = d[\"country_alpha2\"];\n" +
+"        this.enabled = d.enabled;\n" +
+"        this.id = d.id;\n" +
+"        this.internal_identifier = d.internal_identifier;\n" +
+"        this.label = d.label;\n" +
+"        this.label_is_editable = d.label_is_editable;\n" +
+"        this.number = d.number;\n" +
+"        this.vat_rate = d.vat_rate;\n" +
 "    }\n" +
 "}\n" +
-"function checkNull$5(d, field) {\n" +
-"    if (d !== null && d !== undefined) {\n" +
-"        errorHelper$a(field, d, \"null or undefined\", false);\n" +
+"class Reallocation {\n" +
+"    static Parse(d) {\n" +
+"        return Reallocation.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$b = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$a(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$a(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$a(field, d);\n" +
+"        }\n" +
+"        checkString$9(d.created_at, field + \".created_at\");\n" +
+"        d.fromPlanItem = PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem3.Create(d.fromPlanItem, field + \".fromPlanItem\", undefined);\n" +
+"        checkNumber$8(d.id, field + \".id\");\n" +
+"        const knownProperties = [\"created_at\", \"fromPlanItem\", \"id\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$b(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new Reallocation(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.created_at = d.created_at;\n" +
+"        this.fromPlanItem = d.fromPlanItem;\n" +
+"        this.id = d.id;\n" +
 "    }\n" +
 "}\n" +
-"function errorHelper$a(field, d, type, nullable) {\n" +
-"    if (nullable) {\n" +
-"        type += \", null, or undefined\";\n" +
+"class PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem3 {\n" +
+"    static Parse(d) {\n" +
+"        return PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem3.Create(JSON.parse(d));\n" +
 "    }\n" +
-"    prompt(proxyName$a + ':', JSON.stringify(obj$a));\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$b = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$a(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$a(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$a(field, d);\n" +
+"        }\n" +
+"        checkNumber$8(d.company_id, field + \".company_id\");\n" +
+"        checkString$9(d[\"country_alpha2\"], field + \".country_alpha2\");\n" +
+"        checkBoolean$7(d.enabled, field + \".enabled\");\n" +
+"        checkNumber$8(d.id, field + \".id\");\n" +
+"        checkNull$7(d.internal_identifier, field + \".internal_identifier\");\n" +
+"        checkString$9(d.label, field + \".label\");\n" +
+"        checkBoolean$7(d.label_is_editable, field + \".label_is_editable\");\n" +
+"        checkString$9(d.number, field + \".number\");\n" +
+"        checkString$9(d.vat_rate, field + \".vat_rate\");\n" +
+"        const knownProperties = [\"company_id\", \"country_alpha2\", \"enabled\", \"id\", \"internal_identifier\", \"label\", \"label_is_editable\", \"number\", \"vat_rate\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$b(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem3(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.company_id = d.company_id;\n" +
+"        this[\"country_alpha2\"] = d[\"country_alpha2\"];\n" +
+"        this.enabled = d.enabled;\n" +
+"        this.id = d.id;\n" +
+"        this.internal_identifier = d.internal_identifier;\n" +
+"        this.label = d.label;\n" +
+"        this.label_is_editable = d.label_is_editable;\n" +
+"        this.number = d.number;\n" +
+"        this.vat_rate = d.vat_rate;\n" +
+"    }\n" +
+"}\n" +
+"class ScoredInvoices1 {\n" +
+"    static Parse(d) {\n" +
+"        return ScoredInvoices1.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$b = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$a(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$a(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$a(field, d);\n" +
+"        }\n" +
+"        const knownProperties = [];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$b(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new ScoredInvoices1(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"    }\n" +
+"}\n" +
+"let Thirdparty$2 = class Thirdparty {\n" +
+"    static Parse(d) {\n" +
+"        return Thirdparty.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$b = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$a(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$a(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$a(field, d);\n" +
+"        }\n" +
+"        checkString$9(d.activity_code, field + \".activity_code\");\n" +
+"        checkString$9(d.activity_nomenclature, field + \".activity_nomenclature\");\n" +
+"        checkString$9(d.address, field + \".address\");\n" +
+"        checkString$9(d.address_additional_info, field + \".address_additional_info\");\n" +
+"        checkNull$7(d.admin_city_code, field + \".admin_city_code\");\n" +
+"        checkNull$7(d.balance, field + \".balance\");\n" +
+"        checkNull$7(d.billing_bank, field + \".billing_bank\");\n" +
+"        checkNull$7(d.billing_bic, field + \".billing_bic\");\n" +
+"        checkNull$7(d.billing_footer_invoice_id, field + \".billing_footer_invoice_id\");\n" +
+"        checkNull$7(d.billing_footer_invoice_label, field + \".billing_footer_invoice_label\");\n" +
+"        checkNull$7(d.billing_iban, field + \".billing_iban\");\n" +
+"        checkString$9(d.billing_language, field + \".billing_language\");\n" +
+"        checkString$9(d.city, field + \".city\");\n" +
+"        checkNumber$8(d.company_id, field + \".company_id\");\n" +
+"        checkBoolean$7(d.complete, field + \".complete\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$7(d.country, field + \".country\", \"null | string\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkString$9(d.country, field + \".country\", \"null | string\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        checkString$9(d[\"country_alpha2\"], field + \".country_alpha2\");\n" +
+"        checkNull$7(d.credits, field + \".credits\");\n" +
+"        checkNull$7(d.current_mandate, field + \".current_mandate\");\n" +
+"        checkString$9(d.customer_type, field + \".customer_type\");\n" +
+"        checkNull$7(d.debits, field + \".debits\");\n" +
+"        checkString$9(d.delivery_address, field + \".delivery_address\");\n" +
+"        checkString$9(d.delivery_address_additional_info, field + \".delivery_address_additional_info\");\n" +
+"        checkString$9(d.delivery_city, field + \".delivery_city\");\n" +
+"        checkNull$7(d.delivery_country, field + \".delivery_country\");\n" +
+"        checkString$9(d[\"delivery_country_alpha2\"], field + \".delivery_country_alpha2\");\n" +
+"        checkString$9(d.delivery_postal_code, field + \".delivery_postal_code\");\n" +
+"        checkBoolean$7(d.disable_pending_vat, field + \".disable_pending_vat\");\n" +
+"        checkNull$7(d.display_name, field + \".display_name\");\n" +
+"        checkArray$5(d.emails, field + \".emails\");\n" +
+"        if (d.emails) {\n" +
+"            for (let i = 0; i < d.emails.length; i++) {\n" +
+"                checkNever$3(d.emails[i], field + \".emails\" + \"[\" + i + \"]\");\n" +
+"            }\n" +
+"        }\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$7(d.establishment_no, field + \".establishment_no\", \"null | string\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkString$9(d.establishment_no, field + \".establishment_no\", \"null | string\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        checkNull$7(d.estimate_count, field + \".estimate_count\");\n" +
+"        checkString$9(d.first_name, field + \".first_name\");\n" +
+"        checkBoolean$7(d.force_pending_vat, field + \".force_pending_vat\");\n" +
+"        checkNull$7(d.gender, field + \".gender\");\n" +
+"        checkNull$7(d.gocardless_id, field + \".gocardless_id\");\n" +
+"        checkString$9(d.iban, field + \".iban\");\n" +
+"        checkNumber$8(d.id, field + \".id\");\n" +
+"        checkNull$7(d.invoice_count, field + \".invoice_count\");\n" +
+"        checkNull$7(d.invoice_dump_id, field + \".invoice_dump_id\");\n" +
+"        checkBoolean$7(d.invoices_auto_generated, field + \".invoices_auto_generated\");\n" +
+"        checkBoolean$7(d.invoices_auto_validated, field + \".invoices_auto_validated\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$7(d.known_supplier_id, field + \".known_supplier_id\", \"null | number\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNumber$8(d.known_supplier_id, field + \".known_supplier_id\", \"null | number\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        checkString$9(d.last_name, field + \".last_name\");\n" +
+"        checkNull$7(d.ledger_events_count, field + \".ledger_events_count\");\n" +
+"        checkString$9(d.legal_form_code, field + \".legal_form_code\");\n" +
+"        checkString$9(d.method, field + \".method\");\n" +
+"        checkString$9(d.name, field + \".name\");\n" +
+"        checkString$9(d.notes, field + \".notes\");\n" +
+"        checkNull$7(d.notes_comment, field + \".notes_comment\");\n" +
+"        checkString$9(d.payment_conditions, field + \".payment_conditions\");\n" +
+"        checkString$9(d.phone, field + \".phone\");\n" +
+"        checkNull$7(d.plan_item, field + \".plan_item\");\n" +
+"        checkNull$7(d.plan_item_attributes, field + \".plan_item_attributes\");\n" +
+"        checkNumber$8(d.plan_item_id, field + \".plan_item_id\");\n" +
+"        checkNull$7(d.pnl_plan_item, field + \".pnl_plan_item\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNumber$8(d.pnl_plan_item_id, field + \".pnl_plan_item_id\", \"number | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$7(d.pnl_plan_item_id, field + \".pnl_plan_item_id\", \"number | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        checkString$9(d.postal_code, field + \".postal_code\");\n" +
+"        checkNull$7(d.purchase_request_count, field + \".purchase_request_count\");\n" +
+"        checkBoolean$7(d.received_a_mandate_request, field + \".received_a_mandate_request\");\n" +
+"        checkString$9(d.recipient, field + \".recipient\");\n" +
+"        checkBoolean$7(d.recurrent, field + \".recurrent\");\n" +
+"        checkString$9(d.reference, field + \".reference\");\n" +
+"        checkString$9(d.reg_no, field + \".reg_no\");\n" +
+"        checkString$9(d.role, field + \".role\");\n" +
+"        checkBoolean$7(d.rule_enabled, field + \".rule_enabled\");\n" +
+"        checkArray$5(d.search_terms, field + \".search_terms\");\n" +
+"        if (d.search_terms) {\n" +
+"            for (let i = 0; i < d.search_terms.length; i++) {\n" +
+"                checkString$9(d.search_terms[i], field + \".search_terms\" + \"[\" + i + \"]\");\n" +
+"            }\n" +
+"        }\n" +
+"        checkString$9(d.source_id, field + \".source_id\");\n" +
+"        checkNull$7(d.stripe_id, field + \".stripe_id\");\n" +
+"        checkNull$7(d.supplier_payment_method, field + \".supplier_payment_method\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkString$9(d.supplier_payment_method_last_updated_at, field + \".supplier_payment_method_last_updated_at\", \"string | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$7(d.supplier_payment_method_last_updated_at, field + \".supplier_payment_method_last_updated_at\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        checkArray$5(d.tags, field + \".tags\");\n" +
+"        if (d.tags) {\n" +
+"            for (let i = 0; i < d.tags.length; i++) {\n" +
+"                checkNever$3(d.tags[i], field + \".tags\" + \"[\" + i + \"]\");\n" +
+"            }\n" +
+"        }\n" +
+"        checkNull$7(d.turnover, field + \".turnover\");\n" +
+"        checkString$9(d.url, field + \".url\");\n" +
+"        checkString$9(d.vat_number, field + \".vat_number\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkString$9(d.vat_rate, field + \".vat_rate\", \"string | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$7(d.vat_rate, field + \".vat_rate\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        const knownProperties = [\"activity_code\", \"activity_nomenclature\", \"address\", \"address_additional_info\", \"admin_city_code\", \"balance\", \"billing_bank\", \"billing_bic\", \"billing_footer_invoice_id\", \"billing_footer_invoice_label\", \"billing_iban\", \"billing_language\", \"city\", \"company_id\", \"complete\", \"country\", \"country_alpha2\", \"credits\", \"current_mandate\", \"customer_type\", \"debits\", \"delivery_address\", \"delivery_address_additional_info\", \"delivery_city\", \"delivery_country\", \"delivery_country_alpha2\", \"delivery_postal_code\", \"disable_pending_vat\", \"display_name\", \"emails\", \"establishment_no\", \"estimate_count\", \"first_name\", \"force_pending_vat\", \"gender\", \"gocardless_id\", \"iban\", \"id\", \"invoice_count\", \"invoice_dump_id\", \"invoices_auto_generated\", \"invoices_auto_validated\", \"known_supplier_id\", \"last_name\", \"ledger_events_count\", \"legal_form_code\", \"method\", \"name\", \"notes\", \"notes_comment\", \"payment_conditions\", \"phone\", \"plan_item\", \"plan_item_attributes\", \"plan_item_id\", \"pnl_plan_item\", \"pnl_plan_item_id\", \"postal_code\", \"purchase_request_count\", \"received_a_mandate_request\", \"recipient\", \"recurrent\", \"reference\", \"reg_no\", \"role\", \"rule_enabled\", \"search_terms\", \"source_id\", \"stripe_id\", \"supplier_payment_method\", \"supplier_payment_method_last_updated_at\", \"tags\", \"turnover\", \"url\", \"vat_number\", \"vat_rate\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$b(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new Thirdparty(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.activity_code = d.activity_code;\n" +
+"        this.activity_nomenclature = d.activity_nomenclature;\n" +
+"        this.address = d.address;\n" +
+"        this.address_additional_info = d.address_additional_info;\n" +
+"        this.admin_city_code = d.admin_city_code;\n" +
+"        this.balance = d.balance;\n" +
+"        this.billing_bank = d.billing_bank;\n" +
+"        this.billing_bic = d.billing_bic;\n" +
+"        this.billing_footer_invoice_id = d.billing_footer_invoice_id;\n" +
+"        this.billing_footer_invoice_label = d.billing_footer_invoice_label;\n" +
+"        this.billing_iban = d.billing_iban;\n" +
+"        this.billing_language = d.billing_language;\n" +
+"        this.city = d.city;\n" +
+"        this.company_id = d.company_id;\n" +
+"        this.complete = d.complete;\n" +
+"        this.country = d.country;\n" +
+"        this[\"country_alpha2\"] = d[\"country_alpha2\"];\n" +
+"        this.credits = d.credits;\n" +
+"        this.current_mandate = d.current_mandate;\n" +
+"        this.customer_type = d.customer_type;\n" +
+"        this.debits = d.debits;\n" +
+"        this.delivery_address = d.delivery_address;\n" +
+"        this.delivery_address_additional_info = d.delivery_address_additional_info;\n" +
+"        this.delivery_city = d.delivery_city;\n" +
+"        this.delivery_country = d.delivery_country;\n" +
+"        this[\"delivery_country_alpha2\"] = d[\"delivery_country_alpha2\"];\n" +
+"        this.delivery_postal_code = d.delivery_postal_code;\n" +
+"        this.disable_pending_vat = d.disable_pending_vat;\n" +
+"        this.display_name = d.display_name;\n" +
+"        this.emails = d.emails;\n" +
+"        this.establishment_no = d.establishment_no;\n" +
+"        this.estimate_count = d.estimate_count;\n" +
+"        this.first_name = d.first_name;\n" +
+"        this.force_pending_vat = d.force_pending_vat;\n" +
+"        this.gender = d.gender;\n" +
+"        this.gocardless_id = d.gocardless_id;\n" +
+"        this.iban = d.iban;\n" +
+"        this.id = d.id;\n" +
+"        this.invoice_count = d.invoice_count;\n" +
+"        this.invoice_dump_id = d.invoice_dump_id;\n" +
+"        this.invoices_auto_generated = d.invoices_auto_generated;\n" +
+"        this.invoices_auto_validated = d.invoices_auto_validated;\n" +
+"        this.known_supplier_id = d.known_supplier_id;\n" +
+"        this.last_name = d.last_name;\n" +
+"        this.ledger_events_count = d.ledger_events_count;\n" +
+"        this.legal_form_code = d.legal_form_code;\n" +
+"        this.method = d.method;\n" +
+"        this.name = d.name;\n" +
+"        this.notes = d.notes;\n" +
+"        this.notes_comment = d.notes_comment;\n" +
+"        this.payment_conditions = d.payment_conditions;\n" +
+"        this.phone = d.phone;\n" +
+"        this.plan_item = d.plan_item;\n" +
+"        this.plan_item_attributes = d.plan_item_attributes;\n" +
+"        this.plan_item_id = d.plan_item_id;\n" +
+"        this.pnl_plan_item = d.pnl_plan_item;\n" +
+"        this.pnl_plan_item_id = d.pnl_plan_item_id;\n" +
+"        this.postal_code = d.postal_code;\n" +
+"        this.purchase_request_count = d.purchase_request_count;\n" +
+"        this.received_a_mandate_request = d.received_a_mandate_request;\n" +
+"        this.recipient = d.recipient;\n" +
+"        this.recurrent = d.recurrent;\n" +
+"        this.reference = d.reference;\n" +
+"        this.reg_no = d.reg_no;\n" +
+"        this.role = d.role;\n" +
+"        this.rule_enabled = d.rule_enabled;\n" +
+"        this.search_terms = d.search_terms;\n" +
+"        this.source_id = d.source_id;\n" +
+"        this.stripe_id = d.stripe_id;\n" +
+"        this.supplier_payment_method = d.supplier_payment_method;\n" +
+"        this.supplier_payment_method_last_updated_at = d.supplier_payment_method_last_updated_at;\n" +
+"        this.tags = d.tags;\n" +
+"        this.turnover = d.turnover;\n" +
+"        this.url = d.url;\n" +
+"        this.vat_number = d.vat_number;\n" +
+"        this.vat_rate = d.vat_rate;\n" +
+"    }\n" +
+"};\n" +
+"class ScoredInvoices {\n" +
+"    static Parse(d) {\n" +
+"        return ScoredInvoices.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$b = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$a(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$a(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$a(field, d);\n" +
+"        }\n" +
+"        const knownProperties = [];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$b(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new ScoredInvoices(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"    }\n" +
+"}\n" +
+"function throwNull2NonNull$a(field, value, multiple) {\n" +
+"    return errorHelper$b(field, value, multiple ?? \"non-nullable object\");\n" +
+"}\n" +
+"function throwNotObject$a(field, value, multiple) {\n" +
+"    return errorHelper$b(field, value, \"object\");\n" +
+"}\n" +
+"function throwIsArray$a(field, value, multiple) {\n" +
+"    return errorHelper$b(field, value, \"object\");\n" +
+"}\n" +
+"function checkArray$5(value, field, multiple) {\n" +
+"    if (!Array.isArray(value))\n" +
+"        errorHelper$b(field, value, multiple ?? \"array\");\n" +
+"}\n" +
+"function checkNumber$8(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'number')\n" +
+"        errorHelper$b(field, value, multiple ?? \"number\");\n" +
+"}\n" +
+"function checkBoolean$7(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'boolean')\n" +
+"        errorHelper$b(field, value, multiple ?? \"boolean\");\n" +
+"}\n" +
+"function checkString$9(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'string')\n" +
+"        errorHelper$b(field, value, multiple ?? \"string\");\n" +
+"}\n" +
+"function checkNull$7(value, field, multiple) {\n" +
+"    if (value !== null)\n" +
+"        errorHelper$b(field, value, multiple ?? \"null\");\n" +
+"}\n" +
+"function checkNever$3(value, field, multiple) {\n" +
+"    return errorHelper$b(field, value, \"never\");\n" +
+"}\n" +
+"function errorHelper$b(field, d, type) {\n" +
+"    if (!type.includes(' | ')) {\n" +
+"        let jsonClone = obj$b;\n" +
+"        try {\n" +
+"            jsonClone = JSON.parse(JSON.stringify(obj$b));\n" +
+"        }\n" +
+"        catch (error) {\n" +
+"            console.log(error);\n" +
+"        }\n" +
+"        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
+"\" + JSON.stringify(d), jsonClone);\n" +
+"        prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
+"    }\n" +
 "    throw new TypeError('Expected ' + type + \" at \" + field + \" but found:\\n" +
 "\" + JSON.stringify(d) + \"\\n" +
 "\\n" +
 "Full object:\\n" +
-"\" + JSON.stringify(obj$a));\n" +
+"\" + JSON.stringify(obj$b));\n" +
 "}\n" +
 "\n" +
 "async function getDocument(id) {\n" +
 "    const response = await apiRequest(`documents/${id}`, null, 'GET');\n" +
+"    if (!response)\n" +
+"        return null;\n" +
 "    const data = await response?.json();\n" +
 "    return APIDocument.Create(data);\n" +
 "}\n" +
@@ -2243,126 +3792,238 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "}\n" +
 "\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
-"const proxyName$9 = 'APIGroupedDocument';\n" +
-"let obj$9 = null;\n" +
+"const proxyName$a = 'APIGroupedDocument';\n" +
+"let obj$a = null;\n" +
 "class APIGroupedDocument {\n" +
 "    static Parse(d) {\n" +
 "        return APIGroupedDocument.Create(JSON.parse(d));\n" +
 "    }\n" +
-"    static Create(d, field) {\n" +
+"    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$9 = d;\n" +
+"            obj$a = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            throwNull2NonNull$8(field, d);\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$9(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$8(field, d, false);\n" +
+"            throwNotObject$9(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$8(field, d, false);\n" +
+"            throwIsArray$9(field, d);\n" +
 "        }\n" +
-"        checkNumber$7(d.id, false, field + \".id\");\n" +
-"        checkString$8(d.type, false, field + \".type\");\n" +
-"        checkString$8(d.date, true, field + \".date\");\n" +
-"        checkNumber$7(d.journal_id, false, field + \".journal_id\");\n" +
-"        checkString$8(d.source, false, field + \".source\");\n" +
-"        checkBoolean$6(d.is_waiting_details, false, field + \".is_waiting_details\");\n" +
-"        checkString$8(d.fec_pieceref, false, field + \".fec_pieceref\");\n" +
-"        checkString$8(d.label, false, field + \".label\");\n" +
-"        checkString$8(d.amount, false, field + \".amount\");\n" +
-"        d.journal = Journal.Create(d.journal, field + \".journal\");\n" +
-"        checkBoolean$6(d.readonly, false, field + \".readonly\");\n" +
-"        checkNumber$7(d.ledgerEventsCount, false, field + \".ledgerEventsCount\");\n" +
-"        checkString$8(d.totalDebit, false, field + \".totalDebit\");\n" +
-"        checkString$8(d.totalCredit, false, field + \".totalCredit\");\n" +
-"        const knownProperties = [\"id\", \"type\", \"date\", \"journal_id\", \"source\", \"is_waiting_details\", \"fec_pieceref\", \"label\", \"amount\", \"journal\", \"readonly\", \"ledgerEventsCount\", \"totalDebit\", \"totalCredit\"];\n" +
+"        checkString$8(d.amount, field + \".amount\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$6(d.date, field + \".date\", \"null | string\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkString$8(d.date, field + \".date\", \"null | string\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$a + ':', JSON.stringify(obj$a));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        checkString$8(d.fec_pieceref, field + \".fec_pieceref\");\n" +
+"        checkNumber$7(d.id, field + \".id\");\n" +
+"        checkBoolean$6(d.is_waiting_details, field + \".is_waiting_details\");\n" +
+"        d.journal = Journal.Create(d.journal, field + \".journal\", undefined);\n" +
+"        checkNumber$7(d.journal_id, field + \".journal_id\");\n" +
+"        checkString$8(d.label, field + \".label\");\n" +
+"        checkNumber$7(d.ledgerEventsCount, field + \".ledgerEventsCount\");\n" +
+"        checkBoolean$6(d.readonly, field + \".readonly\");\n" +
+"        checkString$8(d.source, field + \".source\");\n" +
+"        if (\"taggingCount\" in d) {\n" +
+"            checkNumber$7(d.taggingCount, field + \".taggingCount\");\n" +
+"        }\n" +
+"        checkString$8(d.totalCredit, field + \".totalCredit\");\n" +
+"        checkString$8(d.totalDebit, field + \".totalDebit\");\n" +
+"        checkString$8(d.type, field + \".type\");\n" +
+"        const knownProperties = [\"amount\", \"date\", \"fec_pieceref\", \"id\", \"is_waiting_details\", \"journal\", \"journal_id\", \"label\", \"ledgerEventsCount\", \"readonly\", \"source\", \"taggingCount\", \"totalCredit\", \"totalDebit\", \"type\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$9(unknownProperty, d, \"never\", false);\n" +
+"            errorHelper$a(unknownProperty, d, \"never (unknown property)\");\n" +
 "        return new APIGroupedDocument(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
-"        this.id = d.id;\n" +
-"        this.type = d.type;\n" +
-"        if (\"date\" in d)\n" +
-"            this.date = d.date;\n" +
-"        this.journal_id = d.journal_id;\n" +
-"        this.source = d.source;\n" +
-"        this.is_waiting_details = d.is_waiting_details;\n" +
-"        this.fec_pieceref = d.fec_pieceref;\n" +
-"        this.label = d.label;\n" +
 "        this.amount = d.amount;\n" +
+"        this.date = d.date;\n" +
+"        this.fec_pieceref = d.fec_pieceref;\n" +
+"        this.id = d.id;\n" +
+"        this.is_waiting_details = d.is_waiting_details;\n" +
 "        this.journal = d.journal;\n" +
-"        this.readonly = d.readonly;\n" +
+"        this.journal_id = d.journal_id;\n" +
+"        this.label = d.label;\n" +
 "        this.ledgerEventsCount = d.ledgerEventsCount;\n" +
-"        this.totalDebit = d.totalDebit;\n" +
+"        this.readonly = d.readonly;\n" +
+"        this.source = d.source;\n" +
+"        if (\"taggingCount\" in d)\n" +
+"            this.taggingCount = d.taggingCount;\n" +
 "        this.totalCredit = d.totalCredit;\n" +
+"        this.totalDebit = d.totalDebit;\n" +
+"        this.type = d.type;\n" +
 "    }\n" +
 "}\n" +
 "class Journal {\n" +
 "    static Parse(d) {\n" +
 "        return Journal.Create(JSON.parse(d));\n" +
 "    }\n" +
-"    static Create(d, field) {\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$a = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$9(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$9(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$9(field, d);\n" +
+"        }\n" +
+"        checkString$8(d.code, field + \".code\");\n" +
+"        checkNumber$7(d.id, field + \".id\");\n" +
+"        checkString$8(d.label, field + \".label\");\n" +
+"        const knownProperties = [\"code\", \"id\", \"label\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$a(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new Journal(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.code = d.code;\n" +
+"        this.id = d.id;\n" +
+"        this.label = d.label;\n" +
+"    }\n" +
+"}\n" +
+"function throwNull2NonNull$9(field, value, multiple) {\n" +
+"    return errorHelper$a(field, value, multiple ?? \"non-nullable object\");\n" +
+"}\n" +
+"function throwNotObject$9(field, value, multiple) {\n" +
+"    return errorHelper$a(field, value, \"object\");\n" +
+"}\n" +
+"function throwIsArray$9(field, value, multiple) {\n" +
+"    return errorHelper$a(field, value, \"object\");\n" +
+"}\n" +
+"function checkNumber$7(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'number')\n" +
+"        errorHelper$a(field, value, \"number\");\n" +
+"}\n" +
+"function checkBoolean$6(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'boolean')\n" +
+"        errorHelper$a(field, value, \"boolean\");\n" +
+"}\n" +
+"function checkString$8(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'string')\n" +
+"        errorHelper$a(field, value, multiple ?? \"string\");\n" +
+"}\n" +
+"function checkNull$6(value, field, multiple) {\n" +
+"    if (value !== null)\n" +
+"        errorHelper$a(field, value, multiple);\n" +
+"}\n" +
+"function errorHelper$a(field, d, type) {\n" +
+"    if (!type.includes(' | ')) {\n" +
+"        let jsonClone = obj$a;\n" +
+"        try {\n" +
+"            jsonClone = JSON.parse(JSON.stringify(obj$a));\n" +
+"        }\n" +
+"        catch (error) {\n" +
+"            console.log(error);\n" +
+"        }\n" +
+"        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
+"\" + JSON.stringify(d), jsonClone);\n" +
+"        prompt(proxyName$a + ':', JSON.stringify(obj$a));\n" +
+"    }\n" +
+"    throw new TypeError('Expected ' + type + \" at \" + field + \" but found:\\n" +
+"\" + JSON.stringify(d) + \"\\n" +
+"\\n" +
+"Full object:\\n" +
+"\" + JSON.stringify(obj$a));\n" +
+"}\n" +
+"\n" +
+"// Stores the currently-being-typechecked object for error messages.\n" +
+"const proxyName$9 = 'APIInvoiceListParams';\n" +
+"let obj$9 = null;\n" +
+"class APIInvoiceListParams {\n" +
+"    static Parse(d) {\n" +
+"        return APIInvoiceListParams.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
 "            obj$9 = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            throwNull2NonNull$8(field, d);\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$8(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$8(field, d, false);\n" +
+"            throwNotObject$8(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$8(field, d, false);\n" +
+"            throwIsArray$8(field, d);\n" +
 "        }\n" +
-"        checkNumber$7(d.id, false, field + \".id\");\n" +
-"        checkString$8(d.code, false, field + \".code\");\n" +
-"        checkString$8(d.label, false, field + \".label\");\n" +
-"        const knownProperties = [\"id\", \"code\", \"label\"];\n" +
+"        if (\"direction\" in d) {\n" +
+"            checkString$7(d.direction, field + \".direction\");\n" +
+"        }\n" +
+"        if (\"filter\" in d) {\n" +
+"            checkString$7(d.filter, field + \".filter\");\n" +
+"        }\n" +
+"        if (\"page\" in d) {\n" +
+"            checkNumber$6(d.page, field + \".page\");\n" +
+"        }\n" +
+"        if (\"sort\" in d) {\n" +
+"            checkString$7(d.sort, field + \".sort\");\n" +
+"        }\n" +
+"        const knownProperties = [\"direction\", \"filter\", \"page\", \"sort\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$9(unknownProperty, d, \"never\", false);\n" +
-"        return new Journal(d);\n" +
+"            errorHelper$9(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new APIInvoiceListParams(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
-"        this.id = d.id;\n" +
-"        this.code = d.code;\n" +
-"        this.label = d.label;\n" +
+"        if (\"direction\" in d)\n" +
+"            this.direction = d.direction;\n" +
+"        if (\"filter\" in d)\n" +
+"            this.filter = d.filter;\n" +
+"        if (\"page\" in d)\n" +
+"            this.page = d.page;\n" +
+"        if (\"sort\" in d)\n" +
+"            this.sort = d.sort;\n" +
 "    }\n" +
 "}\n" +
-"function throwNull2NonNull$8(field, d) {\n" +
-"    return errorHelper$9(field, d, \"non-nullable object\", false);\n" +
+"function throwNull2NonNull$8(field, value, multiple) {\n" +
+"    return errorHelper$9(field, value, multiple ?? \"non-nullable object\");\n" +
 "}\n" +
-"function throwNotObject$8(field, d, nullable) {\n" +
-"    return errorHelper$9(field, d, \"object\", nullable);\n" +
+"function throwNotObject$8(field, value, multiple) {\n" +
+"    return errorHelper$9(field, value, \"object\");\n" +
 "}\n" +
-"function throwIsArray$8(field, d, nullable) {\n" +
-"    return errorHelper$9(field, d, \"object\", nullable);\n" +
+"function throwIsArray$8(field, value, multiple) {\n" +
+"    return errorHelper$9(field, value, \"object\");\n" +
 "}\n" +
-"function checkNumber$7(d, nullable, field) {\n" +
-"    if (typeof (d) !== 'number' && (true)) {\n" +
-"        errorHelper$9(field, d, \"number\", nullable);\n" +
+"function checkNumber$6(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'number')\n" +
+"        errorHelper$9(field, value, \"number\");\n" +
+"}\n" +
+"function checkString$7(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'string')\n" +
+"        errorHelper$9(field, value, \"string\");\n" +
+"}\n" +
+"function errorHelper$9(field, d, type) {\n" +
+"    if (!type.includes(' | ')) {\n" +
+"        let jsonClone = obj$9;\n" +
+"        try {\n" +
+"            jsonClone = JSON.parse(JSON.stringify(obj$9));\n" +
+"        }\n" +
+"        catch (error) {\n" +
+"            console.log(error);\n" +
+"        }\n" +
+"        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
+"\" + JSON.stringify(d), jsonClone);\n" +
+"        prompt(proxyName$9 + ':', JSON.stringify(obj$9));\n" +
 "    }\n" +
-"}\n" +
-"function checkBoolean$6(d, nullable, field) {\n" +
-"    if (typeof (d) !== 'boolean' && (true)) {\n" +
-"        errorHelper$9(field, d, \"boolean\", nullable);\n" +
-"    }\n" +
-"}\n" +
-"function checkString$8(d, nullable, field) {\n" +
-"    if (typeof (d) !== 'string' && (!nullable || (nullable && d !== null && d !== undefined))) {\n" +
-"        errorHelper$9(field, d, \"string\", nullable);\n" +
-"    }\n" +
-"}\n" +
-"function errorHelper$9(field, d, type, nullable) {\n" +
-"    if (nullable) {\n" +
-"        type += \", null, or undefined\";\n" +
-"    }\n" +
-"    prompt(proxyName$9 + ':', JSON.stringify(obj$9));\n" +
 "    throw new TypeError('Expected ' + type + \" at \" + field + \" but found:\\n" +
 "\" + JSON.stringify(d) + \"\\n" +
 "\\n" +
@@ -2371,116 +4032,42 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "}\n" +
 "\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
-"const proxyName$8 = 'APIInvoiceListParams';\n" +
+"const proxyName$8 = 'APIInvoiceList';\n" +
 "let obj$8 = null;\n" +
-"class APIInvoiceListParams {\n" +
-"    static Parse(d) {\n" +
-"        return APIInvoiceListParams.Create(JSON.parse(d));\n" +
-"    }\n" +
-"    static Create(d, field) {\n" +
-"        if (!field) {\n" +
-"            obj$8 = d;\n" +
-"            field = \"root\";\n" +
-"        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            throwNull2NonNull$7(field, d);\n" +
-"        }\n" +
-"        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$7(field, d, false);\n" +
-"        }\n" +
-"        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$7(field, d, false);\n" +
-"        }\n" +
-"        checkString$7(d.direction, true, field + \".direction\");\n" +
-"        checkString$7(d.filter, true, field + \".filter\");\n" +
-"        checkString$7(d.sort, true, field + \".sort\");\n" +
-"        checkNumber$6(d.page, true, field + \".page\");\n" +
-"        const knownProperties = [\"direction\", \"filter\", \"sort\", \"page\"];\n" +
-"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
-"        if (unknownProperty)\n" +
-"            errorHelper$8(unknownProperty, d, \"never\", false);\n" +
-"        return new APIInvoiceListParams(d);\n" +
-"    }\n" +
-"    constructor(d) {\n" +
-"        if (\"direction\" in d)\n" +
-"            this.direction = d.direction;\n" +
-"        if (\"filter\" in d)\n" +
-"            this.filter = d.filter;\n" +
-"        if (\"sort\" in d)\n" +
-"            this.sort = d.sort;\n" +
-"        if (\"page\" in d)\n" +
-"            this.page = d.page;\n" +
-"    }\n" +
-"}\n" +
-"function throwNull2NonNull$7(field, d) {\n" +
-"    return errorHelper$8(field, d, \"non-nullable object\", false);\n" +
-"}\n" +
-"function throwNotObject$7(field, d, nullable) {\n" +
-"    return errorHelper$8(field, d, \"object\", nullable);\n" +
-"}\n" +
-"function throwIsArray$7(field, d, nullable) {\n" +
-"    return errorHelper$8(field, d, \"object\", nullable);\n" +
-"}\n" +
-"function checkNumber$6(d, nullable, field) {\n" +
-"    if (typeof (d) !== 'number' && ((d !== null && d !== undefined))) {\n" +
-"        errorHelper$8(field, d, \"number\", nullable);\n" +
-"    }\n" +
-"}\n" +
-"function checkString$7(d, nullable, field) {\n" +
-"    if (typeof (d) !== 'string' && ((d !== null && d !== undefined))) {\n" +
-"        errorHelper$8(field, d, \"string\", nullable);\n" +
-"    }\n" +
-"}\n" +
-"function errorHelper$8(field, d, type, nullable) {\n" +
-"    if (nullable) {\n" +
-"        type += \", null, or undefined\";\n" +
-"    }\n" +
-"    prompt(proxyName$8 + ':', JSON.stringify(obj$8));\n" +
-"    throw new TypeError('Expected ' + type + \" at \" + field + \" but found:\\n" +
-"\" + JSON.stringify(d) + \"\\n" +
-"\\n" +
-"Full object:\\n" +
-"\" + JSON.stringify(obj$8));\n" +
-"}\n" +
-"\n" +
-"// Stores the currently-being-typechecked object for error messages.\n" +
-"const proxyName$7 = 'APIInvoiceList';\n" +
-"let obj$7 = null;\n" +
 "class APIInvoiceList {\n" +
 "    static Parse(d) {\n" +
 "        return APIInvoiceList.Create(JSON.parse(d));\n" +
 "    }\n" +
-"    static Create(d, field) {\n" +
+"    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$7 = d;\n" +
+"            obj$8 = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            throwNull2NonNull$6(field, d);\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$7(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$6(field, d, false);\n" +
+"            throwNotObject$7(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$6(field, d, false);\n" +
+"            throwIsArray$7(field, d);\n" +
 "        }\n" +
 "        checkArray$4(d.invoices, field + \".invoices\");\n" +
 "        if (d.invoices) {\n" +
 "            for (let i = 0; i < d.invoices.length; i++) {\n" +
-"                d.invoices[i] = InvoicesEntity.Create(d.invoices[i], field + \".invoices\" + \"[\" + i + \"]\");\n" +
+"                d.invoices[i] = InvoicesEntity.Create(d.invoices[i], field + \".invoices\" + \"[\" + i + \"]\", undefined);\n" +
 "            }\n" +
 "        }\n" +
-"        checkNumber$5(d.pageSize, false, field + \".pageSize\");\n" +
-"        d.pagination = Pagination$1.Create(d.pagination, field + \".pagination\");\n" +
+"        checkNumber$5(d.pageSize, field + \".pageSize\");\n" +
+"        d.pagination = Pagination$1.Create(d.pagination, field + \".pagination\", undefined);\n" +
 "        const knownProperties = [\"invoices\", \"pageSize\", \"pagination\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$7(unknownProperty, d, \"never\", false);\n" +
+"            errorHelper$8(unknownProperty, d, \"never (unknown property)\");\n" +
 "        return new APIInvoiceList(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
-"        if (\"invoices\" in d)\n" +
-"            this.invoices = d.invoices;\n" +
+"        this.invoices = d.invoices;\n" +
 "        this.pageSize = d.pageSize;\n" +
 "        this.pagination = d.pagination;\n" +
 "    }\n" +
@@ -2489,129 +4076,238 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    static Parse(d) {\n" +
 "        return InvoicesEntity.Create(JSON.parse(d));\n" +
 "    }\n" +
-"    static Create(d, field) {\n" +
+"    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$7 = d;\n" +
+"            obj$8 = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            throwNull2NonNull$6(field, d);\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$7(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$6(field, d, false);\n" +
+"            throwNotObject$7(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$6(field, d, false);\n" +
+"            throwIsArray$7(field, d);\n" +
 "        }\n" +
-"        checkNumber$5(d.id, false, field + \".id\");\n" +
-"        checkString$6(d.type, false, field + \".type\");\n" +
-"        checkNumber$5(d.company_id, false, field + \".company_id\");\n" +
-"        checkString$6(d.label, false, field + \".label\");\n" +
-"        checkString$6(d.created_at, false, field + \".created_at\");\n" +
-"        checkString$6(d.currency, false, field + \".currency\");\n" +
-"        checkString$6(d.amount, false, field + \".amount\");\n" +
-"        checkString$6(d.currency_amount, false, field + \".currency_amount\");\n" +
-"        checkString$6(d.currency_tax, false, field + \".currency_tax\");\n" +
-"        checkString$6(d.date, true, field + \".date\");\n" +
-"        checkString$6(d.deadline, true, field + \".deadline\");\n" +
-"        checkString$6(d.direction, false, field + \".direction\");\n" +
-"        checkString$6(d.invoice_number, false, field + \".invoice_number\");\n" +
-"        checkString$6(d.source, false, field + \".source\");\n" +
-"        checkNull$4(d.email_from, field + \".email_from\");\n" +
-"        checkString$6(d.gdrive_path, true, field + \".gdrive_path\");\n" +
-"        checkString$6(d.pusher_channel, false, field + \".pusher_channel\");\n" +
-"        checkBoolean$5(d.validation_needed, false, field + \".validation_needed\");\n" +
-"        checkString$6(d.payment_status, false, field + \".payment_status\");\n" +
-"        checkBoolean$5(d.paid, false, field + \".paid\");\n" +
-"        checkString$6(d.amount_without_tax, false, field + \".amount_without_tax\");\n" +
-"        checkBoolean$5(d.not_duplicate, false, field + \".not_duplicate\");\n" +
-"        checkNull$4(d.approval_status, field + \".approval_status\");\n" +
-"        checkString$6(d.checksum, false, field + \".checksum\");\n" +
-"        checkBoolean$5(d.archived, false, field + \".archived\");\n" +
-"        checkBoolean$5(d.incomplete, false, field + \".incomplete\");\n" +
-"        checkBoolean$5(d.is_waiting_for_ocr, false, field + \".is_waiting_for_ocr\");\n" +
-"        checkString$6(d.status, false, field + \".status\");\n" +
-"        checkString$6(d.filename, false, field + \".filename\");\n" +
-"        checkBoolean$5(d.is_factur_x, false, field + \".is_factur_x\");\n" +
-"        d.thirdparty = Thirdparty$1.Create(d.thirdparty, field + \".thirdparty\");\n" +
+"        checkString$6(d.amount, field + \".amount\");\n" +
+"        checkString$6(d.amount_without_tax, field + \".amount_without_tax\");\n" +
+"        checkNull$5(d.approval_status, field + \".approval_status\");\n" +
+"        checkBoolean$5(d.archived, field + \".archived\");\n" +
+"        checkString$6(d.checksum, field + \".checksum\");\n" +
+"        checkNumber$5(d.company_id, field + \".company_id\");\n" +
+"        checkString$6(d.created_at, field + \".created_at\");\n" +
+"        checkString$6(d.currency, field + \".currency\");\n" +
+"        checkString$6(d.currency_amount, field + \".currency_amount\");\n" +
+"        checkString$6(d.currency_tax, field + \".currency_tax\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkString$6(d.date, field + \".date\", \"string | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$5(d.date, field + \".date\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$8 + ':', JSON.stringify(obj$8));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkString$6(d.deadline, field + \".deadline\", \"string | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$5(d.deadline, field + \".deadline\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$8 + ':', JSON.stringify(obj$8));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        checkString$6(d.direction, field + \".direction\");\n" +
+"        checkNull$5(d.email_from, field + \".email_from\");\n" +
+"        checkString$6(d.filename, field + \".filename\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$5(d.gdrive_path, field + \".gdrive_path\", \"null | string\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkString$6(d.gdrive_path, field + \".gdrive_path\", \"null | string\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$8 + ':', JSON.stringify(obj$8));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        checkNumber$5(d.id, field + \".id\");\n" +
+"        checkBoolean$5(d.incomplete, field + \".incomplete\");\n" +
 "        checkArray$4(d.invoice_lines, field + \".invoice_lines\");\n" +
 "        if (d.invoice_lines) {\n" +
 "            for (let i = 0; i < d.invoice_lines.length; i++) {\n" +
-"                d.invoice_lines[i] = InvoiceLinesEntity$1.Create(d.invoice_lines[i], field + \".invoice_lines\" + \"[\" + i + \"]\");\n" +
+"                d.invoice_lines[i] = InvoiceLinesEntity$1.Create(d.invoice_lines[i], field + \".invoice_lines\" + \"[\" + i + \"]\", undefined);\n" +
 "            }\n" +
 "        }\n" +
-"        const knownProperties = [\"id\", \"type\", \"company_id\", \"label\", \"created_at\", \"currency\", \"amount\", \"currency_amount\", \"currency_tax\", \"date\", \"deadline\", \"direction\", \"invoice_number\", \"source\", \"email_from\", \"gdrive_path\", \"pusher_channel\", \"validation_needed\", \"payment_status\", \"paid\", \"amount_without_tax\", \"not_duplicate\", \"approval_status\", \"checksum\", \"archived\", \"incomplete\", \"is_waiting_for_ocr\", \"status\", \"filename\", \"is_factur_x\", \"thirdparty\", \"invoice_lines\"];\n" +
+"        checkString$6(d.invoice_number, field + \".invoice_number\");\n" +
+"        checkBoolean$5(d.is_factur_x, field + \".is_factur_x\");\n" +
+"        checkBoolean$5(d.is_waiting_for_ocr, field + \".is_waiting_for_ocr\");\n" +
+"        checkString$6(d.label, field + \".label\");\n" +
+"        checkBoolean$5(d.not_duplicate, field + \".not_duplicate\");\n" +
+"        checkBoolean$5(d.paid, field + \".paid\");\n" +
+"        checkString$6(d.payment_status, field + \".payment_status\");\n" +
+"        checkString$6(d.pusher_channel, field + \".pusher_channel\");\n" +
+"        checkString$6(d.source, field + \".source\");\n" +
+"        checkString$6(d.status, field + \".status\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            d.thirdparty = Thirdparty$1.Create(d.thirdparty, field + \".thirdparty\", \"Thirdparty | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$5(d.thirdparty, field + \".thirdparty\", \"Thirdparty | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$8 + ':', JSON.stringify(obj$8));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        checkString$6(d.type, field + \".type\");\n" +
+"        checkBoolean$5(d.validation_needed, field + \".validation_needed\");\n" +
+"        const knownProperties = [\"amount\", \"amount_without_tax\", \"approval_status\", \"archived\", \"checksum\", \"company_id\", \"created_at\", \"currency\", \"currency_amount\", \"currency_tax\", \"date\", \"deadline\", \"direction\", \"email_from\", \"filename\", \"gdrive_path\", \"id\", \"incomplete\", \"invoice_lines\", \"invoice_number\", \"is_factur_x\", \"is_waiting_for_ocr\", \"label\", \"not_duplicate\", \"paid\", \"payment_status\", \"pusher_channel\", \"source\", \"status\", \"thirdparty\", \"type\", \"validation_needed\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$7(unknownProperty, d, \"never\", false);\n" +
+"            errorHelper$8(unknownProperty, d, \"never (unknown property)\");\n" +
 "        return new InvoicesEntity(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
-"        this.id = d.id;\n" +
-"        this.type = d.type;\n" +
+"        this.amount = d.amount;\n" +
+"        this.amount_without_tax = d.amount_without_tax;\n" +
+"        this.approval_status = d.approval_status;\n" +
+"        this.archived = d.archived;\n" +
+"        this.checksum = d.checksum;\n" +
 "        this.company_id = d.company_id;\n" +
-"        this.label = d.label;\n" +
 "        this.created_at = d.created_at;\n" +
 "        this.currency = d.currency;\n" +
-"        this.amount = d.amount;\n" +
 "        this.currency_amount = d.currency_amount;\n" +
 "        this.currency_tax = d.currency_tax;\n" +
-"        if (\"date\" in d)\n" +
-"            this.date = d.date;\n" +
-"        if (\"deadline\" in d)\n" +
-"            this.deadline = d.deadline;\n" +
+"        this.date = d.date;\n" +
+"        this.deadline = d.deadline;\n" +
 "        this.direction = d.direction;\n" +
-"        this.invoice_number = d.invoice_number;\n" +
-"        this.source = d.source;\n" +
-"        if (\"email_from\" in d)\n" +
-"            this.email_from = d.email_from;\n" +
-"        if (\"gdrive_path\" in d)\n" +
-"            this.gdrive_path = d.gdrive_path;\n" +
-"        this.pusher_channel = d.pusher_channel;\n" +
-"        this.validation_needed = d.validation_needed;\n" +
-"        this.payment_status = d.payment_status;\n" +
-"        this.paid = d.paid;\n" +
-"        this.amount_without_tax = d.amount_without_tax;\n" +
-"        this.not_duplicate = d.not_duplicate;\n" +
-"        if (\"approval_status\" in d)\n" +
-"            this.approval_status = d.approval_status;\n" +
-"        this.checksum = d.checksum;\n" +
-"        this.archived = d.archived;\n" +
-"        this.incomplete = d.incomplete;\n" +
-"        this.is_waiting_for_ocr = d.is_waiting_for_ocr;\n" +
-"        this.status = d.status;\n" +
+"        this.email_from = d.email_from;\n" +
 "        this.filename = d.filename;\n" +
+"        this.gdrive_path = d.gdrive_path;\n" +
+"        this.id = d.id;\n" +
+"        this.incomplete = d.incomplete;\n" +
+"        this.invoice_lines = d.invoice_lines;\n" +
+"        this.invoice_number = d.invoice_number;\n" +
 "        this.is_factur_x = d.is_factur_x;\n" +
-"        if (\"thirdparty\" in d)\n" +
-"            this.thirdparty = d.thirdparty;\n" +
-"        if (\"invoice_lines\" in d)\n" +
-"            this.invoice_lines = d.invoice_lines;\n" +
+"        this.is_waiting_for_ocr = d.is_waiting_for_ocr;\n" +
+"        this.label = d.label;\n" +
+"        this.not_duplicate = d.not_duplicate;\n" +
+"        this.paid = d.paid;\n" +
+"        this.payment_status = d.payment_status;\n" +
+"        this.pusher_channel = d.pusher_channel;\n" +
+"        this.source = d.source;\n" +
+"        this.status = d.status;\n" +
+"        this.thirdparty = d.thirdparty;\n" +
+"        this.type = d.type;\n" +
+"        this.validation_needed = d.validation_needed;\n" +
 "    }\n" +
 "}\n" +
+"let InvoiceLinesEntity$1 = class InvoiceLinesEntity {\n" +
+"    static Parse(d) {\n" +
+"        return InvoiceLinesEntity.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$8 = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$7(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$7(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$7(field, d);\n" +
+"        }\n" +
+"        checkNumber$5(d.id, field + \".id\");\n" +
+"        d.pnl_plan_item = PnlPlanItem$1.Create(d.pnl_plan_item, field + \".pnl_plan_item\", undefined);\n" +
+"        checkString$6(d.vat_rate, field + \".vat_rate\");\n" +
+"        const knownProperties = [\"id\", \"pnl_plan_item\", \"vat_rate\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$8(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new InvoiceLinesEntity(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.id = d.id;\n" +
+"        this.pnl_plan_item = d.pnl_plan_item;\n" +
+"        this.vat_rate = d.vat_rate;\n" +
+"    }\n" +
+"};\n" +
+"let PnlPlanItem$1 = class PnlPlanItem {\n" +
+"    static Parse(d) {\n" +
+"        return PnlPlanItem.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$8 = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$7(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$7(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$7(field, d);\n" +
+"        }\n" +
+"        checkBoolean$5(d.enabled, field + \".enabled\");\n" +
+"        checkNumber$5(d.id, field + \".id\");\n" +
+"        checkString$6(d.label, field + \".label\");\n" +
+"        checkString$6(d.number, field + \".number\");\n" +
+"        const knownProperties = [\"enabled\", \"id\", \"label\", \"number\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$8(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new PnlPlanItem(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.enabled = d.enabled;\n" +
+"        this.id = d.id;\n" +
+"        this.label = d.label;\n" +
+"        this.number = d.number;\n" +
+"    }\n" +
+"};\n" +
 "let Thirdparty$1 = class Thirdparty {\n" +
 "    static Parse(d) {\n" +
 "        return Thirdparty.Create(JSON.parse(d));\n" +
 "    }\n" +
-"    static Create(d, field) {\n" +
+"    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$7 = d;\n" +
+"            obj$8 = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            return null;\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$7(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$6(field, d, true);\n" +
+"            throwNotObject$7(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$6(field, d, true);\n" +
+"            throwIsArray$7(field, d);\n" +
 "        }\n" +
-"        checkNumber$5(d.id, false, field + \".id\");\n" +
-"        checkString$6(d.name, false, field + \".name\");\n" +
+"        checkNumber$5(d.id, field + \".id\");\n" +
+"        checkString$6(d.name, field + \".name\");\n" +
 "        const knownProperties = [\"id\", \"name\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$7(unknownProperty, d, \"never\", false);\n" +
+"            errorHelper$8(unknownProperty, d, \"never (unknown property)\");\n" +
 "        return new Thirdparty(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -2619,154 +4315,173 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        this.name = d.name;\n" +
 "    }\n" +
 "};\n" +
-"let InvoiceLinesEntity$1 = class InvoiceLinesEntity {\n" +
-"    static Parse(d) {\n" +
-"        return InvoiceLinesEntity.Create(JSON.parse(d));\n" +
-"    }\n" +
-"    static Create(d, field) {\n" +
-"        if (!field) {\n" +
-"            obj$7 = d;\n" +
-"            field = \"root\";\n" +
-"        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            throwNull2NonNull$6(field, d);\n" +
-"        }\n" +
-"        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$6(field, d, false);\n" +
-"        }\n" +
-"        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$6(field, d, false);\n" +
-"        }\n" +
-"        checkNumber$5(d.id, false, field + \".id\");\n" +
-"        checkString$6(d.vat_rate, false, field + \".vat_rate\");\n" +
-"        d.pnl_plan_item = PnlPlanItem$2.Create(d.pnl_plan_item, field + \".pnl_plan_item\");\n" +
-"        const knownProperties = [\"id\", \"vat_rate\", \"pnl_plan_item\"];\n" +
-"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
-"        if (unknownProperty)\n" +
-"            errorHelper$7(unknownProperty, d, \"never\", false);\n" +
-"        return new InvoiceLinesEntity(d);\n" +
-"    }\n" +
-"    constructor(d) {\n" +
-"        this.id = d.id;\n" +
-"        this.vat_rate = d.vat_rate;\n" +
-"        this.pnl_plan_item = d.pnl_plan_item;\n" +
-"    }\n" +
-"};\n" +
-"let PnlPlanItem$2 = class PnlPlanItem {\n" +
-"    static Parse(d) {\n" +
-"        return PnlPlanItem.Create(JSON.parse(d));\n" +
-"    }\n" +
-"    static Create(d, field) {\n" +
-"        if (!field) {\n" +
-"            obj$7 = d;\n" +
-"            field = \"root\";\n" +
-"        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            throwNull2NonNull$6(field, d);\n" +
-"        }\n" +
-"        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$6(field, d, false);\n" +
-"        }\n" +
-"        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$6(field, d, false);\n" +
-"        }\n" +
-"        checkNumber$5(d.id, false, field + \".id\");\n" +
-"        checkString$6(d.number, false, field + \".number\");\n" +
-"        checkString$6(d.label, false, field + \".label\");\n" +
-"        checkBoolean$5(d.enabled, false, field + \".enabled\");\n" +
-"        const knownProperties = [\"id\", \"number\", \"label\", \"enabled\"];\n" +
-"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
-"        if (unknownProperty)\n" +
-"            errorHelper$7(unknownProperty, d, \"never\", false);\n" +
-"        return new PnlPlanItem(d);\n" +
-"    }\n" +
-"    constructor(d) {\n" +
-"        this.id = d.id;\n" +
-"        this.number = d.number;\n" +
-"        this.label = d.label;\n" +
-"        this.enabled = d.enabled;\n" +
-"    }\n" +
-"};\n" +
 "let Pagination$1 = class Pagination {\n" +
 "    static Parse(d) {\n" +
 "        return Pagination.Create(JSON.parse(d));\n" +
 "    }\n" +
-"    static Create(d, field) {\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$8 = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$7(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$7(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$7(field, d);\n" +
+"        }\n" +
+"        checkBoolean$5(d.hasNextPage, field + \".hasNextPage\");\n" +
+"        checkNumber$5(d.page, field + \".page\");\n" +
+"        checkNumber$5(d.pages, field + \".pages\");\n" +
+"        checkNumber$5(d.pageSize, field + \".pageSize\");\n" +
+"        checkNumber$5(d.totalEntries, field + \".totalEntries\");\n" +
+"        checkString$6(d.totalEntriesPrecision, field + \".totalEntriesPrecision\");\n" +
+"        checkString$6(d.totalEntriesStr, field + \".totalEntriesStr\");\n" +
+"        const knownProperties = [\"hasNextPage\", \"page\", \"pages\", \"pageSize\", \"totalEntries\", \"totalEntriesPrecision\", \"totalEntriesStr\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$8(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new Pagination(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.hasNextPage = d.hasNextPage;\n" +
+"        this.page = d.page;\n" +
+"        this.pages = d.pages;\n" +
+"        this.pageSize = d.pageSize;\n" +
+"        this.totalEntries = d.totalEntries;\n" +
+"        this.totalEntriesPrecision = d.totalEntriesPrecision;\n" +
+"        this.totalEntriesStr = d.totalEntriesStr;\n" +
+"    }\n" +
+"};\n" +
+"function throwNull2NonNull$7(field, value, multiple) {\n" +
+"    return errorHelper$8(field, value, multiple ?? \"non-nullable object\");\n" +
+"}\n" +
+"function throwNotObject$7(field, value, multiple) {\n" +
+"    return errorHelper$8(field, value, \"object\");\n" +
+"}\n" +
+"function throwIsArray$7(field, value, multiple) {\n" +
+"    return errorHelper$8(field, value, \"object\");\n" +
+"}\n" +
+"function checkArray$4(value, field, multiple) {\n" +
+"    if (!Array.isArray(value))\n" +
+"        errorHelper$8(field, value, \"array\");\n" +
+"}\n" +
+"function checkNumber$5(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'number')\n" +
+"        errorHelper$8(field, value, \"number\");\n" +
+"}\n" +
+"function checkBoolean$5(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'boolean')\n" +
+"        errorHelper$8(field, value, \"boolean\");\n" +
+"}\n" +
+"function checkString$6(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'string')\n" +
+"        errorHelper$8(field, value, multiple ?? \"string\");\n" +
+"}\n" +
+"function checkNull$5(value, field, multiple) {\n" +
+"    if (value !== null)\n" +
+"        errorHelper$8(field, value, multiple ?? \"null\");\n" +
+"}\n" +
+"function errorHelper$8(field, d, type) {\n" +
+"    if (!type.includes(' | ')) {\n" +
+"        let jsonClone = obj$8;\n" +
+"        try {\n" +
+"            jsonClone = JSON.parse(JSON.stringify(obj$8));\n" +
+"        }\n" +
+"        catch (error) {\n" +
+"            console.log(error);\n" +
+"        }\n" +
+"        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
+"\" + JSON.stringify(d), jsonClone);\n" +
+"        prompt(proxyName$8 + ':', JSON.stringify(obj$8));\n" +
+"    }\n" +
+"    throw new TypeError('Expected ' + type + \" at \" + field + \" but found:\\n" +
+"\" + JSON.stringify(d) + \"\\n" +
+"\\n" +
+"Full object:\\n" +
+"\" + JSON.stringify(obj$8));\n" +
+"}\n" +
+"\n" +
+"// Stores the currently-being-typechecked object for error messages.\n" +
+"const proxyName$7 = 'APIInvoiceUpdateResponse';\n" +
+"let obj$7 = null;\n" +
+"class APIInvoiceUpdateResponse {\n" +
+"    static Parse(d) {\n" +
+"        return APIInvoiceUpdateResponse.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
 "            obj$7 = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            throwNull2NonNull$6(field, d);\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$6(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$6(field, d, false);\n" +
+"            throwNotObject$6(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$6(field, d, false);\n" +
+"            throwIsArray$6(field, d);\n" +
 "        }\n" +
-"        checkNumber$5(d.page, false, field + \".page\");\n" +
-"        checkNumber$5(d.pageSize, false, field + \".pageSize\");\n" +
-"        checkNumber$5(d.pages, false, field + \".pages\");\n" +
-"        checkNumber$5(d.totalEntries, false, field + \".totalEntries\");\n" +
-"        checkString$6(d.totalEntriesStr, false, field + \".totalEntriesStr\");\n" +
-"        checkString$6(d.totalEntriesPrecision, false, field + \".totalEntriesPrecision\");\n" +
-"        checkBoolean$5(d.hasNextPage, false, field + \".hasNextPage\");\n" +
-"        const knownProperties = [\"page\", \"pageSize\", \"pages\", \"totalEntries\", \"totalEntriesStr\", \"totalEntriesPrecision\", \"hasNextPage\"];\n" +
+"        checkBoolean$4(d.embeddable_in_browser, field + \".embeddable_in_browser\");\n" +
+"        checkBoolean$4(d.has_file, field + \".has_file\");\n" +
+"        checkString$5(d.preview_status, field + \".preview_status\");\n" +
+"        checkArray$3(d.preview_urls, field + \".preview_urls\");\n" +
+"        if (d.preview_urls) {\n" +
+"            for (let i = 0; i < d.preview_urls.length; i++) {\n" +
+"                checkString$5(d.preview_urls[i], field + \".preview_urls\" + \"[\" + i + \"]\");\n" +
+"            }\n" +
+"        }\n" +
+"        const knownProperties = [\"embeddable_in_browser\", \"has_file\", \"preview_status\", \"preview_urls\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$7(unknownProperty, d, \"never\", false);\n" +
-"        return new Pagination(d);\n" +
+"            errorHelper$7(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new APIInvoiceUpdateResponse(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
-"        this.page = d.page;\n" +
-"        this.pageSize = d.pageSize;\n" +
-"        this.pages = d.pages;\n" +
-"        this.totalEntries = d.totalEntries;\n" +
-"        this.totalEntriesStr = d.totalEntriesStr;\n" +
-"        this.totalEntriesPrecision = d.totalEntriesPrecision;\n" +
-"        this.hasNextPage = d.hasNextPage;\n" +
-"    }\n" +
-"};\n" +
-"function throwNull2NonNull$6(field, d) {\n" +
-"    return errorHelper$7(field, d, \"non-nullable object\", false);\n" +
-"}\n" +
-"function throwNotObject$6(field, d, nullable) {\n" +
-"    return errorHelper$7(field, d, \"object\", nullable);\n" +
-"}\n" +
-"function throwIsArray$6(field, d, nullable) {\n" +
-"    return errorHelper$7(field, d, \"object\", nullable);\n" +
-"}\n" +
-"function checkArray$4(d, field) {\n" +
-"    if (!Array.isArray(d) && d !== null && d !== undefined) {\n" +
-"        errorHelper$7(field, d, \"array\", true);\n" +
+"        this.embeddable_in_browser = d.embeddable_in_browser;\n" +
+"        this.has_file = d.has_file;\n" +
+"        this.preview_status = d.preview_status;\n" +
+"        this.preview_urls = d.preview_urls;\n" +
 "    }\n" +
 "}\n" +
-"function checkNumber$5(d, nullable, field) {\n" +
-"    if (typeof (d) !== 'number' && (true)) {\n" +
-"        errorHelper$7(field, d, \"number\", nullable);\n" +
-"    }\n" +
+"function throwNull2NonNull$6(field, value, multiple) {\n" +
+"    return errorHelper$7(field, value, multiple ?? \"non-nullable object\");\n" +
 "}\n" +
-"function checkBoolean$5(d, nullable, field) {\n" +
-"    if (typeof (d) !== 'boolean' && (true)) {\n" +
-"        errorHelper$7(field, d, \"boolean\", nullable);\n" +
-"    }\n" +
+"function throwNotObject$6(field, value, multiple) {\n" +
+"    return errorHelper$7(field, value, \"object\");\n" +
 "}\n" +
-"function checkString$6(d, nullable, field) {\n" +
-"    if (typeof (d) !== 'string' && (!nullable || (nullable && d !== null && d !== undefined))) {\n" +
-"        errorHelper$7(field, d, \"string\", nullable);\n" +
-"    }\n" +
+"function throwIsArray$6(field, value, multiple) {\n" +
+"    return errorHelper$7(field, value, \"object\");\n" +
 "}\n" +
-"function checkNull$4(d, field) {\n" +
-"    if (d !== null && d !== undefined) {\n" +
-"        errorHelper$7(field, d, \"null or undefined\", false);\n" +
-"    }\n" +
+"function checkArray$3(value, field, multiple) {\n" +
+"    if (!Array.isArray(value))\n" +
+"        errorHelper$7(field, value, \"array\");\n" +
 "}\n" +
-"function errorHelper$7(field, d, type, nullable) {\n" +
-"    if (nullable) {\n" +
-"        type += \", null, or undefined\";\n" +
+"function checkBoolean$4(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'boolean')\n" +
+"        errorHelper$7(field, value, \"boolean\");\n" +
+"}\n" +
+"function checkString$5(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'string')\n" +
+"        errorHelper$7(field, value, \"string\");\n" +
+"}\n" +
+"function errorHelper$7(field, d, type) {\n" +
+"    if (!type.includes(' | ')) {\n" +
+"        let jsonClone = obj$7;\n" +
+"        try {\n" +
+"            jsonClone = JSON.parse(JSON.stringify(obj$7));\n" +
+"        }\n" +
+"        catch (error) {\n" +
+"            console.log(error);\n" +
+"        }\n" +
+"        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
+"\" + JSON.stringify(d), jsonClone);\n" +
+"        prompt(proxyName$7 + ':', JSON.stringify(obj$7));\n" +
 "    }\n" +
-"    prompt(proxyName$7 + ':', JSON.stringify(obj$7));\n" +
 "    throw new TypeError('Expected ' + type + \" at \" + field + \" but found:\\n" +
 "\" + JSON.stringify(d) + \"\\n" +
 "\\n" +
@@ -2775,78 +4490,1050 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "}\n" +
 "\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
-"const proxyName$6 = 'APIInvoiceUpdateResponse';\n" +
+"const proxyName$6 = 'APIInvoice';\n" +
 "let obj$6 = null;\n" +
-"class APIInvoiceUpdateResponse {\n" +
+"class APIInvoice {\n" +
 "    static Parse(d) {\n" +
-"        return APIInvoiceUpdateResponse.Create(JSON.parse(d));\n" +
+"        return APIInvoice.Create(JSON.parse(d));\n" +
 "    }\n" +
-"    static Create(d, field) {\n" +
+"    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
 "            obj$6 = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            throwNull2NonNull$5(field, d);\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$5(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$5(field, d, false);\n" +
+"            throwNotObject$5(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$5(field, d, false);\n" +
+"            throwIsArray$5(field, d);\n" +
 "        }\n" +
-"        checkBoolean$4(d.has_file, false, field + \".has_file\");\n" +
-"        checkString$5(d.preview_status, false, field + \".preview_status\");\n" +
-"        checkArray$3(d.preview_urls, field + \".preview_urls\");\n" +
-"        if (d.preview_urls) {\n" +
-"            for (let i = 0; i < d.preview_urls.length; i++) {\n" +
-"                checkString$5(d.preview_urls[i], false, field + \".preview_urls\" + \"[\" + i + \"]\");\n" +
+"        checkString$4(d.amount, field + \".amount\");\n" +
+"        checkNull$4(d.approval_status, field + \".approval_status\");\n" +
+"        checkBoolean$3(d.archived, field + \".archived\");\n" +
+"        checkBoolean$3(d.attachment_required, field + \".attachment_required\");\n" +
+"        checkNumber$4(d.blob_id, field + \".blob_id\");\n" +
+"        checkString$4(d.checksum, field + \".checksum\");\n" +
+"        checkNumber$4(d.client_comments_count, field + \".client_comments_count\");\n" +
+"        checkNumber$4(d.company_id, field + \".company_id\");\n" +
+"        checkString$4(d.created_at, field + \".created_at\");\n" +
+"        checkString$4(d.currency, field + \".currency\");\n" +
+"        checkString$4(d.currency_amount, field + \".currency_amount\");\n" +
+"        checkString$4(d.currency_price_before_tax, field + \".currency_price_before_tax\");\n" +
+"        checkString$4(d.currency_tax, field + \".currency_tax\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$4(d.current_account_plan_item, field + \".current_account_plan_item\", \"null | PnlPlanItemOrCurrentAccountPlanItem\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                d.current_account_plan_item = PnlPlanItemOrCurrentAccountPlanItem.Create(d.current_account_plan_item, field + \".current_account_plan_item\", \"null | PnlPlanItemOrCurrentAccountPlanItem\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$6 + ':', JSON.stringify(obj$6));\n" +
+"                throw e;\n" +
 "            }\n" +
 "        }\n" +
-"        checkBoolean$4(d.embeddable_in_browser, false, field + \".embeddable_in_browser\");\n" +
-"        const knownProperties = [\"has_file\", \"preview_status\", \"preview_urls\", \"embeddable_in_browser\"];\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$4(d.current_account_plan_item_id, field + \".current_account_plan_item_id\", \"null | number\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNumber$4(d.current_account_plan_item_id, field + \".current_account_plan_item_id\", \"null | number\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$6 + ':', JSON.stringify(obj$6));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$4(d.date, field + \".date\", \"null | string\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkString$4(d.date, field + \".date\", \"null | string\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$6 + ':', JSON.stringify(obj$6));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$4(d.deadline, field + \".deadline\", \"null | string\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkString$4(d.deadline, field + \".deadline\", \"null | string\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$6 + ':', JSON.stringify(obj$6));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        checkString$4(d.direction, field + \".direction\");\n" +
+"        checkArray$2(d.document_tags, field + \".document_tags\");\n" +
+"        if (d.document_tags) {\n" +
+"            for (let i = 0; i < d.document_tags.length; i++) {\n" +
+"                d.document_tags[i] = DocumentTagsEntity.Create(d.document_tags[i], field + \".document_tags\" + \"[\" + i + \"]\", undefined);\n" +
+"            }\n" +
+"        }\n" +
+"        checkNumber$4(d.duplicates_count, field + \".duplicates_count\");\n" +
+"        checkNull$4(d.email_from, field + \".email_from\");\n" +
+"        checkBoolean$3(d.embeddable_in_browser, field + \".embeddable_in_browser\");\n" +
+"        checkString$4(d.file_signed_id, field + \".file_signed_id\");\n" +
+"        checkString$4(d.filename, field + \".filename\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkString$4(d.gdrive_path, field + \".gdrive_path\", \"string | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$4(d.gdrive_path, field + \".gdrive_path\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$6 + ':', JSON.stringify(obj$6));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        checkString$4(d.group_uuid, field + \".group_uuid\");\n" +
+"        checkBoolean$3(d.has_closed_ledger_events, field + \".has_closed_ledger_events\");\n" +
+"        checkBoolean$3(d.has_duplicates, field + \".has_duplicates\");\n" +
+"        checkBoolean$3(d.has_file, field + \".has_file\");\n" +
+"        checkNumber$4(d.id, field + \".id\");\n" +
+"        checkBoolean$3(d.incomplete, field + \".incomplete\");\n" +
+"        checkArray$2(d.invoice_lines, field + \".invoice_lines\");\n" +
+"        if (d.invoice_lines) {\n" +
+"            for (let i = 0; i < d.invoice_lines.length; i++) {\n" +
+"                d.invoice_lines[i] = InvoiceLinesEntity.Create(d.invoice_lines[i], field + \".invoice_lines\" + \"[\" + i + \"]\", undefined);\n" +
+"            }\n" +
+"        }\n" +
+"        checkNumber$4(d.invoice_lines_count, field + \".invoice_lines_count\");\n" +
+"        checkString$4(d.invoice_number, field + \".invoice_number\");\n" +
+"        checkBoolean$3(d.is_employee_expense, field + \".is_employee_expense\");\n" +
+"        checkBoolean$3(d.is_estimate, field + \".is_estimate\");\n" +
+"        checkBoolean$3(d.is_factur_x, field + \".is_factur_x\");\n" +
+"        checkBoolean$3(d.is_waiting_for_ocr, field + \".is_waiting_for_ocr\");\n" +
+"        checkNumber$4(d.journal_id, field + \".journal_id\");\n" +
+"        checkString$4(d.label, field + \".label\");\n" +
+"        checkString$4(d.method, field + \".method\");\n" +
+"        checkNull$4(d.mileage_allowance, field + \".mileage_allowance\");\n" +
+"        checkString$4(d.outstanding_balance, field + \".outstanding_balance\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNumber$4(d.pages_count, field + \".pages_count\", \"number | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$4(d.pages_count, field + \".pages_count\", \"number | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$6 + ':', JSON.stringify(obj$6));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        checkBoolean$3(d.paid, field + \".paid\");\n" +
+"        checkString$4(d.payment_status, field + \".payment_status\");\n" +
+"        checkString$4(d.preview_status, field + \".preview_status\");\n" +
+"        checkArray$2(d.preview_urls, field + \".preview_urls\");\n" +
+"        if (d.preview_urls) {\n" +
+"            for (let i = 0; i < d.preview_urls.length; i++) {\n" +
+"                checkString$4(d.preview_urls[i], field + \".preview_urls\" + \"[\" + i + \"]\");\n" +
+"            }\n" +
+"        }\n" +
+"        checkString$4(d.pusher_channel, field + \".pusher_channel\");\n" +
+"        checkString$4(d.source, field + \".source\");\n" +
+"        checkString$4(d.status, field + \".status\");\n" +
+"        checkBoolean$3(d.subcomplete, field + \".subcomplete\");\n" +
+"        checkBoolean$3(d.tagged_at_ledger_events_level, field + \".tagged_at_ledger_events_level\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            d.thirdparty = Thirdparty.Create(d.thirdparty, field + \".thirdparty\", \"Thirdparty | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$4(d.thirdparty, field + \".thirdparty\", \"Thirdparty | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$6 + ':', JSON.stringify(obj$6));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNumber$4(d.thirdparty_id, field + \".thirdparty_id\", \"number | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$4(d.thirdparty_id, field + \".thirdparty_id\", \"number | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$6 + ':', JSON.stringify(obj$6));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        checkString$4(d.type, field + \".type\");\n" +
+"        checkString$4(d.url, field + \".url\");\n" +
+"        checkBoolean$3(d.validation_needed, field + \".validation_needed\");\n" +
+"        const knownProperties = [\"amount\", \"approval_status\", \"archived\", \"attachment_required\", \"blob_id\", \"checksum\", \"client_comments_count\", \"company_id\", \"created_at\", \"currency\", \"currency_amount\", \"currency_price_before_tax\", \"currency_tax\", \"current_account_plan_item\", \"current_account_plan_item_id\", \"date\", \"deadline\", \"direction\", \"document_tags\", \"duplicates_count\", \"email_from\", \"embeddable_in_browser\", \"file_signed_id\", \"filename\", \"gdrive_path\", \"group_uuid\", \"has_closed_ledger_events\", \"has_duplicates\", \"has_file\", \"id\", \"incomplete\", \"invoice_lines\", \"invoice_lines_count\", \"invoice_number\", \"is_employee_expense\", \"is_estimate\", \"is_factur_x\", \"is_waiting_for_ocr\", \"journal_id\", \"label\", \"method\", \"mileage_allowance\", \"outstanding_balance\", \"pages_count\", \"paid\", \"payment_status\", \"preview_status\", \"preview_urls\", \"pusher_channel\", \"source\", \"status\", \"subcomplete\", \"tagged_at_ledger_events_level\", \"thirdparty\", \"thirdparty_id\", \"type\", \"url\", \"validation_needed\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$6(unknownProperty, d, \"never\", false);\n" +
-"        return new APIInvoiceUpdateResponse(d);\n" +
+"            errorHelper$6(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new APIInvoice(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
-"        this.has_file = d.has_file;\n" +
-"        this.preview_status = d.preview_status;\n" +
-"        if (\"preview_urls\" in d)\n" +
-"            this.preview_urls = d.preview_urls;\n" +
+"        this.amount = d.amount;\n" +
+"        this.approval_status = d.approval_status;\n" +
+"        this.archived = d.archived;\n" +
+"        this.attachment_required = d.attachment_required;\n" +
+"        this.blob_id = d.blob_id;\n" +
+"        this.checksum = d.checksum;\n" +
+"        this.client_comments_count = d.client_comments_count;\n" +
+"        this.company_id = d.company_id;\n" +
+"        this.created_at = d.created_at;\n" +
+"        this.currency = d.currency;\n" +
+"        this.currency_amount = d.currency_amount;\n" +
+"        this.currency_price_before_tax = d.currency_price_before_tax;\n" +
+"        this.currency_tax = d.currency_tax;\n" +
+"        this.current_account_plan_item = d.current_account_plan_item;\n" +
+"        this.current_account_plan_item_id = d.current_account_plan_item_id;\n" +
+"        this.date = d.date;\n" +
+"        this.deadline = d.deadline;\n" +
+"        this.direction = d.direction;\n" +
+"        this.document_tags = d.document_tags;\n" +
+"        this.duplicates_count = d.duplicates_count;\n" +
+"        this.email_from = d.email_from;\n" +
 "        this.embeddable_in_browser = d.embeddable_in_browser;\n" +
+"        this.file_signed_id = d.file_signed_id;\n" +
+"        this.filename = d.filename;\n" +
+"        this.gdrive_path = d.gdrive_path;\n" +
+"        this.group_uuid = d.group_uuid;\n" +
+"        this.has_closed_ledger_events = d.has_closed_ledger_events;\n" +
+"        this.has_duplicates = d.has_duplicates;\n" +
+"        this.has_file = d.has_file;\n" +
+"        this.id = d.id;\n" +
+"        this.incomplete = d.incomplete;\n" +
+"        this.invoice_lines = d.invoice_lines;\n" +
+"        this.invoice_lines_count = d.invoice_lines_count;\n" +
+"        this.invoice_number = d.invoice_number;\n" +
+"        this.is_employee_expense = d.is_employee_expense;\n" +
+"        this.is_estimate = d.is_estimate;\n" +
+"        this.is_factur_x = d.is_factur_x;\n" +
+"        this.is_waiting_for_ocr = d.is_waiting_for_ocr;\n" +
+"        this.journal_id = d.journal_id;\n" +
+"        this.label = d.label;\n" +
+"        this.method = d.method;\n" +
+"        this.mileage_allowance = d.mileage_allowance;\n" +
+"        this.outstanding_balance = d.outstanding_balance;\n" +
+"        this.pages_count = d.pages_count;\n" +
+"        this.paid = d.paid;\n" +
+"        this.payment_status = d.payment_status;\n" +
+"        this.preview_status = d.preview_status;\n" +
+"        this.preview_urls = d.preview_urls;\n" +
+"        this.pusher_channel = d.pusher_channel;\n" +
+"        this.source = d.source;\n" +
+"        this.status = d.status;\n" +
+"        this.subcomplete = d.subcomplete;\n" +
+"        this.tagged_at_ledger_events_level = d.tagged_at_ledger_events_level;\n" +
+"        this.thirdparty = d.thirdparty;\n" +
+"        this.thirdparty_id = d.thirdparty_id;\n" +
+"        this.type = d.type;\n" +
+"        this.url = d.url;\n" +
+"        this.validation_needed = d.validation_needed;\n" +
 "    }\n" +
 "}\n" +
-"function throwNull2NonNull$5(field, d) {\n" +
-"    return errorHelper$6(field, d, \"non-nullable object\", false);\n" +
-"}\n" +
-"function throwNotObject$5(field, d, nullable) {\n" +
-"    return errorHelper$6(field, d, \"object\", nullable);\n" +
-"}\n" +
-"function throwIsArray$5(field, d, nullable) {\n" +
-"    return errorHelper$6(field, d, \"object\", nullable);\n" +
-"}\n" +
-"function checkArray$3(d, field) {\n" +
-"    if (!Array.isArray(d) && d !== null && d !== undefined) {\n" +
-"        errorHelper$6(field, d, \"array\", true);\n" +
+"class PnlPlanItemOrCurrentAccountPlanItem {\n" +
+"    static Parse(d) {\n" +
+"        return PnlPlanItemOrCurrentAccountPlanItem.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$6 = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$5(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$5(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$5(field, d);\n" +
+"        }\n" +
+"        checkBoolean$3(d.enabled, field + \".enabled\");\n" +
+"        checkNumber$4(d.id, field + \".id\");\n" +
+"        checkString$4(d.label, field + \".label\");\n" +
+"        checkString$4(d.number, field + \".number\");\n" +
+"        const knownProperties = [\"enabled\", \"id\", \"label\", \"number\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$6(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new PnlPlanItemOrCurrentAccountPlanItem(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.enabled = d.enabled;\n" +
+"        this.id = d.id;\n" +
+"        this.label = d.label;\n" +
+"        this.number = d.number;\n" +
 "    }\n" +
 "}\n" +
-"function checkBoolean$4(d, nullable, field) {\n" +
-"    if (typeof (d) !== 'boolean' && (true)) {\n" +
-"        errorHelper$6(field, d, \"boolean\", nullable);\n" +
+"class DocumentTagsEntity {\n" +
+"    static Parse(d) {\n" +
+"        return DocumentTagsEntity.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$6 = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$5(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$5(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$5(field, d);\n" +
+"        }\n" +
+"        checkNumber$4(d.document_id, field + \".document_id\");\n" +
+"        checkNumber$4(d.group_id, field + \".group_id\");\n" +
+"        if (\"id\" in d) {\n" +
+"            checkNumber$4(d.id, field + \".id\");\n" +
+"        }\n" +
+"        d.tag = Tag.Create(d.tag, field + \".tag\", undefined);\n" +
+"        checkNumber$4(d.tag_id, field + \".tag_id\");\n" +
+"        if (\"weight\" in d) {\n" +
+"            checkString$4(d.weight, field + \".weight\");\n" +
+"        }\n" +
+"        const knownProperties = [\"document_id\", \"group_id\", \"id\", \"tag\", \"tag_id\", \"weight\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$6(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new DocumentTagsEntity(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.document_id = d.document_id;\n" +
+"        this.group_id = d.group_id;\n" +
+"        if (\"id\" in d)\n" +
+"            this.id = d.id;\n" +
+"        this.tag = d.tag;\n" +
+"        this.tag_id = d.tag_id;\n" +
+"        if (\"weight\" in d)\n" +
+"            this.weight = d.weight;\n" +
 "    }\n" +
 "}\n" +
-"function checkString$5(d, nullable, field) {\n" +
-"    if (typeof (d) !== 'string' && (true)) {\n" +
-"        errorHelper$6(field, d, \"string\", nullable);\n" +
+"class Tag {\n" +
+"    static Parse(d) {\n" +
+"        return Tag.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$6 = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$5(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$5(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$5(field, d);\n" +
+"        }\n" +
+"        checkNull$4(d.analytical_code, field + \".analytical_code\");\n" +
+"        d.group = Group$1.Create(d.group, field + \".group\", undefined);\n" +
+"        checkNumber$4(d.group_id, field + \".group_id\");\n" +
+"        checkNull$4(d.icon, field + \".icon\");\n" +
+"        checkNumber$4(d.id, field + \".id\");\n" +
+"        checkString$4(d.label, field + \".label\");\n" +
+"        checkNull$4(d.variant, field + \".variant\");\n" +
+"        const knownProperties = [\"analytical_code\", \"group\", \"group_id\", \"icon\", \"id\", \"label\", \"variant\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$6(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new Tag(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.analytical_code = d.analytical_code;\n" +
+"        this.group = d.group;\n" +
+"        this.group_id = d.group_id;\n" +
+"        this.icon = d.icon;\n" +
+"        this.id = d.id;\n" +
+"        this.label = d.label;\n" +
+"        this.variant = d.variant;\n" +
 "    }\n" +
 "}\n" +
-"function errorHelper$6(field, d, type, nullable) {\n" +
-"    if (nullable) {\n" +
-"        type += \", null, or undefined\";\n" +
+"let Group$1 = class Group {\n" +
+"    static Parse(d) {\n" +
+"        return Group.Create(JSON.parse(d));\n" +
 "    }\n" +
-"    prompt(proxyName$6 + ':', JSON.stringify(obj$6));\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$6 = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$5(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$5(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$5(field, d);\n" +
+"        }\n" +
+"        checkString$4(d.icon, field + \".icon\");\n" +
+"        checkString$4(d.label, field + \".label\");\n" +
+"        checkBoolean$3(d.self_service_accounting, field + \".self_service_accounting\");\n" +
+"        const knownProperties = [\"icon\", \"label\", \"self_service_accounting\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$6(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new Group(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.icon = d.icon;\n" +
+"        this.label = d.label;\n" +
+"        this.self_service_accounting = d.self_service_accounting;\n" +
+"    }\n" +
+"};\n" +
+"class InvoiceLinesEntity {\n" +
+"    static Parse(d) {\n" +
+"        return InvoiceLinesEntity.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$6 = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$5(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$5(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$5(field, d);\n" +
+"        }\n" +
+"        checkNull$4(d.advance, field + \".advance\");\n" +
+"        checkNull$4(d.advance_id, field + \".advance_id\");\n" +
+"        checkBoolean$3(d.advance_pnl, field + \".advance_pnl\");\n" +
+"        checkString$4(d.amount, field + \".amount\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$4(d.asset, field + \".asset\", \"null | Asset\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                d.asset = Asset.Create(d.asset, field + \".asset\", \"null | Asset\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$6 + ':', JSON.stringify(obj$6));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$4(d.asset_id, field + \".asset_id\", \"null | number\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNumber$4(d.asset_id, field + \".asset_id\", \"null | number\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$6 + ':', JSON.stringify(obj$6));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        checkString$4(d.currency_amount, field + \".currency_amount\");\n" +
+"        checkString$4(d.currency_price_before_tax, field + \".currency_price_before_tax\");\n" +
+"        checkString$4(d.currency_tax, field + \".currency_tax\");\n" +
+"        checkNull$4(d.deferral, field + \".deferral\");\n" +
+"        checkNull$4(d.deferral_id, field + \".deferral_id\");\n" +
+"        checkBoolean$3(d.global_vat, field + \".global_vat\");\n" +
+"        checkNumber$4(d.id, field + \".id\");\n" +
+"        checkString$4(d.label, field + \".label\");\n" +
+"        checkNull$4(d.ledger_event_label, field + \".ledger_event_label\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$4(d.ocr_vat_rate, field + \".ocr_vat_rate\", \"null | string\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkString$4(d.ocr_vat_rate, field + \".ocr_vat_rate\", \"null | string\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$6 + ':', JSON.stringify(obj$6));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        d.pnl_plan_item = PnlPlanItemOrCurrentAccountPlanItem1.Create(d.pnl_plan_item, field + \".pnl_plan_item\", undefined);\n" +
+"        checkNumber$4(d.pnl_plan_item_id, field + \".pnl_plan_item_id\");\n" +
+"        checkBoolean$3(d.prepaid_pnl, field + \".prepaid_pnl\");\n" +
+"        checkString$4(d.tax, field + \".tax\");\n" +
+"        checkString$4(d.vat_rate, field + \".vat_rate\");\n" +
+"        const knownProperties = [\"advance\", \"advance_id\", \"advance_pnl\", \"amount\", \"asset\", \"asset_id\", \"currency_amount\", \"currency_price_before_tax\", \"currency_tax\", \"deferral\", \"deferral_id\", \"global_vat\", \"id\", \"label\", \"ledger_event_label\", \"ocr_vat_rate\", \"pnl_plan_item\", \"pnl_plan_item_id\", \"prepaid_pnl\", \"tax\", \"vat_rate\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$6(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new InvoiceLinesEntity(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.advance = d.advance;\n" +
+"        this.advance_id = d.advance_id;\n" +
+"        this.advance_pnl = d.advance_pnl;\n" +
+"        this.amount = d.amount;\n" +
+"        this.asset = d.asset;\n" +
+"        this.asset_id = d.asset_id;\n" +
+"        this.currency_amount = d.currency_amount;\n" +
+"        this.currency_price_before_tax = d.currency_price_before_tax;\n" +
+"        this.currency_tax = d.currency_tax;\n" +
+"        this.deferral = d.deferral;\n" +
+"        this.deferral_id = d.deferral_id;\n" +
+"        this.global_vat = d.global_vat;\n" +
+"        this.id = d.id;\n" +
+"        this.label = d.label;\n" +
+"        this.ledger_event_label = d.ledger_event_label;\n" +
+"        this.ocr_vat_rate = d.ocr_vat_rate;\n" +
+"        this.pnl_plan_item = d.pnl_plan_item;\n" +
+"        this.pnl_plan_item_id = d.pnl_plan_item_id;\n" +
+"        this.prepaid_pnl = d.prepaid_pnl;\n" +
+"        this.tax = d.tax;\n" +
+"        this.vat_rate = d.vat_rate;\n" +
+"    }\n" +
+"}\n" +
+"class Asset {\n" +
+"    static Parse(d) {\n" +
+"        return Asset.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$6 = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$5(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$5(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$5(field, d);\n" +
+"        }\n" +
+"        checkNumber$4(d.amortization_months, field + \".amortization_months\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkString$4(d.amortization_type, field + \".amortization_type\", \"string | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$4(d.amortization_type, field + \".amortization_type\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$6 + ':', JSON.stringify(obj$6));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        checkString$4(d.entry_date, field + \".entry_date\");\n" +
+"        checkNumber$4(d.id, field + \".id\");\n" +
+"        checkBoolean$3(d.invoice_line_editable, field + \".invoice_line_editable\");\n" +
+"        checkString$4(d.name, field + \".name\");\n" +
+"        checkNumber$4(d.plan_item_id, field + \".plan_item_id\");\n" +
+"        checkNumber$4(d.quantity, field + \".quantity\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkString$4(d.start_date, field + \".start_date\", \"string | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$4(d.start_date, field + \".start_date\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$6 + ':', JSON.stringify(obj$6));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        const knownProperties = [\"amortization_months\", \"amortization_type\", \"entry_date\", \"id\", \"invoice_line_editable\", \"name\", \"plan_item_id\", \"quantity\", \"start_date\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$6(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new Asset(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.amortization_months = d.amortization_months;\n" +
+"        this.amortization_type = d.amortization_type;\n" +
+"        this.entry_date = d.entry_date;\n" +
+"        this.id = d.id;\n" +
+"        this.invoice_line_editable = d.invoice_line_editable;\n" +
+"        this.name = d.name;\n" +
+"        this.plan_item_id = d.plan_item_id;\n" +
+"        this.quantity = d.quantity;\n" +
+"        this.start_date = d.start_date;\n" +
+"    }\n" +
+"}\n" +
+"class PnlPlanItemOrCurrentAccountPlanItem1 {\n" +
+"    static Parse(d) {\n" +
+"        return PnlPlanItemOrCurrentAccountPlanItem1.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$6 = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$5(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$5(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$5(field, d);\n" +
+"        }\n" +
+"        checkBoolean$3(d.enabled, field + \".enabled\");\n" +
+"        checkNumber$4(d.id, field + \".id\");\n" +
+"        checkString$4(d.label, field + \".label\");\n" +
+"        checkString$4(d.number, field + \".number\");\n" +
+"        const knownProperties = [\"enabled\", \"id\", \"label\", \"number\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$6(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new PnlPlanItemOrCurrentAccountPlanItem1(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.enabled = d.enabled;\n" +
+"        this.id = d.id;\n" +
+"        this.label = d.label;\n" +
+"        this.number = d.number;\n" +
+"    }\n" +
+"}\n" +
+"class Thirdparty {\n" +
+"    static Parse(d) {\n" +
+"        return Thirdparty.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$6 = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$5(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$5(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$5(field, d);\n" +
+"        }\n" +
+"        checkString$4(d.activity_code, field + \".activity_code\");\n" +
+"        checkString$4(d.activity_nomenclature, field + \".activity_nomenclature\");\n" +
+"        checkString$4(d.address, field + \".address\");\n" +
+"        checkString$4(d.address_additional_info, field + \".address_additional_info\");\n" +
+"        checkNull$4(d.admin_city_code, field + \".admin_city_code\");\n" +
+"        checkNull$4(d.balance, field + \".balance\");\n" +
+"        checkNull$4(d.billing_bank, field + \".billing_bank\");\n" +
+"        checkNull$4(d.billing_bic, field + \".billing_bic\");\n" +
+"        checkNull$4(d.billing_footer_invoice_id, field + \".billing_footer_invoice_id\");\n" +
+"        checkNull$4(d.billing_footer_invoice_label, field + \".billing_footer_invoice_label\");\n" +
+"        checkNull$4(d.billing_iban, field + \".billing_iban\");\n" +
+"        checkString$4(d.billing_language, field + \".billing_language\");\n" +
+"        checkString$4(d.city, field + \".city\");\n" +
+"        checkNumber$4(d.company_id, field + \".company_id\");\n" +
+"        checkBoolean$3(d.complete, field + \".complete\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkString$4(d.country, field + \".country\", \"string | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$4(d.country, field + \".country\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$6 + ':', JSON.stringify(obj$6));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        checkString$4(d[\"country_alpha2\"], field + \".country_alpha2\");\n" +
+"        checkNull$4(d.credits, field + \".credits\");\n" +
+"        checkNull$4(d.current_mandate, field + \".current_mandate\");\n" +
+"        checkString$4(d.customer_type, field + \".customer_type\");\n" +
+"        checkNull$4(d.debits, field + \".debits\");\n" +
+"        checkString$4(d.delivery_address, field + \".delivery_address\");\n" +
+"        checkString$4(d.delivery_address_additional_info, field + \".delivery_address_additional_info\");\n" +
+"        checkString$4(d.delivery_city, field + \".delivery_city\");\n" +
+"        checkNull$4(d.delivery_country, field + \".delivery_country\");\n" +
+"        checkString$4(d[\"delivery_country_alpha2\"], field + \".delivery_country_alpha2\");\n" +
+"        checkString$4(d.delivery_postal_code, field + \".delivery_postal_code\");\n" +
+"        checkBoolean$3(d.disable_pending_vat, field + \".disable_pending_vat\");\n" +
+"        checkNull$4(d.display_name, field + \".display_name\");\n" +
+"        checkArray$2(d.emails, field + \".emails\");\n" +
+"        if (d.emails) {\n" +
+"            for (let i = 0; i < d.emails.length; i++) {\n" +
+"                checkNever$2(d.emails[i], field + \".emails\" + \"[\" + i + \"]\");\n" +
+"            }\n" +
+"        }\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$4(d.establishment_no, field + \".establishment_no\", \"null | string\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkString$4(d.establishment_no, field + \".establishment_no\", \"null | string\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$6 + ':', JSON.stringify(obj$6));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        checkNull$4(d.estimate_count, field + \".estimate_count\");\n" +
+"        checkString$4(d.first_name, field + \".first_name\");\n" +
+"        checkBoolean$3(d.force_pending_vat, field + \".force_pending_vat\");\n" +
+"        checkNull$4(d.gender, field + \".gender\");\n" +
+"        checkNull$4(d.gocardless_id, field + \".gocardless_id\");\n" +
+"        checkString$4(d.iban, field + \".iban\");\n" +
+"        checkNumber$4(d.id, field + \".id\");\n" +
+"        checkNull$4(d.invoice_count, field + \".invoice_count\");\n" +
+"        checkNull$4(d.invoice_dump_id, field + \".invoice_dump_id\");\n" +
+"        checkBoolean$3(d.invoices_auto_generated, field + \".invoices_auto_generated\");\n" +
+"        checkBoolean$3(d.invoices_auto_validated, field + \".invoices_auto_validated\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$4(d.known_supplier_id, field + \".known_supplier_id\", \"null | number\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNumber$4(d.known_supplier_id, field + \".known_supplier_id\", \"null | number\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$6 + ':', JSON.stringify(obj$6));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        checkString$4(d.last_name, field + \".last_name\");\n" +
+"        checkNull$4(d.ledger_events_count, field + \".ledger_events_count\");\n" +
+"        checkString$4(d.legal_form_code, field + \".legal_form_code\");\n" +
+"        checkString$4(d.method, field + \".method\");\n" +
+"        checkString$4(d.name, field + \".name\");\n" +
+"        checkString$4(d.notes, field + \".notes\");\n" +
+"        checkNull$4(d.notes_comment, field + \".notes_comment\");\n" +
+"        checkString$4(d.payment_conditions, field + \".payment_conditions\");\n" +
+"        checkString$4(d.phone, field + \".phone\");\n" +
+"        d.plan_item = PlanItemOrPnlPlanItem.Create(d.plan_item, field + \".plan_item\", undefined);\n" +
+"        checkNull$4(d.plan_item_attributes, field + \".plan_item_attributes\");\n" +
+"        checkNumber$4(d.plan_item_id, field + \".plan_item_id\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            d.pnl_plan_item = PlanItemOrPnlPlanItem1.Create(d.pnl_plan_item, field + \".pnl_plan_item\", \"PlanItemOrPnlPlanItem1 | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$4(d.pnl_plan_item, field + \".pnl_plan_item\", \"PlanItemOrPnlPlanItem1 | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$6 + ':', JSON.stringify(obj$6));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNumber$4(d.pnl_plan_item_id, field + \".pnl_plan_item_id\", \"number | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$4(d.pnl_plan_item_id, field + \".pnl_plan_item_id\", \"number | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$6 + ':', JSON.stringify(obj$6));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        checkString$4(d.postal_code, field + \".postal_code\");\n" +
+"        checkNull$4(d.purchase_request_count, field + \".purchase_request_count\");\n" +
+"        checkBoolean$3(d.received_a_mandate_request, field + \".received_a_mandate_request\");\n" +
+"        checkString$4(d.recipient, field + \".recipient\");\n" +
+"        checkBoolean$3(d.recurrent, field + \".recurrent\");\n" +
+"        checkString$4(d.reference, field + \".reference\");\n" +
+"        checkString$4(d.reg_no, field + \".reg_no\");\n" +
+"        checkString$4(d.role, field + \".role\");\n" +
+"        checkBoolean$3(d.rule_enabled, field + \".rule_enabled\");\n" +
+"        checkArray$2(d.search_terms, field + \".search_terms\");\n" +
+"        if (d.search_terms) {\n" +
+"            for (let i = 0; i < d.search_terms.length; i++) {\n" +
+"                checkString$4(d.search_terms[i], field + \".search_terms\" + \"[\" + i + \"]\");\n" +
+"            }\n" +
+"        }\n" +
+"        checkString$4(d.source_id, field + \".source_id\");\n" +
+"        checkNull$4(d.stripe_id, field + \".stripe_id\");\n" +
+"        checkNull$4(d.supplier_payment_method, field + \".supplier_payment_method\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$4(d.supplier_payment_method_last_updated_at, field + \".supplier_payment_method_last_updated_at\", \"null | string\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkString$4(d.supplier_payment_method_last_updated_at, field + \".supplier_payment_method_last_updated_at\", \"null | string\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$6 + ':', JSON.stringify(obj$6));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        checkArray$2(d.tags, field + \".tags\");\n" +
+"        if (d.tags) {\n" +
+"            for (let i = 0; i < d.tags.length; i++) {\n" +
+"                checkNever$2(d.tags[i], field + \".tags\" + \"[\" + i + \"]\");\n" +
+"            }\n" +
+"        }\n" +
+"        checkNull$4(d.turnover, field + \".turnover\");\n" +
+"        checkString$4(d.url, field + \".url\");\n" +
+"        checkString$4(d.vat_number, field + \".vat_number\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkString$4(d.vat_rate, field + \".vat_rate\", \"string | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$4(d.vat_rate, field + \".vat_rate\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$6 + ':', JSON.stringify(obj$6));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        const knownProperties = [\"activity_code\", \"activity_nomenclature\", \"address\", \"address_additional_info\", \"admin_city_code\", \"balance\", \"billing_bank\", \"billing_bic\", \"billing_footer_invoice_id\", \"billing_footer_invoice_label\", \"billing_iban\", \"billing_language\", \"city\", \"company_id\", \"complete\", \"country\", \"country_alpha2\", \"credits\", \"current_mandate\", \"customer_type\", \"debits\", \"delivery_address\", \"delivery_address_additional_info\", \"delivery_city\", \"delivery_country\", \"delivery_country_alpha2\", \"delivery_postal_code\", \"disable_pending_vat\", \"display_name\", \"emails\", \"establishment_no\", \"estimate_count\", \"first_name\", \"force_pending_vat\", \"gender\", \"gocardless_id\", \"iban\", \"id\", \"invoice_count\", \"invoice_dump_id\", \"invoices_auto_generated\", \"invoices_auto_validated\", \"known_supplier_id\", \"last_name\", \"ledger_events_count\", \"legal_form_code\", \"method\", \"name\", \"notes\", \"notes_comment\", \"payment_conditions\", \"phone\", \"plan_item\", \"plan_item_attributes\", \"plan_item_id\", \"pnl_plan_item\", \"pnl_plan_item_id\", \"postal_code\", \"purchase_request_count\", \"received_a_mandate_request\", \"recipient\", \"recurrent\", \"reference\", \"reg_no\", \"role\", \"rule_enabled\", \"search_terms\", \"source_id\", \"stripe_id\", \"supplier_payment_method\", \"supplier_payment_method_last_updated_at\", \"tags\", \"turnover\", \"url\", \"vat_number\", \"vat_rate\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$6(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new Thirdparty(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.activity_code = d.activity_code;\n" +
+"        this.activity_nomenclature = d.activity_nomenclature;\n" +
+"        this.address = d.address;\n" +
+"        this.address_additional_info = d.address_additional_info;\n" +
+"        this.admin_city_code = d.admin_city_code;\n" +
+"        this.balance = d.balance;\n" +
+"        this.billing_bank = d.billing_bank;\n" +
+"        this.billing_bic = d.billing_bic;\n" +
+"        this.billing_footer_invoice_id = d.billing_footer_invoice_id;\n" +
+"        this.billing_footer_invoice_label = d.billing_footer_invoice_label;\n" +
+"        this.billing_iban = d.billing_iban;\n" +
+"        this.billing_language = d.billing_language;\n" +
+"        this.city = d.city;\n" +
+"        this.company_id = d.company_id;\n" +
+"        this.complete = d.complete;\n" +
+"        this.country = d.country;\n" +
+"        this[\"country_alpha2\"] = d[\"country_alpha2\"];\n" +
+"        this.credits = d.credits;\n" +
+"        this.current_mandate = d.current_mandate;\n" +
+"        this.customer_type = d.customer_type;\n" +
+"        this.debits = d.debits;\n" +
+"        this.delivery_address = d.delivery_address;\n" +
+"        this.delivery_address_additional_info = d.delivery_address_additional_info;\n" +
+"        this.delivery_city = d.delivery_city;\n" +
+"        this.delivery_country = d.delivery_country;\n" +
+"        this[\"delivery_country_alpha2\"] = d[\"delivery_country_alpha2\"];\n" +
+"        this.delivery_postal_code = d.delivery_postal_code;\n" +
+"        this.disable_pending_vat = d.disable_pending_vat;\n" +
+"        this.display_name = d.display_name;\n" +
+"        this.emails = d.emails;\n" +
+"        this.establishment_no = d.establishment_no;\n" +
+"        this.estimate_count = d.estimate_count;\n" +
+"        this.first_name = d.first_name;\n" +
+"        this.force_pending_vat = d.force_pending_vat;\n" +
+"        this.gender = d.gender;\n" +
+"        this.gocardless_id = d.gocardless_id;\n" +
+"        this.iban = d.iban;\n" +
+"        this.id = d.id;\n" +
+"        this.invoice_count = d.invoice_count;\n" +
+"        this.invoice_dump_id = d.invoice_dump_id;\n" +
+"        this.invoices_auto_generated = d.invoices_auto_generated;\n" +
+"        this.invoices_auto_validated = d.invoices_auto_validated;\n" +
+"        this.known_supplier_id = d.known_supplier_id;\n" +
+"        this.last_name = d.last_name;\n" +
+"        this.ledger_events_count = d.ledger_events_count;\n" +
+"        this.legal_form_code = d.legal_form_code;\n" +
+"        this.method = d.method;\n" +
+"        this.name = d.name;\n" +
+"        this.notes = d.notes;\n" +
+"        this.notes_comment = d.notes_comment;\n" +
+"        this.payment_conditions = d.payment_conditions;\n" +
+"        this.phone = d.phone;\n" +
+"        this.plan_item = d.plan_item;\n" +
+"        this.plan_item_attributes = d.plan_item_attributes;\n" +
+"        this.plan_item_id = d.plan_item_id;\n" +
+"        this.pnl_plan_item = d.pnl_plan_item;\n" +
+"        this.pnl_plan_item_id = d.pnl_plan_item_id;\n" +
+"        this.postal_code = d.postal_code;\n" +
+"        this.purchase_request_count = d.purchase_request_count;\n" +
+"        this.received_a_mandate_request = d.received_a_mandate_request;\n" +
+"        this.recipient = d.recipient;\n" +
+"        this.recurrent = d.recurrent;\n" +
+"        this.reference = d.reference;\n" +
+"        this.reg_no = d.reg_no;\n" +
+"        this.role = d.role;\n" +
+"        this.rule_enabled = d.rule_enabled;\n" +
+"        this.search_terms = d.search_terms;\n" +
+"        this.source_id = d.source_id;\n" +
+"        this.stripe_id = d.stripe_id;\n" +
+"        this.supplier_payment_method = d.supplier_payment_method;\n" +
+"        this.supplier_payment_method_last_updated_at = d.supplier_payment_method_last_updated_at;\n" +
+"        this.tags = d.tags;\n" +
+"        this.turnover = d.turnover;\n" +
+"        this.url = d.url;\n" +
+"        this.vat_number = d.vat_number;\n" +
+"        this.vat_rate = d.vat_rate;\n" +
+"    }\n" +
+"}\n" +
+"class PlanItemOrPnlPlanItem {\n" +
+"    static Parse(d) {\n" +
+"        return PlanItemOrPnlPlanItem.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$6 = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$5(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$5(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$5(field, d);\n" +
+"        }\n" +
+"        checkNumber$4(d.company_id, field + \".company_id\");\n" +
+"        checkString$4(d[\"country_alpha2\"], field + \".country_alpha2\");\n" +
+"        checkBoolean$3(d.enabled, field + \".enabled\");\n" +
+"        checkNumber$4(d.id, field + \".id\");\n" +
+"        checkNull$4(d.internal_identifier, field + \".internal_identifier\");\n" +
+"        checkString$4(d.label, field + \".label\");\n" +
+"        checkBoolean$3(d.label_is_editable, field + \".label_is_editable\");\n" +
+"        checkString$4(d.number, field + \".number\");\n" +
+"        checkString$4(d.vat_rate, field + \".vat_rate\");\n" +
+"        const knownProperties = [\"company_id\", \"country_alpha2\", \"enabled\", \"id\", \"internal_identifier\", \"label\", \"label_is_editable\", \"number\", \"vat_rate\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$6(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new PlanItemOrPnlPlanItem(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.company_id = d.company_id;\n" +
+"        this[\"country_alpha2\"] = d[\"country_alpha2\"];\n" +
+"        this.enabled = d.enabled;\n" +
+"        this.id = d.id;\n" +
+"        this.internal_identifier = d.internal_identifier;\n" +
+"        this.label = d.label;\n" +
+"        this.label_is_editable = d.label_is_editable;\n" +
+"        this.number = d.number;\n" +
+"        this.vat_rate = d.vat_rate;\n" +
+"    }\n" +
+"}\n" +
+"class PlanItemOrPnlPlanItem1 {\n" +
+"    static Parse(d) {\n" +
+"        return PlanItemOrPnlPlanItem1.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$6 = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$5(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$5(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$5(field, d);\n" +
+"        }\n" +
+"        checkNumber$4(d.company_id, field + \".company_id\");\n" +
+"        checkString$4(d[\"country_alpha2\"], field + \".country_alpha2\");\n" +
+"        checkBoolean$3(d.enabled, field + \".enabled\");\n" +
+"        checkNumber$4(d.id, field + \".id\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$4(d.internal_identifier, field + \".internal_identifier\", \"null | string\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkString$4(d.internal_identifier, field + \".internal_identifier\", \"null | string\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$6 + ':', JSON.stringify(obj$6));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        checkString$4(d.label, field + \".label\");\n" +
+"        checkBoolean$3(d.label_is_editable, field + \".label_is_editable\");\n" +
+"        checkString$4(d.number, field + \".number\");\n" +
+"        checkString$4(d.vat_rate, field + \".vat_rate\");\n" +
+"        const knownProperties = [\"company_id\", \"country_alpha2\", \"enabled\", \"id\", \"internal_identifier\", \"label\", \"label_is_editable\", \"number\", \"vat_rate\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$6(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new PlanItemOrPnlPlanItem1(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.company_id = d.company_id;\n" +
+"        this[\"country_alpha2\"] = d[\"country_alpha2\"];\n" +
+"        this.enabled = d.enabled;\n" +
+"        this.id = d.id;\n" +
+"        this.internal_identifier = d.internal_identifier;\n" +
+"        this.label = d.label;\n" +
+"        this.label_is_editable = d.label_is_editable;\n" +
+"        this.number = d.number;\n" +
+"        this.vat_rate = d.vat_rate;\n" +
+"    }\n" +
+"}\n" +
+"function throwNull2NonNull$5(field, value, multiple) {\n" +
+"    return errorHelper$6(field, value, multiple ?? \"non-nullable object\");\n" +
+"}\n" +
+"function throwNotObject$5(field, value, multiple) {\n" +
+"    return errorHelper$6(field, value, \"object\");\n" +
+"}\n" +
+"function throwIsArray$5(field, value, multiple) {\n" +
+"    return errorHelper$6(field, value, \"object\");\n" +
+"}\n" +
+"function checkArray$2(value, field, multiple) {\n" +
+"    if (!Array.isArray(value))\n" +
+"        errorHelper$6(field, value, \"array\");\n" +
+"}\n" +
+"function checkNumber$4(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'number')\n" +
+"        errorHelper$6(field, value, multiple ?? \"number\");\n" +
+"}\n" +
+"function checkBoolean$3(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'boolean')\n" +
+"        errorHelper$6(field, value, \"boolean\");\n" +
+"}\n" +
+"function checkString$4(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'string')\n" +
+"        errorHelper$6(field, value, multiple ?? \"string\");\n" +
+"}\n" +
+"function checkNull$4(value, field, multiple) {\n" +
+"    if (value !== null)\n" +
+"        errorHelper$6(field, value, multiple ?? \"null\");\n" +
+"}\n" +
+"function checkNever$2(value, field, multiple) {\n" +
+"    return errorHelper$6(field, value, \"never\");\n" +
+"}\n" +
+"function errorHelper$6(field, d, type) {\n" +
+"    if (!type.includes(' | ')) {\n" +
+"        let jsonClone = obj$6;\n" +
+"        try {\n" +
+"            jsonClone = JSON.parse(JSON.stringify(obj$6));\n" +
+"        }\n" +
+"        catch (error) {\n" +
+"            console.log(error);\n" +
+"        }\n" +
+"        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
+"\" + JSON.stringify(d), jsonClone);\n" +
+"        prompt(proxyName$6 + ':', JSON.stringify(obj$6));\n" +
+"    }\n" +
 "    throw new TypeError('Expected ' + type + \" at \" + field + \" but found:\\n" +
 "\" + JSON.stringify(d) + \"\\n" +
 "\\n" +
@@ -2855,849 +5542,227 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "}\n" +
 "\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
-"const proxyName$5 = 'APIInvoice';\n" +
+"const proxyName$5 = 'APILedgerEvent';\n" +
 "let obj$5 = null;\n" +
-"class APIInvoice {\n" +
+"class APILedgerEvent {\n" +
 "    static Parse(d) {\n" +
-"        return APIInvoice.Create(JSON.parse(d));\n" +
+"        return APILedgerEvent.Create(JSON.parse(d));\n" +
 "    }\n" +
-"    static Create(d, field) {\n" +
+"    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
 "            obj$5 = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            throwNull2NonNull$4(field, d);\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$4(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$4(field, d, false);\n" +
+"            throwNotObject$4(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$4(field, d, false);\n" +
+"            throwIsArray$4(field, d);\n" +
 "        }\n" +
-"        checkString$4(d.amount, false, field + \".amount\");\n" +
-"        checkBoolean$3(d.attachment_required, false, field + \".attachment_required\");\n" +
-"        checkNumber$4(d.client_comments_count, false, field + \".client_comments_count\");\n" +
-"        checkNumber$4(d.company_id, false, field + \".company_id\");\n" +
-"        checkString$4(d.created_at, false, field + \".created_at\");\n" +
-"        checkString$4(d.currency, false, field + \".currency\");\n" +
-"        checkString$4(d.currency_amount, false, field + \".currency_amount\");\n" +
-"        checkString$4(d.currency_tax, false, field + \".currency_tax\");\n" +
-"        checkString$4(d.currency_price_before_tax, false, field + \".currency_price_before_tax\");\n" +
-"        checkNumber$4(d.current_account_plan_item_id, true, field + \".current_account_plan_item_id\");\n" +
-"        checkString$4(d.date, true, field + \".date\");\n" +
-"        checkString$4(d.deadline, true, field + \".deadline\");\n" +
-"        checkString$4(d.direction, false, field + \".direction\");\n" +
-"        checkNull$3(d.email_from, field + \".email_from\");\n" +
-"        checkString$4(d.filename, false, field + \".filename\");\n" +
-"        checkString$4(d.gdrive_path, true, field + \".gdrive_path\");\n" +
-"        checkString$4(d.group_uuid, false, field + \".group_uuid\");\n" +
-"        checkNumber$4(d.id, false, field + \".id\");\n" +
-"        checkString$4(d.invoice_number, false, field + \".invoice_number\");\n" +
-"        checkString$4(d.label, false, field + \".label\");\n" +
-"        checkString$4(d.outstanding_balance, false, field + \".outstanding_balance\");\n" +
-"        checkString$4(d.preview_status, false, field + \".preview_status\");\n" +
-"        checkString$4(d.payment_status, false, field + \".payment_status\");\n" +
-"        checkBoolean$3(d.paid, false, field + \".paid\");\n" +
-"        checkString$4(d.pusher_channel, false, field + \".pusher_channel\");\n" +
-"        checkString$4(d.source, false, field + \".source\");\n" +
-"        checkString$4(d.type, false, field + \".type\");\n" +
-"        checkBoolean$3(d.validation_needed, false, field + \".validation_needed\");\n" +
-"        checkNumber$4(d.journal_id, false, field + \".journal_id\");\n" +
-"        checkNumber$4(d.thirdparty_id, true, field + \".thirdparty_id\");\n" +
-"        checkArray$2(d.preview_urls, field + \".preview_urls\");\n" +
-"        if (d.preview_urls) {\n" +
-"            for (let i = 0; i < d.preview_urls.length; i++) {\n" +
-"                checkString$4(d.preview_urls[i], true, field + \".preview_urls\" + \"[\" + i + \"]\");\n" +
+"        checkString$3(d.amount, field + \".amount\");\n" +
+"        checkString$3(d.balance, field + \".balance\");\n" +
+"        checkBoolean$2(d.closed, field + \".closed\");\n" +
+"        checkString$3(d.credit, field + \".credit\");\n" +
+"        checkString$3(d.debit, field + \".debit\");\n" +
+"        checkNumber$3(d.id, field + \".id\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$3(d.label, field + \".label\", \"null | string\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkString$3(d.label, field + \".label\", \"null | string\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$5 + ':', JSON.stringify(obj$5));\n" +
+"                throw e;\n" +
 "            }\n" +
 "        }\n" +
-"        checkNull$3(d.approval_status, field + \".approval_status\");\n" +
-"        checkString$4(d.checksum, false, field + \".checksum\");\n" +
-"        checkBoolean$3(d.archived, false, field + \".archived\");\n" +
-"        checkNumber$4(d.duplicates_count, false, field + \".duplicates_count\");\n" +
-"        checkBoolean$3(d.has_duplicates, false, field + \".has_duplicates\");\n" +
-"        checkNumber$4(d.invoice_lines_count, false, field + \".invoice_lines_count\");\n" +
-"        checkBoolean$3(d.is_estimate, false, field + \".is_estimate\");\n" +
-"        checkBoolean$3(d.is_employee_expense, false, field + \".is_employee_expense\");\n" +
-"        checkBoolean$3(d.is_factur_x, false, field + \".is_factur_x\");\n" +
-"        checkBoolean$3(d.subcomplete, false, field + \".subcomplete\");\n" +
-"        checkBoolean$3(d.has_closed_ledger_events, false, field + \".has_closed_ledger_events\");\n" +
-"        d.thirdparty = Thirdparty.Create(d.thirdparty, field + \".thirdparty\");\n" +
-"        checkArray$2(d.invoice_lines, field + \".invoice_lines\");\n" +
-"        if (d.invoice_lines) {\n" +
-"            for (let i = 0; i < d.invoice_lines.length; i++) {\n" +
-"                d.invoice_lines[i] = InvoiceLinesEntity.Create(d.invoice_lines[i], field + \".invoice_lines\" + \"[\" + i + \"]\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$3(d.lettering, field + \".lettering\", \"null | Lettering\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                d.lettering = Lettering.Create(d.lettering, field + \".lettering\", \"null | Lettering\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$5 + ':', JSON.stringify(obj$5));\n" +
+"                throw e;\n" +
 "            }\n" +
 "        }\n" +
-"        checkBoolean$3(d.incomplete, false, field + \".incomplete\");\n" +
-"        checkBoolean$3(d.is_waiting_for_ocr, false, field + \".is_waiting_for_ocr\");\n" +
-"        checkString$4(d.status, false, field + \".status\");\n" +
-"        checkBoolean$3(d.tagged_at_ledger_events_level, false, field + \".tagged_at_ledger_events_level\");\n" +
-"        d.current_account_plan_item = PnlPlanItemOrCurrentAccountPlanItem.Create(d.current_account_plan_item, field + \".current_account_plan_item\");\n" +
-"        checkBoolean$3(d.has_file, false, field + \".has_file\");\n" +
-"        checkString$4(d.file_signed_id, false, field + \".file_signed_id\");\n" +
-"        checkBoolean$3(d.embeddable_in_browser, false, field + \".embeddable_in_browser\");\n" +
-"        checkNumber$4(d.pages_count, true, field + \".pages_count\");\n" +
-"        checkNumber$4(d.blob_id, false, field + \".blob_id\");\n" +
-"        checkString$4(d.url, false, field + \".url\");\n" +
-"        checkString$4(d.method, false, field + \".method\");\n" +
-"        checkArray$2(d.document_tags, field + \".document_tags\");\n" +
-"        if (d.document_tags) {\n" +
-"            for (let i = 0; i < d.document_tags.length; i++) {\n" +
-"                d.document_tags[i] = DocumentTagsEntity.Create(d.document_tags[i], field + \".document_tags\" + \"[\" + i + \"]\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$3(d.lettering_id, field + \".lettering_id\", \"null | number\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNumber$3(d.lettering_id, field + \".lettering_id\", \"null | number\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$5 + ':', JSON.stringify(obj$5));\n" +
+"                throw e;\n" +
 "            }\n" +
 "        }\n" +
-"        checkNull$3(d.mileage_allowance, field + \".mileage_allowance\");\n" +
-"        const knownProperties = [\"amount\", \"attachment_required\", \"client_comments_count\", \"company_id\", \"created_at\", \"currency\", \"currency_amount\", \"currency_tax\", \"currency_price_before_tax\", \"current_account_plan_item_id\", \"date\", \"deadline\", \"direction\", \"email_from\", \"filename\", \"gdrive_path\", \"group_uuid\", \"id\", \"invoice_number\", \"label\", \"outstanding_balance\", \"preview_status\", \"payment_status\", \"paid\", \"pusher_channel\", \"source\", \"type\", \"validation_needed\", \"journal_id\", \"thirdparty_id\", \"preview_urls\", \"approval_status\", \"checksum\", \"archived\", \"duplicates_count\", \"has_duplicates\", \"invoice_lines_count\", \"is_estimate\", \"is_employee_expense\", \"is_factur_x\", \"subcomplete\", \"has_closed_ledger_events\", \"thirdparty\", \"invoice_lines\", \"incomplete\", \"is_waiting_for_ocr\", \"status\", \"tagged_at_ledger_events_level\", \"current_account_plan_item\", \"has_file\", \"file_signed_id\", \"embeddable_in_browser\", \"pages_count\", \"blob_id\", \"url\", \"method\", \"document_tags\", \"mileage_allowance\"];\n" +
+"        checkNumber$3(d.plan_item_id, field + \".plan_item_id\");\n" +
+"        d.planItem = PlanItem$1.Create(d.planItem, field + \".planItem\", undefined);\n" +
+"        checkBoolean$2(d.readonly, field + \".readonly\");\n" +
+"        checkBoolean$2(d.readonlyAmounts, field + \".readonlyAmounts\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$3(d.reconciliation_id, field + \".reconciliation_id\", \"null | number\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNumber$3(d.reconciliation_id, field + \".reconciliation_id\", \"null | number\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$5 + ':', JSON.stringify(obj$5));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        checkString$3(d.source, field + \".source\");\n" +
+"        const knownProperties = [\"amount\", \"balance\", \"closed\", \"credit\", \"debit\", \"id\", \"label\", \"lettering\", \"lettering_id\", \"plan_item_id\", \"planItem\", \"readonly\", \"readonlyAmounts\", \"reconciliation_id\", \"source\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$5(unknownProperty, d, \"never\", false);\n" +
-"        return new APIInvoice(d);\n" +
+"            errorHelper$5(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new APILedgerEvent(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
 "        this.amount = d.amount;\n" +
-"        this.attachment_required = d.attachment_required;\n" +
-"        this.client_comments_count = d.client_comments_count;\n" +
-"        this.company_id = d.company_id;\n" +
-"        this.created_at = d.created_at;\n" +
-"        this.currency = d.currency;\n" +
-"        this.currency_amount = d.currency_amount;\n" +
-"        this.currency_tax = d.currency_tax;\n" +
-"        this.currency_price_before_tax = d.currency_price_before_tax;\n" +
-"        if (\"current_account_plan_item_id\" in d)\n" +
-"            this.current_account_plan_item_id = d.current_account_plan_item_id;\n" +
-"        if (\"date\" in d)\n" +
-"            this.date = d.date;\n" +
-"        if (\"deadline\" in d)\n" +
-"            this.deadline = d.deadline;\n" +
-"        this.direction = d.direction;\n" +
-"        if (\"email_from\" in d)\n" +
-"            this.email_from = d.email_from;\n" +
-"        this.filename = d.filename;\n" +
-"        if (\"gdrive_path\" in d)\n" +
-"            this.gdrive_path = d.gdrive_path;\n" +
-"        this.group_uuid = d.group_uuid;\n" +
+"        this.balance = d.balance;\n" +
+"        this.closed = d.closed;\n" +
+"        this.credit = d.credit;\n" +
+"        this.debit = d.debit;\n" +
 "        this.id = d.id;\n" +
-"        this.invoice_number = d.invoice_number;\n" +
 "        this.label = d.label;\n" +
-"        this.outstanding_balance = d.outstanding_balance;\n" +
-"        this.preview_status = d.preview_status;\n" +
-"        this.payment_status = d.payment_status;\n" +
-"        this.paid = d.paid;\n" +
-"        this.pusher_channel = d.pusher_channel;\n" +
+"        this.lettering = d.lettering;\n" +
+"        this.lettering_id = d.lettering_id;\n" +
+"        this.plan_item_id = d.plan_item_id;\n" +
+"        this.planItem = d.planItem;\n" +
+"        this.readonly = d.readonly;\n" +
+"        this.readonlyAmounts = d.readonlyAmounts;\n" +
+"        this.reconciliation_id = d.reconciliation_id;\n" +
 "        this.source = d.source;\n" +
-"        this.type = d.type;\n" +
-"        this.validation_needed = d.validation_needed;\n" +
-"        this.journal_id = d.journal_id;\n" +
-"        if (\"thirdparty_id\" in d)\n" +
-"            this.thirdparty_id = d.thirdparty_id;\n" +
-"        if (\"preview_urls\" in d)\n" +
-"            this.preview_urls = d.preview_urls;\n" +
-"        if (\"approval_status\" in d)\n" +
-"            this.approval_status = d.approval_status;\n" +
-"        this.checksum = d.checksum;\n" +
-"        this.archived = d.archived;\n" +
-"        this.duplicates_count = d.duplicates_count;\n" +
-"        this.has_duplicates = d.has_duplicates;\n" +
-"        this.invoice_lines_count = d.invoice_lines_count;\n" +
-"        this.is_estimate = d.is_estimate;\n" +
-"        this.is_employee_expense = d.is_employee_expense;\n" +
-"        this.is_factur_x = d.is_factur_x;\n" +
-"        this.subcomplete = d.subcomplete;\n" +
-"        this.has_closed_ledger_events = d.has_closed_ledger_events;\n" +
-"        if (\"thirdparty\" in d)\n" +
-"            this.thirdparty = d.thirdparty;\n" +
-"        if (\"invoice_lines\" in d)\n" +
-"            this.invoice_lines = d.invoice_lines;\n" +
-"        this.incomplete = d.incomplete;\n" +
-"        this.is_waiting_for_ocr = d.is_waiting_for_ocr;\n" +
-"        this.status = d.status;\n" +
-"        this.tagged_at_ledger_events_level = d.tagged_at_ledger_events_level;\n" +
-"        if (\"current_account_plan_item\" in d)\n" +
-"            this.current_account_plan_item = d.current_account_plan_item;\n" +
-"        this.has_file = d.has_file;\n" +
-"        this.file_signed_id = d.file_signed_id;\n" +
-"        this.embeddable_in_browser = d.embeddable_in_browser;\n" +
-"        if (\"pages_count\" in d)\n" +
-"            this.pages_count = d.pages_count;\n" +
-"        this.blob_id = d.blob_id;\n" +
-"        this.url = d.url;\n" +
-"        this.method = d.method;\n" +
-"        if (\"document_tags\" in d)\n" +
-"            this.document_tags = d.document_tags;\n" +
-"        if (\"mileage_allowance\" in d)\n" +
-"            this.mileage_allowance = d.mileage_allowance;\n" +
 "    }\n" +
 "}\n" +
-"class Thirdparty {\n" +
+"class Lettering {\n" +
 "    static Parse(d) {\n" +
-"        return Thirdparty.Create(JSON.parse(d));\n" +
+"        return Lettering.Create(JSON.parse(d));\n" +
 "    }\n" +
-"    static Create(d, field) {\n" +
+"    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
 "            obj$5 = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            return null;\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$4(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$4(field, d, true);\n" +
+"            throwNotObject$4(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$4(field, d, true);\n" +
+"            throwIsArray$4(field, d);\n" +
 "        }\n" +
-"        checkNumber$4(d.id, false, field + \".id\");\n" +
-"        checkNumber$4(d.known_supplier_id, true, field + \".known_supplier_id\");\n" +
-"        checkNumber$4(d.company_id, false, field + \".company_id\");\n" +
-"        checkString$4(d.name, false, field + \".name\");\n" +
-"        checkString$4(d.role, false, field + \".role\");\n" +
-"        checkString$4(d.address, false, field + \".address\");\n" +
-"        checkString$4(d.postal_code, false, field + \".postal_code\");\n" +
-"        checkString$4(d.city, false, field + \".city\");\n" +
-"        checkString$4(d[\"country_alpha2\"], false, field + \".country_alpha2\");\n" +
-"        checkString$4(d.vat_number, false, field + \".vat_number\");\n" +
-"        checkArray$2(d.search_terms, field + \".search_terms\");\n" +
-"        if (d.search_terms) {\n" +
-"            for (let i = 0; i < d.search_terms.length; i++) {\n" +
-"                checkString$4(d.search_terms[i], false, field + \".search_terms\" + \"[\" + i + \"]\");\n" +
-"            }\n" +
-"        }\n" +
-"        checkArray$2(d.emails, field + \".emails\");\n" +
-"        if (d.emails) {\n" +
-"            for (let i = 0; i < d.emails.length; i++) {\n" +
-"                checkNull$3(d.emails[i], field + \".emails\" + \"[\" + i + \"]\");\n" +
-"            }\n" +
-"        }\n" +
-"        checkString$4(d.reg_no, false, field + \".reg_no\");\n" +
-"        checkString$4(d.phone, false, field + \".phone\");\n" +
-"        checkString$4(d.first_name, false, field + \".first_name\");\n" +
-"        checkBoolean$3(d.recurrent, false, field + \".recurrent\");\n" +
-"        checkString$4(d.last_name, false, field + \".last_name\");\n" +
-"        checkNull$3(d.gender, field + \".gender\");\n" +
-"        checkString$4(d.payment_conditions, false, field + \".payment_conditions\");\n" +
-"        checkString$4(d.customer_type, false, field + \".customer_type\");\n" +
-"        checkBoolean$3(d.disable_pending_vat, false, field + \".disable_pending_vat\");\n" +
-"        checkBoolean$3(d.force_pending_vat, false, field + \".force_pending_vat\");\n" +
-"        checkNull$3(d.gocardless_id, field + \".gocardless_id\");\n" +
-"        checkBoolean$3(d.invoices_auto_generated, false, field + \".invoices_auto_generated\");\n" +
-"        checkBoolean$3(d.invoices_auto_validated, false, field + \".invoices_auto_validated\");\n" +
-"        checkNull$3(d.billing_iban, field + \".billing_iban\");\n" +
-"        checkNull$3(d.billing_bic, field + \".billing_bic\");\n" +
-"        checkNull$3(d.billing_bank, field + \".billing_bank\");\n" +
-"        checkString$4(d.recipient, false, field + \".recipient\");\n" +
-"        checkString$4(d.billing_language, false, field + \".billing_language\");\n" +
-"        checkString$4(d.iban, false, field + \".iban\");\n" +
-"        checkNull$3(d.stripe_id, field + \".stripe_id\");\n" +
-"        checkNull$3(d.invoice_dump_id, field + \".invoice_dump_id\");\n" +
-"        checkString$4(d.delivery_address, false, field + \".delivery_address\");\n" +
-"        checkString$4(d.delivery_postal_code, false, field + \".delivery_postal_code\");\n" +
-"        checkString$4(d.delivery_city, false, field + \".delivery_city\");\n" +
-"        checkString$4(d[\"delivery_country_alpha2\"], false, field + \".delivery_country_alpha2\");\n" +
-"        checkString$4(d.reference, false, field + \".reference\");\n" +
-"        checkString$4(d.legal_form_code, false, field + \".legal_form_code\");\n" +
-"        checkString$4(d.activity_nomenclature, false, field + \".activity_nomenclature\");\n" +
-"        checkString$4(d.activity_code, false, field + \".activity_code\");\n" +
-"        checkNull$3(d.billing_footer_invoice_id, field + \".billing_footer_invoice_id\");\n" +
-"        checkNumber$4(d.plan_item_id, false, field + \".plan_item_id\");\n" +
-"        checkBoolean$3(d.rule_enabled, false, field + \".rule_enabled\");\n" +
-"        checkNull$3(d.supplier_payment_method, field + \".supplier_payment_method\");\n" +
-"        checkString$4(d.supplier_payment_method_last_updated_at, true, field + \".supplier_payment_method_last_updated_at\");\n" +
-"        checkString$4(d.notes, false, field + \".notes\");\n" +
-"        checkNull$3(d.admin_city_code, field + \".admin_city_code\");\n" +
-"        checkString$4(d.establishment_no, true, field + \".establishment_no\");\n" +
-"        checkString$4(d.address_additional_info, false, field + \".address_additional_info\");\n" +
-"        checkString$4(d.delivery_address_additional_info, false, field + \".delivery_address_additional_info\");\n" +
-"        checkString$4(d.vat_rate, true, field + \".vat_rate\");\n" +
-"        checkNumber$4(d.pnl_plan_item_id, true, field + \".pnl_plan_item_id\");\n" +
-"        checkString$4(d.source_id, false, field + \".source_id\");\n" +
-"        checkString$4(d.country, true, field + \".country\");\n" +
-"        checkNull$3(d.delivery_country, field + \".delivery_country\");\n" +
-"        checkBoolean$3(d.complete, false, field + \".complete\");\n" +
-"        checkString$4(d.url, false, field + \".url\");\n" +
-"        checkString$4(d.method, false, field + \".method\");\n" +
-"        checkNull$3(d.billing_footer_invoice_label, field + \".billing_footer_invoice_label\");\n" +
-"        checkNull$3(d.display_name, field + \".display_name\");\n" +
-"        checkNull$3(d.debits, field + \".debits\");\n" +
-"        checkNull$3(d.credits, field + \".credits\");\n" +
-"        checkNull$3(d.balance, field + \".balance\");\n" +
-"        checkNull$3(d.invoice_count, field + \".invoice_count\");\n" +
-"        checkNull$3(d.purchase_request_count, field + \".purchase_request_count\");\n" +
-"        checkNull$3(d.estimate_count, field + \".estimate_count\");\n" +
-"        checkNull$3(d.turnover, field + \".turnover\");\n" +
-"        checkNull$3(d.ledger_events_count, field + \".ledger_events_count\");\n" +
-"        d.plan_item = PlanItemOrPnlPlanItem.Create(d.plan_item, field + \".plan_item\");\n" +
-"        d.pnl_plan_item = PnlPlanItem$1.Create(d.pnl_plan_item, field + \".pnl_plan_item\");\n" +
-"        checkNull$3(d.current_mandate, field + \".current_mandate\");\n" +
-"        checkBoolean$3(d.received_a_mandate_request, false, field + \".received_a_mandate_request\");\n" +
-"        checkNull$3(d.notes_comment, field + \".notes_comment\");\n" +
-"        checkNull$3(d.plan_item_attributes, field + \".plan_item_attributes\");\n" +
-"        checkArray$2(d.tags, field + \".tags\");\n" +
-"        if (d.tags) {\n" +
-"            for (let i = 0; i < d.tags.length; i++) {\n" +
-"                checkNull$3(d.tags[i], field + \".tags\" + \"[\" + i + \"]\");\n" +
-"            }\n" +
-"        }\n" +
-"        const knownProperties = [\"id\", \"known_supplier_id\", \"company_id\", \"name\", \"role\", \"address\", \"postal_code\", \"city\", \"country_alpha2\", \"vat_number\", \"search_terms\", \"emails\", \"reg_no\", \"phone\", \"first_name\", \"recurrent\", \"last_name\", \"gender\", \"payment_conditions\", \"customer_type\", \"disable_pending_vat\", \"force_pending_vat\", \"gocardless_id\", \"invoices_auto_generated\", \"invoices_auto_validated\", \"billing_iban\", \"billing_bic\", \"billing_bank\", \"recipient\", \"billing_language\", \"iban\", \"stripe_id\", \"invoice_dump_id\", \"delivery_address\", \"delivery_postal_code\", \"delivery_city\", \"delivery_country_alpha2\", \"reference\", \"legal_form_code\", \"activity_nomenclature\", \"activity_code\", \"billing_footer_invoice_id\", \"plan_item_id\", \"rule_enabled\", \"supplier_payment_method\", \"supplier_payment_method_last_updated_at\", \"notes\", \"admin_city_code\", \"establishment_no\", \"address_additional_info\", \"delivery_address_additional_info\", \"vat_rate\", \"pnl_plan_item_id\", \"source_id\", \"country\", \"delivery_country\", \"complete\", \"url\", \"method\", \"billing_footer_invoice_label\", \"display_name\", \"debits\", \"credits\", \"balance\", \"invoice_count\", \"purchase_request_count\", \"estimate_count\", \"turnover\", \"ledger_events_count\", \"plan_item\", \"pnl_plan_item\", \"current_mandate\", \"received_a_mandate_request\", \"notes_comment\", \"plan_item_attributes\", \"tags\"];\n" +
+"        checkString$3(d.balance, field + \".balance\");\n" +
+"        checkNumber$3(d.id, field + \".id\");\n" +
+"        checkString$3(d.max_date, field + \".max_date\");\n" +
+"        checkString$3(d.min_date, field + \".min_date\");\n" +
+"        checkString$3(d.plan_item_number, field + \".plan_item_number\");\n" +
+"        const knownProperties = [\"balance\", \"id\", \"max_date\", \"min_date\", \"plan_item_number\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$5(unknownProperty, d, \"never\", false);\n" +
-"        return new Thirdparty(d);\n" +
+"            errorHelper$5(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new Lettering(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
+"        this.balance = d.balance;\n" +
 "        this.id = d.id;\n" +
-"        if (\"known_supplier_id\" in d)\n" +
-"            this.known_supplier_id = d.known_supplier_id;\n" +
-"        this.company_id = d.company_id;\n" +
-"        this.name = d.name;\n" +
-"        this.role = d.role;\n" +
-"        this.address = d.address;\n" +
-"        this.postal_code = d.postal_code;\n" +
-"        this.city = d.city;\n" +
+"        this.max_date = d.max_date;\n" +
+"        this.min_date = d.min_date;\n" +
+"        this.plan_item_number = d.plan_item_number;\n" +
+"    }\n" +
+"}\n" +
+"let PlanItem$1 = class PlanItem {\n" +
+"    static Parse(d) {\n" +
+"        return PlanItem.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$5 = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$4(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$4(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$4(field, d);\n" +
+"        }\n" +
+"        checkString$3(d[\"country_alpha2\"], field + \".country_alpha2\");\n" +
+"        checkBoolean$2(d.enabled, field + \".enabled\");\n" +
+"        checkNumber$3(d.id, field + \".id\");\n" +
+"        checkString$3(d.label, field + \".label\");\n" +
+"        checkString$3(d.number, field + \".number\");\n" +
+"        checkString$3(d.vat_rate, field + \".vat_rate\");\n" +
+"        const knownProperties = [\"country_alpha2\", \"enabled\", \"id\", \"label\", \"number\", \"vat_rate\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$5(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new PlanItem(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
 "        this[\"country_alpha2\"] = d[\"country_alpha2\"];\n" +
-"        this.vat_number = d.vat_number;\n" +
-"        if (\"search_terms\" in d)\n" +
-"            this.search_terms = d.search_terms;\n" +
-"        if (\"emails\" in d)\n" +
-"            this.emails = d.emails;\n" +
-"        this.reg_no = d.reg_no;\n" +
-"        this.phone = d.phone;\n" +
-"        this.first_name = d.first_name;\n" +
-"        this.recurrent = d.recurrent;\n" +
-"        this.last_name = d.last_name;\n" +
-"        if (\"gender\" in d)\n" +
-"            this.gender = d.gender;\n" +
-"        this.payment_conditions = d.payment_conditions;\n" +
-"        this.customer_type = d.customer_type;\n" +
-"        this.disable_pending_vat = d.disable_pending_vat;\n" +
-"        this.force_pending_vat = d.force_pending_vat;\n" +
-"        if (\"gocardless_id\" in d)\n" +
-"            this.gocardless_id = d.gocardless_id;\n" +
-"        this.invoices_auto_generated = d.invoices_auto_generated;\n" +
-"        this.invoices_auto_validated = d.invoices_auto_validated;\n" +
-"        if (\"billing_iban\" in d)\n" +
-"            this.billing_iban = d.billing_iban;\n" +
-"        if (\"billing_bic\" in d)\n" +
-"            this.billing_bic = d.billing_bic;\n" +
-"        if (\"billing_bank\" in d)\n" +
-"            this.billing_bank = d.billing_bank;\n" +
-"        this.recipient = d.recipient;\n" +
-"        this.billing_language = d.billing_language;\n" +
-"        this.iban = d.iban;\n" +
-"        if (\"stripe_id\" in d)\n" +
-"            this.stripe_id = d.stripe_id;\n" +
-"        if (\"invoice_dump_id\" in d)\n" +
-"            this.invoice_dump_id = d.invoice_dump_id;\n" +
-"        this.delivery_address = d.delivery_address;\n" +
-"        this.delivery_postal_code = d.delivery_postal_code;\n" +
-"        this.delivery_city = d.delivery_city;\n" +
-"        this[\"delivery_country_alpha2\"] = d[\"delivery_country_alpha2\"];\n" +
-"        this.reference = d.reference;\n" +
-"        this.legal_form_code = d.legal_form_code;\n" +
-"        this.activity_nomenclature = d.activity_nomenclature;\n" +
-"        this.activity_code = d.activity_code;\n" +
-"        if (\"billing_footer_invoice_id\" in d)\n" +
-"            this.billing_footer_invoice_id = d.billing_footer_invoice_id;\n" +
-"        this.plan_item_id = d.plan_item_id;\n" +
-"        this.rule_enabled = d.rule_enabled;\n" +
-"        if (\"supplier_payment_method\" in d)\n" +
-"            this.supplier_payment_method = d.supplier_payment_method;\n" +
-"        if (\"supplier_payment_method_last_updated_at\" in d)\n" +
-"            this.supplier_payment_method_last_updated_at = d.supplier_payment_method_last_updated_at;\n" +
-"        this.notes = d.notes;\n" +
-"        if (\"admin_city_code\" in d)\n" +
-"            this.admin_city_code = d.admin_city_code;\n" +
-"        if (\"establishment_no\" in d)\n" +
-"            this.establishment_no = d.establishment_no;\n" +
-"        this.address_additional_info = d.address_additional_info;\n" +
-"        this.delivery_address_additional_info = d.delivery_address_additional_info;\n" +
-"        if (\"vat_rate\" in d)\n" +
-"            this.vat_rate = d.vat_rate;\n" +
-"        if (\"pnl_plan_item_id\" in d)\n" +
-"            this.pnl_plan_item_id = d.pnl_plan_item_id;\n" +
-"        this.source_id = d.source_id;\n" +
-"        if (\"country\" in d)\n" +
-"            this.country = d.country;\n" +
-"        if (\"delivery_country\" in d)\n" +
-"            this.delivery_country = d.delivery_country;\n" +
-"        this.complete = d.complete;\n" +
-"        this.url = d.url;\n" +
-"        this.method = d.method;\n" +
-"        if (\"billing_footer_invoice_label\" in d)\n" +
-"            this.billing_footer_invoice_label = d.billing_footer_invoice_label;\n" +
-"        if (\"display_name\" in d)\n" +
-"            this.display_name = d.display_name;\n" +
-"        if (\"debits\" in d)\n" +
-"            this.debits = d.debits;\n" +
-"        if (\"credits\" in d)\n" +
-"            this.credits = d.credits;\n" +
-"        if (\"balance\" in d)\n" +
-"            this.balance = d.balance;\n" +
-"        if (\"invoice_count\" in d)\n" +
-"            this.invoice_count = d.invoice_count;\n" +
-"        if (\"purchase_request_count\" in d)\n" +
-"            this.purchase_request_count = d.purchase_request_count;\n" +
-"        if (\"estimate_count\" in d)\n" +
-"            this.estimate_count = d.estimate_count;\n" +
-"        if (\"turnover\" in d)\n" +
-"            this.turnover = d.turnover;\n" +
-"        if (\"ledger_events_count\" in d)\n" +
-"            this.ledger_events_count = d.ledger_events_count;\n" +
-"        this.plan_item = d.plan_item;\n" +
-"        if (\"pnl_plan_item\" in d)\n" +
-"            this.pnl_plan_item = d.pnl_plan_item;\n" +
-"        if (\"current_mandate\" in d)\n" +
-"            this.current_mandate = d.current_mandate;\n" +
-"        this.received_a_mandate_request = d.received_a_mandate_request;\n" +
-"        if (\"notes_comment\" in d)\n" +
-"            this.notes_comment = d.notes_comment;\n" +
-"        if (\"plan_item_attributes\" in d)\n" +
-"            this.plan_item_attributes = d.plan_item_attributes;\n" +
-"        if (\"tags\" in d)\n" +
-"            this.tags = d.tags;\n" +
-"    }\n" +
-"}\n" +
-"class PlanItemOrPnlPlanItem {\n" +
-"    static Parse(d) {\n" +
-"        return PlanItemOrPnlPlanItem.Create(JSON.parse(d));\n" +
-"    }\n" +
-"    static Create(d, field) {\n" +
-"        if (!field) {\n" +
-"            obj$5 = d;\n" +
-"            field = \"root\";\n" +
-"        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            throwNull2NonNull$4(field, d);\n" +
-"        }\n" +
-"        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$4(field, d, false);\n" +
-"        }\n" +
-"        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$4(field, d, false);\n" +
-"        }\n" +
-"        checkNumber$4(d.id, false, field + \".id\");\n" +
-"        checkString$4(d.number, false, field + \".number\");\n" +
-"        checkNull$3(d.internal_identifier, field + \".internal_identifier\");\n" +
-"        checkString$4(d.label, false, field + \".label\");\n" +
-"        checkNumber$4(d.company_id, false, field + \".company_id\");\n" +
-"        checkBoolean$3(d.enabled, false, field + \".enabled\");\n" +
-"        checkString$4(d.vat_rate, false, field + \".vat_rate\");\n" +
-"        checkString$4(d[\"country_alpha2\"], false, field + \".country_alpha2\");\n" +
-"        checkBoolean$3(d.label_is_editable, false, field + \".label_is_editable\");\n" +
-"        const knownProperties = [\"id\", \"number\", \"internal_identifier\", \"label\", \"company_id\", \"enabled\", \"vat_rate\", \"country_alpha2\", \"label_is_editable\"];\n" +
-"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
-"        if (unknownProperty)\n" +
-"            errorHelper$5(unknownProperty, d, \"never\", false);\n" +
-"        return new PlanItemOrPnlPlanItem(d);\n" +
-"    }\n" +
-"    constructor(d) {\n" +
-"        this.id = d.id;\n" +
-"        this.number = d.number;\n" +
-"        if (\"internal_identifier\" in d)\n" +
-"            this.internal_identifier = d.internal_identifier;\n" +
-"        this.label = d.label;\n" +
-"        this.company_id = d.company_id;\n" +
 "        this.enabled = d.enabled;\n" +
-"        this.vat_rate = d.vat_rate;\n" +
-"        this[\"country_alpha2\"] = d[\"country_alpha2\"];\n" +
-"        this.label_is_editable = d.label_is_editable;\n" +
-"    }\n" +
-"}\n" +
-"let PnlPlanItem$1 = class PnlPlanItem {\n" +
-"    static Parse(d) {\n" +
-"        return PnlPlanItem.Create(JSON.parse(d));\n" +
-"    }\n" +
-"    static Create(d, field) {\n" +
-"        if (!field) {\n" +
-"            obj$5 = d;\n" +
-"            field = \"root\";\n" +
-"        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            return null;\n" +
-"        }\n" +
-"        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$4(field, d, true);\n" +
-"        }\n" +
-"        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$4(field, d, true);\n" +
-"        }\n" +
-"        checkNumber$4(d.id, false, field + \".id\");\n" +
-"        checkString$4(d.number, false, field + \".number\");\n" +
-"        checkString$4(d.internal_identifier, true, field + \".internal_identifier\");\n" +
-"        checkString$4(d.label, false, field + \".label\");\n" +
-"        checkNumber$4(d.company_id, false, field + \".company_id\");\n" +
-"        checkBoolean$3(d.enabled, false, field + \".enabled\");\n" +
-"        checkString$4(d.vat_rate, false, field + \".vat_rate\");\n" +
-"        checkString$4(d[\"country_alpha2\"], false, field + \".country_alpha2\");\n" +
-"        checkBoolean$3(d.label_is_editable, false, field + \".label_is_editable\");\n" +
-"        const knownProperties = [\"id\", \"number\", \"internal_identifier\", \"label\", \"company_id\", \"enabled\", \"vat_rate\", \"country_alpha2\", \"label_is_editable\"];\n" +
-"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
-"        if (unknownProperty)\n" +
-"            errorHelper$5(unknownProperty, d, \"never\", false);\n" +
-"        return new PnlPlanItem(d);\n" +
-"    }\n" +
-"    constructor(d) {\n" +
 "        this.id = d.id;\n" +
-"        this.number = d.number;\n" +
-"        if (\"internal_identifier\" in d)\n" +
-"            this.internal_identifier = d.internal_identifier;\n" +
 "        this.label = d.label;\n" +
-"        this.company_id = d.company_id;\n" +
-"        this.enabled = d.enabled;\n" +
+"        this.number = d.number;\n" +
 "        this.vat_rate = d.vat_rate;\n" +
-"        this[\"country_alpha2\"] = d[\"country_alpha2\"];\n" +
-"        this.label_is_editable = d.label_is_editable;\n" +
 "    }\n" +
 "};\n" +
-"class InvoiceLinesEntity {\n" +
-"    static Parse(d) {\n" +
-"        return InvoiceLinesEntity.Create(JSON.parse(d));\n" +
-"    }\n" +
-"    static Create(d, field) {\n" +
-"        if (!field) {\n" +
-"            obj$5 = d;\n" +
-"            field = \"root\";\n" +
-"        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            throwNull2NonNull$4(field, d);\n" +
-"        }\n" +
-"        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$4(field, d, false);\n" +
-"        }\n" +
-"        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$4(field, d, false);\n" +
-"        }\n" +
-"        checkNumber$4(d.id, false, field + \".id\");\n" +
-"        checkString$4(d.amount, false, field + \".amount\");\n" +
-"        checkString$4(d.tax, false, field + \".tax\");\n" +
-"        checkString$4(d.currency_amount, false, field + \".currency_amount\");\n" +
-"        checkString$4(d.currency_price_before_tax, false, field + \".currency_price_before_tax\");\n" +
-"        checkString$4(d.currency_tax, false, field + \".currency_tax\");\n" +
-"        checkString$4(d.label, false, field + \".label\");\n" +
-"        checkNumber$4(d.pnl_plan_item_id, false, field + \".pnl_plan_item_id\");\n" +
-"        checkNull$3(d.advance, field + \".advance\");\n" +
-"        checkString$4(d.vat_rate, false, field + \".vat_rate\");\n" +
-"        checkString$4(d.ocr_vat_rate, true, field + \".ocr_vat_rate\");\n" +
-"        checkNumber$4(d.asset_id, true, field + \".asset_id\");\n" +
-"        checkNull$3(d.deferral_id, field + \".deferral_id\");\n" +
-"        checkNull$3(d.advance_id, field + \".advance_id\");\n" +
-"        checkBoolean$3(d.prepaid_pnl, false, field + \".prepaid_pnl\");\n" +
-"        checkBoolean$3(d.global_vat, false, field + \".global_vat\");\n" +
-"        checkNull$3(d.ledger_event_label, field + \".ledger_event_label\");\n" +
-"        d.pnl_plan_item = PnlPlanItemOrCurrentAccountPlanItem1.Create(d.pnl_plan_item, field + \".pnl_plan_item\");\n" +
-"        checkNull$3(d.deferral, field + \".deferral\");\n" +
-"        d.asset = Asset.Create(d.asset, field + \".asset\");\n" +
-"        checkBoolean$3(d.advance_pnl, false, field + \".advance_pnl\");\n" +
-"        const knownProperties = [\"id\", \"amount\", \"tax\", \"currency_amount\", \"currency_price_before_tax\", \"currency_tax\", \"label\", \"pnl_plan_item_id\", \"advance\", \"vat_rate\", \"ocr_vat_rate\", \"asset_id\", \"deferral_id\", \"advance_id\", \"prepaid_pnl\", \"global_vat\", \"ledger_event_label\", \"pnl_plan_item\", \"deferral\", \"asset\", \"advance_pnl\"];\n" +
-"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
-"        if (unknownProperty)\n" +
-"            errorHelper$5(unknownProperty, d, \"never\", false);\n" +
-"        return new InvoiceLinesEntity(d);\n" +
-"    }\n" +
-"    constructor(d) {\n" +
-"        this.id = d.id;\n" +
-"        this.amount = d.amount;\n" +
-"        this.tax = d.tax;\n" +
-"        this.currency_amount = d.currency_amount;\n" +
-"        this.currency_price_before_tax = d.currency_price_before_tax;\n" +
-"        this.currency_tax = d.currency_tax;\n" +
-"        this.label = d.label;\n" +
-"        this.pnl_plan_item_id = d.pnl_plan_item_id;\n" +
-"        if (\"advance\" in d)\n" +
-"            this.advance = d.advance;\n" +
-"        this.vat_rate = d.vat_rate;\n" +
-"        if (\"ocr_vat_rate\" in d)\n" +
-"            this.ocr_vat_rate = d.ocr_vat_rate;\n" +
-"        if (\"asset_id\" in d)\n" +
-"            this.asset_id = d.asset_id;\n" +
-"        if (\"deferral_id\" in d)\n" +
-"            this.deferral_id = d.deferral_id;\n" +
-"        if (\"advance_id\" in d)\n" +
-"            this.advance_id = d.advance_id;\n" +
-"        this.prepaid_pnl = d.prepaid_pnl;\n" +
-"        this.global_vat = d.global_vat;\n" +
-"        if (\"ledger_event_label\" in d)\n" +
-"            this.ledger_event_label = d.ledger_event_label;\n" +
-"        this.pnl_plan_item = d.pnl_plan_item;\n" +
-"        if (\"deferral\" in d)\n" +
-"            this.deferral = d.deferral;\n" +
-"        if (\"asset\" in d)\n" +
-"            this.asset = d.asset;\n" +
-"        this.advance_pnl = d.advance_pnl;\n" +
-"    }\n" +
+"function throwNull2NonNull$4(field, value, multiple) {\n" +
+"    return errorHelper$5(field, value, multiple ?? \"non-nullable object\");\n" +
 "}\n" +
-"class PnlPlanItemOrCurrentAccountPlanItem1 {\n" +
-"    static Parse(d) {\n" +
-"        return PnlPlanItemOrCurrentAccountPlanItem1.Create(JSON.parse(d));\n" +
-"    }\n" +
-"    static Create(d, field) {\n" +
-"        if (!field) {\n" +
-"            obj$5 = d;\n" +
-"            field = \"root\";\n" +
-"        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            throwNull2NonNull$4(field, d);\n" +
-"        }\n" +
-"        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$4(field, d, false);\n" +
-"        }\n" +
-"        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$4(field, d, false);\n" +
-"        }\n" +
-"        checkNumber$4(d.id, false, field + \".id\");\n" +
-"        checkString$4(d.number, false, field + \".number\");\n" +
-"        checkString$4(d.label, false, field + \".label\");\n" +
-"        checkBoolean$3(d.enabled, false, field + \".enabled\");\n" +
-"        const knownProperties = [\"id\", \"number\", \"label\", \"enabled\"];\n" +
-"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
-"        if (unknownProperty)\n" +
-"            errorHelper$5(unknownProperty, d, \"never\", false);\n" +
-"        return new PnlPlanItemOrCurrentAccountPlanItem1(d);\n" +
-"    }\n" +
-"    constructor(d) {\n" +
-"        this.id = d.id;\n" +
-"        this.number = d.number;\n" +
-"        this.label = d.label;\n" +
-"        this.enabled = d.enabled;\n" +
-"    }\n" +
+"function throwNotObject$4(field, value, multiple) {\n" +
+"    return errorHelper$5(field, value, \"object\");\n" +
 "}\n" +
-"class Asset {\n" +
-"    static Parse(d) {\n" +
-"        return Asset.Create(JSON.parse(d));\n" +
-"    }\n" +
-"    static Create(d, field) {\n" +
-"        if (!field) {\n" +
-"            obj$5 = d;\n" +
-"            field = \"root\";\n" +
-"        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            return null;\n" +
-"        }\n" +
-"        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$4(field, d, true);\n" +
-"        }\n" +
-"        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$4(field, d, true);\n" +
-"        }\n" +
-"        checkNumber$4(d.id, false, field + \".id\");\n" +
-"        checkString$4(d.name, false, field + \".name\");\n" +
-"        checkNumber$4(d.plan_item_id, false, field + \".plan_item_id\");\n" +
-"        checkString$4(d.entry_date, false, field + \".entry_date\");\n" +
-"        checkString$4(d.start_date, true, field + \".start_date\");\n" +
-"        checkNumber$4(d.quantity, false, field + \".quantity\");\n" +
-"        checkString$4(d.amortization_type, true, field + \".amortization_type\");\n" +
-"        checkNumber$4(d.amortization_months, false, field + \".amortization_months\");\n" +
-"        checkBoolean$3(d.invoice_line_editable, false, field + \".invoice_line_editable\");\n" +
-"        const knownProperties = [\"id\", \"name\", \"plan_item_id\", \"entry_date\", \"start_date\", \"quantity\", \"amortization_type\", \"amortization_months\", \"invoice_line_editable\"];\n" +
-"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
-"        if (unknownProperty)\n" +
-"            errorHelper$5(unknownProperty, d, \"never\", false);\n" +
-"        return new Asset(d);\n" +
-"    }\n" +
-"    constructor(d) {\n" +
-"        this.id = d.id;\n" +
-"        this.name = d.name;\n" +
-"        this.plan_item_id = d.plan_item_id;\n" +
-"        this.entry_date = d.entry_date;\n" +
-"        if (\"start_date\" in d)\n" +
-"            this.start_date = d.start_date;\n" +
-"        this.quantity = d.quantity;\n" +
-"        if (\"amortization_type\" in d)\n" +
-"            this.amortization_type = d.amortization_type;\n" +
-"        this.amortization_months = d.amortization_months;\n" +
-"        this.invoice_line_editable = d.invoice_line_editable;\n" +
-"    }\n" +
+"function throwIsArray$4(field, value, multiple) {\n" +
+"    return errorHelper$5(field, value, \"object\");\n" +
 "}\n" +
-"class PnlPlanItemOrCurrentAccountPlanItem {\n" +
-"    static Parse(d) {\n" +
-"        return PnlPlanItemOrCurrentAccountPlanItem.Create(JSON.parse(d));\n" +
-"    }\n" +
-"    static Create(d, field) {\n" +
-"        if (!field) {\n" +
-"            obj$5 = d;\n" +
-"            field = \"root\";\n" +
-"        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            return null;\n" +
-"        }\n" +
-"        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$4(field, d, true);\n" +
-"        }\n" +
-"        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$4(field, d, true);\n" +
-"        }\n" +
-"        checkNumber$4(d.id, false, field + \".id\");\n" +
-"        checkString$4(d.number, false, field + \".number\");\n" +
-"        checkString$4(d.label, false, field + \".label\");\n" +
-"        checkBoolean$3(d.enabled, false, field + \".enabled\");\n" +
-"        const knownProperties = [\"id\", \"number\", \"label\", \"enabled\"];\n" +
-"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
-"        if (unknownProperty)\n" +
-"            errorHelper$5(unknownProperty, d, \"never\", false);\n" +
-"        return new PnlPlanItemOrCurrentAccountPlanItem(d);\n" +
-"    }\n" +
-"    constructor(d) {\n" +
-"        this.id = d.id;\n" +
-"        this.number = d.number;\n" +
-"        this.label = d.label;\n" +
-"        this.enabled = d.enabled;\n" +
-"    }\n" +
+"function checkNumber$3(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'number')\n" +
+"        errorHelper$5(field, value, multiple ?? \"number\");\n" +
 "}\n" +
-"class DocumentTagsEntity {\n" +
-"    static Parse(d) {\n" +
-"        return DocumentTagsEntity.Create(JSON.parse(d));\n" +
-"    }\n" +
-"    static Create(d, field) {\n" +
-"        if (!field) {\n" +
-"            obj$5 = d;\n" +
-"            field = \"root\";\n" +
-"        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            return null;\n" +
-"        }\n" +
-"        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$4(field, d, true);\n" +
-"        }\n" +
-"        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$4(field, d, true);\n" +
-"        }\n" +
-"        checkNumber$4(d.id, false, field + \".id\");\n" +
-"        checkNumber$4(d.document_id, false, field + \".document_id\");\n" +
-"        checkNumber$4(d.tag_id, false, field + \".tag_id\");\n" +
-"        checkNumber$4(d.group_id, false, field + \".group_id\");\n" +
-"        checkString$4(d.weight, false, field + \".weight\");\n" +
-"        d.tag = Tag.Create(d.tag, field + \".tag\");\n" +
-"        const knownProperties = [\"id\", \"document_id\", \"tag_id\", \"group_id\", \"weight\", \"tag\"];\n" +
-"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
-"        if (unknownProperty)\n" +
-"            errorHelper$5(unknownProperty, d, \"never\", false);\n" +
-"        return new DocumentTagsEntity(d);\n" +
-"    }\n" +
-"    constructor(d) {\n" +
-"        this.id = d.id;\n" +
-"        this.document_id = d.document_id;\n" +
-"        this.tag_id = d.tag_id;\n" +
-"        this.group_id = d.group_id;\n" +
-"        this.weight = d.weight;\n" +
-"        this.tag = d.tag;\n" +
-"    }\n" +
+"function checkBoolean$2(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'boolean')\n" +
+"        errorHelper$5(field, value, \"boolean\");\n" +
 "}\n" +
-"class Tag {\n" +
-"    static Parse(d) {\n" +
-"        return Tag.Create(JSON.parse(d));\n" +
-"    }\n" +
-"    static Create(d, field) {\n" +
-"        if (!field) {\n" +
-"            obj$5 = d;\n" +
-"            field = \"root\";\n" +
+"function checkString$3(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'string')\n" +
+"        errorHelper$5(field, value, multiple ?? \"string\");\n" +
+"}\n" +
+"function checkNull$3(value, field, multiple) {\n" +
+"    if (value !== null)\n" +
+"        errorHelper$5(field, value, multiple ?? \"null\");\n" +
+"}\n" +
+"function errorHelper$5(field, d, type) {\n" +
+"    if (!type.includes(' | ')) {\n" +
+"        let jsonClone = obj$5;\n" +
+"        try {\n" +
+"            jsonClone = JSON.parse(JSON.stringify(obj$5));\n" +
 "        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            throwNull2NonNull$4(field, d);\n" +
+"        catch (error) {\n" +
+"            console.log(error);\n" +
 "        }\n" +
-"        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$4(field, d, false);\n" +
-"        }\n" +
-"        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$4(field, d, false);\n" +
-"        }\n" +
-"        checkNumber$4(d.id, false, field + \".id\");\n" +
-"        checkString$4(d.label, false, field + \".label\");\n" +
-"        checkNull$3(d.analytical_code, field + \".analytical_code\");\n" +
-"        checkNumber$4(d.group_id, false, field + \".group_id\");\n" +
-"        checkNull$3(d.variant, field + \".variant\");\n" +
-"        checkNull$3(d.icon, field + \".icon\");\n" +
-"        d.group = Group$1.Create(d.group, field + \".group\");\n" +
-"        const knownProperties = [\"id\", \"label\", \"analytical_code\", \"group_id\", \"variant\", \"icon\", \"group\"];\n" +
-"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
-"        if (unknownProperty)\n" +
-"            errorHelper$5(unknownProperty, d, \"never\", false);\n" +
-"        return new Tag(d);\n" +
+"        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
+"\" + JSON.stringify(d), jsonClone);\n" +
+"        prompt(proxyName$5 + ':', JSON.stringify(obj$5));\n" +
 "    }\n" +
-"    constructor(d) {\n" +
-"        this.id = d.id;\n" +
-"        this.label = d.label;\n" +
-"        if (\"analytical_code\" in d)\n" +
-"            this.analytical_code = d.analytical_code;\n" +
-"        this.group_id = d.group_id;\n" +
-"        if (\"variant\" in d)\n" +
-"            this.variant = d.variant;\n" +
-"        if (\"icon\" in d)\n" +
-"            this.icon = d.icon;\n" +
-"        this.group = d.group;\n" +
-"    }\n" +
-"}\n" +
-"let Group$1 = class Group {\n" +
-"    static Parse(d) {\n" +
-"        return Group.Create(JSON.parse(d));\n" +
-"    }\n" +
-"    static Create(d, field) {\n" +
-"        if (!field) {\n" +
-"            obj$5 = d;\n" +
-"            field = \"root\";\n" +
-"        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            throwNull2NonNull$4(field, d);\n" +
-"        }\n" +
-"        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$4(field, d, false);\n" +
-"        }\n" +
-"        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$4(field, d, false);\n" +
-"        }\n" +
-"        checkString$4(d.label, false, field + \".label\");\n" +
-"        checkString$4(d.icon, false, field + \".icon\");\n" +
-"        checkBoolean$3(d.self_service_accounting, false, field + \".self_service_accounting\");\n" +
-"        const knownProperties = [\"label\", \"icon\", \"self_service_accounting\"];\n" +
-"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
-"        if (unknownProperty)\n" +
-"            errorHelper$5(unknownProperty, d, \"never\", false);\n" +
-"        return new Group(d);\n" +
-"    }\n" +
-"    constructor(d) {\n" +
-"        this.label = d.label;\n" +
-"        this.icon = d.icon;\n" +
-"        this.self_service_accounting = d.self_service_accounting;\n" +
-"    }\n" +
-"};\n" +
-"function throwNull2NonNull$4(field, d) {\n" +
-"    return errorHelper$5(field, d, \"non-nullable object\", false);\n" +
-"}\n" +
-"function throwNotObject$4(field, d, nullable) {\n" +
-"    return errorHelper$5(field, d, \"object\", nullable);\n" +
-"}\n" +
-"function throwIsArray$4(field, d, nullable) {\n" +
-"    return errorHelper$5(field, d, \"object\", nullable);\n" +
-"}\n" +
-"function checkArray$2(d, field) {\n" +
-"    if (!Array.isArray(d) && d !== null && d !== undefined) {\n" +
-"        errorHelper$5(field, d, \"array\", true);\n" +
-"    }\n" +
-"}\n" +
-"function checkNumber$4(d, nullable, field) {\n" +
-"    if (typeof (d) !== 'number' && (!nullable || (nullable && d !== null && d !== undefined))) {\n" +
-"        errorHelper$5(field, d, \"number\", nullable);\n" +
-"    }\n" +
-"}\n" +
-"function checkBoolean$3(d, nullable, field) {\n" +
-"    if (typeof (d) !== 'boolean' && (true)) {\n" +
-"        errorHelper$5(field, d, \"boolean\", nullable);\n" +
-"    }\n" +
-"}\n" +
-"function checkString$4(d, nullable, field) {\n" +
-"    if (typeof (d) !== 'string' && (!nullable || (nullable && d !== null && d !== undefined))) {\n" +
-"        errorHelper$5(field, d, \"string\", nullable);\n" +
-"    }\n" +
-"}\n" +
-"function checkNull$3(d, field) {\n" +
-"    if (d !== null && d !== undefined) {\n" +
-"        errorHelper$5(field, d, \"null or undefined\", false);\n" +
-"    }\n" +
-"}\n" +
-"function errorHelper$5(field, d, type, nullable) {\n" +
-"    if (nullable) {\n" +
-"        type += \", null, or undefined\";\n" +
-"    }\n" +
-"    prompt(proxyName$5 + ':', JSON.stringify(obj$5));\n" +
 "    throw new TypeError('Expected ' + type + \" at \" + field + \" but found:\\n" +
 "\" + JSON.stringify(d) + \"\\n" +
 "\\n" +
@@ -3706,368 +5771,216 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "}\n" +
 "\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
-"const proxyName$4 = 'APILedgerEvent';\n" +
+"const proxyName$4 = 'APIThirdparty';\n" +
 "let obj$4 = null;\n" +
-"class APILedgerEvent {\n" +
-"    static Parse(d) {\n" +
-"        return APILedgerEvent.Create(JSON.parse(d));\n" +
-"    }\n" +
-"    static Create(d, field) {\n" +
-"        if (!field) {\n" +
-"            obj$4 = d;\n" +
-"            field = \"root\";\n" +
-"        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            throwNull2NonNull$3(field, d);\n" +
-"        }\n" +
-"        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$3(field, d, false);\n" +
-"        }\n" +
-"        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$3(field, d, false);\n" +
-"        }\n" +
-"        checkNumber$3(d.id, false, field + \".id\");\n" +
-"        checkString$3(d.balance, false, field + \".balance\");\n" +
-"        checkNumber$3(d.plan_item_id, false, field + \".plan_item_id\");\n" +
-"        checkNumber$3(d.lettering_id, true, field + \".lettering_id\");\n" +
-"        checkNumber$3(d.reconciliation_id, true, field + \".reconciliation_id\");\n" +
-"        checkString$3(d.source, false, field + \".source\");\n" +
-"        checkBoolean$2(d.closed, false, field + \".closed\");\n" +
-"        checkString$3(d.debit, false, field + \".debit\");\n" +
-"        checkString$3(d.credit, false, field + \".credit\");\n" +
-"        checkString$3(d.amount, false, field + \".amount\");\n" +
-"        d.planItem = PlanItem$1.Create(d.planItem, field + \".planItem\");\n" +
-"        checkString$3(d.label, true, field + \".label\");\n" +
-"        checkBoolean$2(d.readonly, false, field + \".readonly\");\n" +
-"        checkBoolean$2(d.readonlyAmounts, false, field + \".readonlyAmounts\");\n" +
-"        d.lettering = Lettering.Create(d.lettering, field + \".lettering\");\n" +
-"        const knownProperties = [\"id\", \"balance\", \"plan_item_id\", \"lettering_id\", \"reconciliation_id\", \"source\", \"closed\", \"debit\", \"credit\", \"amount\", \"planItem\", \"label\", \"readonly\", \"readonlyAmounts\", \"lettering\"];\n" +
-"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
-"        if (unknownProperty)\n" +
-"            errorHelper$4(unknownProperty, d, \"never\", false);\n" +
-"        return new APILedgerEvent(d);\n" +
-"    }\n" +
-"    constructor(d) {\n" +
-"        this.id = d.id;\n" +
-"        this.balance = d.balance;\n" +
-"        this.plan_item_id = d.plan_item_id;\n" +
-"        if (\"lettering_id\" in d)\n" +
-"            this.lettering_id = d.lettering_id;\n" +
-"        if (\"reconciliation_id\" in d)\n" +
-"            this.reconciliation_id = d.reconciliation_id;\n" +
-"        this.source = d.source;\n" +
-"        this.closed = d.closed;\n" +
-"        this.debit = d.debit;\n" +
-"        this.credit = d.credit;\n" +
-"        this.amount = d.amount;\n" +
-"        this.planItem = d.planItem;\n" +
-"        if (\"label\" in d)\n" +
-"            this.label = d.label;\n" +
-"        this.readonly = d.readonly;\n" +
-"        this.readonlyAmounts = d.readonlyAmounts;\n" +
-"        if (\"lettering\" in d)\n" +
-"            this.lettering = d.lettering;\n" +
-"    }\n" +
-"}\n" +
-"let PlanItem$1 = class PlanItem {\n" +
-"    static Parse(d) {\n" +
-"        return PlanItem.Create(JSON.parse(d));\n" +
-"    }\n" +
-"    static Create(d, field) {\n" +
-"        if (!field) {\n" +
-"            obj$4 = d;\n" +
-"            field = \"root\";\n" +
-"        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            throwNull2NonNull$3(field, d);\n" +
-"        }\n" +
-"        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$3(field, d, false);\n" +
-"        }\n" +
-"        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$3(field, d, false);\n" +
-"        }\n" +
-"        checkNumber$3(d.id, false, field + \".id\");\n" +
-"        checkString$3(d.number, false, field + \".number\");\n" +
-"        checkString$3(d.vat_rate, false, field + \".vat_rate\");\n" +
-"        checkString$3(d[\"country_alpha2\"], false, field + \".country_alpha2\");\n" +
-"        checkString$3(d.label, false, field + \".label\");\n" +
-"        checkBoolean$2(d.enabled, false, field + \".enabled\");\n" +
-"        const knownProperties = [\"id\", \"number\", \"vat_rate\", \"country_alpha2\", \"label\", \"enabled\"];\n" +
-"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
-"        if (unknownProperty)\n" +
-"            errorHelper$4(unknownProperty, d, \"never\", false);\n" +
-"        return new PlanItem(d);\n" +
-"    }\n" +
-"    constructor(d) {\n" +
-"        this.id = d.id;\n" +
-"        this.number = d.number;\n" +
-"        this.vat_rate = d.vat_rate;\n" +
-"        this[\"country_alpha2\"] = d[\"country_alpha2\"];\n" +
-"        this.label = d.label;\n" +
-"        this.enabled = d.enabled;\n" +
-"    }\n" +
-"};\n" +
-"class Lettering {\n" +
-"    static Parse(d) {\n" +
-"        return Lettering.Create(JSON.parse(d));\n" +
-"    }\n" +
-"    static Create(d, field) {\n" +
-"        if (!field) {\n" +
-"            obj$4 = d;\n" +
-"            field = \"root\";\n" +
-"        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            return null;\n" +
-"        }\n" +
-"        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$3(field, d, true);\n" +
-"        }\n" +
-"        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$3(field, d, true);\n" +
-"        }\n" +
-"        checkNumber$3(d.id, false, field + \".id\");\n" +
-"        checkString$3(d.balance, false, field + \".balance\");\n" +
-"        checkString$3(d.min_date, false, field + \".min_date\");\n" +
-"        checkString$3(d.max_date, false, field + \".max_date\");\n" +
-"        checkString$3(d.plan_item_number, false, field + \".plan_item_number\");\n" +
-"        const knownProperties = [\"id\", \"balance\", \"min_date\", \"max_date\", \"plan_item_number\"];\n" +
-"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
-"        if (unknownProperty)\n" +
-"            errorHelper$4(unknownProperty, d, \"never\", false);\n" +
-"        return new Lettering(d);\n" +
-"    }\n" +
-"    constructor(d) {\n" +
-"        this.id = d.id;\n" +
-"        this.balance = d.balance;\n" +
-"        this.min_date = d.min_date;\n" +
-"        this.max_date = d.max_date;\n" +
-"        this.plan_item_number = d.plan_item_number;\n" +
-"    }\n" +
-"}\n" +
-"function throwNull2NonNull$3(field, d) {\n" +
-"    return errorHelper$4(field, d, \"non-nullable object\", false);\n" +
-"}\n" +
-"function throwNotObject$3(field, d, nullable) {\n" +
-"    return errorHelper$4(field, d, \"object\", nullable);\n" +
-"}\n" +
-"function throwIsArray$3(field, d, nullable) {\n" +
-"    return errorHelper$4(field, d, \"object\", nullable);\n" +
-"}\n" +
-"function checkNumber$3(d, nullable, field) {\n" +
-"    if (typeof (d) !== 'number' && (!nullable || (nullable && d !== null && d !== undefined))) {\n" +
-"        errorHelper$4(field, d, \"number\", nullable);\n" +
-"    }\n" +
-"}\n" +
-"function checkBoolean$2(d, nullable, field) {\n" +
-"    if (typeof (d) !== 'boolean' && (true)) {\n" +
-"        errorHelper$4(field, d, \"boolean\", nullable);\n" +
-"    }\n" +
-"}\n" +
-"function checkString$3(d, nullable, field) {\n" +
-"    if (typeof (d) !== 'string' && (!nullable || (nullable && d !== null && d !== undefined))) {\n" +
-"        errorHelper$4(field, d, \"string\", nullable);\n" +
-"    }\n" +
-"}\n" +
-"function errorHelper$4(field, d, type, nullable) {\n" +
-"    if (nullable) {\n" +
-"        type += \", null, or undefined\";\n" +
-"    }\n" +
-"    prompt(proxyName$4 + ':', JSON.stringify(obj$4));\n" +
-"    throw new TypeError('Expected ' + type + \" at \" + field + \" but found:\\n" +
-"\" + JSON.stringify(d) + \"\\n" +
-"\\n" +
-"Full object:\\n" +
-"\" + JSON.stringify(obj$4));\n" +
-"}\n" +
-"\n" +
-"// Stores the currently-being-typechecked object for error messages.\n" +
-"const proxyName$3 = 'APIThirdparty';\n" +
-"let obj$3 = null;\n" +
 "class APIThirdparty {\n" +
 "    static Parse(d) {\n" +
 "        return APIThirdparty.Create(JSON.parse(d));\n" +
 "    }\n" +
-"    static Create(d, field) {\n" +
+"    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$3 = d;\n" +
+"            obj$4 = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            throwNull2NonNull$2(field, d);\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$3(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$2(field, d, false);\n" +
+"            throwNotObject$3(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$2(field, d, false);\n" +
+"            throwIsArray$3(field, d);\n" +
 "        }\n" +
-"        d.supplier = Supplier.Create(d.supplier, field + \".supplier\");\n" +
-"        d.customer = Customer.Create(d.customer, field + \".customer\");\n" +
-"        const knownProperties = [\"supplier\", \"customer\"];\n" +
+"        if (\"customer\" in d) {\n" +
+"            d.customer = Customer.Create(d.customer, field + \".customer\", undefined);\n" +
+"        }\n" +
+"        if (\"supplier\" in d) {\n" +
+"            d.supplier = Supplier.Create(d.supplier, field + \".supplier\", undefined);\n" +
+"        }\n" +
+"        const knownProperties = [\"customer\", \"supplier\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$3(unknownProperty, d, \"never\", false);\n" +
+"            errorHelper$4(unknownProperty, d, \"never (unknown property)\");\n" +
 "        return new APIThirdparty(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
-"        if (\"supplier\" in d)\n" +
-"            this.supplier = d.supplier;\n" +
 "        if (\"customer\" in d)\n" +
 "            this.customer = d.customer;\n" +
+"        if (\"supplier\" in d)\n" +
+"            this.supplier = d.supplier;\n" +
 "    }\n" +
 "}\n" +
-"class Supplier {\n" +
+"class Customer {\n" +
 "    static Parse(d) {\n" +
-"        return Supplier.Create(JSON.parse(d));\n" +
+"        return Customer.Create(JSON.parse(d));\n" +
 "    }\n" +
-"    static Create(d, field) {\n" +
+"    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$3 = d;\n" +
+"            obj$4 = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            return null;\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$3(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$2(field, d, true);\n" +
+"            throwNotObject$3(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$2(field, d, true);\n" +
+"            throwIsArray$3(field, d);\n" +
 "        }\n" +
-"        checkNumber$2(d.id, false, field + \".id\");\n" +
-"        checkNumber$2(d.company_id, false, field + \".company_id\");\n" +
-"        checkBoolean$1(d.disable_pending_vat, false, field + \".disable_pending_vat\");\n" +
+"        checkString$2(d.address, field + \".address\");\n" +
+"        checkString$2(d.address_additional_info, field + \".address_additional_info\");\n" +
+"        checkNull$2(d.billing_bank, field + \".billing_bank\");\n" +
+"        checkNull$2(d.billing_bic, field + \".billing_bic\");\n" +
+"        checkNull$2(d.billing_footer_invoice, field + \".billing_footer_invoice\");\n" +
+"        checkNull$2(d.billing_footer_invoice_id, field + \".billing_footer_invoice_id\");\n" +
+"        checkNull$2(d.billing_iban, field + \".billing_iban\");\n" +
+"        checkString$2(d.billing_language, field + \".billing_language\");\n" +
+"        checkString$2(d.city, field + \".city\");\n" +
+"        checkNumber$2(d.company_id, field + \".company_id\");\n" +
+"        checkString$2(d[\"country_alpha2\"], field + \".country_alpha2\");\n" +
+"        checkNull$2(d.current_mandate, field + \".current_mandate\");\n" +
+"        checkString$2(d.customer_type, field + \".customer_type\");\n" +
+"        checkString$2(d.delivery_address, field + \".delivery_address\");\n" +
+"        checkString$2(d.delivery_address_additional_info, field + \".delivery_address_additional_info\");\n" +
+"        checkString$2(d.delivery_city, field + \".delivery_city\");\n" +
+"        checkString$2(d[\"delivery_country_alpha2\"], field + \".delivery_country_alpha2\");\n" +
+"        checkString$2(d.delivery_postal_code, field + \".delivery_postal_code\");\n" +
+"        checkBoolean$1(d.disable_pending_vat, field + \".disable_pending_vat\");\n" +
 "        checkArray$1(d.emails, field + \".emails\");\n" +
 "        if (d.emails) {\n" +
 "            for (let i = 0; i < d.emails.length; i++) {\n" +
-"                checkNull$2(d.emails[i], field + \".emails\" + \"[\" + i + \"]\");\n" +
+"                checkNever$1(d.emails[i], field + \".emails\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
-"        checkString$2(d[\"country_alpha2\"], false, field + \".country_alpha2\");\n" +
-"        checkBoolean$1(d.force_pending_vat, false, field + \".force_pending_vat\");\n" +
-"        checkString$2(d.iban, false, field + \".iban\");\n" +
-"        checkBoolean$1(d.invoices_auto_generated, false, field + \".invoices_auto_generated\");\n" +
-"        checkBoolean$1(d.invoices_auto_validated, false, field + \".invoices_auto_validated\");\n" +
-"        checkString$2(d.name, false, field + \".name\");\n" +
-"        checkString$2(d.notes, false, field + \".notes\");\n" +
+"        checkString$2(d.first_name, field + \".first_name\");\n" +
+"        checkBoolean$1(d.force_pending_vat, field + \".force_pending_vat\");\n" +
+"        checkNumber$2(d.id, field + \".id\");\n" +
+"        checkBoolean$1(d.invoices_auto_generated, field + \".invoices_auto_generated\");\n" +
+"        checkBoolean$1(d.invoices_auto_validated, field + \".invoices_auto_validated\");\n" +
+"        checkString$2(d.last_name, field + \".last_name\");\n" +
+"        checkString$2(d.name, field + \".name\");\n" +
+"        checkString$2(d.notes, field + \".notes\");\n" +
+"        checkNull$2(d.notes_comment, field + \".notes_comment\");\n" +
+"        checkString$2(d.payment_conditions, field + \".payment_conditions\");\n" +
+"        checkString$2(d.phone, field + \".phone\");\n" +
+"        d.plan_item = PlanItem.Create(d.plan_item, field + \".plan_item\", undefined);\n" +
+"        checkString$2(d.postal_code, field + \".postal_code\");\n" +
+"        checkBoolean$1(d.received_a_mandate_request, field + \".received_a_mandate_request\");\n" +
+"        checkString$2(d.recipient, field + \".recipient\");\n" +
+"        checkString$2(d.reference, field + \".reference\");\n" +
+"        checkString$2(d.reg_no, field + \".reg_no\");\n" +
 "        checkArray$1(d.search_terms, field + \".search_terms\");\n" +
 "        if (d.search_terms) {\n" +
 "            for (let i = 0; i < d.search_terms.length; i++) {\n" +
-"                checkString$2(d.search_terms[i], false, field + \".search_terms\" + \"[\" + i + \"]\");\n" +
+"                checkString$2(d.search_terms[i], field + \".search_terms\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
-"        checkNull$2(d.supplier_payment_method, field + \".supplier_payment_method\");\n" +
-"        checkString$2(d.vat_number, false, field + \".vat_number\");\n" +
-"        checkNull$2(d.supplier_due_date_delay, field + \".supplier_due_date_delay\");\n" +
-"        checkString$2(d.supplier_due_date_rule, false, field + \".supplier_due_date_rule\");\n" +
-"        checkString$2(d.address, false, field + \".address\");\n" +
-"        checkString$2(d.city, false, field + \".city\");\n" +
-"        checkString$2(d.postal_code, false, field + \".postal_code\");\n" +
-"        checkNull$2(d.admin_city_code, field + \".admin_city_code\");\n" +
-"        checkString$2(d.activity_nomenclature, false, field + \".activity_nomenclature\");\n" +
-"        checkNull$2(d.establishment_no, field + \".establishment_no\");\n" +
-"        checkNull$2(d.notes_comment, field + \".notes_comment\");\n" +
-"        d.plan_item = PlanItem.Create(d.plan_item, field + \".plan_item\");\n" +
-"        checkArray$1(d.thirdparty_invoice_line_rules, field + \".thirdparty_invoice_line_rules\");\n" +
-"        if (d.thirdparty_invoice_line_rules) {\n" +
-"            for (let i = 0; i < d.thirdparty_invoice_line_rules.length; i++) {\n" +
-"                d.thirdparty_invoice_line_rules[i] = ThirdpartyInvoiceLineRulesEntity.Create(d.thirdparty_invoice_line_rules[i], field + \".thirdparty_invoice_line_rules\" + \"[\" + i + \"]\");\n" +
-"            }\n" +
-"        }\n" +
+"        checkNull$2(d.sepa_mandate, field + \".sepa_mandate\");\n" +
+"        checkString$2(d.source_id, field + \".source_id\");\n" +
 "        checkArray$1(d.tags, field + \".tags\");\n" +
 "        if (d.tags) {\n" +
 "            for (let i = 0; i < d.tags.length; i++) {\n" +
-"                d.tags[i] = TagsEntityOrTag.Create(d.tags[i], field + \".tags\" + \"[\" + i + \"]\");\n" +
+"                checkNever$1(d.tags[i], field + \".tags\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
 "        checkArray$1(d.thirdparties_tags, field + \".thirdparties_tags\");\n" +
 "        if (d.thirdparties_tags) {\n" +
 "            for (let i = 0; i < d.thirdparties_tags.length; i++) {\n" +
-"                d.thirdparties_tags[i] = ThirdpartiesTagsEntity.Create(d.thirdparties_tags[i], field + \".thirdparties_tags\" + \"[\" + i + \"]\");\n" +
+"                checkNever$1(d.thirdparties_tags[i], field + \".thirdparties_tags\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
-"        d.iban_last_update = IbanLastUpdate.Create(d.iban_last_update, field + \".iban_last_update\");\n" +
-"        checkArray$1(d.thirdparty_visibility_rules, field + \".thirdparty_visibility_rules\");\n" +
-"        if (d.thirdparty_visibility_rules) {\n" +
-"            for (let i = 0; i < d.thirdparty_visibility_rules.length; i++) {\n" +
-"                d.thirdparty_visibility_rules[i] = ThirdpartyVisibilityRulesEntity.Create(d.thirdparty_visibility_rules[i], field + \".thirdparty_visibility_rules\" + \"[\" + i + \"]\");\n" +
+"        checkArray$1(d.thirdparty_contacts, field + \".thirdparty_contacts\");\n" +
+"        if (d.thirdparty_contacts) {\n" +
+"            for (let i = 0; i < d.thirdparty_contacts.length; i++) {\n" +
+"                checkNever$1(d.thirdparty_contacts[i], field + \".thirdparty_contacts\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
-"        const knownProperties = [\"id\", \"company_id\", \"disable_pending_vat\", \"emails\", \"country_alpha2\", \"force_pending_vat\", \"iban\", \"invoices_auto_generated\", \"invoices_auto_validated\", \"name\", \"notes\", \"search_terms\", \"supplier_payment_method\", \"vat_number\", \"supplier_due_date_delay\", \"supplier_due_date_rule\", \"address\", \"city\", \"postal_code\", \"admin_city_code\", \"activity_nomenclature\", \"establishment_no\", \"notes_comment\", \"plan_item\", \"thirdparty_invoice_line_rules\", \"tags\", \"thirdparties_tags\", \"iban_last_update\", \"thirdparty_visibility_rules\"];\n" +
+"        checkArray$1(d.thirdparty_invoice_line_rules, field + \".thirdparty_invoice_line_rules\");\n" +
+"        if (d.thirdparty_invoice_line_rules) {\n" +
+"            for (let i = 0; i < d.thirdparty_invoice_line_rules.length; i++) {\n" +
+"                d.thirdparty_invoice_line_rules[i] = ThirdpartyInvoiceLineRulesEntity.Create(d.thirdparty_invoice_line_rules[i], field + \".thirdparty_invoice_line_rules\" + \"[\" + i + \"]\", undefined);\n" +
+"            }\n" +
+"        }\n" +
+"        checkString$2(d.vat_number, field + \".vat_number\");\n" +
+"        const knownProperties = [\"address\", \"address_additional_info\", \"billing_bank\", \"billing_bic\", \"billing_footer_invoice\", \"billing_footer_invoice_id\", \"billing_iban\", \"billing_language\", \"city\", \"company_id\", \"country_alpha2\", \"current_mandate\", \"customer_type\", \"delivery_address\", \"delivery_address_additional_info\", \"delivery_city\", \"delivery_country_alpha2\", \"delivery_postal_code\", \"disable_pending_vat\", \"emails\", \"first_name\", \"force_pending_vat\", \"id\", \"invoices_auto_generated\", \"invoices_auto_validated\", \"last_name\", \"name\", \"notes\", \"notes_comment\", \"payment_conditions\", \"phone\", \"plan_item\", \"postal_code\", \"received_a_mandate_request\", \"recipient\", \"reference\", \"reg_no\", \"search_terms\", \"sepa_mandate\", \"source_id\", \"tags\", \"thirdparties_tags\", \"thirdparty_contacts\", \"thirdparty_invoice_line_rules\", \"vat_number\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$3(unknownProperty, d, \"never\", false);\n" +
-"        return new Supplier(d);\n" +
+"            errorHelper$4(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new Customer(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
-"        this.id = d.id;\n" +
+"        this.address = d.address;\n" +
+"        this.address_additional_info = d.address_additional_info;\n" +
+"        this.billing_bank = d.billing_bank;\n" +
+"        this.billing_bic = d.billing_bic;\n" +
+"        this.billing_footer_invoice = d.billing_footer_invoice;\n" +
+"        this.billing_footer_invoice_id = d.billing_footer_invoice_id;\n" +
+"        this.billing_iban = d.billing_iban;\n" +
+"        this.billing_language = d.billing_language;\n" +
+"        this.city = d.city;\n" +
 "        this.company_id = d.company_id;\n" +
-"        this.disable_pending_vat = d.disable_pending_vat;\n" +
-"        if (\"emails\" in d)\n" +
-"            this.emails = d.emails;\n" +
 "        this[\"country_alpha2\"] = d[\"country_alpha2\"];\n" +
+"        this.current_mandate = d.current_mandate;\n" +
+"        this.customer_type = d.customer_type;\n" +
+"        this.delivery_address = d.delivery_address;\n" +
+"        this.delivery_address_additional_info = d.delivery_address_additional_info;\n" +
+"        this.delivery_city = d.delivery_city;\n" +
+"        this[\"delivery_country_alpha2\"] = d[\"delivery_country_alpha2\"];\n" +
+"        this.delivery_postal_code = d.delivery_postal_code;\n" +
+"        this.disable_pending_vat = d.disable_pending_vat;\n" +
+"        this.emails = d.emails;\n" +
+"        this.first_name = d.first_name;\n" +
 "        this.force_pending_vat = d.force_pending_vat;\n" +
-"        this.iban = d.iban;\n" +
+"        this.id = d.id;\n" +
 "        this.invoices_auto_generated = d.invoices_auto_generated;\n" +
 "        this.invoices_auto_validated = d.invoices_auto_validated;\n" +
+"        this.last_name = d.last_name;\n" +
 "        this.name = d.name;\n" +
 "        this.notes = d.notes;\n" +
-"        if (\"search_terms\" in d)\n" +
-"            this.search_terms = d.search_terms;\n" +
-"        if (\"supplier_payment_method\" in d)\n" +
-"            this.supplier_payment_method = d.supplier_payment_method;\n" +
-"        this.vat_number = d.vat_number;\n" +
-"        if (\"supplier_due_date_delay\" in d)\n" +
-"            this.supplier_due_date_delay = d.supplier_due_date_delay;\n" +
-"        this.supplier_due_date_rule = d.supplier_due_date_rule;\n" +
-"        this.address = d.address;\n" +
-"        this.city = d.city;\n" +
-"        this.postal_code = d.postal_code;\n" +
-"        if (\"admin_city_code\" in d)\n" +
-"            this.admin_city_code = d.admin_city_code;\n" +
-"        this.activity_nomenclature = d.activity_nomenclature;\n" +
-"        if (\"establishment_no\" in d)\n" +
-"            this.establishment_no = d.establishment_no;\n" +
-"        if (\"notes_comment\" in d)\n" +
-"            this.notes_comment = d.notes_comment;\n" +
+"        this.notes_comment = d.notes_comment;\n" +
+"        this.payment_conditions = d.payment_conditions;\n" +
+"        this.phone = d.phone;\n" +
 "        this.plan_item = d.plan_item;\n" +
-"        if (\"thirdparty_invoice_line_rules\" in d)\n" +
-"            this.thirdparty_invoice_line_rules = d.thirdparty_invoice_line_rules;\n" +
-"        if (\"tags\" in d)\n" +
-"            this.tags = d.tags;\n" +
-"        if (\"thirdparties_tags\" in d)\n" +
-"            this.thirdparties_tags = d.thirdparties_tags;\n" +
-"        if (\"iban_last_update\" in d)\n" +
-"            this.iban_last_update = d.iban_last_update;\n" +
-"        if (\"thirdparty_visibility_rules\" in d)\n" +
-"            this.thirdparty_visibility_rules = d.thirdparty_visibility_rules;\n" +
+"        this.postal_code = d.postal_code;\n" +
+"        this.received_a_mandate_request = d.received_a_mandate_request;\n" +
+"        this.recipient = d.recipient;\n" +
+"        this.reference = d.reference;\n" +
+"        this.reg_no = d.reg_no;\n" +
+"        this.search_terms = d.search_terms;\n" +
+"        this.sepa_mandate = d.sepa_mandate;\n" +
+"        this.source_id = d.source_id;\n" +
+"        this.tags = d.tags;\n" +
+"        this.thirdparties_tags = d.thirdparties_tags;\n" +
+"        this.thirdparty_contacts = d.thirdparty_contacts;\n" +
+"        this.thirdparty_invoice_line_rules = d.thirdparty_invoice_line_rules;\n" +
+"        this.vat_number = d.vat_number;\n" +
 "    }\n" +
 "}\n" +
 "class PlanItem {\n" +
 "    static Parse(d) {\n" +
 "        return PlanItem.Create(JSON.parse(d));\n" +
 "    }\n" +
-"    static Create(d, field) {\n" +
+"    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$3 = d;\n" +
+"            obj$4 = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            throwNull2NonNull$2(field, d);\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$3(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$2(field, d, false);\n" +
+"            throwNotObject$3(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$2(field, d, false);\n" +
+"            throwIsArray$3(field, d);\n" +
 "        }\n" +
-"        checkNumber$2(d.id, false, field + \".id\");\n" +
-"        checkString$2(d.number, false, field + \".number\");\n" +
+"        checkNumber$2(d.id, field + \".id\");\n" +
+"        checkString$2(d.number, field + \".number\");\n" +
 "        const knownProperties = [\"id\", \"number\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$3(unknownProperty, d, \"never\", false);\n" +
+"            errorHelper$4(unknownProperty, d, \"never (unknown property)\");\n" +
 "        return new PlanItem(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -4079,66 +5992,273 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    static Parse(d) {\n" +
 "        return ThirdpartyInvoiceLineRulesEntity.Create(JSON.parse(d));\n" +
 "    }\n" +
-"    static Create(d, field) {\n" +
+"    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$3 = d;\n" +
+"            obj$4 = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            throwNull2NonNull$2(field, d);\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$3(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$2(field, d, false);\n" +
+"            throwNotObject$3(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$2(field, d, false);\n" +
+"            throwIsArray$3(field, d);\n" +
 "        }\n" +
-"        d.pnl_plan_item = PnlPlanItem.Create(d.pnl_plan_item, field + \".pnl_plan_item\");\n" +
-"        checkString$2(d.vat_rate, true, field + \".vat_rate\");\n" +
+"        d.pnl_plan_item = PnlPlanItem.Create(d.pnl_plan_item, field + \".pnl_plan_item\", undefined);\n" +
+"        checkString$2(d.vat_rate, field + \".vat_rate\");\n" +
 "        const knownProperties = [\"pnl_plan_item\", \"vat_rate\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$3(unknownProperty, d, \"never\", false);\n" +
+"            errorHelper$4(unknownProperty, d, \"never (unknown property)\");\n" +
 "        return new ThirdpartyInvoiceLineRulesEntity(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
 "        this.pnl_plan_item = d.pnl_plan_item;\n" +
-"        if (\"vat_rate\" in d)\n" +
-"            this.vat_rate = d.vat_rate;\n" +
+"        this.vat_rate = d.vat_rate;\n" +
 "    }\n" +
 "}\n" +
 "class PnlPlanItem {\n" +
 "    static Parse(d) {\n" +
 "        return PnlPlanItem.Create(JSON.parse(d));\n" +
 "    }\n" +
-"    static Create(d, field) {\n" +
+"    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$3 = d;\n" +
+"            obj$4 = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            throwNull2NonNull$2(field, d);\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$3(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$2(field, d, false);\n" +
+"            throwNotObject$3(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$2(field, d, false);\n" +
+"            throwIsArray$3(field, d);\n" +
 "        }\n" +
-"        checkNumber$2(d.id, false, field + \".id\");\n" +
-"        checkBoolean$1(d.enabled, false, field + \".enabled\");\n" +
-"        checkString$2(d.label, false, field + \".label\");\n" +
-"        checkString$2(d.number, false, field + \".number\");\n" +
-"        const knownProperties = [\"id\", \"enabled\", \"label\", \"number\"];\n" +
+"        checkBoolean$1(d.enabled, field + \".enabled\");\n" +
+"        checkNumber$2(d.id, field + \".id\");\n" +
+"        checkString$2(d.label, field + \".label\");\n" +
+"        checkString$2(d.number, field + \".number\");\n" +
+"        const knownProperties = [\"enabled\", \"id\", \"label\", \"number\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$3(unknownProperty, d, \"never\", false);\n" +
+"            errorHelper$4(unknownProperty, d, \"never (unknown property)\");\n" +
 "        return new PnlPlanItem(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
-"        this.id = d.id;\n" +
 "        this.enabled = d.enabled;\n" +
+"        this.id = d.id;\n" +
 "        this.label = d.label;\n" +
+"        this.number = d.number;\n" +
+"    }\n" +
+"}\n" +
+"class Supplier {\n" +
+"    static Parse(d) {\n" +
+"        return Supplier.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$4 = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$3(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$3(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$3(field, d);\n" +
+"        }\n" +
+"        checkString$2(d.activity_nomenclature, field + \".activity_nomenclature\");\n" +
+"        checkString$2(d.address, field + \".address\");\n" +
+"        checkNull$2(d.admin_city_code, field + \".admin_city_code\");\n" +
+"        checkString$2(d.city, field + \".city\");\n" +
+"        checkNumber$2(d.company_id, field + \".company_id\");\n" +
+"        checkString$2(d[\"country_alpha2\"], field + \".country_alpha2\");\n" +
+"        checkBoolean$1(d.disable_pending_vat, field + \".disable_pending_vat\");\n" +
+"        checkArray$1(d.emails, field + \".emails\");\n" +
+"        if (d.emails) {\n" +
+"            for (let i = 0; i < d.emails.length; i++) {\n" +
+"                checkNever$1(d.emails[i], field + \".emails\" + \"[\" + i + \"]\");\n" +
+"            }\n" +
+"        }\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$2(d.establishment_no, field + \".establishment_no\", \"null | string\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkString$2(d.establishment_no, field + \".establishment_no\", \"null | string\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$4 + ':', JSON.stringify(obj$4));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        checkBoolean$1(d.force_pending_vat, field + \".force_pending_vat\");\n" +
+"        checkString$2(d.iban, field + \".iban\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$2(d.iban_last_update, field + \".iban_last_update\", \"null | IbanLastUpdate\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                d.iban_last_update = IbanLastUpdate.Create(d.iban_last_update, field + \".iban_last_update\", \"null | IbanLastUpdate\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$4 + ':', JSON.stringify(obj$4));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"iban_proof\" in d) {\n" +
+"            checkNull$2(d.iban_proof, field + \".iban_proof\");\n" +
+"        }\n" +
+"        checkNumber$2(d.id, field + \".id\");\n" +
+"        checkBoolean$1(d.invoices_auto_generated, field + \".invoices_auto_generated\");\n" +
+"        checkBoolean$1(d.invoices_auto_validated, field + \".invoices_auto_validated\");\n" +
+"        checkString$2(d.name, field + \".name\");\n" +
+"        checkString$2(d.notes, field + \".notes\");\n" +
+"        checkNull$2(d.notes_comment, field + \".notes_comment\");\n" +
+"        d.plan_item = PlanItem1.Create(d.plan_item, field + \".plan_item\", undefined);\n" +
+"        checkString$2(d.postal_code, field + \".postal_code\");\n" +
+"        checkArray$1(d.search_terms, field + \".search_terms\");\n" +
+"        if (d.search_terms) {\n" +
+"            for (let i = 0; i < d.search_terms.length; i++) {\n" +
+"                checkString$2(d.search_terms[i], field + \".search_terms\" + \"[\" + i + \"]\");\n" +
+"            }\n" +
+"        }\n" +
+"        checkNull$2(d.supplier_due_date_delay, field + \".supplier_due_date_delay\");\n" +
+"        checkString$2(d.supplier_due_date_rule, field + \".supplier_due_date_rule\");\n" +
+"        checkNull$2(d.supplier_payment_method, field + \".supplier_payment_method\");\n" +
+"        checkArray$1(d.tags, field + \".tags\");\n" +
+"        if (d.tags) {\n" +
+"            for (let i = 0; i < d.tags.length; i++) {\n" +
+"                d.tags[i] = TagsEntityOrTag.Create(d.tags[i], field + \".tags\" + \"[\" + i + \"]\", undefined);\n" +
+"            }\n" +
+"        }\n" +
+"        checkArray$1(d.thirdparties_tags, field + \".thirdparties_tags\");\n" +
+"        if (d.thirdparties_tags) {\n" +
+"            for (let i = 0; i < d.thirdparties_tags.length; i++) {\n" +
+"                d.thirdparties_tags[i] = ThirdpartiesTagsEntity.Create(d.thirdparties_tags[i], field + \".thirdparties_tags\" + \"[\" + i + \"]\", undefined);\n" +
+"            }\n" +
+"        }\n" +
+"        checkArray$1(d.thirdparty_invoice_line_rules, field + \".thirdparty_invoice_line_rules\");\n" +
+"        if (d.thirdparty_invoice_line_rules) {\n" +
+"            for (let i = 0; i < d.thirdparty_invoice_line_rules.length; i++) {\n" +
+"                d.thirdparty_invoice_line_rules[i] = ThirdpartyInvoiceLineRulesEntity1.Create(d.thirdparty_invoice_line_rules[i], field + \".thirdparty_invoice_line_rules\" + \"[\" + i + \"]\", undefined);\n" +
+"            }\n" +
+"        }\n" +
+"        checkArray$1(d.thirdparty_visibility_rules, field + \".thirdparty_visibility_rules\");\n" +
+"        if (d.thirdparty_visibility_rules) {\n" +
+"            for (let i = 0; i < d.thirdparty_visibility_rules.length; i++) {\n" +
+"                d.thirdparty_visibility_rules[i] = ThirdpartyVisibilityRulesEntity.Create(d.thirdparty_visibility_rules[i], field + \".thirdparty_visibility_rules\" + \"[\" + i + \"]\", undefined);\n" +
+"            }\n" +
+"        }\n" +
+"        checkString$2(d.vat_number, field + \".vat_number\");\n" +
+"        const knownProperties = [\"activity_nomenclature\", \"address\", \"admin_city_code\", \"city\", \"company_id\", \"country_alpha2\", \"disable_pending_vat\", \"emails\", \"establishment_no\", \"force_pending_vat\", \"iban\", \"iban_last_update\", \"iban_proof\", \"id\", \"invoices_auto_generated\", \"invoices_auto_validated\", \"name\", \"notes\", \"notes_comment\", \"plan_item\", \"postal_code\", \"search_terms\", \"supplier_due_date_delay\", \"supplier_due_date_rule\", \"supplier_payment_method\", \"tags\", \"thirdparties_tags\", \"thirdparty_invoice_line_rules\", \"thirdparty_visibility_rules\", \"vat_number\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$4(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new Supplier(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.activity_nomenclature = d.activity_nomenclature;\n" +
+"        this.address = d.address;\n" +
+"        this.admin_city_code = d.admin_city_code;\n" +
+"        this.city = d.city;\n" +
+"        this.company_id = d.company_id;\n" +
+"        this[\"country_alpha2\"] = d[\"country_alpha2\"];\n" +
+"        this.disable_pending_vat = d.disable_pending_vat;\n" +
+"        this.emails = d.emails;\n" +
+"        this.establishment_no = d.establishment_no;\n" +
+"        this.force_pending_vat = d.force_pending_vat;\n" +
+"        this.iban = d.iban;\n" +
+"        this.iban_last_update = d.iban_last_update;\n" +
+"        if (\"iban_proof\" in d)\n" +
+"            this.iban_proof = d.iban_proof;\n" +
+"        this.id = d.id;\n" +
+"        this.invoices_auto_generated = d.invoices_auto_generated;\n" +
+"        this.invoices_auto_validated = d.invoices_auto_validated;\n" +
+"        this.name = d.name;\n" +
+"        this.notes = d.notes;\n" +
+"        this.notes_comment = d.notes_comment;\n" +
+"        this.plan_item = d.plan_item;\n" +
+"        this.postal_code = d.postal_code;\n" +
+"        this.search_terms = d.search_terms;\n" +
+"        this.supplier_due_date_delay = d.supplier_due_date_delay;\n" +
+"        this.supplier_due_date_rule = d.supplier_due_date_rule;\n" +
+"        this.supplier_payment_method = d.supplier_payment_method;\n" +
+"        this.tags = d.tags;\n" +
+"        this.thirdparties_tags = d.thirdparties_tags;\n" +
+"        this.thirdparty_invoice_line_rules = d.thirdparty_invoice_line_rules;\n" +
+"        this.thirdparty_visibility_rules = d.thirdparty_visibility_rules;\n" +
+"        this.vat_number = d.vat_number;\n" +
+"    }\n" +
+"}\n" +
+"class IbanLastUpdate {\n" +
+"    static Parse(d) {\n" +
+"        return IbanLastUpdate.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$4 = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$3(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$3(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$3(field, d);\n" +
+"        }\n" +
+"        checkString$2(d.at, field + \".at\");\n" +
+"        checkBoolean$1(d.from_pennylane, field + \".from_pennylane\");\n" +
+"        checkString$2(d.name, field + \".name\");\n" +
+"        const knownProperties = [\"at\", \"from_pennylane\", \"name\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$4(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new IbanLastUpdate(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.at = d.at;\n" +
+"        this.from_pennylane = d.from_pennylane;\n" +
+"        this.name = d.name;\n" +
+"    }\n" +
+"}\n" +
+"class PlanItem1 {\n" +
+"    static Parse(d) {\n" +
+"        return PlanItem1.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$4 = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$3(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$3(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$3(field, d);\n" +
+"        }\n" +
+"        checkNumber$2(d.id, field + \".id\");\n" +
+"        checkString$2(d.number, field + \".number\");\n" +
+"        const knownProperties = [\"id\", \"number\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$4(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new PlanItem1(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.id = d.id;\n" +
 "        this.number = d.number;\n" +
 "    }\n" +
 "}\n" +
@@ -4146,61 +6266,61 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    static Parse(d) {\n" +
 "        return TagsEntityOrTag.Create(JSON.parse(d));\n" +
 "    }\n" +
-"    static Create(d, field) {\n" +
+"    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$3 = d;\n" +
+"            obj$4 = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            return null;\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$3(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$2(field, d, true);\n" +
+"            throwNotObject$3(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$2(field, d, true);\n" +
+"            throwIsArray$3(field, d);\n" +
 "        }\n" +
-"        checkNumber$2(d.id, false, field + \".id\");\n" +
-"        checkString$2(d.label, false, field + \".label\");\n" +
-"        checkNumber$2(d.group_id, false, field + \".group_id\");\n" +
-"        d.group = Group.Create(d.group, field + \".group\");\n" +
-"        const knownProperties = [\"id\", \"label\", \"group_id\", \"group\"];\n" +
+"        d.group = Group.Create(d.group, field + \".group\", undefined);\n" +
+"        checkNumber$2(d.group_id, field + \".group_id\");\n" +
+"        checkNumber$2(d.id, field + \".id\");\n" +
+"        checkString$2(d.label, field + \".label\");\n" +
+"        const knownProperties = [\"group\", \"group_id\", \"id\", \"label\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$3(unknownProperty, d, \"never\", false);\n" +
+"            errorHelper$4(unknownProperty, d, \"never (unknown property)\");\n" +
 "        return new TagsEntityOrTag(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
+"        this.group = d.group;\n" +
+"        this.group_id = d.group_id;\n" +
 "        this.id = d.id;\n" +
 "        this.label = d.label;\n" +
-"        this.group_id = d.group_id;\n" +
-"        this.group = d.group;\n" +
 "    }\n" +
 "}\n" +
 "class Group {\n" +
 "    static Parse(d) {\n" +
 "        return Group.Create(JSON.parse(d));\n" +
 "    }\n" +
-"    static Create(d, field) {\n" +
+"    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$3 = d;\n" +
+"            obj$4 = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            throwNull2NonNull$2(field, d);\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$3(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$2(field, d, false);\n" +
+"            throwNotObject$3(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$2(field, d, false);\n" +
+"            throwIsArray$3(field, d);\n" +
 "        }\n" +
-"        checkString$2(d.label, false, field + \".label\");\n" +
-"        checkBoolean$1(d.self_service_accounting, false, field + \".self_service_accounting\");\n" +
+"        checkString$2(d.label, field + \".label\");\n" +
+"        checkBoolean$1(d.self_service_accounting, field + \".self_service_accounting\");\n" +
 "        const knownProperties = [\"label\", \"self_service_accounting\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$3(unknownProperty, d, \"never\", false);\n" +
+"            errorHelper$4(unknownProperty, d, \"never (unknown property)\");\n" +
 "        return new Group(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -4212,319 +6332,118 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    static Parse(d) {\n" +
 "        return ThirdpartiesTagsEntity.Create(JSON.parse(d));\n" +
 "    }\n" +
-"    static Create(d, field) {\n" +
+"    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$3 = d;\n" +
+"            obj$4 = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            return null;\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$3(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$2(field, d, true);\n" +
+"            throwNotObject$3(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$2(field, d, true);\n" +
+"            throwIsArray$3(field, d);\n" +
 "        }\n" +
-"        checkNumber$2(d.id, false, field + \".id\");\n" +
-"        checkString$2(d.weight, false, field + \".weight\");\n" +
-"        d.tag = TagsEntityOrTag1.Create(d.tag, field + \".tag\");\n" +
-"        const knownProperties = [\"id\", \"weight\", \"tag\"];\n" +
+"        checkNumber$2(d.id, field + \".id\");\n" +
+"        d.tag = TagsEntityOrTag1.Create(d.tag, field + \".tag\", undefined);\n" +
+"        checkString$2(d.weight, field + \".weight\");\n" +
+"        const knownProperties = [\"id\", \"tag\", \"weight\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$3(unknownProperty, d, \"never\", false);\n" +
+"            errorHelper$4(unknownProperty, d, \"never (unknown property)\");\n" +
 "        return new ThirdpartiesTagsEntity(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
 "        this.id = d.id;\n" +
-"        this.weight = d.weight;\n" +
 "        this.tag = d.tag;\n" +
+"        this.weight = d.weight;\n" +
 "    }\n" +
 "}\n" +
 "class TagsEntityOrTag1 {\n" +
 "    static Parse(d) {\n" +
 "        return TagsEntityOrTag1.Create(JSON.parse(d));\n" +
 "    }\n" +
-"    static Create(d, field) {\n" +
+"    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$3 = d;\n" +
+"            obj$4 = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            throwNull2NonNull$2(field, d);\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$3(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$2(field, d, false);\n" +
+"            throwNotObject$3(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$2(field, d, false);\n" +
+"            throwIsArray$3(field, d);\n" +
 "        }\n" +
-"        checkNumber$2(d.id, false, field + \".id\");\n" +
-"        checkString$2(d.label, false, field + \".label\");\n" +
-"        checkNumber$2(d.group_id, false, field + \".group_id\");\n" +
-"        d.group = Group.Create(d.group, field + \".group\");\n" +
-"        const knownProperties = [\"id\", \"label\", \"group_id\", \"group\"];\n" +
+"        d.group = Group.Create(d.group, field + \".group\", undefined);\n" +
+"        checkNumber$2(d.group_id, field + \".group_id\");\n" +
+"        checkNumber$2(d.id, field + \".id\");\n" +
+"        checkString$2(d.label, field + \".label\");\n" +
+"        const knownProperties = [\"group\", \"group_id\", \"id\", \"label\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$3(unknownProperty, d, \"never\", false);\n" +
+"            errorHelper$4(unknownProperty, d, \"never (unknown property)\");\n" +
 "        return new TagsEntityOrTag1(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
+"        this.group = d.group;\n" +
+"        this.group_id = d.group_id;\n" +
 "        this.id = d.id;\n" +
 "        this.label = d.label;\n" +
-"        this.group_id = d.group_id;\n" +
-"        this.group = d.group;\n" +
-"    }\n" +
-"}\n" +
-"class IbanLastUpdate {\n" +
-"    static Parse(d) {\n" +
-"        return IbanLastUpdate.Create(JSON.parse(d));\n" +
-"    }\n" +
-"    static Create(d, field) {\n" +
-"        if (!field) {\n" +
-"            obj$3 = d;\n" +
-"            field = \"root\";\n" +
-"        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            return null;\n" +
-"        }\n" +
-"        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$2(field, d, true);\n" +
-"        }\n" +
-"        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$2(field, d, true);\n" +
-"        }\n" +
-"        checkString$2(d.at, false, field + \".at\");\n" +
-"        checkString$2(d.name, false, field + \".name\");\n" +
-"        checkBoolean$1(d.from_pennylane, false, field + \".from_pennylane\");\n" +
-"        const knownProperties = [\"at\", \"name\", \"from_pennylane\"];\n" +
-"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
-"        if (unknownProperty)\n" +
-"            errorHelper$3(unknownProperty, d, \"never\", false);\n" +
-"        return new IbanLastUpdate(d);\n" +
-"    }\n" +
-"    constructor(d) {\n" +
-"        this.at = d.at;\n" +
-"        this.name = d.name;\n" +
-"        this.from_pennylane = d.from_pennylane;\n" +
-"    }\n" +
-"}\n" +
-"class ThirdpartyVisibilityRulesEntity {\n" +
-"    static Parse(d) {\n" +
-"        return ThirdpartyVisibilityRulesEntity.Create(JSON.parse(d));\n" +
-"    }\n" +
-"    static Create(d, field) {\n" +
-"        if (!field) {\n" +
-"            obj$3 = d;\n" +
-"            field = \"root\";\n" +
-"        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            throwNull2NonNull$2(field, d);\n" +
-"        }\n" +
-"        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$2(field, d, false);\n" +
-"        }\n" +
-"        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$2(field, d, false);\n" +
-"        }\n" +
-"        checkNumber$2(d.id, false, field + \".id\");\n" +
-"        checkString$2(d.visible_on, false, field + \".visible_on\");\n" +
-"        const knownProperties = [\"id\", \"visible_on\"];\n" +
-"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
-"        if (unknownProperty)\n" +
-"            errorHelper$3(unknownProperty, d, \"never\", false);\n" +
-"        return new ThirdpartyVisibilityRulesEntity(d);\n" +
-"    }\n" +
-"    constructor(d) {\n" +
-"        this.id = d.id;\n" +
-"        this.visible_on = d.visible_on;\n" +
-"    }\n" +
-"}\n" +
-"class Customer {\n" +
-"    static Parse(d) {\n" +
-"        return Customer.Create(JSON.parse(d));\n" +
-"    }\n" +
-"    static Create(d, field) {\n" +
-"        if (!field) {\n" +
-"            obj$3 = d;\n" +
-"            field = \"root\";\n" +
-"        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            return null;\n" +
-"        }\n" +
-"        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$2(field, d, true);\n" +
-"        }\n" +
-"        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$2(field, d, true);\n" +
-"        }\n" +
-"        checkNumber$2(d.id, false, field + \".id\");\n" +
-"        checkNumber$2(d.company_id, false, field + \".company_id\");\n" +
-"        checkString$2(d.address, false, field + \".address\");\n" +
-"        checkString$2(d.address_additional_info, false, field + \".address_additional_info\");\n" +
-"        checkNull$2(d.billing_bank, field + \".billing_bank\");\n" +
-"        checkNull$2(d.billing_bic, field + \".billing_bic\");\n" +
-"        checkNull$2(d.billing_footer_invoice_id, field + \".billing_footer_invoice_id\");\n" +
-"        checkNull$2(d.billing_iban, field + \".billing_iban\");\n" +
-"        checkString$2(d.billing_language, false, field + \".billing_language\");\n" +
-"        checkString$2(d.city, false, field + \".city\");\n" +
-"        checkString$2(d[\"country_alpha2\"], false, field + \".country_alpha2\");\n" +
-"        checkString$2(d.customer_type, false, field + \".customer_type\");\n" +
-"        checkString$2(d.delivery_address, false, field + \".delivery_address\");\n" +
-"        checkString$2(d.delivery_address_additional_info, false, field + \".delivery_address_additional_info\");\n" +
-"        checkString$2(d.delivery_city, false, field + \".delivery_city\");\n" +
-"        checkString$2(d[\"delivery_country_alpha2\"], false, field + \".delivery_country_alpha2\");\n" +
-"        checkString$2(d.delivery_postal_code, false, field + \".delivery_postal_code\");\n" +
-"        checkBoolean$1(d.disable_pending_vat, false, field + \".disable_pending_vat\");\n" +
-"        checkArray$1(d.emails, field + \".emails\");\n" +
-"        if (d.emails) {\n" +
-"            for (let i = 0; i < d.emails.length; i++) {\n" +
-"                checkNull$2(d.emails[i], field + \".emails\" + \"[\" + i + \"]\");\n" +
-"            }\n" +
-"        }\n" +
-"        checkString$2(d.first_name, false, field + \".first_name\");\n" +
-"        checkBoolean$1(d.force_pending_vat, false, field + \".force_pending_vat\");\n" +
-"        checkBoolean$1(d.invoices_auto_generated, false, field + \".invoices_auto_generated\");\n" +
-"        checkBoolean$1(d.invoices_auto_validated, false, field + \".invoices_auto_validated\");\n" +
-"        checkString$2(d.last_name, false, field + \".last_name\");\n" +
-"        checkString$2(d.name, false, field + \".name\");\n" +
-"        checkString$2(d.notes, false, field + \".notes\");\n" +
-"        checkString$2(d.payment_conditions, false, field + \".payment_conditions\");\n" +
-"        checkString$2(d.phone, false, field + \".phone\");\n" +
-"        checkString$2(d.postal_code, false, field + \".postal_code\");\n" +
-"        checkString$2(d.reference, false, field + \".reference\");\n" +
-"        checkString$2(d.reg_no, false, field + \".reg_no\");\n" +
-"        checkArray$1(d.search_terms, field + \".search_terms\");\n" +
-"        if (d.search_terms) {\n" +
-"            for (let i = 0; i < d.search_terms.length; i++) {\n" +
-"                checkString$2(d.search_terms[i], false, field + \".search_terms\" + \"[\" + i + \"]\");\n" +
-"            }\n" +
-"        }\n" +
-"        checkString$2(d.source_id, false, field + \".source_id\");\n" +
-"        checkString$2(d.vat_number, false, field + \".vat_number\");\n" +
-"        checkString$2(d.recipient, false, field + \".recipient\");\n" +
-"        checkNull$2(d.notes_comment, field + \".notes_comment\");\n" +
-"        d.plan_item = PlanItem.Create(d.plan_item, field + \".plan_item\");\n" +
-"        checkArray$1(d.thirdparty_invoice_line_rules, field + \".thirdparty_invoice_line_rules\");\n" +
-"        if (d.thirdparty_invoice_line_rules) {\n" +
-"            for (let i = 0; i < d.thirdparty_invoice_line_rules.length; i++) {\n" +
-"                d.thirdparty_invoice_line_rules[i] = ThirdpartyInvoiceLineRulesEntity1.Create(d.thirdparty_invoice_line_rules[i], field + \".thirdparty_invoice_line_rules\" + \"[\" + i + \"]\");\n" +
-"            }\n" +
-"        }\n" +
-"        checkArray$1(d.tags, field + \".tags\");\n" +
-"        if (d.tags) {\n" +
-"            for (let i = 0; i < d.tags.length; i++) {\n" +
-"                checkNull$2(d.tags[i], field + \".tags\" + \"[\" + i + \"]\");\n" +
-"            }\n" +
-"        }\n" +
-"        checkArray$1(d.thirdparties_tags, field + \".thirdparties_tags\");\n" +
-"        if (d.thirdparties_tags) {\n" +
-"            for (let i = 0; i < d.thirdparties_tags.length; i++) {\n" +
-"                checkNull$2(d.thirdparties_tags[i], field + \".thirdparties_tags\" + \"[\" + i + \"]\");\n" +
-"            }\n" +
-"        }\n" +
-"        checkNull$2(d.billing_footer_invoice, field + \".billing_footer_invoice\");\n" +
-"        checkNull$2(d.sepa_mandate, field + \".sepa_mandate\");\n" +
-"        checkNull$2(d.current_mandate, field + \".current_mandate\");\n" +
-"        checkBoolean$1(d.received_a_mandate_request, false, field + \".received_a_mandate_request\");\n" +
-"        checkArray$1(d.thirdparty_contacts, field + \".thirdparty_contacts\");\n" +
-"        if (d.thirdparty_contacts) {\n" +
-"            for (let i = 0; i < d.thirdparty_contacts.length; i++) {\n" +
-"                checkNull$2(d.thirdparty_contacts[i], field + \".thirdparty_contacts\" + \"[\" + i + \"]\");\n" +
-"            }\n" +
-"        }\n" +
-"        const knownProperties = [\"id\", \"company_id\", \"address\", \"address_additional_info\", \"billing_bank\", \"billing_bic\", \"billing_footer_invoice_id\", \"billing_iban\", \"billing_language\", \"city\", \"country_alpha2\", \"customer_type\", \"delivery_address\", \"delivery_address_additional_info\", \"delivery_city\", \"delivery_country_alpha2\", \"delivery_postal_code\", \"disable_pending_vat\", \"emails\", \"first_name\", \"force_pending_vat\", \"invoices_auto_generated\", \"invoices_auto_validated\", \"last_name\", \"name\", \"notes\", \"payment_conditions\", \"phone\", \"postal_code\", \"reference\", \"reg_no\", \"search_terms\", \"source_id\", \"vat_number\", \"recipient\", \"notes_comment\", \"plan_item\", \"thirdparty_invoice_line_rules\", \"tags\", \"thirdparties_tags\", \"billing_footer_invoice\", \"sepa_mandate\", \"current_mandate\", \"received_a_mandate_request\", \"thirdparty_contacts\"];\n" +
-"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
-"        if (unknownProperty)\n" +
-"            errorHelper$3(unknownProperty, d, \"never\", false);\n" +
-"        return new Customer(d);\n" +
-"    }\n" +
-"    constructor(d) {\n" +
-"        this.id = d.id;\n" +
-"        this.company_id = d.company_id;\n" +
-"        this.address = d.address;\n" +
-"        this.address_additional_info = d.address_additional_info;\n" +
-"        if (\"billing_bank\" in d)\n" +
-"            this.billing_bank = d.billing_bank;\n" +
-"        if (\"billing_bic\" in d)\n" +
-"            this.billing_bic = d.billing_bic;\n" +
-"        if (\"billing_footer_invoice_id\" in d)\n" +
-"            this.billing_footer_invoice_id = d.billing_footer_invoice_id;\n" +
-"        if (\"billing_iban\" in d)\n" +
-"            this.billing_iban = d.billing_iban;\n" +
-"        this.billing_language = d.billing_language;\n" +
-"        this.city = d.city;\n" +
-"        this[\"country_alpha2\"] = d[\"country_alpha2\"];\n" +
-"        this.customer_type = d.customer_type;\n" +
-"        this.delivery_address = d.delivery_address;\n" +
-"        this.delivery_address_additional_info = d.delivery_address_additional_info;\n" +
-"        this.delivery_city = d.delivery_city;\n" +
-"        this[\"delivery_country_alpha2\"] = d[\"delivery_country_alpha2\"];\n" +
-"        this.delivery_postal_code = d.delivery_postal_code;\n" +
-"        this.disable_pending_vat = d.disable_pending_vat;\n" +
-"        if (\"emails\" in d)\n" +
-"            this.emails = d.emails;\n" +
-"        this.first_name = d.first_name;\n" +
-"        this.force_pending_vat = d.force_pending_vat;\n" +
-"        this.invoices_auto_generated = d.invoices_auto_generated;\n" +
-"        this.invoices_auto_validated = d.invoices_auto_validated;\n" +
-"        this.last_name = d.last_name;\n" +
-"        this.name = d.name;\n" +
-"        this.notes = d.notes;\n" +
-"        this.payment_conditions = d.payment_conditions;\n" +
-"        this.phone = d.phone;\n" +
-"        this.postal_code = d.postal_code;\n" +
-"        this.reference = d.reference;\n" +
-"        this.reg_no = d.reg_no;\n" +
-"        if (\"search_terms\" in d)\n" +
-"            this.search_terms = d.search_terms;\n" +
-"        this.source_id = d.source_id;\n" +
-"        this.vat_number = d.vat_number;\n" +
-"        this.recipient = d.recipient;\n" +
-"        if (\"notes_comment\" in d)\n" +
-"            this.notes_comment = d.notes_comment;\n" +
-"        this.plan_item = d.plan_item;\n" +
-"        if (\"thirdparty_invoice_line_rules\" in d)\n" +
-"            this.thirdparty_invoice_line_rules = d.thirdparty_invoice_line_rules;\n" +
-"        if (\"tags\" in d)\n" +
-"            this.tags = d.tags;\n" +
-"        if (\"thirdparties_tags\" in d)\n" +
-"            this.thirdparties_tags = d.thirdparties_tags;\n" +
-"        if (\"billing_footer_invoice\" in d)\n" +
-"            this.billing_footer_invoice = d.billing_footer_invoice;\n" +
-"        if (\"sepa_mandate\" in d)\n" +
-"            this.sepa_mandate = d.sepa_mandate;\n" +
-"        if (\"current_mandate\" in d)\n" +
-"            this.current_mandate = d.current_mandate;\n" +
-"        this.received_a_mandate_request = d.received_a_mandate_request;\n" +
-"        if (\"thirdparty_contacts\" in d)\n" +
-"            this.thirdparty_contacts = d.thirdparty_contacts;\n" +
 "    }\n" +
 "}\n" +
 "class ThirdpartyInvoiceLineRulesEntity1 {\n" +
 "    static Parse(d) {\n" +
 "        return ThirdpartyInvoiceLineRulesEntity1.Create(JSON.parse(d));\n" +
 "    }\n" +
-"    static Create(d, field) {\n" +
+"    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$3 = d;\n" +
+"            obj$4 = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            throwNull2NonNull$2(field, d);\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$3(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$2(field, d, false);\n" +
+"            throwNotObject$3(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$2(field, d, false);\n" +
+"            throwIsArray$3(field, d);\n" +
 "        }\n" +
-"        d.pnl_plan_item = PnlPlanItem.Create(d.pnl_plan_item, field + \".pnl_plan_item\");\n" +
-"        checkString$2(d.vat_rate, false, field + \".vat_rate\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            d.pnl_plan_item = PnlPlanItem1.Create(d.pnl_plan_item, field + \".pnl_plan_item\", \"PnlPlanItem1 | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$2(d.pnl_plan_item, field + \".pnl_plan_item\", \"PnlPlanItem1 | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$4 + ':', JSON.stringify(obj$4));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkString$2(d.vat_rate, field + \".vat_rate\", \"string | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$2(d.vat_rate, field + \".vat_rate\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$4 + ':', JSON.stringify(obj$4));\n" +
+"                throw e;\n" +
+"            }\n" +
+"        }\n" +
 "        const knownProperties = [\"pnl_plan_item\", \"vat_rate\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$3(unknownProperty, d, \"never\", false);\n" +
+"            errorHelper$4(unknownProperty, d, \"never (unknown property)\");\n" +
 "        return new ThirdpartyInvoiceLineRulesEntity1(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -4532,45 +6451,199 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        this.vat_rate = d.vat_rate;\n" +
 "    }\n" +
 "}\n" +
-"function throwNull2NonNull$2(field, d) {\n" +
-"    return errorHelper$3(field, d, \"non-nullable object\", false);\n" +
-"}\n" +
-"function throwNotObject$2(field, d, nullable) {\n" +
-"    return errorHelper$3(field, d, \"object\", nullable);\n" +
-"}\n" +
-"function throwIsArray$2(field, d, nullable) {\n" +
-"    return errorHelper$3(field, d, \"object\", nullable);\n" +
-"}\n" +
-"function checkArray$1(d, field) {\n" +
-"    if (!Array.isArray(d) && d !== null && d !== undefined) {\n" +
-"        errorHelper$3(field, d, \"array\", true);\n" +
+"class PnlPlanItem1 {\n" +
+"    static Parse(d) {\n" +
+"        return PnlPlanItem1.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$4 = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$3(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$3(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$3(field, d);\n" +
+"        }\n" +
+"        checkBoolean$1(d.enabled, field + \".enabled\");\n" +
+"        checkNumber$2(d.id, field + \".id\");\n" +
+"        checkString$2(d.label, field + \".label\");\n" +
+"        checkString$2(d.number, field + \".number\");\n" +
+"        const knownProperties = [\"enabled\", \"id\", \"label\", \"number\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$4(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new PnlPlanItem1(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.enabled = d.enabled;\n" +
+"        this.id = d.id;\n" +
+"        this.label = d.label;\n" +
+"        this.number = d.number;\n" +
 "    }\n" +
 "}\n" +
-"function checkNumber$2(d, nullable, field) {\n" +
-"    if (typeof (d) !== 'number' && (true)) {\n" +
-"        errorHelper$3(field, d, \"number\", nullable);\n" +
+"class ThirdpartyVisibilityRulesEntity {\n" +
+"    static Parse(d) {\n" +
+"        return ThirdpartyVisibilityRulesEntity.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$4 = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$3(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$3(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$3(field, d);\n" +
+"        }\n" +
+"        checkNumber$2(d.id, field + \".id\");\n" +
+"        checkString$2(d.visible_on, field + \".visible_on\");\n" +
+"        const knownProperties = [\"id\", \"visible_on\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$4(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new ThirdpartyVisibilityRulesEntity(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.id = d.id;\n" +
+"        this.visible_on = d.visible_on;\n" +
 "    }\n" +
 "}\n" +
-"function checkBoolean$1(d, nullable, field) {\n" +
-"    if (typeof (d) !== 'boolean' && (true)) {\n" +
-"        errorHelper$3(field, d, \"boolean\", nullable);\n" +
+"function throwNull2NonNull$3(field, value, multiple) {\n" +
+"    return errorHelper$4(field, value, multiple ?? \"non-nullable object\");\n" +
+"}\n" +
+"function throwNotObject$3(field, value, multiple) {\n" +
+"    return errorHelper$4(field, value, \"object\");\n" +
+"}\n" +
+"function throwIsArray$3(field, value, multiple) {\n" +
+"    return errorHelper$4(field, value, \"object\");\n" +
+"}\n" +
+"function checkArray$1(value, field, multiple) {\n" +
+"    if (!Array.isArray(value))\n" +
+"        errorHelper$4(field, value, \"array\");\n" +
+"}\n" +
+"function checkNumber$2(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'number')\n" +
+"        errorHelper$4(field, value, \"number\");\n" +
+"}\n" +
+"function checkBoolean$1(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'boolean')\n" +
+"        errorHelper$4(field, value, \"boolean\");\n" +
+"}\n" +
+"function checkString$2(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'string')\n" +
+"        errorHelper$4(field, value, multiple ?? \"string\");\n" +
+"}\n" +
+"function checkNull$2(value, field, multiple) {\n" +
+"    if (value !== null)\n" +
+"        errorHelper$4(field, value, multiple ?? \"null\");\n" +
+"}\n" +
+"function checkNever$1(value, field, multiple) {\n" +
+"    return errorHelper$4(field, value, \"never\");\n" +
+"}\n" +
+"function errorHelper$4(field, d, type) {\n" +
+"    if (!type.includes(' | ')) {\n" +
+"        let jsonClone = obj$4;\n" +
+"        try {\n" +
+"            jsonClone = JSON.parse(JSON.stringify(obj$4));\n" +
+"        }\n" +
+"        catch (error) {\n" +
+"            console.log(error);\n" +
+"        }\n" +
+"        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
+"\" + JSON.stringify(d), jsonClone);\n" +
+"        prompt(proxyName$4 + ':', JSON.stringify(obj$4));\n" +
+"    }\n" +
+"    throw new TypeError('Expected ' + type + \" at \" + field + \" but found:\\n" +
+"\" + JSON.stringify(d) + \"\\n" +
+"\\n" +
+"Full object:\\n" +
+"\" + JSON.stringify(obj$4));\n" +
+"}\n" +
+"\n" +
+"// Stores the currently-being-typechecked object for error messages.\n" +
+"const proxyName$3 = 'APITransactionListParams';\n" +
+"let obj$3 = null;\n" +
+"class APITransactionListParams {\n" +
+"    static Parse(d) {\n" +
+"        return APITransactionListParams.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$3 = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$2(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$2(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$2(field, d);\n" +
+"        }\n" +
+"        if (\"filter\" in d) {\n" +
+"            checkString$1(d.filter, field + \".filter\");\n" +
+"        }\n" +
+"        if (\"page\" in d) {\n" +
+"            checkNumber$1(d.page, field + \".page\");\n" +
+"        }\n" +
+"        if (\"sort\" in d) {\n" +
+"            checkString$1(d.sort, field + \".sort\");\n" +
+"        }\n" +
+"        const knownProperties = [\"filter\", \"page\", \"sort\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$3(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new APITransactionListParams(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        if (\"filter\" in d)\n" +
+"            this.filter = d.filter;\n" +
+"        if (\"page\" in d)\n" +
+"            this.page = d.page;\n" +
+"        if (\"sort\" in d)\n" +
+"            this.sort = d.sort;\n" +
 "    }\n" +
 "}\n" +
-"function checkString$2(d, nullable, field) {\n" +
-"    if (typeof (d) !== 'string' && (!nullable || (nullable && d !== null && d !== undefined))) {\n" +
-"        errorHelper$3(field, d, \"string\", nullable);\n" +
-"    }\n" +
+"function throwNull2NonNull$2(field, value, multiple) {\n" +
+"    return errorHelper$3(field, value, multiple ?? \"non-nullable object\");\n" +
 "}\n" +
-"function checkNull$2(d, field) {\n" +
-"    if (d !== null && d !== undefined) {\n" +
-"        errorHelper$3(field, d, \"null or undefined\", false);\n" +
-"    }\n" +
+"function throwNotObject$2(field, value, multiple) {\n" +
+"    return errorHelper$3(field, value, \"object\");\n" +
 "}\n" +
-"function errorHelper$3(field, d, type, nullable) {\n" +
-"    if (nullable) {\n" +
-"        type += \", null, or undefined\";\n" +
+"function throwIsArray$2(field, value, multiple) {\n" +
+"    return errorHelper$3(field, value, \"object\");\n" +
+"}\n" +
+"function checkNumber$1(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'number')\n" +
+"        errorHelper$3(field, value, \"number\");\n" +
+"}\n" +
+"function checkString$1(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'string')\n" +
+"        errorHelper$3(field, value, \"string\");\n" +
+"}\n" +
+"function errorHelper$3(field, d, type) {\n" +
+"    if (!type.includes(' | ')) {\n" +
+"        let jsonClone = obj$3;\n" +
+"        try {\n" +
+"            jsonClone = JSON.parse(JSON.stringify(obj$3));\n" +
+"        }\n" +
+"        catch (error) {\n" +
+"            console.log(error);\n" +
+"        }\n" +
+"        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
+"\" + JSON.stringify(d), jsonClone);\n" +
+"        prompt(proxyName$3 + ':', JSON.stringify(obj$3));\n" +
 "    }\n" +
-"    prompt(proxyName$3 + ':', JSON.stringify(obj$3));\n" +
 "    throw new TypeError('Expected ' + type + \" at \" + field + \" but found:\\n" +
 "\" + JSON.stringify(d) + \"\\n" +
 "\\n" +
@@ -4579,68 +6652,245 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "}\n" +
 "\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
-"const proxyName$2 = 'APITransactionListParams';\n" +
+"const proxyName$2 = 'APITransactionList';\n" +
 "let obj$2 = null;\n" +
-"class APITransactionListParams {\n" +
+"class APITransactionList {\n" +
 "    static Parse(d) {\n" +
-"        return APITransactionListParams.Create(JSON.parse(d));\n" +
+"        return APITransactionList.Create(JSON.parse(d));\n" +
 "    }\n" +
-"    static Create(d, field) {\n" +
+"    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
 "            obj$2 = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            throwNull2NonNull$1(field, d);\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$1(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$1(field, d, false);\n" +
+"            throwNotObject$1(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$1(field, d, false);\n" +
+"            throwIsArray$1(field, d);\n" +
 "        }\n" +
-"        checkString$1(d.filter, true, field + \".filter\");\n" +
-"        checkString$1(d.sort, true, field + \".sort\");\n" +
-"        checkNumber$1(d.page, true, field + \".page\");\n" +
-"        const knownProperties = [\"filter\", \"sort\", \"page\"];\n" +
+"        d.pagination = Pagination.Create(d.pagination, field + \".pagination\", undefined);\n" +
+"        checkArray(d.transactions, field + \".transactions\");\n" +
+"        if (d.transactions) {\n" +
+"            for (let i = 0; i < d.transactions.length; i++) {\n" +
+"                d.transactions[i] = TransactionsEntity.Create(d.transactions[i], field + \".transactions\" + \"[\" + i + \"]\", undefined);\n" +
+"            }\n" +
+"        }\n" +
+"        const knownProperties = [\"pagination\", \"transactions\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$2(unknownProperty, d, \"never\", false);\n" +
-"        return new APITransactionListParams(d);\n" +
+"            errorHelper$2(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new APITransactionList(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
-"        if (\"filter\" in d)\n" +
-"            this.filter = d.filter;\n" +
-"        if (\"sort\" in d)\n" +
-"            this.sort = d.sort;\n" +
-"        if (\"page\" in d)\n" +
-"            this.page = d.page;\n" +
+"        this.pagination = d.pagination;\n" +
+"        this.transactions = d.transactions;\n" +
 "    }\n" +
 "}\n" +
-"function throwNull2NonNull$1(field, d) {\n" +
-"    return errorHelper$2(field, d, \"non-nullable object\", false);\n" +
-"}\n" +
-"function throwNotObject$1(field, d, nullable) {\n" +
-"    return errorHelper$2(field, d, \"object\", nullable);\n" +
-"}\n" +
-"function throwIsArray$1(field, d, nullable) {\n" +
-"    return errorHelper$2(field, d, \"object\", nullable);\n" +
-"}\n" +
-"function checkNumber$1(d, nullable, field) {\n" +
-"    if (typeof (d) !== 'number' && ((d !== null && d !== undefined))) {\n" +
-"        errorHelper$2(field, d, \"number\", nullable);\n" +
+"class Pagination {\n" +
+"    static Parse(d) {\n" +
+"        return Pagination.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$2 = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$1(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$1(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$1(field, d);\n" +
+"        }\n" +
+"        checkBoolean(d.hasNextPage, field + \".hasNextPage\");\n" +
+"        checkNumber(d.page, field + \".page\");\n" +
+"        checkNumber(d.pages, field + \".pages\");\n" +
+"        checkNumber(d.pageSize, field + \".pageSize\");\n" +
+"        checkNumber(d.totalEntries, field + \".totalEntries\");\n" +
+"        checkString(d.totalEntriesPrecision, field + \".totalEntriesPrecision\");\n" +
+"        checkString(d.totalEntriesStr, field + \".totalEntriesStr\");\n" +
+"        const knownProperties = [\"hasNextPage\", \"page\", \"pages\", \"pageSize\", \"totalEntries\", \"totalEntriesPrecision\", \"totalEntriesStr\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$2(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new Pagination(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.hasNextPage = d.hasNextPage;\n" +
+"        this.page = d.page;\n" +
+"        this.pages = d.pages;\n" +
+"        this.pageSize = d.pageSize;\n" +
+"        this.totalEntries = d.totalEntries;\n" +
+"        this.totalEntriesPrecision = d.totalEntriesPrecision;\n" +
+"        this.totalEntriesStr = d.totalEntriesStr;\n" +
 "    }\n" +
 "}\n" +
-"function checkString$1(d, nullable, field) {\n" +
-"    if (typeof (d) !== 'string' && ((d !== null && d !== undefined))) {\n" +
-"        errorHelper$2(field, d, \"string\", nullable);\n" +
+"class TransactionsEntity {\n" +
+"    static Parse(d) {\n" +
+"        return TransactionsEntity.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$2 = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$1(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$1(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$1(field, d);\n" +
+"        }\n" +
+"        checkNumber(d.account_id, field + \".account_id\");\n" +
+"        d.account_synchronization = AccountSynchronization.Create(d.account_synchronization, field + \".account_synchronization\", undefined);\n" +
+"        checkString(d.amount, field + \".amount\");\n" +
+"        checkNull$1(d.archived_at, field + \".archived_at\");\n" +
+"        checkBoolean(d.attachment_lost, field + \".attachment_lost\");\n" +
+"        checkBoolean(d.attachment_required, field + \".attachment_required\");\n" +
+"        checkNumber(d.company_id, field + \".company_id\");\n" +
+"        checkString(d.currency, field + \".currency\");\n" +
+"        checkString(d.currency_amount, field + \".currency_amount\");\n" +
+"        checkString(d.currency_fee, field + \".currency_fee\");\n" +
+"        checkString(d.date, field + \".date\");\n" +
+"        checkNull$1(d.dump, field + \".dump\");\n" +
+"        checkNull$1(d.dump_id, field + \".dump_id\");\n" +
+"        checkString(d.fee, field + \".fee\");\n" +
+"        checkNumber(d.files_count, field + \".files_count\");\n" +
+"        checkString(d.gross_amount, field + \".gross_amount\");\n" +
+"        checkString(d.group_uuid, field + \".group_uuid\");\n" +
+"        checkNumber(d.id, field + \".id\");\n" +
+"        checkBoolean(d.is_potential_duplicate, field + \".is_potential_duplicate\");\n" +
+"        checkBoolean(d.is_waiting_details, field + \".is_waiting_details\");\n" +
+"        checkString(d.label, field + \".label\");\n" +
+"        checkBoolean(d.pending, field + \".pending\");\n" +
+"        checkNull$1(d.reconciliation_id, field + \".reconciliation_id\");\n" +
+"        checkString(d.source, field + \".source\");\n" +
+"        checkString(d.source_logo, field + \".source_logo\");\n" +
+"        checkString(d.status, field + \".status\");\n" +
+"        checkString(d.type, field + \".type\");\n" +
+"        checkString(d.updated_at, field + \".updated_at\");\n" +
+"        checkBoolean(d.validation_needed, field + \".validation_needed\");\n" +
+"        const knownProperties = [\"account_id\", \"account_synchronization\", \"amount\", \"archived_at\", \"attachment_lost\", \"attachment_required\", \"company_id\", \"currency\", \"currency_amount\", \"currency_fee\", \"date\", \"dump\", \"dump_id\", \"fee\", \"files_count\", \"gross_amount\", \"group_uuid\", \"id\", \"is_potential_duplicate\", \"is_waiting_details\", \"label\", \"pending\", \"reconciliation_id\", \"source\", \"source_logo\", \"status\", \"type\", \"updated_at\", \"validation_needed\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$2(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new TransactionsEntity(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.account_id = d.account_id;\n" +
+"        this.account_synchronization = d.account_synchronization;\n" +
+"        this.amount = d.amount;\n" +
+"        this.archived_at = d.archived_at;\n" +
+"        this.attachment_lost = d.attachment_lost;\n" +
+"        this.attachment_required = d.attachment_required;\n" +
+"        this.company_id = d.company_id;\n" +
+"        this.currency = d.currency;\n" +
+"        this.currency_amount = d.currency_amount;\n" +
+"        this.currency_fee = d.currency_fee;\n" +
+"        this.date = d.date;\n" +
+"        this.dump = d.dump;\n" +
+"        this.dump_id = d.dump_id;\n" +
+"        this.fee = d.fee;\n" +
+"        this.files_count = d.files_count;\n" +
+"        this.gross_amount = d.gross_amount;\n" +
+"        this.group_uuid = d.group_uuid;\n" +
+"        this.id = d.id;\n" +
+"        this.is_potential_duplicate = d.is_potential_duplicate;\n" +
+"        this.is_waiting_details = d.is_waiting_details;\n" +
+"        this.label = d.label;\n" +
+"        this.pending = d.pending;\n" +
+"        this.reconciliation_id = d.reconciliation_id;\n" +
+"        this.source = d.source;\n" +
+"        this.source_logo = d.source_logo;\n" +
+"        this.status = d.status;\n" +
+"        this.type = d.type;\n" +
+"        this.updated_at = d.updated_at;\n" +
+"        this.validation_needed = d.validation_needed;\n" +
 "    }\n" +
 "}\n" +
-"function errorHelper$2(field, d, type, nullable) {\n" +
-"    if (nullable) {\n" +
-"        type += \", null, or undefined\";\n" +
+"class AccountSynchronization {\n" +
+"    static Parse(d) {\n" +
+"        return AccountSynchronization.Create(JSON.parse(d));\n" +
 "    }\n" +
-"    prompt(proxyName$2 + ':', JSON.stringify(obj$2));\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$2 = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$1(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$1(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$1(field, d);\n" +
+"        }\n" +
+"        checkString(d.created_at, field + \".created_at\");\n" +
+"        checkNull$1(d.error_message, field + \".error_message\");\n" +
+"        checkBoolean(d.triggered_manually, field + \".triggered_manually\");\n" +
+"        const knownProperties = [\"created_at\", \"error_message\", \"triggered_manually\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$2(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new AccountSynchronization(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.created_at = d.created_at;\n" +
+"        this.error_message = d.error_message;\n" +
+"        this.triggered_manually = d.triggered_manually;\n" +
+"    }\n" +
+"}\n" +
+"function throwNull2NonNull$1(field, value, multiple) {\n" +
+"    return errorHelper$2(field, value, multiple ?? \"non-nullable object\");\n" +
+"}\n" +
+"function throwNotObject$1(field, value, multiple) {\n" +
+"    return errorHelper$2(field, value, \"object\");\n" +
+"}\n" +
+"function throwIsArray$1(field, value, multiple) {\n" +
+"    return errorHelper$2(field, value, \"object\");\n" +
+"}\n" +
+"function checkArray(value, field, multiple) {\n" +
+"    if (!Array.isArray(value))\n" +
+"        errorHelper$2(field, value, \"array\");\n" +
+"}\n" +
+"function checkNumber(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'number')\n" +
+"        errorHelper$2(field, value, \"number\");\n" +
+"}\n" +
+"function checkBoolean(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'boolean')\n" +
+"        errorHelper$2(field, value, \"boolean\");\n" +
+"}\n" +
+"function checkString(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'string')\n" +
+"        errorHelper$2(field, value, \"string\");\n" +
+"}\n" +
+"function checkNull$1(value, field, multiple) {\n" +
+"    if (value !== null)\n" +
+"        errorHelper$2(field, value, \"null\");\n" +
+"}\n" +
+"function errorHelper$2(field, d, type) {\n" +
+"    if (!type.includes(' | ')) {\n" +
+"        let jsonClone = obj$2;\n" +
+"        try {\n" +
+"            jsonClone = JSON.parse(JSON.stringify(obj$2));\n" +
+"        }\n" +
+"        catch (error) {\n" +
+"            console.log(error);\n" +
+"        }\n" +
+"        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
+"\" + JSON.stringify(d), jsonClone);\n" +
+"        prompt(proxyName$2 + ':', JSON.stringify(obj$2));\n" +
+"    }\n" +
 "    throw new TypeError('Expected ' + type + \" at \" + field + \" but found:\\n" +
 "\" + JSON.stringify(d) + \"\\n" +
 "\\n" +
@@ -4649,283 +6899,41 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "}\n" +
 "\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
-"const proxyName$1 = 'APITransactionList';\n" +
+"const proxyName$1 = 'APITransaction';\n" +
 "let obj$1 = null;\n" +
-"class APITransactionList {\n" +
-"    static Parse(d) {\n" +
-"        return APITransactionList.Create(JSON.parse(d));\n" +
-"    }\n" +
-"    static Create(d, field) {\n" +
-"        if (!field) {\n" +
-"            obj$1 = d;\n" +
-"            field = \"root\";\n" +
-"        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            throwNull2NonNull(field, d);\n" +
-"        }\n" +
-"        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject(field, d, false);\n" +
-"        }\n" +
-"        else if (Array.isArray(d)) {\n" +
-"            throwIsArray(field, d, false);\n" +
-"        }\n" +
-"        checkArray(d.transactions, field + \".transactions\");\n" +
-"        if (d.transactions) {\n" +
-"            for (let i = 0; i < d.transactions.length; i++) {\n" +
-"                d.transactions[i] = TransactionsEntity.Create(d.transactions[i], field + \".transactions\" + \"[\" + i + \"]\");\n" +
-"            }\n" +
-"        }\n" +
-"        d.pagination = Pagination.Create(d.pagination, field + \".pagination\");\n" +
-"        const knownProperties = [\"transactions\", \"pagination\"];\n" +
-"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
-"        if (unknownProperty)\n" +
-"            errorHelper$1(unknownProperty, d, \"never\", false);\n" +
-"        return new APITransactionList(d);\n" +
-"    }\n" +
-"    constructor(d) {\n" +
-"        if (\"transactions\" in d)\n" +
-"            this.transactions = d.transactions;\n" +
-"        this.pagination = d.pagination;\n" +
-"    }\n" +
-"}\n" +
-"class TransactionsEntity {\n" +
-"    static Parse(d) {\n" +
-"        return TransactionsEntity.Create(JSON.parse(d));\n" +
-"    }\n" +
-"    static Create(d, field) {\n" +
-"        if (!field) {\n" +
-"            obj$1 = d;\n" +
-"            field = \"root\";\n" +
-"        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            throwNull2NonNull(field, d);\n" +
-"        }\n" +
-"        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject(field, d, false);\n" +
-"        }\n" +
-"        else if (Array.isArray(d)) {\n" +
-"            throwIsArray(field, d, false);\n" +
-"        }\n" +
-"        checkNumber(d.id, false, field + \".id\");\n" +
-"        checkString(d.type, false, field + \".type\");\n" +
-"        checkNumber(d.account_id, false, field + \".account_id\");\n" +
-"        checkNumber(d.company_id, false, field + \".company_id\");\n" +
-"        checkNull$1(d.dump_id, field + \".dump_id\");\n" +
-"        checkString(d.group_uuid, false, field + \".group_uuid\");\n" +
-"        checkString(d.date, false, field + \".date\");\n" +
-"        checkString(d.label, false, field + \".label\");\n" +
-"        checkString(d.amount, false, field + \".amount\");\n" +
-"        checkString(d.fee, false, field + \".fee\");\n" +
-"        checkString(d.currency, false, field + \".currency\");\n" +
-"        checkString(d.source, false, field + \".source\");\n" +
-"        checkString(d.currency_amount, false, field + \".currency_amount\");\n" +
-"        checkString(d.currency_fee, false, field + \".currency_fee\");\n" +
-"        checkNull$1(d.archived_at, field + \".archived_at\");\n" +
-"        checkString(d.updated_at, false, field + \".updated_at\");\n" +
-"        checkBoolean(d.is_waiting_details, false, field + \".is_waiting_details\");\n" +
-"        checkBoolean(d.validation_needed, false, field + \".validation_needed\");\n" +
-"        checkBoolean(d.is_potential_duplicate, false, field + \".is_potential_duplicate\");\n" +
-"        checkBoolean(d.attachment_lost, false, field + \".attachment_lost\");\n" +
-"        checkBoolean(d.attachment_required, false, field + \".attachment_required\");\n" +
-"        checkBoolean(d.pending, false, field + \".pending\");\n" +
-"        checkString(d.status, false, field + \".status\");\n" +
-"        checkString(d.gross_amount, false, field + \".gross_amount\");\n" +
-"        checkNull$1(d.reconciliation_id, field + \".reconciliation_id\");\n" +
-"        checkNumber(d.files_count, false, field + \".files_count\");\n" +
-"        checkString(d.source_logo, false, field + \".source_logo\");\n" +
-"        d.account_synchronization = AccountSynchronization.Create(d.account_synchronization, field + \".account_synchronization\");\n" +
-"        checkNull$1(d.dump, field + \".dump\");\n" +
-"        const knownProperties = [\"id\", \"type\", \"account_id\", \"company_id\", \"dump_id\", \"group_uuid\", \"date\", \"label\", \"amount\", \"fee\", \"currency\", \"source\", \"currency_amount\", \"currency_fee\", \"archived_at\", \"updated_at\", \"is_waiting_details\", \"validation_needed\", \"is_potential_duplicate\", \"attachment_lost\", \"attachment_required\", \"pending\", \"status\", \"gross_amount\", \"reconciliation_id\", \"files_count\", \"source_logo\", \"account_synchronization\", \"dump\"];\n" +
-"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
-"        if (unknownProperty)\n" +
-"            errorHelper$1(unknownProperty, d, \"never\", false);\n" +
-"        return new TransactionsEntity(d);\n" +
-"    }\n" +
-"    constructor(d) {\n" +
-"        this.id = d.id;\n" +
-"        this.type = d.type;\n" +
-"        this.account_id = d.account_id;\n" +
-"        this.company_id = d.company_id;\n" +
-"        if (\"dump_id\" in d)\n" +
-"            this.dump_id = d.dump_id;\n" +
-"        this.group_uuid = d.group_uuid;\n" +
-"        this.date = d.date;\n" +
-"        this.label = d.label;\n" +
-"        this.amount = d.amount;\n" +
-"        this.fee = d.fee;\n" +
-"        this.currency = d.currency;\n" +
-"        this.source = d.source;\n" +
-"        this.currency_amount = d.currency_amount;\n" +
-"        this.currency_fee = d.currency_fee;\n" +
-"        if (\"archived_at\" in d)\n" +
-"            this.archived_at = d.archived_at;\n" +
-"        this.updated_at = d.updated_at;\n" +
-"        this.is_waiting_details = d.is_waiting_details;\n" +
-"        this.validation_needed = d.validation_needed;\n" +
-"        this.is_potential_duplicate = d.is_potential_duplicate;\n" +
-"        this.attachment_lost = d.attachment_lost;\n" +
-"        this.attachment_required = d.attachment_required;\n" +
-"        this.pending = d.pending;\n" +
-"        this.status = d.status;\n" +
-"        this.gross_amount = d.gross_amount;\n" +
-"        if (\"reconciliation_id\" in d)\n" +
-"            this.reconciliation_id = d.reconciliation_id;\n" +
-"        this.files_count = d.files_count;\n" +
-"        this.source_logo = d.source_logo;\n" +
-"        this.account_synchronization = d.account_synchronization;\n" +
-"        if (\"dump\" in d)\n" +
-"            this.dump = d.dump;\n" +
-"    }\n" +
-"}\n" +
-"class AccountSynchronization {\n" +
-"    static Parse(d) {\n" +
-"        return AccountSynchronization.Create(JSON.parse(d));\n" +
-"    }\n" +
-"    static Create(d, field) {\n" +
-"        if (!field) {\n" +
-"            obj$1 = d;\n" +
-"            field = \"root\";\n" +
-"        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            throwNull2NonNull(field, d);\n" +
-"        }\n" +
-"        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject(field, d, false);\n" +
-"        }\n" +
-"        else if (Array.isArray(d)) {\n" +
-"            throwIsArray(field, d, false);\n" +
-"        }\n" +
-"        checkString(d.created_at, false, field + \".created_at\");\n" +
-"        checkBoolean(d.triggered_manually, false, field + \".triggered_manually\");\n" +
-"        checkNull$1(d.error_message, field + \".error_message\");\n" +
-"        const knownProperties = [\"created_at\", \"triggered_manually\", \"error_message\"];\n" +
-"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
-"        if (unknownProperty)\n" +
-"            errorHelper$1(unknownProperty, d, \"never\", false);\n" +
-"        return new AccountSynchronization(d);\n" +
-"    }\n" +
-"    constructor(d) {\n" +
-"        this.created_at = d.created_at;\n" +
-"        this.triggered_manually = d.triggered_manually;\n" +
-"        if (\"error_message\" in d)\n" +
-"            this.error_message = d.error_message;\n" +
-"    }\n" +
-"}\n" +
-"class Pagination {\n" +
-"    static Parse(d) {\n" +
-"        return Pagination.Create(JSON.parse(d));\n" +
-"    }\n" +
-"    static Create(d, field) {\n" +
-"        if (!field) {\n" +
-"            obj$1 = d;\n" +
-"            field = \"root\";\n" +
-"        }\n" +
-"        if (d === null || d === undefined) {\n" +
-"            throwNull2NonNull(field, d);\n" +
-"        }\n" +
-"        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject(field, d, false);\n" +
-"        }\n" +
-"        else if (Array.isArray(d)) {\n" +
-"            throwIsArray(field, d, false);\n" +
-"        }\n" +
-"        checkNumber(d.page, false, field + \".page\");\n" +
-"        checkNumber(d.pageSize, false, field + \".pageSize\");\n" +
-"        checkNumber(d.pages, false, field + \".pages\");\n" +
-"        checkNumber(d.totalEntries, false, field + \".totalEntries\");\n" +
-"        checkString(d.totalEntriesStr, false, field + \".totalEntriesStr\");\n" +
-"        checkString(d.totalEntriesPrecision, false, field + \".totalEntriesPrecision\");\n" +
-"        checkBoolean(d.hasNextPage, false, field + \".hasNextPage\");\n" +
-"        const knownProperties = [\"page\", \"pageSize\", \"pages\", \"totalEntries\", \"totalEntriesStr\", \"totalEntriesPrecision\", \"hasNextPage\"];\n" +
-"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
-"        if (unknownProperty)\n" +
-"            errorHelper$1(unknownProperty, d, \"never\", false);\n" +
-"        return new Pagination(d);\n" +
-"    }\n" +
-"    constructor(d) {\n" +
-"        this.page = d.page;\n" +
-"        this.pageSize = d.pageSize;\n" +
-"        this.pages = d.pages;\n" +
-"        this.totalEntries = d.totalEntries;\n" +
-"        this.totalEntriesStr = d.totalEntriesStr;\n" +
-"        this.totalEntriesPrecision = d.totalEntriesPrecision;\n" +
-"        this.hasNextPage = d.hasNextPage;\n" +
-"    }\n" +
-"}\n" +
-"function throwNull2NonNull(field, d) {\n" +
-"    return errorHelper$1(field, d, \"non-nullable object\", false);\n" +
-"}\n" +
-"function throwNotObject(field, d, nullable) {\n" +
-"    return errorHelper$1(field, d, \"object\", nullable);\n" +
-"}\n" +
-"function throwIsArray(field, d, nullable) {\n" +
-"    return errorHelper$1(field, d, \"object\", nullable);\n" +
-"}\n" +
-"function checkArray(d, field) {\n" +
-"    if (!Array.isArray(d) && d !== null && d !== undefined) {\n" +
-"        errorHelper$1(field, d, \"array\", true);\n" +
-"    }\n" +
-"}\n" +
-"function checkNumber(d, nullable, field) {\n" +
-"    if (typeof (d) !== 'number' && (true)) {\n" +
-"        errorHelper$1(field, d, \"number\", nullable);\n" +
-"    }\n" +
-"}\n" +
-"function checkBoolean(d, nullable, field) {\n" +
-"    if (typeof (d) !== 'boolean' && (true)) {\n" +
-"        errorHelper$1(field, d, \"boolean\", nullable);\n" +
-"    }\n" +
-"}\n" +
-"function checkString(d, nullable, field) {\n" +
-"    if (typeof (d) !== 'string' && (true)) {\n" +
-"        errorHelper$1(field, d, \"string\", nullable);\n" +
-"    }\n" +
-"}\n" +
-"function checkNull$1(d, field) {\n" +
-"    if (d !== null && d !== undefined) {\n" +
-"        errorHelper$1(field, d, \"null or undefined\", false);\n" +
-"    }\n" +
-"}\n" +
-"function errorHelper$1(field, d, type, nullable) {\n" +
-"    if (nullable) {\n" +
-"        type += \", null, or undefined\";\n" +
-"    }\n" +
-"    prompt(proxyName$1 + ':', JSON.stringify(obj$1));\n" +
-"    throw new TypeError('Expected ' + type + \" at \" + field + \" but found:\\n" +
-"\" + JSON.stringify(d) + \"\\n" +
-"\\n" +
-"Full object:\\n" +
-"\" + JSON.stringify(obj$1));\n" +
-"}\n" +
-"\n" +
-"// Stores the currently-being-typechecked object for error messages.\n" +
-"const proxyName = 'APITransaction';\n" +
-"let obj = null;\n" +
 "class APITransaction {\n" +
 "    static Parse(s) {\n" +
 "        return APITransaction.Create(JSON.parse(s));\n" +
 "    }\n" +
 "    static Create(s, fieldName) {\n" +
 "        if (!fieldName) {\n" +
-"            obj = s;\n" +
+"            obj$1 = s;\n" +
 "            fieldName = \"root\";\n" +
 "        }\n" +
-"        checkNull(s, fieldName);\n" +
-"        return s;\n" +
+"        checkNever(s, fieldName);\n" +
 "    }\n" +
 "}\n" +
-"function checkNull(d, field) {\n" +
-"    if (d !== null && d !== undefined) {\n" +
-"        errorHelper(field, d, \"null or undefined\");\n" +
-"    }\n" +
+"function checkNever(value, field, multiple) {\n" +
+"    return errorHelper$1(field, value, \"never\");\n" +
 "}\n" +
-"function errorHelper(field, d, type, nullable) {\n" +
-"    prompt(proxyName + ':', JSON.stringify(obj));\n" +
+"function errorHelper$1(field, d, type) {\n" +
+"    if (!type.includes(' | ')) {\n" +
+"        let jsonClone = obj$1;\n" +
+"        try {\n" +
+"            jsonClone = JSON.parse(JSON.stringify(obj$1));\n" +
+"        }\n" +
+"        catch (error) {\n" +
+"            console.log(error);\n" +
+"        }\n" +
+"        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
+"\" + JSON.stringify(d), jsonClone);\n" +
+"        prompt(proxyName$1 + ':', JSON.stringify(obj$1));\n" +
+"    }\n" +
 "    throw new TypeError('Expected ' + type + \" at \" + field + \" but found:\\n" +
 "\" + JSON.stringify(d) + \"\\n" +
 "\\n" +
 "Full object:\\n" +
-"\" + JSON.stringify(obj));\n" +
+"\" + JSON.stringify(obj$1));\n" +
 "}\n" +
 "\n" +
 "async function getLedgerEvents(id) {\n" +
@@ -5045,8 +7053,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const valid = await this.isValid();\n" +
 "        const message = await this.getValidMessage();\n" +
 "        const doc = await this.getDocument();\n" +
-"        const createdAt = new Date(doc.created_at).getTime();\n" +
-"        const date = new Date(doc.date).getTime();\n" +
+"        const createdAt = doc && new Date(doc.created_at).getTime();\n" +
+"        const date = doc && new Date(doc.date).getTime();\n" +
 "        return { id, valid, message, createdAt, date };\n" +
 "    }\n" +
 "    async reloadLedgerEvents() {\n" +
@@ -5429,7 +7437,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        return this._message;\n" +
 "    }\n" +
 "    async loadMessage() {\n" +
-"        this.debug('loadMessage', this);\n" +
+"        this.log('loadMessage', this);\n" +
 "        this.message = '⟳';\n" +
 "        const rawTransaction = getReactProps($('.paragraph-body-m+.heading-page.mt-1'), 9).transaction;\n" +
 "        this.state.transaction = new Transaction(rawTransaction);\n" +
@@ -5540,6 +7548,71 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "}\n" +
 "\n" +
+"// Stores the currently-being-typechecked object for error messages.\n" +
+"const proxyName = 'APIInvoiceToDMS';\n" +
+"let obj = null;\n" +
+"class APIInvoiceToDMS {\n" +
+"    static Parse(d) {\n" +
+"        return APIInvoiceToDMS.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray(field, d);\n" +
+"        }\n" +
+"        checkNull(d.response, field + \".response\");\n" +
+"        const knownProperties = [\"response\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new APIInvoiceToDMS(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.response = d.response;\n" +
+"    }\n" +
+"}\n" +
+"function throwNull2NonNull(field, value, multiple) {\n" +
+"    return errorHelper(field, value, multiple ?? \"non-nullable object\");\n" +
+"}\n" +
+"function throwNotObject(field, value, multiple) {\n" +
+"    return errorHelper(field, value, \"object\");\n" +
+"}\n" +
+"function throwIsArray(field, value, multiple) {\n" +
+"    return errorHelper(field, value, \"object\");\n" +
+"}\n" +
+"function checkNull(value, field, multiple) {\n" +
+"    if (value !== null)\n" +
+"        errorHelper(field, value, \"null\");\n" +
+"}\n" +
+"function errorHelper(field, d, type) {\n" +
+"    if (!type.includes(' | ')) {\n" +
+"        let jsonClone = obj;\n" +
+"        try {\n" +
+"            jsonClone = JSON.parse(JSON.stringify(obj));\n" +
+"        }\n" +
+"        catch (error) {\n" +
+"            console.log(error);\n" +
+"        }\n" +
+"        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
+"\" + JSON.stringify(d), jsonClone);\n" +
+"        prompt(proxyName + ':', JSON.stringify(obj));\n" +
+"    }\n" +
+"    throw new TypeError('Expected ' + type + \" at \" + field + \" but found:\\n" +
+"\" + JSON.stringify(d) + \"\\n" +
+"\\n" +
+"Full object:\\n" +
+"\" + JSON.stringify(obj));\n" +
+"}\n" +
+"\n" +
 "async function getInvoice(id) {\n" +
 "    if (!id)\n" +
 "        throw new Error(`Error: getInvoice() invalid id: ${id}`);\n" +
@@ -5591,6 +7664,14 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            yield invoice;\n" +
 "        ++page;\n" +
 "    } while (true);\n" +
+"}\n" +
+"/**\n" +
+" * Move invoice to DMS\n" +
+" */\n" +
+"async function moveToDms(id, destId) {\n" +
+"    const url = `accountants/invoices/${id}/move_to_dms?parent_id=${destId}`;\n" +
+"    const response = await apiRequest(url, null, 'PUT');\n" +
+"    return APIInvoiceToDMS.Create({ response });\n" +
 "}\n" +
 "\n" +
 "class Cache extends Logger {\n" +
@@ -5670,12 +7751,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            return this.data.filter(matchOrPredicate);\n" +
 "        return this.data.filter(item => Object.entries(matchOrPredicate).every(([key, value]) => item[key] === value));\n" +
 "    }\n" +
-"    /**\n" +
-"     * Returns the first cached element that match condition, and undefined\n" +
-"     * otherwise.\n" +
-"     */\n" +
 "    find(match) {\n" +
 "        this.load();\n" +
+"        if (typeof match === 'function')\n" +
+"            return this.data.find(match);\n" +
 "        return this.data.find(item => Object.entries(match).every(([key, value]) => item[key] === value));\n" +
 "    }\n" +
 "    /**\n" +
@@ -6127,13 +8206,19 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            yield status;\n" +
 "        }\n" +
 "        // verifier les plus anciennes entrées\n" +
-"        /**\n" +
-"         * A ce stade toutes les entrées ont été traitées, mais rien ne garantit\n" +
-"         * que les premières entrées chargées nèont pas subi de modification depuis\n" +
-"         * il faudrait avoir un champ status.updatedAt et retester toutes les entrées\n" +
-"         * pour lesquelles ce champ est vieux de plus de 3 jours, disons\n" +
-"         */\n" +
-"        this.error('TODO: vérifier les entrées qui ont été modifiée récemment');\n" +
+"        const dateRef = Date.now() - (3 * 86400000);\n" +
+"        let item = this.cache.find(cachedItem => cachedItem.fetchedAt < dateRef);\n" +
+"        while (item) {\n" +
+"            const status = await this.updateStatus(item);\n" +
+"            if (this.isSkipped(status)) {\n" +
+"                if (!status?.valid)\n" +
+"                    this.log('skip', status);\n" +
+"            }\n" +
+"            else {\n" +
+"                yield status;\n" +
+"            }\n" +
+"            item = this.cache.find(cachedItem => cachedItem.fetchedAt < dateRef);\n" +
+"        }\n" +
 "    }\n" +
 "    isSkipped(status) {\n" +
 "        if (!status)\n" +
@@ -6151,8 +8236,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "     */\n" +
 "    async updateStatus(id, value) {\n" +
 "        if ('number' !== typeof id) {\n" +
-"            value = id;\n" +
-"            id = value.id;\n" +
+"            id = id.id;\n" +
 "        }\n" +
 "        if (!value)\n" +
 "            value = await this.getStatus(id);\n" +
@@ -6212,6 +8296,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            state.loaded = false;\n" +
 "            localStorage.setItem(storageKey, JSON.stringify(state));\n" +
 "        }\n" +
+"        const dateRef = Date.now() - (3 * 86400000);\n" +
+"        let status = this.cache.find(item => item.fetchedAt < dateRef);\n" +
+"        while (status) {\n" +
+"            await this.updateStatus(status);\n" +
+"            status = this.cache.find(item => item.fetchedAt < dateRef);\n" +
+"        }\n" +
 "        if (state.loaded)\n" +
 "            return;\n" +
 "        // load all\n" +
@@ -6248,27 +8338,27 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    allowWaiting() {\n" +
 "        this.container.appendChild(parseHTML(`<button type=\"button\" class=\"${getButtonClassName()} wait-item\">\\ud83d\\udd52</button>`));\n" +
-"        const button = $(`.wait-item`, this.container);\n" +
-"        const tooltip = Tooltip.make({ target: button, text: '' });\n" +
+"        const waitButton = $(`.wait-item`, this.container);\n" +
+"        const tooltip = Tooltip.make({ target: waitButton, text: '' });\n" +
 "        const updateWaitDisplay = () => {\n" +
 "            const status = this.cache.find({ id: this.current });\n" +
 "            if (!status?.wait || (new Date(status.wait).getTime() < Date.now())) {\n" +
-"                button.style.backgroundColor = '';\n" +
+"                waitButton.style.backgroundColor = '';\n" +
 "                tooltip.setText('Ne plus afficher pendant 3 jours');\n" +
 "                return;\n" +
 "            }\n" +
-"            button.style.backgroundColor = 'var(--blue)';\n" +
+"            waitButton.style.backgroundColor = 'var(--blue)';\n" +
 "            const date = new Date(status.wait).toISOString().replace('T', ' ').slice(0, 16)\n" +
 "                .split(' ').map(block => block.split('-').reverse().join('/')).join(' ');\n" +
 "            tooltip.setText(`Ignoré jusqu'à ${date}.`);\n" +
 "        };\n" +
 "        updateWaitDisplay();\n" +
 "        setInterval(() => { updateWaitDisplay(); }, 60000);\n" +
-"        button.addEventListener('click', () => {\n" +
+"        waitButton.addEventListener('click', () => {\n" +
 "            this.log('waiting button clicked');\n" +
 "            const status = this.cache.find({ id: this.current });\n" +
 "            if (!status)\n" +
-"                return;\n" +
+"                return this.log({ cachedStatus: status, id: this.current });\n" +
 "            const wait = (status.wait && (new Date(status.wait).getTime() > Date.now())) ? ''\n" +
 "                : new Date(Date.now() + 3 * 86400000).toISOString();\n" +
 "            this.cache.updateItem({ id: this.current }, Object.assign(status, { wait }));\n" +
@@ -6304,8 +8394,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    static async load(id) {\n" +
 "        const invoice = await getInvoice(id);\n" +
 "        if (!invoice?.id) {\n" +
-"            console.log('Invoice.load: cannot load this invoice', { id, invoice, _this: this });\n" +
-"            return null;\n" +
+"            this.prototype.log('Invoice.load: cannot load this invoice', { id, invoice, _this: this });\n" +
+"            return new NotFoundInvoice({ id });\n" +
 "        }\n" +
 "        return this.from(invoice);\n" +
 "    }\n" +
@@ -6323,7 +8413,15 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        return this.invoice;\n" +
 "    }\n" +
 "}\n" +
-"Object.assign(window, { Invoice });\n" +
+"class NotFoundInvoice extends Invoice {\n" +
+"    constructor() {\n" +
+"        super(...arguments);\n" +
+"        this.direction = 'unknown';\n" +
+"    }\n" +
+"    loadValidMessage() {\n" +
+"        return Promise.resolve('Facture introuvable');\n" +
+"    }\n" +
+"}\n" +
 "class SupplierInvoice extends Invoice {\n" +
 "    constructor() {\n" +
 "        super(...arguments);\n" +
@@ -6331,18 +8429,29 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    async loadValidMessage() {\n" +
 "        const current = Number(getParam(location.href, 'id'));\n" +
-"        current === this.id;\n" +
-"        const invoice = await this.getInvoice();\n" +
-"        // Fait partie d'un exercis clôt\n" +
-"        if (invoice.has_closed_ledger_events)\n" +
-"            return 'OK';\n" +
+"        const isCurrent = current === this.id;\n" +
+"        const invoice = await this.getInvoice().catch((error) => error);\n" +
+"        if (!(invoice instanceof APIInvoice)) {\n" +
+"            this.log('loadValidMessage', invoice);\n" +
+"            alert(invoice.message);\n" +
+"            return null;\n" +
+"        }\n" +
+"        // Fait partie d'un exercice clôturé\n" +
+"        if (invoice.has_closed_ledger_events) {\n" +
+"            this.log('Fait partie d\\'un exercice clos');\n" +
+"            if (invoice.date)\n" +
+"                return 'OK';\n" +
+"        }\n" +
 "        const ledgerEvents = await this.getLedgerEvents();\n" +
-"        if (ledgerEvents.some(levent => levent.closed))\n" +
-"            return 'OK';\n" +
+"        if (ledgerEvents.some(levent => levent.closed)) {\n" +
+"            this.log(\"Est attaché à une écriture faisant partie d'un exercice clos\");\n" +
+"            if (invoice.date)\n" +
+"                return 'OK';\n" +
+"        }\n" +
 "        if (!invoice)\n" +
 "            this.log('loadValidMessage', { Invoice: this, invoice });\n" +
 "        const doc = await this.getDocument();\n" +
-"        if (invoice.id === current)\n" +
+"        if (isCurrent)\n" +
 "            this.log('loadValidMessage', this);\n" +
 "        const groupedDocuments = await this.getGroupedDocuments();\n" +
 "        // Archived\n" +
@@ -6356,7 +8465,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "          title=\"Le numéro de facture d'une facture archivée doit commencer par une de ces possibilités. Cliquer ici pour plus d'informations.\"\n" +
 "          href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Facture%20archiv%C3%A9e\"\n" +
 "        >Facture archivée sans référence ⓘ</a><ul style=\"margin:0;padding:0.8em;\">${archivedAllowed.map(it => `<li>${it}</li>`).join('')}</ul>`;\n" +
-"            if (invoice.id == current)\n" +
+"            if (isCurrent)\n" +
 "                this.log('loadValidMessage', 'archivé avec numéro de facture correct');\n" +
 "            return 'OK';\n" +
 "        }\n" +
@@ -6417,36 +8526,6 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        <li>CHQ###</li>\n" +
 "      </ul>`;\n" +
 "        }\n" +
-"        // Aides octroyées ou piece d'indentité avec date\n" +
-"        const emptyDateAllowed = ['CHQ', 'CHQ DÉCHIRÉ'];\n" +
-"        if ([\n" +
-"            106438171, // AIDES OCTROYÉES\n" +
-"            114270419,\n" +
-"            106519227,\n" +
-"        ].includes(invoice.thirdparty?.id ?? 0)\n" +
-"            || emptyDateAllowed.some(item => invoice.invoice_number?.startsWith(item))) {\n" +
-"            if (invoice.date || invoice.deadline)\n" +
-"                return `<a\n" +
-"          title=\"Cliquer ici pour plus d'informations\"\n" +
-"          href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Date%20de%20facture\"\n" +
-"        >Les dates doivent être vides ⓘ</a>`;\n" +
-"        }\n" +
-"        else if (!invoice.date) {\n" +
-"            if (!emptyDateAllowed.some(item => invoice.invoice_number?.startsWith(item))) {\n" +
-"                const archiveLabel = archivedAllowed.find(label => invoice.invoice_number.startsWith(label));\n" +
-"                if (archiveLabel) {\n" +
-"                    return `<a\n" +
-"            title=\"Archiver la facture : ⁝ > Archiver la facture.\\n" +
-"Cliquer ici pour plus d'informations\"\n" +
-"            href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Facture%20archiv%C3%A9e\"\n" +
-"          >Archiver ${archiveLabel} ⓘ</a><ul style=\"margin:0;padding:0.8em;\">`;\n" +
-"                }\n" +
-"                return `<a\n" +
-"          title=\"Cliquer ici pour plus d'informations\"\n" +
-"          href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Date%20de%20facture\"\n" +
-"        >Date de facture vide ⓘ</a><ul style=\"margin:0;padding:0.8em;\">${emptyDateAllowed.map(it => `<li>${it}</li>`).join('')}</ul>`;\n" +
-"            }\n" +
-"        }\n" +
 "        // Aides octroyées avec mauvais ID\n" +
 "        if (invoice.thirdparty?.name === \"AIDES OCTROYÉES\" && invoice.thirdparty.id !== 106438171)\n" +
 "            return 'Il ne doit y avoir qu\\'un seul compte \"AIDES OCTROYÉES\", et ce n\\'est pas le bon...';\n" +
@@ -6470,14 +8549,14 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "        }\n" +
 "        // Stripe fees invoice\n" +
-"        if (invoice.thirdparty?.id === 115640202)\n" +
+"        if (invoice.thirdparty?.id === 115640202) {\n" +
+"            if (isCurrent)\n" +
+"                this.log('loadValidMessage', 'facture Stripe');\n" +
 "            return 'OK';\n" +
+"        }\n" +
 "        // ID card\n" +
-"        if (invoice.thirdparty?.id === 106519227) {\n" +
-"            if (invoice.invoice_number?.startsWith('ID '))\n" +
-"                return 'OK';\n" +
-"            else\n" +
-"                return 'Le \"Numéro de facture\" des pièces d\\'identité commence obligatoirement par \"ID \"';\n" +
+"        if (invoice.thirdparty?.id === 106519227 && !invoice.invoice_number?.startsWith('ID ')) {\n" +
+"            return 'Le \"Numéro de facture\" des pièces d\\'identité commence obligatoirement par \"ID \"';\n" +
 "        }\n" +
 "        // Has transaction attached\n" +
 "        const transactions = groupedDocuments.filter(doc => doc.type === 'Transaction');\n" +
@@ -6501,6 +8580,54 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "          >Pas de transaction attachée ⓘ</a><ul style=\"margin:0;padding:0.8em;\">${orphanAllowed.concat(archivedAllowed).map(it => `<li>${it}</li>`).join('')}</ul>`;\n" +
 "            }\n" +
 "        }\n" +
+"        // Justificatif ne donnant pas lieu à une écriture\n" +
+"        if (transactions.length && ([\n" +
+"            106438171, // AIDES OCTROYÉES             : talon de chèque ou reçu signé\n" +
+"            114270419, // DON VERSÉ A UNE ASSOCIATION : talon de chèque ou reçu cerfa\n" +
+"            106519227, // PIECE ID\n" +
+"        ].includes(invoice.thirdparty?.id ?? 0)\n" +
+"            || invoice.invoice_number.startsWith('CHQ') // TALON DE CHEQUE\n" +
+"        )) {\n" +
+"            if (transactions.find(transaction => transaction.date.startsWith('2023'))) {\n" +
+"                await moveToDms(this.id, 57983091 /*2023 - Compta - Fournisseurs*/);\n" +
+"                if (isCurrent)\n" +
+"                    this.log('moved to DMS', { invoice: this });\n" +
+"                return (await Invoice.load(this.id)).loadValidMessage();\n" +
+"            }\n" +
+"            if (transactions.find(transaction => transaction.date.startsWith('2024'))) {\n" +
+"                await moveToDms(this.id, 21994050 /*2024 - Compta - Fournisseurs*/);\n" +
+"                if (isCurrent)\n" +
+"                    this.log('moved to DMS', { invoice: this });\n" +
+"                return (await Invoice.load(this.id)).loadValidMessage();\n" +
+"            }\n" +
+"            if (transactions.find(transaction => transaction.date.startsWith('2025'))) {\n" +
+"                await moveToDms(this.id, 21994065 /*2025 - Compta - Fournisseurs*/);\n" +
+"                if (isCurrent)\n" +
+"                    this.log('moved to DMS', { invoice: this });\n" +
+"                return (await Invoice.load(this.id)).loadValidMessage();\n" +
+"            }\n" +
+"            return `<a\n" +
+"        title=\"Cliquer ici pour plus d'informations\"\n" +
+"        href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Envoi%20en%20GED\"\n" +
+"      >Envoyer en GED ⓘ</a>`;\n" +
+"        }\n" +
+"        // Date manquante\n" +
+"        if (!invoice.date) {\n" +
+"            const archiveLabel = archivedAllowed.find(label => invoice.invoice_number.startsWith(label));\n" +
+"            if (archiveLabel) {\n" +
+"                return `<a\n" +
+"          title=\"Archiver la facture : ⁝ > Archiver la facture.\\n" +
+"Cliquer ici pour plus d'informations\"\n" +
+"          href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Facture%20archiv%C3%A9e\"\n" +
+"        >Archiver ${archiveLabel} ⓘ</a><ul style=\"margin:0;padding:0.8em;\">`;\n" +
+"            }\n" +
+"            return `<a\n" +
+"        title=\"Cliquer ici pour plus d'informations\"\n" +
+"        href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Date%20de%20facture\"\n" +
+"      >Date de facture vide ⓘ</a>`;\n" +
+"        }\n" +
+"        if (isCurrent)\n" +
+"            this.log('loadValidMessage', 'fin des contrôles');\n" +
 "        return 'OK';\n" +
 "    }\n" +
 "}\n" +
@@ -6570,13 +8697,11 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "          title=\"Si la transaction est introuvable, mettre un des textes proposés au début du numéro de facture. Cliquer ici pour plus d'informations.\"\n" +
 "          href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Pas%20de%20transaction%20attach%C3%A9e\"\n" +
 "        >Pas de transaction attachée ⓘ</a><ul style=\"margin:0;padding:0.8em;\">${groupedOptional.map(it => `<li>${it}</li>`).join('')}</ul>`;\n" +
-"        // Les dates doivent toujours être vides\n" +
-"        if (invoice.date || invoice.deadline)\n" +
-"            return `<a\n" +
-"      title=\"Les dates des pièces orientées client doivent toujours être vides. Cliquer ici pour plus d'informations\"\n" +
-"      href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Facture%20client\"\n" +
-"    >Les dates doivent être vides ⓘ</a>`;\n" +
-"        return 'OK';\n" +
+"        // Une fois la transaction trouvée, envoyer en GED\n" +
+"        return `<a\n" +
+"      title=\"Cliquer ici pour plus d'informations\"\n" +
+"      href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Envoi%20en%20GED\"\n" +
+"    >Envoyer en GED ⓘ</a>`;\n" +
 "    }\n" +
 "}\n" +
 "\n" +
@@ -6637,9 +8762,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    async getStatus(id) {\n" +
 "        const invoice = await Invoice.load(id);\n" +
-"        if (!invoice)\n" +
+"        if (!invoice || invoice instanceof NotFoundInvoice)\n" +
 "            return null; // probablement une facture supprimée\n" +
-"        return await invoice.getStatus();\n" +
+"        const status = await invoice.getStatus();\n" +
+"        if (status.message === 'Facture introuvable')\n" +
+"            return null;\n" +
+"        return status;\n" +
 "    }\n" +
 "    /** Add \"next invalid invoice\" button on invoices list */\n" +
 "    async appendContainer() {\n" +
@@ -6667,12 +8795,31 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    async init() {\n" +
 "        await waitPage('invoiceDetail');\n" +
+"        this.tooltipThirdpartyId();\n" +
 "        this.cache = CacheStatus.getInstance(this.storageKey);\n" +
 "        this.cache.on('change', () => this.handleCacheChange());\n" +
 "        this.watchReloadHotkey();\n" +
 "        this.watchEventSave();\n" +
 "        await this.appendContainer();\n" +
 "        setInterval(() => { this.watch(); }, 200);\n" +
+"    }\n" +
+"    async tooltipThirdpartyId() {\n" +
+"        const target = await waitElem('div[data-testid=\"thirdpartyAutocompleteAsyncSelect\"]');\n" +
+"        let invoice = await waitFunc(() => this.state.invoice?.getInvoice() ?? false);\n" +
+"        const tooltip = Tooltip.make({ target, text: `#${invoice.thirdparty_id}` });\n" +
+"        do {\n" +
+"            await waitFunc(() => {\n" +
+"                return $('div[data-testid=\"thirdpartyAutocompleteAsyncSelect\"]') !== target ||\n" +
+"                    this.state.invoice?.id !== invoice.id;\n" +
+"            });\n" +
+"            if (this.state.invoice?.id !== invoice.id) {\n" +
+"                invoice = await waitFunc(() => this.state.invoice?.getInvoice() ?? false);\n" +
+"                tooltip.setText(`#${invoice.thirdparty_id}`);\n" +
+"            }\n" +
+"            else\n" +
+"                break;\n" +
+"        } while (true);\n" +
+"        this.tooltipThirdpartyId();\n" +
 "    }\n" +
 "    set message(text) {\n" +
 "        this.emit('message-change', text);\n" +
@@ -6682,8 +8829,9 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    watchReloadHotkey() {\n" +
 "        document.addEventListener('keydown', event => {\n" +
-"            if (isPage('invoiceDetail') && event.ctrlKey && event.code === 'KeyR') {\n" +
-"                event.preventDefault();\n" +
+"            if (isPage('invoiceDetail') && event.ctrlKey && ['KeyS', 'KeyR'].includes(event.code)) {\n" +
+"                if (event.code === 'KeyR')\n" +
+"                    event.preventDefault();\n" +
 "                this.reload();\n" +
 "                this.debug('reloading from watchReloadHotkey');\n" +
 "            }\n" +
@@ -6802,8 +8950,16 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        const buttonClass = buttonsBlock.querySelector('button')?.className ?? '';\n" +
 "        const id = getReactProps(buttonsBlock, 4).invoiceId;\n" +
-"        buttonsBlock.insertBefore(parseHTML(`<button class=\"archive-button ${buttonClass}\">&nbsp;x&nbsp;</button>`), buttonsBlock.firstElementChild);\n" +
+"        buttonsBlock.insertBefore(parseHTML(`\n" +
+"        ` /*<button\n" +
+"          class=\"dms-button noCaret ui-button ui-button-sm ui-button-secondary ui-button-secondary-primary ui-button-sm-icon-only\" aria-haspopup=\"true\" aria-expanded=\"false\" type=\"button\">\n" +
+"          <svg class=\"MuiSvgIcon-root MuiSvgIcon-fontSizeMedium mr-0 css-q7mezt\" focusable=\"false\" aria-hidden=\"true\" viewBox=\"0 0 24 24\" data-testid=\"DriveFileMoveRoundedIcon\" style=\"font-size: 1rem;\"><path d=\"M20 6h-8l-1.41-1.41C10.21 4.21 9.7 4 9.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2m-8 9.79V14H9c-.55 0-1-.45-1-1s.45-1 1-1h3v-1.79c0-.45.54-.67.85-.35l2.79 2.79c.2.2.2.51 0 .71l-2.79 2.79c-.31.31-.85.09-.85-.36\"></path></svg>\n" +
+"        </button>*/\n" +
+"            + `\n" +
+"        <button class=\"archive-button ${buttonClass}\">&nbsp;x&nbsp;</button>\n" +
+"      `), buttonsBlock.firstElementChild);\n" +
 "        const archiveButton = buttonsBlock.querySelector('.archive-button');\n" +
+"        Tooltip.make({ target: archiveButton, text: 'Archiver ce justificatif' });\n" +
 "        archiveButton.addEventListener('click', async () => {\n" +
 "            archiveButton.disabled = true;\n" +
 "            archiveButton.classList.add('disabled');\n" +
@@ -6825,6 +8981,24 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            this.log(`archive invoice #${id}`, { invoice });\n" +
 "            ValidMessage.getInstance().reload();\n" +
 "        });\n" +
+"        /*\n" +
+"        const dmsButton = buttonsBlock.querySelector<HTMLButtonElement>('.dms-button');\n" +
+"        dmsButton!.addEventListener('click', async () => {\n" +
+"          dmsButton.disabled = true;\n" +
+"          dmsButton.classList.add('disabled');\n" +
+"          dmsButton.innerText = '⟳';\n" +
+"          const invoice = await Invoice.load(id);\n" +
+"          if (!invoice) {\n" +
+"            alert('Impossible de trouver la facture #'+id);\n" +
+"            dmsButton.innerText = '⚠';\n" +
+"            return;\n" +
+"          }\n" +
+"          await moveToDms(\n" +
+"            invoice.id,\n" +
+"            84899227 // 2024/justificatifs Achats\n" +
+"          );\n" +
+"        });\n" +
+"        */\n" +
 "        upElement(buttonsBlock, 3).querySelector('.flex-grow-1 .d-block:last-child')?.appendChild(parseHTML(`&nbsp;<span class=\"invoice-id d-inline-block bg-secondary-100 dihsuQ px-0_5\">#${id}</span>`));\n" +
 "    }\n" +
 "}\n" +
@@ -6920,6 +9094,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (findElem('button', 'Client'))\n" +
 "            return [\n" +
 "                '.input-group-prepend+.input-group-append input',\n" +
+"                'div[data-testid=\"thirdpartyAutocompleteAsyncSelect\"] input',\n" +
 "                'input[name=\"invoice_number\"]',\n" +
 "                'input[name=\"currency_amount\"]',\n" +
 "                'input[placeholder=\"Rechercher\"]',\n" +
@@ -6962,7 +9137,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            event.stopImmediatePropagation();\n" +
 "            const rawInvoice = getReactProps(invoiceNumberField, 25).initialValues ?? // for customer pieces\n" +
 "                getReactProps(invoiceNumberField, 27).initialValues ?? // for supplier pieces\n" +
-"                getReactProps(invoiceNumberField, 44).initialValues; // for customer pieces\n" +
+"                getReactProps(invoiceNumberField, 44).initialValues ?? // for customer pieces\n" +
+"                getReactProps(invoiceNumberField, 23).initialValues; // for customer pieces\n" +
 "            if (!rawInvoice.archived) {\n" +
 "                this.debug('Invoice is not archived');\n" +
 "                return;\n" +
@@ -6986,13 +9162,13 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        this.debug('handleKeydown', event);\n" +
 "        if (event.altKey) {\n" +
 "            switch (event.code) {\n" +
-"                case 'KeyE': return this.filterClick('Montant', event);\n" +
+"                case 'KeyE': return this.filterClick('button.ui-filters-button--size-sm.ui-filters-button:nth-of-type(3)', event);\n" +
 "                case 'KeyD': return this.filterClick('Date', event);\n" +
 "            }\n" +
 "        }\n" +
 "        if (event.ctrlKey) {\n" +
 "            switch (event.code) {\n" +
-"                case 'KeyS': return this.saveLedgerEvents();\n" +
+"                case 'KeyS': return this.save();\n" +
 "            }\n" +
 "        }\n" +
 "        else\n" +
@@ -7002,20 +9178,20 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    return this.manageEnter(event);\n" +
 "            }\n" +
 "    }\n" +
-"    async filterClick(label, event) {\n" +
+"    async filterClick(selector, event) {\n" +
 "        event.preventDefault();\n" +
-"        const filterButton = $$('div.dropdown button')\n" +
-"            .find(button => getReactProps(button, 1).label === label);\n" +
+"        const filterButton = $(selector);\n" +
 "        if (!filterButton)\n" +
-"            this.log(`bouton \"${label}\" introuvable`);\n" +
+"            this.log(`bouton \"${selector}\" introuvable`);\n" +
 "        if (event.shiftKey) {\n" +
 "            $('div[aria-label=Effacer]', filterButton)?.click();\n" +
 "            return;\n" +
 "        }\n" +
 "        filterButton?.click();\n" +
-"        const inputField = await waitElem(`input[aria-label=${label}]`, '', 2000);\n" +
+"        const inputContainerId = filterButton.getAttribute('aria-controls');\n" +
+"        const inputField = await waitElem(`div[id=\"${inputContainerId}\"] input`, '', 2000);\n" +
 "        if (!inputField)\n" +
-"            this.log(`champ \"input[aria-label=${label}]\" introuvable`);\n" +
+"            this.log(`champ \"div[id=\"${inputContainerId}\"] input\" introuvable`);\n" +
 "        inputField?.focus();\n" +
 "    }\n" +
 "    async manageEnter(event) {\n" +
@@ -7030,9 +9206,17 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            return $('button[data-tracking-action=\"Transactions Page - Date Filter click\"]')?.click();\n" +
 "        }\n" +
 "    }\n" +
+"    save() {\n" +
+"        this.saveLedgerEvents();\n" +
+"        this.confirmRules();\n" +
+"    }\n" +
 "    saveLedgerEvents() {\n" +
 "        this.log('saveLedgerEvents()');\n" +
 "        findElem('button', 'Enregistrer')?.click();\n" +
+"    }\n" +
+"    confirmRules() {\n" +
+"        this.log('confirmRules()');\n" +
+"        findElem('button', 'Confirmer')?.click();\n" +
 "    }\n" +
 "}\n" +
 "\n" +
@@ -7081,6 +9265,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    fill(anchor) {\n" +
 "        const table = anchor.closest('table');\n" +
+"        if (!table)\n" +
+"            return;\n" +
 "        this.log(\"fill\", table);\n" +
 "        const headRow = $('thead tr', table);\n" +
 "        $('th.id-column', headRow)?.remove();\n" +
@@ -7167,19 +9353,73 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "}\n" +
 "\n" +
+"class TransactionPannelStyle extends Service {\n" +
+"    async init() {\n" +
+"        this.hideOldDateBanner();\n" +
+"    }\n" +
+"    async hideOldDateBanner() {\n" +
+"        const ref = await waitElem('span', 'Vous êtes en train de visualiser un exercice antérieur à l’exercice courant.');\n" +
+"        const banner = ref.closest('main>div>div.d-block');\n" +
+"        this.log({ ref, banner });\n" +
+"        if (banner) {\n" +
+"            banner.style.height = '0';\n" +
+"            banner.style.overflow = 'hidden';\n" +
+"            const column = $('.panel-opened>.flex-column');\n" +
+"            if (column)\n" +
+"                column.style.top = '40px';\n" +
+"        }\n" +
+"        await waitFunc(() => findElem('span', 'Vous êtes en train de visualiser un exercice antérieur à l’exercice courant.') !== ref);\n" +
+"        this.hideOldDateBanner();\n" +
+"    }\n" +
+"}\n" +
+"\n" +
+"class AutoSearchTransaction extends Service {\n" +
+"    async init() {\n" +
+"        await waitPage(\"invoiceDetail\");\n" +
+"        this.createButton();\n" +
+"        this.watch();\n" +
+"    }\n" +
+"    createButton() {\n" +
+"        this.container = parseHTML(`<button\n" +
+"      class=\"${getButtonClassName()} auto-find-transaction-button\"\n" +
+"      style=\"margin-left: 1em; padding: .2em;\"\n" +
+"    >🔍</button>`).firstElementChild;\n" +
+"        Tooltip.make({ target: this.container, text: 'Chercher une transaction de ce montant' });\n" +
+"        this.container.addEventListener('click', event => {\n" +
+"            const amountInput = findElem('input[name=\"currency_amount\"]');\n" +
+"            const urlRoot = location.href.split('/').slice(0, 6).join('/');\n" +
+"            const url = `${urlRoot}/transactions?filter=${JSON.stringify([{\n" +
+"                    field: \"amount\",\n" +
+"                    operator: \"abs_eq\",\n" +
+"                    value: parseFloat(amountInput.value.replace(',', '.').replace(/ /gu, '')),\n" +
+"                }])}&per_page=300&sort=-date&sidepanel_tab=reconciliation`;\n" +
+"            openInTab(url);\n" +
+"        });\n" +
+"    }\n" +
+"    async watch() {\n" +
+"        const refEl = await waitPage(\"invoiceDetail\");\n" +
+"        const amountInput = findElem('input[name=\"currency_amount\"]');\n" +
+"        amountInput.closest('.form-group').querySelector('label').appendChild(this.container);\n" +
+"        await waitFunc(async () => await waitPage('invoiceDetail') !== refEl);\n" +
+"        this.init();\n" +
+"    }\n" +
+"}\n" +
+"\n" +
 "last7DaysFilter();\n" +
-"ValidMessage.start();\n" +
-"TransactionAddByIdButton.start();\n" +
+"AddInvoiceIdColumn.start();\n" +
+"AllowChangeArchivedInvoiceNumber.start();\n" +
+"ArchiveGroupedDocument.start();\n" +
+"AutoSearchTransaction.start();\n" +
+"EntryBlocInfos.start();\n" +
+"FixTab.start();\n" +
+"InvoiceDisplayInfos.start();\n" +
 "NextInvalidInvoice.start();\n" +
 "NextInvalidTransaction.start();\n" +
-"InvoiceDisplayInfos.start();\n" +
-"ArchiveGroupedDocument.start();\n" +
-"FixTab.start();\n" +
-"AllowChangeArchivedInvoiceNumber.start();\n" +
-"TransactionPanelHotkeys.start();\n" +
-"EntryBlocInfos.start();\n" +
-"AddInvoiceIdColumn.start();\n" +
 "RotateImg.start();\n" +
+"TransactionAddByIdButton.start();\n" +
+"TransactionPanelHotkeys.start();\n" +
+"TransactionPannelStyle.start();\n" +
+"ValidMessage.start();\n" +
 "/*\n" +
 "async function mergeInvoices () {\n" +
 "  const button = Array.from(document.getElementsByTagName('button'))\n" +
@@ -7195,7 +9435,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "}\n" +
 "*/\n" +
 "const augmentation = {\n" +
-"    GM_Pennylane_Version: /** version **/ '0.1.17',\n" +
+"    GM_Pennylane_Version: /** version **/ '0.1.25',\n" +
 "    GM: {\n" +
 "        API: {\n" +
 "            getDocument,\n" +
@@ -7209,17 +9449,27 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        $$,\n" +
 "        $,\n" +
 "        findElem,\n" +
+"        findReactProp,\n" +
 "        getReact,\n" +
 "        getReactProps,\n" +
 "        Invoice,\n" +
 "        parseHTML,\n" +
 "        Transaction,\n" +
+"        waitElem: findElem,\n" +
+"        getButtonClassName,\n" +
 "    },\n" +
 "};\n" +
 "Object.assign(window, augmentation);\n" +
 "" + '})();';
 try {
-    unsafeWindow.eval(code);
+    // inject eval.ts
+    const blob = new Blob([code], { type: 'application/javascript' });
+    const url = URL.createObjectURL(blob);
+    const script = document.createElement('script');
+    script.src = url;
+    script.onload = () => { URL.revokeObjectURL(url); };
+    unsafeWindow.document.body.appendChild(script);
+    // start services
     openTabService();
     console.log('GM SUCCESS');
 }

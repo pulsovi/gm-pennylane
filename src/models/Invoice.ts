@@ -237,13 +237,11 @@ class SupplierInvoice extends Invoice {
       if (transactions.find(transaction => transaction.date.startsWith('2024'))) {
         await moveToDms(this.id, 21994050 /*2024 - Compta - Fournisseurs*/);
         if (isCurrent) this.log('moved to DMS', {invoice: this});
-        await sleep(3000);
         return (await Invoice.load(this.id)).loadValidMessage();
       }
       if (transactions.find(transaction => transaction.date.startsWith('2025'))) {
         await moveToDms(this.id, 21994065 /*2025 - Compta - Fournisseurs*/);
         if (isCurrent) this.log('moved to DMS', {invoice: this});
-        await sleep(3000);
         return (await Invoice.load(this.id)).loadValidMessage();
       }
       return `<a
