@@ -38,8 +38,8 @@ export default abstract class ValidableDocument extends Document {
     const valid = await this.isValid();
     const message = await this.getValidMessage();
     const doc = await this.getDocument();
-    const createdAt = new Date(doc.created_at).getTime();
-    const date = new Date(doc.date).getTime();
+    const createdAt = doc && new Date(doc.created_at).getTime();
+    const date = doc && new Date(doc.date).getTime();
     return { id, valid, message, createdAt, date };
   }
 

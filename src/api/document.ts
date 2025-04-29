@@ -3,6 +3,7 @@ import {APIDocument} from './Document/index.js';
 
 export async function getDocument (id): Promise<APIDocument> {
   const response = await apiRequest(`documents/${id}`, null, 'GET');
+  if (!response) return null;
   const data = await response?.json();
   return APIDocument.Create(data);
 }
