@@ -44,9 +44,9 @@ export default class InvoiceDisplayInfos extends Service {
     do {
       await waitFunc(() => {
         return $('div[data-testid="thirdpartyAutocompleteAsyncSelect"]') !== target ||
-        this.state.invoice.id !== invoice.id
+        this.state.invoice?.id !== invoice.id
       });
-      if (this.state.invoice.id !== invoice.id) {
+      if (this.state.invoice?.id !== invoice.id) {
         invoice = await waitFunc(() => this.state.invoice?.getInvoice() ?? false);
         tooltip.setText(`#${invoice.thirdparty_id}`);
       } else break;
@@ -64,8 +64,8 @@ export default class InvoiceDisplayInfos extends Service {
 
   watchReloadHotkey () {
     document.addEventListener('keydown', event => {
-      if (isPage('invoiceDetail') && event.ctrlKey && event.code === 'KeyR') {
-        event.preventDefault();
+      if (isPage('invoiceDetail') && event.ctrlKey && ['KeyS', 'KeyR'].includes(event.code)) {
+        if (event.code === 'KeyR') event.preventDefault();
         this.reload();
         this.debug('reloading from watchReloadHotkey');
       } else {
