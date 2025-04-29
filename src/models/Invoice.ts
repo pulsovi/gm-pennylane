@@ -16,8 +16,8 @@ export default abstract class Invoice extends ValidableDocument {
   static async load(id: number) {
     const invoice = await getInvoice(id);
     if (!invoice?.id) {
-      console.log('Invoice.load: cannot load this invoice', { id, invoice, _this: this });
-      return null;
+      this.prototype.log('Invoice.load: cannot load this invoice', { id, invoice, _this: this });
+      return new NotFoundInvoice({id});
     }
     return this.from(invoice);
   }
@@ -36,7 +36,14 @@ export default abstract class Invoice extends ValidableDocument {
     return this.invoice;
   }
 }
-Object.assign(window, { Invoice });
+
+export class NotFoundInvoice extends Invoice {
+  public readonly direction = 'unknown';
+
+  loadValidMessage() {
+      return Promise.resolve('Facture introuvable');
+  }
+}
 
 class SupplierInvoice extends Invoice {
   public readonly direction = 'supplier';

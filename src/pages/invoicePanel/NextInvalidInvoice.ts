@@ -4,7 +4,7 @@ import { APIInvoiceListParams } from '../../api/types.js';
 import CacheListRecord from '../../framework/CacheListRecord.js';
 import type { Status } from '../../framework/CacheStatus.js';
 import OpenNextInvalid from '../../framework/OpenNextInvalid.js';
-import Invoice from '../../models/Invoice.js';
+import Invoice, { NotFoundInvoice } from '../../models/Invoice.js';
 import { isPage, waitPage } from '../../navigation/waitPage.js';
 
 interface InvoiceStatus extends Status {
@@ -59,9 +59,12 @@ export default class NextInvalidInvoice extends OpenNextInvalid {
   async getStatus (id: number): Promise<Status|null> {
     const invoice = await Invoice.load(id);
 
-    if (!invoice) return null; // probablement une facture supprimée
+    if (!invoice || invoice instanceof NotFoundInvoice) return null; // probablement une facture supprimée
 
-    return await invoice.getStatus();
+    const status = await invoice.getStatus();
+    if (status.message === 'Facture introuvable') return null;
+
+    return status;
   }
 
   /** Add "next invalid invoice" button on invoices list */
