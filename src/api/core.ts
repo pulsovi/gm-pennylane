@@ -27,12 +27,14 @@ export async function apiRequest (endpoint: string, data: Record<string, unknown
     return apiRequest(endpoint, data, method);
   }
 
-  if (
-    response.status === 429
-    && await response.clone().text() === "You made too many requests. Time to take a break?"
-  ) {
-    apiRequestWait = sleep(1000).then(() => { apiRequestWait = null; });
-    return apiRequest(endpoint, data, method);
+  if (response.status === 204) {
+    console.log('API Request: pas de contenu', { endpoint, data, method });
+    return null;
+  }
+
+  if (response.status === 404) {
+    console.log('API Request: page introuvable', { endpoint, data, method });
+    return null;
   }
 
   if (response.status === 422) {
@@ -43,14 +45,17 @@ export async function apiRequest (endpoint: string, data: Record<string, unknown
     }
   }
 
-  if (response.status === 404) {
-    console.log('API Request: page introuvable', { endpoint, data, method });
-    return null;
+  if (
+    response.status === 429
+    && await response.clone().text() === "You made too many requests. Time to take a break?"
+  ) {
+    apiRequestWait = sleep(1000).then(() => { apiRequestWait = null; });
+    return apiRequest(endpoint, data, method);
   }
 
   if (response.status !== 200) {
     console.log('apiRequest response status is not 200', {response});
-    throw new Error('Todo : améliorer le message ci-dessus');
+    throw new Error('Todo : Créer un gestionnaire pour le code error status = '+response.status);
   }
 
   return response;
