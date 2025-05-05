@@ -6,6 +6,7 @@ import Document from './Document.js';
 import { getTransaction } from '../api/transaction.js';
 import { GroupedDocumentsEntity } from '../api/Document/index.js';
 import { getParam } from '../_/url.js';
+import { APIDMSLink } from '../api/DMS/Link.js';
 
 export default class Transaction extends ValidableDocument {
   protected _raw;
@@ -23,6 +24,10 @@ export default class Transaction extends ValidableDocument {
       this.transaction = await this._transaction;
     }
     return await this._transaction;
+  }
+
+  public async getDMSLinks(): Promise<APIDMSLink[]> {
+    return await super.getDMSLinks('Transaction');
   }
 
   protected async loadValidMessage() {
@@ -92,6 +97,7 @@ export default class Transaction extends ValidableDocument {
       return 'OK';
     }
 
+    const dmsLinks = await this.getDMSLinks();
     if (['VIR ', 'Payout: '].some(label => doc.label.startsWith(label))) {
       if ([
         ' DE: Stripe Technology Europe Ltd MOTIF: STRIPE ',

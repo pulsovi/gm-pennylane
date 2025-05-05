@@ -1,3 +1,5 @@
+import { getDMSLinks } from '../api/dms.js';
+import { APIDMSLink } from '../api/DMS/Link.js';
 import { archiveDocument, getDocument, reloadLedgerEvents } from '../api/document.js';
 import { GroupedDocumentsEntity } from '../api/Document/index.js';
 import { getGroupedDocuments, getLedgerEvents } from '../api/operation.js';
@@ -79,14 +81,18 @@ export default class Document extends Logger {
     return this.groupedDocuments;
   }
 
-  async getThirdparty (): Promise<Thirdparty['thirdparty']> {
+  async getThirdparty (): Promise<Thirdparty['thirdparty']|null> {
     if (!this.thirdparty)
       this.thirdparty = this._getThirdparty();
-    return (await this.thirdparty).thirdparty;
+    return (await this.thirdparty)?.thirdparty;
   }
 
   private async _getThirdparty () {
     const doc = await this.getDocument();
     return await getThirdparty(doc.thirdparty_id);
+  }
+
+  public async getDMSLinks(recordType: string): Promise<APIDMSLink[]> {
+    return await getDMSLinks(this.id, recordType);
   }
 }
