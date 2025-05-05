@@ -11,9 +11,10 @@ export interface Thirdparty {
  */
 export async function getThirdparty (
   id
-): Promise<Thirdparty> {
+): Promise<Thirdparty|null> {
   const response = await apiRequest(`thirdparties/${id}`, null, 'GET');
   const json = await response?.json();
+  if (!json) return json;
   const data = APIThirdparty.Create(json);
   const [direction, thirdparty] = Object.entries(data)[0] as [Direction, APIThirdparty[Direction]];
   return { direction, thirdparty };

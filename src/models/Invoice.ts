@@ -17,7 +17,7 @@ export default abstract class Invoice extends ValidableDocument {
     const invoice = await getInvoice(id);
     if (!invoice?.id) {
       this.prototype.log('Invoice.load: cannot load this invoice', { id, invoice, _this: this });
-      return new NotFoundInvoice({id});
+      return new NotFoundInvoice({ id });
     }
     return this.from(invoice);
   }
@@ -41,7 +41,7 @@ export class NotFoundInvoice extends Invoice {
   public readonly direction = 'unknown';
 
   loadValidMessage() {
-      return Promise.resolve('Facture introuvable');
+    return Promise.resolve('Facture introuvable');
   }
 }
 
@@ -121,7 +121,7 @@ class SupplierInvoice extends Invoice {
 
     // Pas de compte de charge associé
     const thirdparty = await this.getThirdparty();
-    if (!thirdparty.thirdparty_invoice_line_rules?.[0]?.pnl_plan_item) {
+    if (!thirdparty?.thirdparty_invoice_line_rules?.[0]?.pnl_plan_item) {
       return `<a
           title="Cliquer ici pour plus d'informations"
           href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Fournisseur%20inconnu"

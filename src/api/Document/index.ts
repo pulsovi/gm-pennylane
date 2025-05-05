@@ -2917,7 +2917,7 @@ export class PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem3 {
   public readonly "country_alpha2": string;
   public readonly enabled: boolean;
   public readonly id: number;
-  public readonly internal_identifier: null;
+  public readonly internal_identifier: string | null;
   public readonly label: string;
   public readonly label_is_editable: boolean;
   public readonly number: string;
@@ -2941,7 +2941,17 @@ export class PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem3 {
     checkString(d["country_alpha2"], field + ".country_alpha2");
     checkBoolean(d.enabled, field + ".enabled");
     checkNumber(d.id, field + ".id");
-    checkNull(d.internal_identifier, field + ".internal_identifier");
+    // This will be refactored in the next release.
+    try {
+      checkString(d.internal_identifier, field + ".internal_identifier", "string | null");
+    } catch (e) {
+      try {
+        checkNull(d.internal_identifier, field + ".internal_identifier", "string | null");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+        throw e;
+      }
+    }
     checkString(d.label, field + ".label");
     checkBoolean(d.label_is_editable, field + ".label_is_editable");
     checkString(d.number, field + ".number");
