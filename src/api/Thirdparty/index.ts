@@ -355,6 +355,7 @@ export class Supplier {
   public readonly thirdparties_tags: ThirdpartiesTagsEntity[];
   public readonly thirdparty_invoice_line_rules: ThirdpartyInvoiceLineRulesEntity1[];
   public readonly thirdparty_visibility_rules: ThirdpartyVisibilityRulesEntity[];
+  public readonly validation_status?: string;
   public readonly vat_number: string;
   public static Parse(d: string): Supplier {
     return Supplier.Create(JSON.parse(d));
@@ -392,7 +393,6 @@ export class Supplier {
         checkString(d.establishment_no, field + ".establishment_no", "null | string");
       } catch (e) {
         prompt(proxyName+':', JSON.stringify(obj));
-        throw e;
       }
     }
     checkBoolean(d.force_pending_vat, field + ".force_pending_vat");
@@ -405,7 +405,6 @@ export class Supplier {
         d.iban_last_update = IbanLastUpdate.Create(d.iban_last_update, field + ".iban_last_update", "null | IbanLastUpdate");
       } catch (e) {
         prompt(proxyName+':', JSON.stringify(obj));
-        throw e;
       }
     }
     if ("iban_proof" in d) {
@@ -452,8 +451,11 @@ export class Supplier {
         d.thirdparty_visibility_rules[i] = ThirdpartyVisibilityRulesEntity.Create(d.thirdparty_visibility_rules[i], field + ".thirdparty_visibility_rules" + "[" + i + "]", undefined);
       }
     }
+    if ("validation_status" in d) {
+      checkString(d.validation_status, field + ".validation_status");
+    }
     checkString(d.vat_number, field + ".vat_number");
-    const knownProperties = ["activity_nomenclature","address","admin_city_code","city","company_id","country_alpha2","disable_pending_vat","emails","establishment_no","force_pending_vat","iban","iban_last_update","iban_proof","id","invoices_auto_generated","invoices_auto_validated","name","notes","notes_comment","plan_item","postal_code","search_terms","supplier_due_date_delay","supplier_due_date_rule","supplier_payment_method","tags","thirdparties_tags","thirdparty_invoice_line_rules","thirdparty_visibility_rules","vat_number"];
+    const knownProperties = ["activity_nomenclature","address","admin_city_code","city","company_id","country_alpha2","disable_pending_vat","emails","establishment_no","force_pending_vat","iban","iban_last_update","iban_proof","id","invoices_auto_generated","invoices_auto_validated","name","notes","notes_comment","plan_item","postal_code","search_terms","supplier_due_date_delay","supplier_due_date_rule","supplier_payment_method","tags","thirdparties_tags","thirdparty_invoice_line_rules","thirdparty_visibility_rules","validation_status","vat_number"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
     if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
     return new Supplier(d);
@@ -488,6 +490,7 @@ export class Supplier {
     this.thirdparties_tags = d.thirdparties_tags;
     this.thirdparty_invoice_line_rules = d.thirdparty_invoice_line_rules;
     this.thirdparty_visibility_rules = d.thirdparty_visibility_rules;
+    if ("validation_status" in d) this.validation_status = d.validation_status;
     this.vat_number = d.vat_number;
   }
 }
@@ -722,7 +725,6 @@ export class ThirdpartyInvoiceLineRulesEntity1 {
         checkNull(d.pnl_plan_item, field + ".pnl_plan_item", "PnlPlanItem1 | null");
       } catch (e) {
         prompt(proxyName+':', JSON.stringify(obj));
-        throw e;
       }
     }
     // This will be refactored in the next release.
@@ -733,7 +735,6 @@ export class ThirdpartyInvoiceLineRulesEntity1 {
         checkNull(d.vat_rate, field + ".vat_rate", "string | null");
       } catch (e) {
         prompt(proxyName+':', JSON.stringify(obj));
-        throw e;
       }
     }
     const knownProperties = ["pnl_plan_item","vat_rate"];
@@ -853,5 +854,4 @@ function errorHelper(field: string, d: any, type: string): never {
     console.log('Expected ' + type + " at " + field + " but found:\n" + JSON.stringify(d), jsonClone);
     prompt(proxyName+':', JSON.stringify(obj));
   }
-  throw new TypeError('Expected ' + type + " at " + field + " but found:\n" + JSON.stringify(d) + "\n\nFull object:\n" + JSON.stringify(obj));
 }

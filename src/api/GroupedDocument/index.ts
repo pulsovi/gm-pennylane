@@ -41,7 +41,6 @@ export class APIGroupedDocument {
         checkString(d.date, field + ".date", "null | string");
       } catch (e) {
         prompt(proxyName+':', JSON.stringify(obj));
-        throw e;
       }
     }
     checkString(d.fec_pieceref, field + ".fec_pieceref");
@@ -149,5 +148,4 @@ function errorHelper(field: string, d: any, type: string): never {
     console.log('Expected ' + type + " at " + field + " but found:\n" + JSON.stringify(d), jsonClone);
     prompt(proxyName+':', JSON.stringify(obj));
   }
-  throw new TypeError('Expected ' + type + " at " + field + " but found:\n" + JSON.stringify(d) + "\n\nFull object:\n" + JSON.stringify(obj));
 }

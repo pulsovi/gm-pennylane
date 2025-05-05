@@ -46,7 +46,6 @@ export class APILedgerEvent {
         checkString(d.label, field + ".label", "null | string");
       } catch (e) {
         prompt(proxyName+':', JSON.stringify(obj));
-        throw e;
       }
     }
     // This will be refactored in the next release.
@@ -57,7 +56,6 @@ export class APILedgerEvent {
         d.lettering = Lettering.Create(d.lettering, field + ".lettering", "null | Lettering");
       } catch (e) {
         prompt(proxyName+':', JSON.stringify(obj));
-        throw e;
       }
     }
     // This will be refactored in the next release.
@@ -68,7 +66,6 @@ export class APILedgerEvent {
         checkNumber(d.lettering_id, field + ".lettering_id", "null | number");
       } catch (e) {
         prompt(proxyName+':', JSON.stringify(obj));
-        throw e;
       }
     }
     checkNumber(d.plan_item_id, field + ".plan_item_id");
@@ -83,7 +80,6 @@ export class APILedgerEvent {
         checkNumber(d.reconciliation_id, field + ".reconciliation_id", "null | number");
       } catch (e) {
         prompt(proxyName+':', JSON.stringify(obj));
-        throw e;
       }
     }
     checkString(d.source, field + ".source");
@@ -226,5 +222,4 @@ function errorHelper(field: string, d: any, type: string): never {
     console.log('Expected ' + type + " at " + field + " but found:\n" + JSON.stringify(d), jsonClone);
     prompt(proxyName+':', JSON.stringify(obj));
   }
-  throw new TypeError('Expected ' + type + " at " + field + " but found:\n" + JSON.stringify(d) + "\n\nFull object:\n" + JSON.stringify(obj));
 }

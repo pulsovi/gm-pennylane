@@ -6,8 +6,8 @@ export class APIInvoice {
   public readonly approval_status: null;
   public readonly archived: boolean;
   public readonly attachment_required: boolean;
-  public readonly blob_id: number;
-  public readonly checksum: string;
+  public readonly blob_id: number | null;
+  public readonly checksum: string | null;
   public readonly client_comments_count: number;
   public readonly company_id: number;
   public readonly created_at: string;
@@ -25,7 +25,7 @@ export class APIInvoice {
   public readonly email_from: null;
   public readonly embeddable_in_browser: boolean;
   public readonly file_signed_id: string;
-  public readonly filename: string;
+  public readonly filename: string | null;
   public readonly gdrive_path: string | null;
   public readonly group_uuid: string;
   public readonly has_closed_ledger_events: boolean;
@@ -48,7 +48,7 @@ export class APIInvoice {
   public readonly pages_count: number | null;
   public readonly paid: boolean;
   public readonly payment_status: string;
-  public readonly preview_status: string;
+  public readonly preview_status: string | null;
   public readonly preview_urls: string[];
   public readonly pusher_channel: string;
   public readonly source: string;
@@ -79,8 +79,26 @@ export class APIInvoice {
     checkNull(d.approval_status, field + ".approval_status");
     checkBoolean(d.archived, field + ".archived");
     checkBoolean(d.attachment_required, field + ".attachment_required");
-    checkNumber(d.blob_id, field + ".blob_id");
-    checkString(d.checksum, field + ".checksum");
+    // This will be refactored in the next release.
+    try {
+      checkNumber(d.blob_id, field + ".blob_id", "number | null");
+    } catch (e) {
+      try {
+        checkNull(d.blob_id, field + ".blob_id", "number | null");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+      }
+    }
+    // This will be refactored in the next release.
+    try {
+      checkString(d.checksum, field + ".checksum", "string | null");
+    } catch (e) {
+      try {
+        checkNull(d.checksum, field + ".checksum", "string | null");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+      }
+    }
     checkNumber(d.client_comments_count, field + ".client_comments_count");
     checkNumber(d.company_id, field + ".company_id");
     checkString(d.created_at, field + ".created_at");
@@ -96,7 +114,6 @@ export class APIInvoice {
         d.current_account_plan_item = PnlPlanItemOrCurrentAccountPlanItem.Create(d.current_account_plan_item, field + ".current_account_plan_item", "null | PnlPlanItemOrCurrentAccountPlanItem");
       } catch (e) {
         prompt(proxyName+':', JSON.stringify(obj));
-        throw e;
       }
     }
     // This will be refactored in the next release.
@@ -107,7 +124,6 @@ export class APIInvoice {
         checkNumber(d.current_account_plan_item_id, field + ".current_account_plan_item_id", "null | number");
       } catch (e) {
         prompt(proxyName+':', JSON.stringify(obj));
-        throw e;
       }
     }
     // This will be refactored in the next release.
@@ -118,7 +134,6 @@ export class APIInvoice {
         checkString(d.date, field + ".date", "null | string");
       } catch (e) {
         prompt(proxyName+':', JSON.stringify(obj));
-        throw e;
       }
     }
     // This will be refactored in the next release.
@@ -129,7 +144,6 @@ export class APIInvoice {
         checkString(d.deadline, field + ".deadline", "null | string");
       } catch (e) {
         prompt(proxyName+':', JSON.stringify(obj));
-        throw e;
       }
     }
     checkString(d.direction, field + ".direction");
@@ -143,7 +157,16 @@ export class APIInvoice {
     checkNull(d.email_from, field + ".email_from");
     checkBoolean(d.embeddable_in_browser, field + ".embeddable_in_browser");
     checkString(d.file_signed_id, field + ".file_signed_id");
-    checkString(d.filename, field + ".filename");
+    // This will be refactored in the next release.
+    try {
+      checkString(d.filename, field + ".filename", "string | null");
+    } catch (e) {
+      try {
+        checkNull(d.filename, field + ".filename", "string | null");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+      }
+    }
     // This will be refactored in the next release.
     try {
       checkString(d.gdrive_path, field + ".gdrive_path", "string | null");
@@ -152,7 +175,6 @@ export class APIInvoice {
         checkNull(d.gdrive_path, field + ".gdrive_path", "string | null");
       } catch (e) {
         prompt(proxyName+':', JSON.stringify(obj));
-        throw e;
       }
     }
     checkString(d.group_uuid, field + ".group_uuid");
@@ -186,12 +208,20 @@ export class APIInvoice {
         checkNull(d.pages_count, field + ".pages_count", "number | null");
       } catch (e) {
         prompt(proxyName+':', JSON.stringify(obj));
-        throw e;
       }
     }
     checkBoolean(d.paid, field + ".paid");
     checkString(d.payment_status, field + ".payment_status");
-    checkString(d.preview_status, field + ".preview_status");
+    // This will be refactored in the next release.
+    try {
+      checkString(d.preview_status, field + ".preview_status", "string | null");
+    } catch (e) {
+      try {
+        checkNull(d.preview_status, field + ".preview_status", "string | null");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+      }
+    }
     checkArray(d.preview_urls, field + ".preview_urls");
     if (d.preview_urls) {
       for (let i = 0; i < d.preview_urls.length; i++) {
@@ -211,7 +241,6 @@ export class APIInvoice {
         checkNull(d.thirdparty, field + ".thirdparty", "Thirdparty | null");
       } catch (e) {
         prompt(proxyName+':', JSON.stringify(obj));
-        throw e;
       }
     }
     // This will be refactored in the next release.
@@ -222,7 +251,6 @@ export class APIInvoice {
         checkNull(d.thirdparty_id, field + ".thirdparty_id", "number | null");
       } catch (e) {
         prompt(proxyName+':', JSON.stringify(obj));
-        throw e;
       }
     }
     checkString(d.type, field + ".type");
@@ -508,7 +536,6 @@ export class InvoiceLinesEntity {
         d.asset = Asset.Create(d.asset, field + ".asset", "null | Asset");
       } catch (e) {
         prompt(proxyName+':', JSON.stringify(obj));
-        throw e;
       }
     }
     // This will be refactored in the next release.
@@ -519,7 +546,6 @@ export class InvoiceLinesEntity {
         checkNumber(d.asset_id, field + ".asset_id", "null | number");
       } catch (e) {
         prompt(proxyName+':', JSON.stringify(obj));
-        throw e;
       }
     }
     checkString(d.currency_amount, field + ".currency_amount");
@@ -539,7 +565,6 @@ export class InvoiceLinesEntity {
         checkString(d.ocr_vat_rate, field + ".ocr_vat_rate", "null | string");
       } catch (e) {
         prompt(proxyName+':', JSON.stringify(obj));
-        throw e;
       }
     }
     d.pnl_plan_item = PnlPlanItemOrCurrentAccountPlanItem1.Create(d.pnl_plan_item, field + ".pnl_plan_item", undefined);
@@ -611,7 +636,6 @@ export class Asset {
         checkNull(d.amortization_type, field + ".amortization_type", "string | null");
       } catch (e) {
         prompt(proxyName+':', JSON.stringify(obj));
-        throw e;
       }
     }
     checkString(d.entry_date, field + ".entry_date");
@@ -628,7 +652,6 @@ export class Asset {
         checkNull(d.start_date, field + ".start_date", "string | null");
       } catch (e) {
         prompt(proxyName+':', JSON.stringify(obj));
-        throw e;
       }
     }
     const knownProperties = ["amortization_months","amortization_type","entry_date","id","invoice_line_editable","name","plan_item_id","quantity","start_date"];
@@ -801,7 +824,6 @@ export class Thirdparty {
         checkNull(d.country, field + ".country", "string | null");
       } catch (e) {
         prompt(proxyName+':', JSON.stringify(obj));
-        throw e;
       }
     }
     checkString(d["country_alpha2"], field + ".country_alpha2");
@@ -831,7 +853,6 @@ export class Thirdparty {
         checkString(d.establishment_no, field + ".establishment_no", "null | string");
       } catch (e) {
         prompt(proxyName+':', JSON.stringify(obj));
-        throw e;
       }
     }
     checkNull(d.estimate_count, field + ".estimate_count");
@@ -853,7 +874,6 @@ export class Thirdparty {
         checkNumber(d.known_supplier_id, field + ".known_supplier_id", "null | number");
       } catch (e) {
         prompt(proxyName+':', JSON.stringify(obj));
-        throw e;
       }
     }
     checkString(d.last_name, field + ".last_name");
@@ -876,7 +896,6 @@ export class Thirdparty {
         checkNull(d.pnl_plan_item, field + ".pnl_plan_item", "PlanItemOrPnlPlanItem1 | null");
       } catch (e) {
         prompt(proxyName+':', JSON.stringify(obj));
-        throw e;
       }
     }
     // This will be refactored in the next release.
@@ -887,7 +906,6 @@ export class Thirdparty {
         checkNull(d.pnl_plan_item_id, field + ".pnl_plan_item_id", "number | null");
       } catch (e) {
         prompt(proxyName+':', JSON.stringify(obj));
-        throw e;
       }
     }
     checkString(d.postal_code, field + ".postal_code");
@@ -916,7 +934,6 @@ export class Thirdparty {
         checkString(d.supplier_payment_method_last_updated_at, field + ".supplier_payment_method_last_updated_at", "null | string");
       } catch (e) {
         prompt(proxyName+':', JSON.stringify(obj));
-        throw e;
       }
     }
     checkArray(d.tags, field + ".tags");
@@ -936,7 +953,6 @@ export class Thirdparty {
         checkNull(d.vat_rate, field + ".vat_rate", "string | null");
       } catch (e) {
         prompt(proxyName+':', JSON.stringify(obj));
-        throw e;
       }
     }
     const knownProperties = ["activity_code","activity_nomenclature","address","address_additional_info","admin_city_code","balance","billing_bank","billing_bic","billing_footer_invoice_id","billing_footer_invoice_label","billing_iban","billing_language","city","company_id","complete","country","country_alpha2","credits","current_mandate","customer_type","debits","delivery_address","delivery_address_additional_info","delivery_city","delivery_country","delivery_country_alpha2","delivery_postal_code","disable_pending_vat","display_name","emails","establishment_no","estimate_count","first_name","force_pending_vat","gender","gocardless_id","iban","id","invoice_count","invoice_dump_id","invoices_auto_generated","invoices_auto_validated","known_supplier_id","last_name","ledger_events_count","legal_form_code","method","name","notes","notes_comment","payment_conditions","phone","plan_item","plan_item_attributes","plan_item_id","pnl_plan_item","pnl_plan_item_id","postal_code","purchase_request_count","received_a_mandate_request","recipient","recurrent","reference","reg_no","role","rule_enabled","search_terms","source_id","stripe_id","supplier_payment_method","supplier_payment_method_last_updated_at","tags","turnover","url","vat_number","vat_rate"];
@@ -1113,7 +1129,6 @@ export class PlanItemOrPnlPlanItem1 {
         checkString(d.internal_identifier, field + ".internal_identifier", "null | string");
       } catch (e) {
         prompt(proxyName+':', JSON.stringify(obj));
-        throw e;
       }
     }
     checkString(d.label, field + ".label");
@@ -1176,5 +1191,4 @@ function errorHelper(field: string, d: any, type: string): never {
     console.log('Expected ' + type + " at " + field + " but found:\n" + JSON.stringify(d), jsonClone);
     prompt(proxyName+':', JSON.stringify(obj));
   }
-  throw new TypeError('Expected ' + type + " at " + field + " but found:\n" + JSON.stringify(d) + "\n\nFull object:\n" + JSON.stringify(obj));
 }

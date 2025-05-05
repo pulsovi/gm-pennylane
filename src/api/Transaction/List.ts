@@ -139,7 +139,6 @@ export class TransactionsEntity {
         checkString(d.archived_at, field + ".archived_at", "null | string");
       } catch (e) {
         prompt(proxyName+':', JSON.stringify(obj));
-        throw e;
       }
     }
     checkBoolean(d.attachment_lost, field + ".attachment_lost");
@@ -155,7 +154,6 @@ export class TransactionsEntity {
         checkNull(d.currency_fee, field + ".currency_fee", "string | null");
       } catch (e) {
         prompt(proxyName+':', JSON.stringify(obj));
-        throw e;
       }
     }
     checkString(d.date, field + ".date");
@@ -167,7 +165,6 @@ export class TransactionsEntity {
         d.dump = Dump.Create(d.dump, field + ".dump", "null | Dump");
       } catch (e) {
         prompt(proxyName+':', JSON.stringify(obj));
-        throw e;
       }
     }
     // This will be refactored in the next release.
@@ -178,7 +175,6 @@ export class TransactionsEntity {
         checkNumber(d.dump_id, field + ".dump_id", "null | number");
       } catch (e) {
         prompt(proxyName+':', JSON.stringify(obj));
-        throw e;
       }
     }
     // This will be refactored in the next release.
@@ -189,7 +185,6 @@ export class TransactionsEntity {
         checkNull(d.fee, field + ".fee", "string | null");
       } catch (e) {
         prompt(proxyName+':', JSON.stringify(obj));
-        throw e;
       }
     }
     checkNumber(d.files_count, field + ".files_count");
@@ -272,7 +267,6 @@ export class AccountSynchronization {
         checkNull(d.created_at, field + ".created_at", "string | null");
       } catch (e) {
         prompt(proxyName+':', JSON.stringify(obj));
-        throw e;
       }
     }
     checkNull(d.error_message, field + ".error_message");
@@ -284,7 +278,6 @@ export class AccountSynchronization {
         checkNull(d.triggered_manually, field + ".triggered_manually", "boolean | null");
       } catch (e) {
         prompt(proxyName+':', JSON.stringify(obj));
-        throw e;
       }
     }
     const knownProperties = ["created_at","error_message","triggered_manually"];
@@ -368,5 +361,4 @@ function errorHelper(field: string, d: any, type: string): never {
     console.log('Expected ' + type + " at " + field + " but found:\n" + JSON.stringify(d), jsonClone);
     prompt(proxyName+':', JSON.stringify(obj));
   }
-  throw new TypeError('Expected ' + type + " at " + field + " but found:\n" + JSON.stringify(d) + "\n\nFull object:\n" + JSON.stringify(obj));
 }
