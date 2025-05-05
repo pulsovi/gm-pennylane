@@ -167,19 +167,20 @@ export default class Transaction extends ValidableDocument {
       }
 
       const isCheck = doc.label.startsWith('CHEQUE ');
-      const withReceipt = groupedDocuments.filter(gdoc => gdoc.type !== 'Transaction'
+      const receiptsNb = groupedDocuments.filter(gdoc => gdoc.type !== 'Transaction'
         && [' CERFA ', ' CB '].some(needle => gdoc.label.includes(needle))
-      ).length;
+      ).length + dmsLinks.filter(dms => dms.name.includes('CERFA ')).length;
       if (
         ledgerEvents.length !== 2
-        || groupedDocuments.length !== 1 + Number(isCheck) + Number(withReceipt)
+        || (groupedDocuments.length + dmsLinks.length) !== 1 + Number(isCheck) + Number(receiptsNb)
         || ledgerEvents.reduce((acc, ev) => acc + parseFloat(ev.amount), 0) !== 0
       ) {
-        if (isCurrent) this.log({
+        if (isCurrent) this.log('Don versé à une autre association incorrectement traité', {
           'ledgerEvents.length': ledgerEvents.length,
           'groupedDocuments.length': groupedDocuments.length,
           isCheck,
-          withReceipt,
+          receiptsNb,
+          dmsLinks,
           eventsSum: ledgerEvents.reduce((acc, ev) => acc + parseFloat(ev.amount), 0)
         });
         return `<a
@@ -199,7 +200,7 @@ export default class Transaction extends ValidableDocument {
     if (!aidLedgerEvent && parseFloat(doc.amount) < 0) {
       for (const gdoc of groupedDocuments) {
         if (gdoc.type !== 'Invoice') continue;
-        const {thirdparty_id} = await new Document(gdoc).getDocument();
+        const { thirdparty_id } = await new Document(gdoc).getDocument();
         // Aides octroyées à une asso ou un particulier
         if ([106438171, 114270419].includes(thirdparty_id)) {
           // Aides octroyées sans compte d'aide
@@ -241,8 +242,9 @@ export default class Transaction extends ValidableDocument {
       // On a parfois des calculs qui ne tombent pas très juste en JS
       if (Math.abs((balance.transaction ?? 0) - (balance.Reçu ?? 0)) > 0.001) {
         // Pour les remises de chèques, on a deux pièces justificatives necessaires : le chèque et le cerfa
-        message = 'La somme des Reçus doit valoir le montant de la transaction';
+        message = 'La somme des reçus doit valoir le montant de la transaction';
         balance.Reçu = balance.Reçu ?? 0;
+        if (dmsLinks.some(dms => dms.name.startsWith('CERFA'))) message = '';
       }
     } else {
       if (Math.abs((balance.transaction ?? 0) - (balance.autre ?? 0)) > 0.001) {
@@ -255,7 +257,7 @@ export default class Transaction extends ValidableDocument {
     if (message && !toSkip) {
       return `<a
           title="Cliquer ici pour plus d'informations."
-          href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Transaction%20-%20Balance%20v2"
+          href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Transaction%20-%20Balance%20v2#${escape(message)}"
         >Balance v2 déséquilibrée: ${message} ⓘ</a><ul>${Object.entries(balance)
           .sort(([keya], [keyb]) => {
             const keys = ['transaction', 'CHQ', 'Reçu', 'autre'];
@@ -269,67 +271,63 @@ export default class Transaction extends ValidableDocument {
     if (ledgerEvents.some(line => line.planItem.number.startsWith('445')))
       return 'Une écriture comporte un compte de TVA';
 
-    if (
-      // si justificatif demandé, sauter cette section
-      !doc.is_waiting_details
-      || isCurrent
-    ) {
-      if (ledgerEvents.find(line => line.planItem.number === '6288'))
-        return 'Une ligne d\'écriture comporte le numéro de compte 6288';
+    if (ledgerEvents.find(line => line.planItem.number === '6288'))
+      return 'Une ligne d\'écriture comporte le numéro de compte 6288';
 
-      if (ledgerEvents.find(line => line.planItem.number === '4716001')) {
-        return `<a
+    if (ledgerEvents.find(line => line.planItem.number === '4716001')) {
+      return `<a
             title="Cliquer ici pour plus d'informations."
             href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Transaction%20attribu%C3%A9e%20%C3%A0%20un%20compte%20d'attente"
           >Une ligne d'écriture utilise un compte d'attente: 4716001 ⓘ</a>`;
-      }
+    }
 
-      if (ledgerEvents.some(
-        line => line.planItem.number.startsWith('47') && line.planItem.number !== '47600001')
-      ) {
-        return `<a
+    if (ledgerEvents.some(
+      line => line.planItem.number.startsWith('47') && line.planItem.number !== '47600001')
+    ) {
+      return `<a
             title="Cliquer ici pour plus d'informations."
             href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Transaction%20attribu%C3%A9e%20%C3%A0%20un%20compte%20d'attente"
           >Une écriture comporte un compte d\'attente (commençant par 47) ⓘ</a>`;
-      }
-
-      // balance déséquilibrée
-      const third = ledgerEvents.find(line => line.planItem.number.startsWith('40'))?.planItem?.number;
-      if (third) {
-        const thirdEvents = ledgerEvents.filter(line => line.planItem.number === third);
-        const balance = thirdEvents.reduce((sum, line) => sum + parseFloat(line.amount), 0);
-        if (isCurrent)
-          this.log('loadValidMessage: Balance', Math.abs(balance) > 0.001 ? 'déséquilibrée' : 'OK', this);
-
-        // On a parfois des calculs qui ne tombent pas très juste en JS
-        //if (Math.abs(balance) > 0.001) {
-        if (Math.abs(balance) > 100) {
-          return `Balance déséquilibrée avec Tiers spécifié : ${balance}`;
-        }
-      }
-
-      // Pas plus d'exigence pour les petits montants
-      if (Math.abs(parseFloat(doc.currency_amount)) < 100) return 'OK';
-
-      // Justificatif manquant
-      if (doc.date.startsWith('2023')) return 'OK';
-      const attachmentOptional =
-        Math.abs(parseFloat(doc.currency_amount)) < 100
-        || [
-          ' DE: STRIPE MOTIF: ALLODONS REF: ',
-        ].some(label => doc.label.includes(label))
-        || [
-          'REMISE CHEQUE ',
-          'VIR RECU ',
-          'VIR INST RE ',
-          'VIR INSTANTANE RECU DE: ',
-        ].some(label => doc.label.startsWith(label));
-      const attachmentRequired = doc.attachment_required && !doc.attachment_lost
-        && (!attachmentOptional || isCurrent);
-      const hasAttachment = groupedDocuments.length > 1;
-      if (isCurrent) this.log({ attachmentOptional, attachmentRequired, groupedDocuments, hasAttachment });
-      if (attachmentRequired && !hasAttachment) return 'Justificatif manquant';
     }
+
+    // balance déséquilibrée
+    const third = ledgerEvents.find(line => line.planItem.number.startsWith('40'))?.planItem?.number;
+    if (third) {
+      const thirdEvents = ledgerEvents.filter(line => line.planItem.number === third);
+      const balance = thirdEvents.reduce((sum, line) => sum + parseFloat(line.amount), 0);
+      if (isCurrent)
+        this.log('loadValidMessage: Balance', Math.abs(balance) > 0.001 ? 'déséquilibrée' : 'OK', this);
+
+      // On a parfois des calculs qui ne tombent pas très juste en JS
+      //if (Math.abs(balance) > 0.001) {
+      if (Math.abs(balance) > 100) {
+        return `Balance déséquilibrée avec Tiers spécifié : ${balance}`;
+      }
+    }
+
+    // Justificatif manquant
+    if (
+      !ledgerEvents.some(levent => levent.closed) // Exercice clos
+      && Math.abs(parseFloat(doc.currency_amount)) >= 100
+    ) {
+
+    }
+    const attachmentOptional =
+      (!isCurrent && Math.abs(parseFloat(doc.currency_amount)) < 100) // Justificatif pas exigé pour les petits montants
+      || [
+        ' DE: STRIPE MOTIF: ALLODONS REF: ',
+      ].some(label => doc.label.includes(label))
+      || [
+        'REMISE CHEQUE ',
+        'VIR RECU ',
+        'VIR INST RE ',
+        'VIR INSTANTANE RECU DE: ',
+      ].some(label => doc.label.startsWith(label));
+    const attachmentRequired = doc.attachment_required && !doc.attachment_lost
+      && (!attachmentOptional || isCurrent);
+    const hasAttachment = groupedDocuments.length > 1;
+    if (isCurrent) this.log({ attachmentOptional, attachmentRequired, groupedDocuments, hasAttachment });
+    if (attachmentRequired && !hasAttachment) return 'Justificatif manquant';
 
     return 'OK';
   }

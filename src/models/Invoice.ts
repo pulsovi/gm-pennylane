@@ -231,23 +231,28 @@ class SupplierInvoice extends Invoice {
     ) {
       if (transactions.find(transaction => transaction.date.startsWith('2023'))) {
         await moveToDms(this.id, 57983091 /*2023 - Compta - Fournisseurs*/);
-        if (isCurrent) this.log('moved to DMS', {invoice: this});
+        if (isCurrent) this.log('moved to DMS', { invoice: this });
         return (await Invoice.load(this.id)).loadValidMessage();
       }
       if (transactions.find(transaction => transaction.date.startsWith('2024'))) {
         await moveToDms(this.id, 21994050 /*2024 - Compta - Fournisseurs*/);
-        if (isCurrent) this.log('moved to DMS', {invoice: this});
+        if (isCurrent) this.log('moved to DMS', { invoice: this });
         return (await Invoice.load(this.id)).loadValidMessage();
       }
+      /**
       if (transactions.find(transaction => transaction.date.startsWith('2025'))) {
-        await moveToDms(this.id, 21994065 /*2025 - Compta - Fournisseurs*/);
-        if (isCurrent) this.log('moved to DMS', {invoice: this});
+        await moveToDms(this.id, 21994065 /*2025 - Compta - Fournisseurs*);
+        if (isCurrent) this.log('moved to DMS', { invoice: this });
         return (await Invoice.load(this.id)).loadValidMessage();
       }
-      return `<a
-        title="Cliquer ici pour plus d'informations"
-        href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Envoi%20en%20GED"
-      >Envoyer en GED ⓘ</a>`;
+      /**/
+      if (!transactions.find(transaction => transaction.date.startsWith('2025'))) {
+        this.log('Envoyer en GED', transactions);
+        return `<a
+          title="Cliquer ici pour plus d'informations"
+          href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Envoi%20en%20GED"
+        >Envoyer en GED ⓘ</a>`;
+      }
     }
 
     // Date manquante
@@ -259,10 +264,14 @@ class SupplierInvoice extends Invoice {
           href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Facture%20archiv%C3%A9e"
         >Archiver ${archiveLabel} ⓘ</a><ul style="margin:0;padding:0.8em;">`;
       }
-      return `<a
-        title="Cliquer ici pour plus d'informations"
-        href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Date%20de%20facture"
-      >Date de facture vide ⓘ</a>`;
+      if (invoice.has_closed_ledger_events || ledgerEvents.some(levent => levent.closed)) {
+        this.log('exercice clos, on ne peut plus remplir la date');
+      } else {
+        return `<a
+          title="Cliquer ici pour plus d'informations"
+          href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Date%20de%20facture"
+        >Date de facture vide ⓘ</a>`;
+      }
     }
 
     if (isCurrent) this.log('loadValidMessage', 'fin des contrôles');
@@ -279,22 +288,23 @@ class CustomerInvoice extends Invoice {
     const invoice = await this.getInvoice();
 
     // Fait partie d'un exercis clôt
-    if (invoice.has_closed_ledger_events) return 'OK';
+    const closed = invoice.has_closed_ledger_events;
 
     if (isCurrent) this.log('loadValidMessage', this);
+
     // Archived
+    const archivedAllowed = ['§ #', '¤ TRANSACTION INTROUVABLE'];
     if (invoice.archived) {
-      const allowed = ['§ #', '¤ TRANSACTION INTROUVABLE'];
       if (
         //legacy
         !invoice.invoice_number.startsWith('§ ESPECES') &&
 
-        !allowed.some(allowedItem => invoice.invoice_number.startsWith(allowedItem))
+        !archivedAllowed.some(allowedItem => invoice.invoice_number.startsWith(allowedItem))
       )
         return `<a
           title="Le numéro de facture d'une facture archivée doit commencer par une de ces possibilités. Cliquer ici pour plus d'informations."
           href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Facture%20archiv%C3%A9e"
-        >Facture archivée sans référence ⓘ</a><ul style="margin:0;padding:0.8em;">${allowed.map(it => `<li>${it}</li>`).join('')}</ul>`;
+        >Facture archivée sans référence ⓘ</a><ul style="margin:0;padding:0.8em;">${archivedAllowed.map(it => `<li>${it}</li>`).join('')}</ul>`;
       return 'OK';
     }
 
@@ -306,21 +316,22 @@ class CustomerInvoice extends Invoice {
       return 'les seuls clients autorisés sont "PIECE ID" et "DON MANUEL"';
 
     // piece id
-    if (invoice.thirdparty.id === 113420582) {
+    if (invoice.thirdparty.id === 113420582 /* PIECE ID */) {
       if (!invoice.invoice_number?.startsWith('ID '))
         return 'le champ "Numéro de facture" doit commencer par "ID NOM_DE_LA_PERSONNE"';
-      return 'OK';
     }
 
     // Montant
-    if (invoice.amount === '0.0' && !invoice.invoice_number.includes('|ZERO|')) return `<a
+    if (invoice.amount === '0.0' && !(
+      invoice.invoice_number.includes('|ZERO|') || invoice.thirdparty.id === 113420582 /* PIECE ID */
+    )) return `<a
       title="Cliquer ici pour plus d'informations."
       href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Facture%20client"
     >Ajouter le montant ⓘ</a><ul style="margin:0;padding:0.8em;"><li>|ZERO|</li></ul>`;
 
     // Don Manuel
     if (
-      invoice.thirdparty_id === 103165930
+      invoice.thirdparty_id === 103165930 /* DON MANUEL */
       && !['CHQ', 'CERFA'].some(label => invoice.invoice_number.includes(label))
     ) {
       return `<a
@@ -347,10 +358,48 @@ class CustomerInvoice extends Invoice {
         >Pas de transaction attachée ⓘ</a><ul style="margin:0;padding:0.8em;">${groupedOptional.map(it => `<li>${it}</li>`).join('')}</ul>`;
 
     // Une fois la transaction trouvée, envoyer en GED
-    return `<a
-      title="Cliquer ici pour plus d'informations"
-      href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Envoi%20en%20GED"
-    >Envoyer en GED ⓘ</a>`;
+    const transactions = groupedDocuments.filter(gdoc => gdoc.type === 'Transaction');
+
+    if (transactions.find(transaction => transaction.date.startsWith('2024'))) {
+      await moveToDms(this.id, 21994051 /*2024 - Compta - Clients */);
+      if (isCurrent) this.log('moved to DMS', { invoice: this });
+      return (await Invoice.load(this.id)).loadValidMessage();
+    }
+
+    if (transactions.find(transaction => transaction.date.startsWith('2023'))) {
+      await moveToDms(this.id, 57983092 /*2023 - Compta - Clients */);
+      if (isCurrent) this.log('moved to DMS', { invoice: this });
+      return (await Invoice.load(this.id)).loadValidMessage();
+    }
+
+    // Date manquante
+    if (!invoice.date) {
+      const archiveLabel = archivedAllowed.find(label => invoice.invoice_number.startsWith(label));
+      if (archiveLabel) {
+        return `<a
+          title="Archiver la facture : ⁝ > Archiver la facture.\nCliquer ici pour plus d'informations"
+          href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Facture%20archiv%C3%A9e"
+        >Archiver ${archiveLabel} ⓘ</a><ul style="margin:0;padding:0.8em;">`;
+      }
+
+      const ledgerEvents = await this.getLedgerEvents();
+      if (invoice.has_closed_ledger_events || ledgerEvents.some(levent => levent.closed)) {
+        this.log('exercice clos, on ne peut plus remplir la date');
+      } else {
+        return `<a
+          title="Cliquer ici pour plus d'informations"
+          href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Date%20de%20facture"
+        >Date de facture vide ⓘ</a>`;
+      }
+    }
+
+    if (!transactions.find(transaction => transaction.date.startsWith('2025'))) {
+      this.log('Envoyer en GED', transactions);
+      return `<a
+        title="Cliquer ici pour plus d'informations"
+        href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Envoi%20en%20GED"
+      >Envoyer en GED ⓘ</a>`;
+    }
 
     return 'OK';
   }
