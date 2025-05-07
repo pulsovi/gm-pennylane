@@ -24,6 +24,10 @@ export function isPage (pageName: string): never;
 export function isPage (pageName: string): Element|false|never {
     switch (pageName) {
         case 'invoiceDetail': return findElem('h4', 'Réconciliation') ?? false;
+        case 'DMS': return (
+            (location.href.split('/')[5] === 'dms' && findElem('h3', 'Détail du document'))
+            || false
+        );
         default: throw new Error(`unknown page required : "${pageName}"`);
     }
 }

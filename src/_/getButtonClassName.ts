@@ -7,8 +7,10 @@ let cachedClassName = '';
  */
 export function getButtonClassName () {
   if (cachedClassName) return cachedClassName;
-  const buttonModel = findElem<HTMLDivElement>('button div', 'Raccourcis')?.parentElement
-    ?? findElem('div', 'Détails')?.querySelector('button+button:last-child');
+  const buttonModel =
+    findElem<HTMLDivElement>('button div', 'Raccourcis')?.parentElement
+    ?? findElem('div', 'Détails')?.querySelector('button+button:last-child')
+    ?? findElem('button', 'Déplacer');
   const className = buttonModel?.className ?? '';
   cachedClassName = className;
   return className;

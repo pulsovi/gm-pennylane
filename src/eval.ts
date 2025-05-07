@@ -23,12 +23,15 @@ import { findReactProp, getReact, getReactProps } from './_/react.js';
 import TransactionPannelStyle from './pages/transactionPanel/Style.js';
 import AutoSearchTransaction from './pages/invoicePanel/AutoSearchTransaction.js';
 import { getButtonClassName } from './_/getButtonClassName.js';
+import DMSRotateImg from './pages/DMS/RotateImg.js';
+import { GMXmlHttpRequest } from './_/gmXhr.js';
 
 last7DaysFilter();
 AddInvoiceIdColumn.start();
 AllowChangeArchivedInvoiceNumber.start();
 ArchiveGroupedDocument.start();
 AutoSearchTransaction.start();
+DMSRotateImg.start();
 EntryBlocInfos.start();
 FixTab.start();
 InvoiceDisplayInfos.start();
@@ -78,6 +81,7 @@ const augmentation = {
     Transaction,
     waitElem: findElem,
     getButtonClassName,
+    GMXmlHttpRequest,
   },
 };
 Object.assign(window, augmentation);

@@ -1,4 +1,5 @@
 import { openTabService } from './GM/openTabService.js';
+import { XmlHttpRequest } from './GM/xmlHttpRequest.js';
 
 const code = ';(function IIFE() {'+evalContent+'})();';
 try {
@@ -12,6 +13,7 @@ try {
 
   // start services
   openTabService();
+  XmlHttpRequest.start();
   console.log('GM SUCCESS');
 } catch (error) {
   console.log('GM ERROR');

@@ -43,14 +43,19 @@ export function getReactComponent (elem?: Element | null, up = 0) {
  * @param propName The prop to find.
  * @returns The level of the component tree which have given props by name.
  */
-export function findReactProp (elem: Element | null, propName: string): unknown | null {
+export function findReactProp (elem: Element | null, propName: string): number | null;
+export function findReactProp (elem: Element | null, propName?: never): Set<string>;
+export function findReactProp (elem: Element | null, propName?: string): number | Set<string> | null {
+  const propList = new Set<string>();
   let i = 0;
 
   while (elem) {
     const props = getReactProps(elem, i);
     if (!props) break;
-    if (props && propName in props) return i;
+    if (!propName) Object.keys(props).forEach(key => propList.add(key));
+    else if (props && propName in props) return i;
     ++i;
   }
+  if (!propName) return propList;
   return null;
 }
