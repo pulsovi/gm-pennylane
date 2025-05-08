@@ -60,6 +60,14 @@ export default class Tooltip {
   }
 
   /**
+   * Get the tooltip HTML text
+   */
+  public getHTML (): string {
+    const inner = $<HTMLDivElement>(`#${this.id} .tooltip-inner`);
+    return inner.innerHTML;
+  }
+
+  /**
    * Move the tooltip at good position to point visually the target
    */
   private setPos () {

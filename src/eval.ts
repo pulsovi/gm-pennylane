@@ -25,6 +25,7 @@ import AutoSearchTransaction from './pages/invoicePanel/AutoSearchTransaction.js
 import { getButtonClassName } from './_/getButtonClassName.js';
 import DMSRotateImg from './pages/DMS/RotateImg.js';
 import { GMXmlHttpRequest } from './_/gmXhr.js';
+import ImproveMatchSuggestions from './pages/transactionPanel/ImproveMatchSuggestions.js';
 
 last7DaysFilter();
 AddInvoiceIdColumn.start();
@@ -34,6 +35,7 @@ AutoSearchTransaction.start();
 DMSRotateImg.start();
 EntryBlocInfos.start();
 FixTab.start();
+ImproveMatchSuggestions.start();
 InvoiceDisplayInfos.start();
 NextInvalidInvoice.start();
 NextInvalidTransaction.start();
