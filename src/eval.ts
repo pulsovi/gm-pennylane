@@ -30,6 +30,10 @@ import { getDMSItem, getDMSItemLinks, getDMSItemList, getDMSLinks } from './api/
 import OpenRefTransaction from './pages/invoicePanel/OpenRefTransaction.js';
 import ImproveMatchSuggestions from './pages/transactionPanel/ImproveMatchSuggestions.js';
 import { waitPage } from './navigation/waitPage.js';
+import HighlightWrongDMSFilenames from './pages/transactionPanel/HighlightWrongDMSFilenames.js';
+import DMSItem from './models/DMSItem.js';
+import Document from './models/Document.js';
+import Item from './models/Item.js';
 
 last7DaysFilter();
 AddInvoiceIdColumn.start();
@@ -40,6 +44,7 @@ DMSDisplayStatus.start();
 DMSRotateImg.start();
 EntryBlocInfos.start();
 FixTab.start();
+HighlightWrongDMSFilenames.start();
 ImproveMatchSuggestions.start();
 InvoiceDisplayInfos.start();
 NextInvalidInvoice.start();
@@ -84,9 +89,7 @@ const augmentation = {
     findReactProp,
     getReact,
     getReactProps,
-    Invoice,
     parseHTML,
-    Transaction,
     waitElem: findElem,
     getButtonClassName,
     GMXmlHttpRequest,
@@ -95,6 +98,11 @@ const augmentation = {
     getDMSItemLinks,
     getDMSItemList,
     waitPage,
+    models: {
+      Invoice,
+      Transaction,
+      DMSItem,
+    },
   },
 };
 Object.assign(window, augmentation);

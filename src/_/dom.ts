@@ -46,3 +46,9 @@ export function parseHTML(html) {
     template.innerHTML = html;
     return template.content;
 }
+
+export function HTMLToString(html:string): string {
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  return div.innerText;
+}

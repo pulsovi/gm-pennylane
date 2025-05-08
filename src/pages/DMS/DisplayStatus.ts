@@ -33,7 +33,7 @@ export default class DMSDisplayStatus extends Service {
     const rightList = findElem<HTMLDivElement>('div', 'Nom du Fichier').closest('div.w-100')
     const ref = getReactProps(rightList, 7).item;
 
-    rightList.appendChild(this.container);
+    rightList.insertBefore(this.container, rightList.firstChild);
     const item = new DMSItem(ref);
     const message = await item.getValidMessage();
     this.container.innerHTML = message;
