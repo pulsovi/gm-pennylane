@@ -10,13 +10,14 @@ export default class ArchiveGroupedDocument extends Service {
     await waitElem('h3', 'Transactions');
 
     while (await waitFunc(() =>
-      $$('div>a+button>svg[data-testid="LinkOffRoundedIcon"]').some(svg => !svg.closest('div')?.querySelector('.archive-button'))
+      $$('a[href*="invoices/"]')
+        .some(link => !link.closest('div')?.querySelector('.archive-button'))
     )) this.addInvoiceInfos();
   }
 
   addInvoiceInfos() {
-    const buttonsBlock = $$('div>a+button>svg[data-testid="LinkOffRoundedIcon"]')
-      .find(svg => !svg.closest('div')?.querySelector('.archive-button'))
+    const buttonsBlock = $$('a[href*="invoices/"]')
+      .find(link => !link.closest('div')?.querySelector('.archive-button'))
       ?.closest('div');
     if (!buttonsBlock) {
       this.log('addInvoiceInfos : no invoice found');
