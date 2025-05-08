@@ -7,6 +7,8 @@ import { getTransaction } from '../api/transaction.js';
 import { GroupedDocumentsEntity } from '../api/Document/index.js';
 import { getParam } from '../_/url.js';
 import { APIDMSLink } from '../api/DMS/Link.js';
+import DMSItem from './DMSItem.js';
+import { createDMSLink } from '../api/dms.js';
 
 export default class Transaction extends ValidableDocument {
   protected _raw;
@@ -31,22 +33,34 @@ export default class Transaction extends ValidableDocument {
   }
 
   protected async loadValidMessage() {
-    const isCurrent = this.id === Number(getParam(location.href, 'transaction_id'));
+    const isCurrent = String(this.id) === getParam(location.href, 'transaction_id');
     if (isCurrent) this.log('loadValidMessage', this);
 
     const ledgerEvents = await this.getLedgerEvents();
 
     // Fait partie d'un exercice clos
-    if (ledgerEvents.some(event => event.closed)) return 'OK';
-
-    const doc = await this.getDocument();
+    if (ledgerEvents.some(event => event.closed)) {
+      if (isCurrent) this.log('fait partie d\'un exercice clos');
+      return 'OK';
+    }
 
     // Transaction archivée
-    if (doc.archived) return 'OK';
+    const doc = await this.getDocument();
+    if (doc.archived) {
+      if(isCurrent) this.log('transaction archivée');
+      return 'OK';
+    }
 
-    const groupedDocuments = await this.getGroupedDocuments();
+    // Fichiers DMS mal nommés
+    const dmsLinks = await this.getDMSLinks();
+    for (const dmsLink of dmsLinks) {
+      const dmsItem = new DMSItem({ id: dmsLink.item_id });
+      const dmsStatus = await dmsItem.getValidMessage();
+      if (dmsStatus !== 'OK') return `Corriger les noms des fichiers attachés dans l'onglet "Réconciliation" (surlignés en orange)`;
+    }
 
     // Pas de rapprochement bancaire
+    const groupedDocuments = await this.getGroupedDocuments();
     const groupedDoc = groupedDocuments.find(gdoc => gdoc.id === doc.id) as GroupedDocumentsEntity;
     const recent = (Date.now() - new Date(doc.date).getTime()) < 86_400_000 * 30;
     if (!recent && !groupedDoc.reconciled)
@@ -63,6 +77,7 @@ export default class Transaction extends ValidableDocument {
         || ledgerEvents.reduce((acc, ev) => acc + parseFloat(ev.amount), 0) !== 0
         || !ledgerEvents.find(ev => ev.planItem.number === '6270005')
       ) return 'Frais bancaires SG mal attribué (=> 6270005)';
+      if (isCurrent) this.log('frais bancaires OK');
       return 'OK';
     }
 
@@ -73,6 +88,7 @@ export default class Transaction extends ValidableDocument {
         || ledgerEvents.reduce((acc, ev) => acc + parseFloat(ev.amount), 0) !== 0
         || !ledgerEvents.find(ev => ev.planItem.number === '754110001')
       ) return 'Virement Allodons mal attribué (=>754110001)';
+      if (isCurrent) this.log('virement allodon OK');
       return 'OK';
     }
 
@@ -83,6 +99,7 @@ export default class Transaction extends ValidableDocument {
         || ledgerEvents.reduce((acc, ev) => acc + parseFloat(ev.amount), 0) !== 0
         || !ledgerEvents.find(ev => ev.planItem.number === '6270001')
       ) return 'Frais Stripe mal attribués (=>6270001)';
+      if (isCurrent) this.log('frais bancaires Stripe OK');
       return 'OK';
     }
 
@@ -94,10 +111,10 @@ export default class Transaction extends ValidableDocument {
         || !ledgerEvents.find(ev => ev.planItem.number === '6270001')
         || !ledgerEvents.find(ev => ev.planItem.number === '754110002')
       ) return 'Renouvellement de don mal attribués';
+      if (isCurrent) this.log('Renouvellement de don OK');
       return 'OK';
     }
 
-    const dmsLinks = await this.getDMSLinks();
     if (['VIR ', 'Payout: '].some(label => doc.label.startsWith(label))) {
       if ([
         ' DE: Stripe Technology Europe Ltd MOTIF: STRIPE ',
@@ -110,6 +127,7 @@ export default class Transaction extends ValidableDocument {
           || ledgerEvents.reduce((acc, ev) => acc + parseFloat(ev.amount), 0) !== 0
           || !ledgerEvents.find(ev => ev.planItem.number === '58000001')
         ) return 'Virement interne Stripe mal attribué (=>58000001)';
+        if (isCurrent) this.log('virement interne Stripe OK');
         return 'OK';
       }
 
@@ -130,6 +148,7 @@ export default class Transaction extends ValidableDocument {
           || ledgerEvents.reduce((acc, ev) => acc + parseFloat(ev.amount), 0) !== 0
           || !ledgerEvents.find(ev => ev.planItem.number === '75411')
         ) return 'Virement reçu d\'une association mal attribué';
+        if (isCurrent) this.log('virement reçu d\'une association OK');
         return 'OK';
       }
       const sansCerfa = [
@@ -145,6 +164,7 @@ export default class Transaction extends ValidableDocument {
           || ledgerEvents.reduce((acc, ev) => acc + parseFloat(ev.amount), 0) !== 0
           || !ledgerEvents.find(ev => ev.planItem.number === '75411')
         ) return 'Virement reçu avec CERFA optionel mal attribué (=>75411)';
+        if (isCurrent) this.log('Virement reçu avec CERFA optionel OK');
         return 'OK';
       }
       if (groupedDocuments.length < 2) return `<a
@@ -158,6 +178,7 @@ export default class Transaction extends ValidableDocument {
     // Aides octroyées
     const aidLedgerEvent = ledgerEvents.find(line => line.planItem.number.startsWith('6571'));
     if (aidLedgerEvent?.planItem.number === '6571002') { // a une autre asso
+      /**
       // Aides octroyées sans label
       if (!aidLedgerEvent.label) {
         return `<a
@@ -188,7 +209,9 @@ export default class Transaction extends ValidableDocument {
           href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Don%20%C3%A0%20une%20autre%20association"
         >Don versé à une autre association incorrectement traité ⓘ</a>`;
       }
+      if (isCurrent) this.log('Don versé à une autre association OK');
       return 'OK';
+      /**/
     }
     if (aidLedgerEvent && !aidLedgerEvent.label) {
       // Aides octroyées sans label
@@ -227,12 +250,19 @@ export default class Transaction extends ValidableDocument {
       else if (/ CHQ(?:\d|\s)/u.test(gdoc.label)) balance.CHQ = (balance.CHQ ?? 0) + value;
       else balance.autre = (balance.autre ?? 0) + value;
     });
+    for (const dmsLink of dmsLinks) {
+      if (dmsLink.name.startsWith('CHQ'))
+        balance.CHQ = (balance.CHQ ?? 0) - Number(dmsLink.name.match(/- (?<amount>[\d \.]*) ?€$/u)?.groups.amount);
+      if (/^(?:CERFA|AIDES) /u.test(dmsLink.name))
+        balance.Reçu = (balance.Reçu ?? 0) - Number(dmsLink.name.match(/- (?<amount>[\d \.]*) ?€$/u)?.groups.amount);
+    }
     ledgerEvents.forEach(event => {
       // pertes/gains de change
       if (['47600001', '656', '75800002'].includes(event.planItem.number)) {
         balance.autre = (balance.autre ?? 0) - parseFloat(event.amount);
       }
     });
+    if (isCurrent) this.log({ balance });
     let message = '';
     if (
       doc.label.startsWith('REMISE CHEQUE ')
@@ -244,8 +274,9 @@ export default class Transaction extends ValidableDocument {
         // Pour les remises de chèques, on a deux pièces justificatives necessaires : le chèque et le cerfa
         message = 'La somme des reçus doit valoir le montant de la transaction';
         balance.Reçu = balance.Reçu ?? 0;
-        if (dmsLinks.some(dms => dms.name.startsWith('CERFA'))) message = '';
       }
+    } else if (balance.Reçu) {
+      message = 'La contrepartie devrait commencer par "6571" (onglet "Écritures)';
     } else {
       if (Math.abs((balance.transaction ?? 0) - (balance.autre ?? 0)) > 0.001) {
         message = 'La somme des autres justificatifs doit valoir le montant de la transaction';
@@ -258,7 +289,7 @@ export default class Transaction extends ValidableDocument {
       return `<a
           title="Cliquer ici pour plus d'informations."
           href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Transaction%20-%20Balance%20v2#${escape(message)}"
-        >Balance v2 déséquilibrée: ${message} ⓘ</a><ul>${Object.entries(balance)
+        >Balance déséquilibrée: ${message} ⓘ</a><ul>${Object.entries(balance)
           .sort(([keya], [keyb]) => {
             const keys = ['transaction', 'CHQ', 'Reçu', 'autre'];
             return keys.indexOf(keya) - keys.indexOf(keyb);
@@ -325,7 +356,7 @@ export default class Transaction extends ValidableDocument {
       ].some(label => doc.label.startsWith(label));
     const attachmentRequired = doc.attachment_required && !doc.attachment_lost
       && (!attachmentOptional || isCurrent);
-    const hasAttachment = groupedDocuments.length > 1;
+    const hasAttachment = (groupedDocuments.length + dmsLinks.length) > 1;
     if (isCurrent) this.log({ attachmentOptional, attachmentRequired, groupedDocuments, hasAttachment });
     if (attachmentRequired && !hasAttachment) return 'Justificatif manquant';
 
@@ -336,6 +367,8 @@ export default class Transaction extends ValidableDocument {
   async groupAdd(id: number) {
     const doc = await this.getDocument();
     const groups = doc.group_uuid;
-    await documentMatching({ id, groups });
+    const docMatchResp = await documentMatching({ id, groups });
+    this.debug('groupAdd', {docMatchResp});
+    if (docMatchResp?.id !== id) await createDMSLink(id, this.id, 'Transaction');
   }
 }

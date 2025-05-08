@@ -1,5 +1,6 @@
 import { apiRequest  } from './core.js';
 import {APIDocument} from './Document/index.js';
+import { APIDocumentMatching } from './Document/Matching.js';
 
 export async function getDocument (id): Promise<APIDocument> {
   const response = await apiRequest(`documents/${id}`, null, 'GET');
@@ -14,11 +15,13 @@ interface MatchingOptions {
 }
 export async function documentMatching (options: MatchingOptions) {
   const group_uuids = Array.isArray(options.groups) ? options.groups : [options.groups];
-  await apiRequest(
+  const response = await apiRequest(
     `documents/${options.id}/matching`,
     { matching: { unmatch_ids:[], group_uuids } },
     'PUT'
   );
+  if (!response) return null;
+  return APIDocumentMatching.Create(await response.json());
 }
 
 export async function reloadLedgerEvents (id): Promise<APIDocument> {

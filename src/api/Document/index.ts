@@ -3268,7 +3268,9 @@ function checkNever(value: any, field: string, multiple?: string): void {
   return errorHelper(field, value, multiple ?? "never");
 }
 function errorHelper(field: string, d: any, type: string): void {
-  if (!type.includes(' | ')) {
+  if (type.includes(' | ')) {
+    throw new TypeError('Expected ' + type + " at " + field + " but found:\n" + JSON.stringify(d) + "\n\nFull object:\n" + JSON.stringify(obj));
+  } else {
     let jsonClone = obj;
     try {
       jsonClone = JSON.parse(JSON.stringify(obj));

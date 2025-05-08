@@ -1,12 +1,6 @@
 import { $, $$, findElem, parseHTML } from "../../_/dom.js";
-import { fetchToDataURL } from "../../_/fetch.js";
-import { getButtonClassName } from "../../_/getButtonClassName.js";
-import { GMXmlHttpRequest } from "../../_/gmXhr.js";
-import { rotateImage } from "../../_/image.js";
 import { getReactProps } from "../../_/react.js";
 import { waitFunc } from "../../_/time.js";
-import { isObject } from "../../_/typing.js";
-import { APIDMSItem } from "../../api/DMS/Item.js";
 import Service from "../../framework/Service.js";
 import DMSItem from "../../models/DMSItem.js";
 import { waitPage } from "../../navigation/waitPage.js";
@@ -35,8 +29,9 @@ export default class DMSDisplayStatus extends Service {
 
     rightList.insertBefore(this.container, rightList.firstChild);
     const item = new DMSItem(ref);
+    const dmsItem = await item.getItem();
     const message = await item.getValidMessage();
-    this.container.innerHTML = message;
+    this.container.innerHTML = `#${dmsItem.itemable_id}<br/>${message}`;
     const isOk = message === 'OK';
     this.container.classList.toggle('bg-warning-100', !isOk);
     this.container.classList.toggle('bg-primary-100', isOk);
