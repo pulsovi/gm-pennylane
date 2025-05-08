@@ -36,3 +36,10 @@ export async function archiveDocument (id: number, unarchive = false): Promise<n
   const responseData = await response?.json();
   return responseData;
 }
+
+/**
+ * Return http link to open a document
+ */
+export function getDocumentLink(id:number): string {
+  return `${location.href.split('/').slice(0,5).join('/')}/documents/${id}.html`;
+}

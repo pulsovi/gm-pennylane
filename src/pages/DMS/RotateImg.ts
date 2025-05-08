@@ -50,10 +50,11 @@ export default class DMSRotateImg extends Service {
 
     const iframe = $<HTMLIFrameElement>('iframe', rightList.parentElement.previousElementSibling);
     if (iframe) {
-      const src = await GMXmlHttpRequest(iframe.src);
-      const url = isObject(src) && ('finalUrl' in src) && src.finalUrl;
-      this.log({ url });
-      const replacement = parseHTML(`
+      const srcContent = await fetch(iframe.src);
+      const url = srcContent.redirected && new URL(srcContent.url);
+      this.log({ iframeSrc: iframe.src, srcContent, url });
+      if (url?.searchParams.get('response-content-type') !== 'application/pdf') {
+        const replacement = parseHTML(`
         <div class="border rounded border-secondary-200">
           <div class="pan-container sc-ewIWWK bVhudS overflow-hidden" style="user-select: none;">
             <div class="matrix" style="transform: matrix(1, 0, 0, 1, 0, 0);">
@@ -64,15 +65,19 @@ export default class DMSRotateImg extends Service {
           </div>
         </div>
       `).firstElementChild;
-      iframe.parentElement.insertBefore(replacement, iframe);
-      iframe.hidden = true;
-      this.makePanContainerDynamic();
-      this.on('reload', () => {
-        this.log('reload', {replacement});
-        replacement.remove();
-      });
+        iframe.parentElement.insertBefore(replacement, iframe);
+        iframe.hidden = true;
+        this.makePanContainerDynamic();
+        this.on('reload', () => {
+          this.log('reload', { replacement });
+          replacement.remove();
+        });
+      }
     }
-    $$<HTMLImageElement>('img', $('.pan-container')).forEach(image => this.handleImage(image));
+    if ($('.pan-container')) {
+      $$<HTMLImageElement>('img', $('.pan-container'))
+        .forEach(image => this.handleImage(image));
+    }
     const ref = getReactProps(rightList, 7).item;
     await waitFunc(() => getReactProps(rightList, 7).item !== ref);
     this.emit('reload');
@@ -136,7 +141,7 @@ export default class DMSRotateImg extends Service {
 
   async reset() {
     await new Promise(rs => { this.img.addEventListener('load', rs); });
-    await new Promise(rs => { requestAnimationFrame(() => { setTimeout(rs, 0); })});
+    await new Promise(rs => { requestAnimationFrame(() => { setTimeout(rs, 0); }) });
 
     const containerHeight = parseInt(getComputedStyle(this.panContainer).height);
     const containerWidth = parseInt(getComputedStyle(this.panContainer).width);
@@ -145,8 +150,8 @@ export default class DMSRotateImg extends Service {
 
     this.state.zoomMin = Math.min(containerHeight / imgHeight, containerWidth / imgWidth);
     this.state.matrix.zoom = this.state.zoomMin;
-    this.state.matrix.translationX = -(containerWidth - (containerWidth*this.state.zoomMin)) / 2;
-    this.state.matrix.translationY = -(containerHeight - (containerHeight*this.state.zoomMin)) / 2;
+    this.state.matrix.translationX = -(containerWidth - (containerWidth * this.state.zoomMin)) / 2;
+    this.state.matrix.translationY = -(containerHeight - (containerHeight * this.state.zoomMin)) / 2;
     this.log({ containerHeight, containerWidth, imgHeight, imgWidth, class: this });
     this.setMatrix();
   }

@@ -1,8 +1,14 @@
 import { getParam } from '../_/url.js';
+import { getDMSItemList, updateDMSItem } from '../api/dms.js';
+import { APIDMSItem } from '../api/DMS/Item.js';
 import { getInvoice, moveToDms, updateInvoice } from '../api/invoice.js';
 import { APIInvoice } from '../api/types.js';
+import Logger from '../framework/Logger.js';
+import DMSItem from './DMSItem.js';
 
 import ValidableDocument from './ValidableDocument.js';
+
+const staticLogger = new Logger('Invoice');
 
 export default abstract class Invoice extends ValidableDocument {
   public readonly type = 'invoice';
@@ -16,7 +22,7 @@ export default abstract class Invoice extends ValidableDocument {
   static async load(id: number) {
     const invoice = await getInvoice(id);
     if (!invoice?.id) {
-      this.prototype.log('Invoice.load: cannot load this invoice', { id, invoice, _this: this });
+      staticLogger.log('Invoice.load: cannot load this invoice', { id, invoice, _this: this });
       return new NotFoundInvoice({ id });
     }
     return this.from(invoice);
@@ -34,6 +40,20 @@ export default abstract class Invoice extends ValidableDocument {
       });
     }
     return this.invoice;
+  }
+
+  async moveToDms(destId: number) {
+    const invoice = await this.getInvoice();
+    const filename = invoice.filename;
+    const fileId = invoice.file_signed_id;
+    const invoiceName = invoice.invoice_number;
+    await moveToDms(this.id, destId);
+    const files = await getDMSItemList({
+      filter:[{field: 'name', operator: 'search_all', value: filename}]
+    });
+    const item: APIDMSItem = files.items.find(fileItem => fileItem.signed_id === fileId);
+    await updateDMSItem({ id: item.id, name: invoiceName });
+    return new DMSItem({id: item.id});
   }
 }
 
@@ -230,18 +250,21 @@ class SupplierInvoice extends Invoice {
       )
     ) {
       if (transactions.find(transaction => transaction.date.startsWith('2023'))) {
-        await moveToDms(this.id, 57983091 /*2023 - Compta - Fournisseurs*/);
+        const dmsItem = await this.moveToDms(57983091 /*2023 - Compta - Fournisseurs*/);
+        this.log({dmsItem});
         if (isCurrent) this.log('moved to DMS', { invoice: this });
         return (await Invoice.load(this.id)).loadValidMessage();
       }
       if (transactions.find(transaction => transaction.date.startsWith('2024'))) {
-        await moveToDms(this.id, 21994050 /*2024 - Compta - Fournisseurs*/);
+        const dmsItem = await this.moveToDms(21994050 /*2024 - Compta - Fournisseurs*/);
+        this.log({dmsItem});
         if (isCurrent) this.log('moved to DMS', { invoice: this });
         return (await Invoice.load(this.id)).loadValidMessage();
       }
       /**
       if (transactions.find(transaction => transaction.date.startsWith('2025'))) {
-        await moveToDms(this.id, 21994065 /*2025 - Compta - Fournisseurs*);
+        const dmsItem = await this.moveToDms(21994065 /*2025 - Compta - Fournisseurs*);
+        this.log({dmsItem});
         if (isCurrent) this.log('moved to DMS', { invoice: this });
         return (await Invoice.load(this.id)).loadValidMessage();
       }
@@ -266,6 +289,13 @@ class SupplierInvoice extends Invoice {
       }
       if (invoice.has_closed_ledger_events || ledgerEvents.some(levent => levent.closed)) {
         this.log('exercice clos, on ne peut plus remplir la date');
+        if (transactions.find(transaction => transaction.date.startsWith('2023'))) {
+          const dmsItem = await this.moveToDms(57983091 /*2023 - Compta - Fournisseurs*/);
+          this.log({dmsItem});
+          if (isCurrent) this.log('moved to DMS', { invoice: this });
+          return (await Invoice.load(this.id)).loadValidMessage();
+        }
+        return 'envoyer en GED';
       } else {
         return `<a
           title="Cliquer ici pour plus d'informations"
@@ -361,13 +391,15 @@ class CustomerInvoice extends Invoice {
     const transactions = groupedDocuments.filter(gdoc => gdoc.type === 'Transaction');
 
     if (transactions.find(transaction => transaction.date.startsWith('2024'))) {
-      await moveToDms(this.id, 21994051 /*2024 - Compta - Clients */);
+      const dmsItem = await this.moveToDms(21994051 /*2024 - Compta - Clients */);
+      this.log({dmsItem});
       if (isCurrent) this.log('moved to DMS', { invoice: this });
       return (await Invoice.load(this.id)).loadValidMessage();
     }
 
     if (transactions.find(transaction => transaction.date.startsWith('2023'))) {
-      await moveToDms(this.id, 57983092 /*2023 - Compta - Clients */);
+      const dmsItem = await this.moveToDms(57983092 /*2023 - Compta - Clients */);
+      this.log({dmsItem});
       if (isCurrent) this.log('moved to DMS', { invoice: this });
       return (await Invoice.load(this.id)).loadValidMessage();
     }

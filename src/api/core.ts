@@ -2,7 +2,7 @@ import { sleep } from '../_/time.js';
 
 let apiRequestWait: Promise<void> | null = null;
 
-export async function apiRequest (endpoint: string, data: Record<string, unknown> | null, method = 'POST') {
+export async function apiRequest (endpoint: string, data: Record<string, unknown> | null = null, method = 'POST') {
   if (apiRequestWait) await apiRequestWait;
   const response = await fetch(`${location.href.split('/').slice(0, 5).join('/')}/${endpoint}`, {
     method,

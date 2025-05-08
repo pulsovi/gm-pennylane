@@ -25,14 +25,18 @@ import AutoSearchTransaction from './pages/invoicePanel/AutoSearchTransaction.js
 import { getButtonClassName } from './_/getButtonClassName.js';
 import DMSRotateImg from './pages/DMS/RotateImg.js';
 import { GMXmlHttpRequest } from './_/gmXhr.js';
+import DMSDisplayStatus from './pages/DMS/DisplayStatus.js';
+import { getDMSItem, getDMSItemLinks, getDMSItemList, getDMSLinks } from './api/dms.js';
 import OpenRefTransaction from './pages/invoicePanel/OpenRefTransaction.js';
 import ImproveMatchSuggestions from './pages/transactionPanel/ImproveMatchSuggestions.js';
+import { waitPage } from './navigation/waitPage.js';
 
 last7DaysFilter();
 AddInvoiceIdColumn.start();
 AllowChangeArchivedInvoiceNumber.start();
 ArchiveGroupedDocument.start();
 AutoSearchTransaction.start();
+DMSDisplayStatus.start();
 DMSRotateImg.start();
 EntryBlocInfos.start();
 FixTab.start();
@@ -86,6 +90,11 @@ const augmentation = {
     waitElem: findElem,
     getButtonClassName,
     GMXmlHttpRequest,
+    getDMSItem,
+    getDMSLinks,
+    getDMSItemLinks,
+    getDMSItemList,
+    waitPage,
   },
 };
 Object.assign(window, augmentation);

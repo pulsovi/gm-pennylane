@@ -29,11 +29,11 @@ export async function getTransactionsList (
  */
 export async function* getTransactionGenerator (
   params: APITransactionListParams = {}
-): AsyncGenerator<TransactionsEntity> {
+): AsyncGenerator<APITransaction> {
   let page = Number(params.page ?? 1);
   do {
     const data = await getTransactionsList(Object.assign({}, params, { page }));
-    const transactions = data.transactions;
+    const transactions = data.transactions.map(item => APITransaction.Create(item));
     if (!transactions?.length) return;
     for (const transaction of transactions) yield transaction;
     ++page;
@@ -41,7 +41,7 @@ export async function* getTransactionGenerator (
 }
 
 export async function findTransaction (
-  cb: (transaction: TransactionsEntity, params: APITransactionListParams & { page: number }) => boolean | Promise<boolean>,
+  cb: (transaction: APITransaction, params: APITransactionListParams & { page: number }) => boolean | Promise<boolean>,
   params: APITransactionListParams = {}
 ): Promise<APITransaction> {
   if (('page' in params) && !Number.isInteger(params.page)) {
@@ -57,7 +57,10 @@ export async function findTransaction (
     const transactions = data.transactions;
     if (!transactions?.length) return null;
     console.log('findTransaction page', {parameters, data, transactions});
-    for (const transaction of transactions) if (await cb(transaction, parameters)) return transaction;
+    for (const item of transactions) {
+      const transaction = APITransaction.Create(item);
+      if (await cb(transaction, parameters)) return transaction;
+    }
     parameters = Object.assign(jsonClone(parameters), { page: parameters.page + 1 });
   } while (parameters.page <= data.pagination.pages);
   return null;

@@ -1,0 +1,187 @@
+// Stores the currently-being-typechecked object for error messages.
+const proxyName = 'APIDMSUpdateItem';
+let obj: any = null;
+export class APIDMSUpdateItem {
+  // samples: [null]
+  public readonly archived_at: null;
+  // samples: ["2025-05-08T08:45:49.350476Z"]
+  public readonly created_at: string;
+  // samples: [{"first_name":"David","last_name":"Gabison","full_name":"David Gabison","email":"david@gabison.com","role":"external_accountant"}]
+  public readonly creator: Creator;
+  // samples: [false]
+  public readonly favorite: boolean;
+  // samples: ["pdf"]
+  public readonly file_extension: string;
+  // samples: [3089256]
+  public readonly file_size: number;
+  // samples: ["/rails/active_storage/blobs/redirect/zICBpl9yYWlsc4KkZGF0Yc4DudJ4o3B1cqdibG9iX2lk--446b8e67c98702cc2b99466a6f7ad0b09006bbb4/%C2%A7%20%23580541770.pdf"]
+  public readonly file_url: string;
+  // samples: [92187073]
+  public readonly id: number;
+  // samples: [false]
+  public readonly imports_allowed: boolean;
+  // samples: [48168851]
+  public readonly itemable_id: number;
+  // samples: ["PUT"]
+  public readonly method: string;
+  // samples: ["§ #580541770"]
+  public readonly name: string;
+  // samples: [57983091]
+  public readonly parent_id: number;
+  // samples: ["private-gid---jeancaisse-DmsItem-92187073"]
+  public readonly pusher_channel: string;
+  // samples: [false]
+  public readonly readonly: boolean;
+  // samples: [null]
+  public readonly reference_link: null;
+  // samples: [false]
+  public readonly shared: boolean;
+  // samples: ["zICBpl9yYWlsc4KkZGF0Yc4DudJ4o3B1cqdibG9iX2lk--446b8e67c98702cc2b99466a6f7ad0b09006bbb4"]
+  public readonly signed_id: string;
+  // samples: ["dms_file"]
+  public readonly type: string;
+  // samples: ["2025-05-08T08:45:49.950945Z"]
+  public readonly updated_at: string;
+  public static Parse(d: string): APIDMSUpdateItem {
+    return APIDMSUpdateItem.Create(JSON.parse(d));
+  }
+  public static Create(d: any, field?: string, multiple ?: string): APIDMSUpdateItem {
+    if (!field) {
+      obj = d;
+      field = "root";
+    }
+    if (!d) {
+      throwNull2NonNull(field, d, multiple ?? this.name);
+    } else if (typeof(d) !== 'object') {
+      throwNotObject(field, d);
+    } else if (Array.isArray(d)) {
+      throwIsArray(field, d);
+    }
+    checkNull(d.archived_at, field + ".archived_at");
+    checkString(d.created_at, field + ".created_at");
+    d.creator = Creator.Create(d.creator, field + ".creator", undefined);
+    checkBoolean(d.favorite, field + ".favorite");
+    checkString(d.file_extension, field + ".file_extension");
+    checkNumber(d.file_size, field + ".file_size");
+    checkString(d.file_url, field + ".file_url");
+    checkNumber(d.id, field + ".id");
+    checkBoolean(d.imports_allowed, field + ".imports_allowed");
+    checkNumber(d.itemable_id, field + ".itemable_id");
+    checkString(d.method, field + ".method");
+    checkString(d.name, field + ".name");
+    checkNumber(d.parent_id, field + ".parent_id");
+    checkString(d.pusher_channel, field + ".pusher_channel");
+    checkBoolean(d.readonly, field + ".readonly");
+    checkNull(d.reference_link, field + ".reference_link");
+    checkBoolean(d.shared, field + ".shared");
+    checkString(d.signed_id, field + ".signed_id");
+    checkString(d.type, field + ".type");
+    checkString(d.updated_at, field + ".updated_at");
+    const knownProperties = ["archived_at","created_at","creator","favorite","file_extension","file_size","file_url","id","imports_allowed","itemable_id","method","name","parent_id","pusher_channel","readonly","reference_link","shared","signed_id","type","updated_at"];
+    const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
+    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    return new APIDMSUpdateItem(d);
+  }
+  private constructor(d: any) {
+    this.archived_at = d.archived_at;
+    this.created_at = d.created_at;
+    this.creator = d.creator;
+    this.favorite = d.favorite;
+    this.file_extension = d.file_extension;
+    this.file_size = d.file_size;
+    this.file_url = d.file_url;
+    this.id = d.id;
+    this.imports_allowed = d.imports_allowed;
+    this.itemable_id = d.itemable_id;
+    this.method = d.method;
+    this.name = d.name;
+    this.parent_id = d.parent_id;
+    this.pusher_channel = d.pusher_channel;
+    this.readonly = d.readonly;
+    this.reference_link = d.reference_link;
+    this.shared = d.shared;
+    this.signed_id = d.signed_id;
+    this.type = d.type;
+    this.updated_at = d.updated_at;
+  }
+}
+
+export class Creator {
+  // samples: ["david@gabison.com"]
+  public readonly email: string;
+  // samples: ["David"]
+  public readonly first_name: string;
+  // samples: ["David Gabison"]
+  public readonly full_name: string;
+  // samples: ["Gabison"]
+  public readonly last_name: string;
+  // samples: ["external_accountant"]
+  public readonly role: string;
+  public static Parse(d: string): Creator {
+    return Creator.Create(JSON.parse(d));
+  }
+  public static Create(d: any, field?: string, multiple ?: string): Creator {
+    if (!field) {
+      obj = d;
+      field = "root";
+    }
+    if (!d) {
+      throwNull2NonNull(field, d, multiple ?? this.name);
+    } else if (typeof(d) !== 'object') {
+      throwNotObject(field, d);
+    } else if (Array.isArray(d)) {
+      throwIsArray(field, d);
+    }
+    checkString(d.email, field + ".email");
+    checkString(d.first_name, field + ".first_name");
+    checkString(d.full_name, field + ".full_name");
+    checkString(d.last_name, field + ".last_name");
+    checkString(d.role, field + ".role");
+    const knownProperties = ["email","first_name","full_name","last_name","role"];
+    const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
+    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    return new Creator(d);
+  }
+  private constructor(d: any) {
+    this.email = d.email;
+    this.first_name = d.first_name;
+    this.full_name = d.full_name;
+    this.last_name = d.last_name;
+    this.role = d.role;
+  }
+}
+
+function throwNull2NonNull(field: string, value: any, multiple?: string): never {
+  return errorHelper(field, value, multiple ?? "non-nullable object");
+}
+function throwNotObject(field: string, value: any, multiple?: string): never {
+  return errorHelper(field, value, multiple ?? "object");
+}
+function throwIsArray(field: string, value: any, multiple?: string): never {
+  return errorHelper(field, value, multiple ?? "object");
+}
+function checkNumber(value: any, field: string, multiple?: string): void {
+  if (typeof(value) !== 'number') errorHelper(field, value, multiple ?? "number");
+}
+function checkBoolean(value: any, field: string, multiple?: string): void {
+  if (typeof(value) !== 'boolean') errorHelper(field, value, multiple ?? "boolean");
+}
+function checkString(value: any, field: string, multiple?: string): void {
+  if (typeof(value) !== 'string') errorHelper(field, value, multiple ?? "string");
+}
+function checkNull(value: any, field: string, multiple?: string): void {
+  if (value !== null) errorHelper(field, value, multiple ?? "null");
+}
+function errorHelper(field: string, d: any, type: string): never {
+  if (!type.includes(' | ')) {
+    let jsonClone = obj;
+    try {
+      jsonClone = JSON.parse(JSON.stringify(obj));
+    } catch(error) {
+      console.log(error);
+    }
+    console.log('Expected ' + type + " at " + field + " but found:\n" + JSON.stringify(d), jsonClone);
+    prompt(proxyName+':', JSON.stringify(obj));
+  }
+  throw new TypeError('Expected ' + type + " at " + field + " but found:\n" + JSON.stringify(d) + "\n\nFull object:\n" + JSON.stringify(obj));
+}
