@@ -2,13 +2,9 @@
 const proxyName = 'APIDMSItemList';
 let obj: any = null;
 export class APIDMSItemList {
-  // samples: ["[{\"field\":\"name\",\"operator\":\"search_all\",\"value\":\"Scan2024-01-22_184251.jpg\"}]","[{\"field\":\"name\",\"operator\":\"search_all\",\"value\":\"Scan2024-01-22_184251\"}]"]
   public readonly filters: string;
-  // samples: [[],[{"id":92179675,"itemable_id":48164141,"name":"Scan2024-01-22_184251.jpg","archived_at":null,"created_at":"2025-05-08T07:53:09.017893Z","updated_at":"2025-05-08T07:53:09.036275Z","pusher_channel":"private-gid---jeancaisse-DmsItem-92179675","parent_id":57983091,"shared":false,"imports_allowed":false,"type":"dms_file","favorite":false,"creator":{"first_name":"David","last_name":"Gabison","full_name":"David Gabison","email":"david@gabison.com","role":"external_accountant"},"file_url":"/rails/active_storage/blobs/redirect/zICBpl9yYWlsc4KkZGF0Yc4Gfexgo3B1cqdibG9iX2lk--651dd80922ea608b3dd39e3527e7fbd56388b8ab/Scan2024-01-22_184251.jpg","file_size":446168,"signed_id":"zICBpl9yYWlsc4KkZGF0Yc4Gfexgo3B1cqdibG9iX2lk--651dd80922ea608b3dd39e3527e7fbd56388b8ab","file_extension":"jpg","reference_link":null,"comments_count":0,"readonly":false,"method":"GET"}]]
   public readonly items: ItemsEntity[];
-  // samples: [{"page":0,"pageSize":20,"pages":1,"totalEntries":0,"totalEntriesStr":"0","totalEntriesPrecision":"exact","hasNextPage":false}]
   public readonly pagination: Pagination;
-  // samples: ["+name"]
   public readonly sort: string;
   public static Parse(d: string): APIDMSItemList {
     return APIDMSItemList.Create(JSON.parse(d));
@@ -48,47 +44,26 @@ export class APIDMSItemList {
 }
 
 export class ItemsEntity {
-  // samples: [null]
   public readonly archived_at: null;
-  // samples: [0]
   public readonly comments_count: number;
-  // samples: ["2025-05-08T07:53:09.017893Z"]
   public readonly created_at: string;
-  // samples: [{"first_name":"David","last_name":"Gabison","full_name":"David Gabison","email":"david@gabison.com","role":"external_accountant"}]
   public readonly creator: Creator;
-  // samples: [false]
   public readonly favorite: boolean;
-  // samples: ["jpg"]
   public readonly file_extension: string;
-  // samples: [446168]
   public readonly file_size: number;
-  // samples: ["/rails/active_storage/blobs/redirect/zICBpl9yYWlsc4KkZGF0Yc4Gfexgo3B1cqdibG9iX2lk--651dd80922ea608b3dd39e3527e7fbd56388b8ab/Scan2024-01-22_184251.jpg"]
   public readonly file_url: string;
-  // samples: [92179675]
   public readonly id: number;
-  // samples: [false]
   public readonly imports_allowed: boolean;
-  // samples: [48164141]
   public readonly itemable_id: number;
-  // samples: ["GET"]
   public readonly method: string;
-  // samples: ["Scan2024-01-22_184251.jpg"]
   public readonly name: string;
-  // samples: [57983091]
   public readonly parent_id: number;
-  // samples: ["private-gid---jeancaisse-DmsItem-92179675"]
   public readonly pusher_channel: string;
-  // samples: [false]
   public readonly readonly: boolean;
-  // samples: [null]
   public readonly reference_link: null;
-  // samples: [false]
   public readonly shared: boolean;
-  // samples: ["zICBpl9yYWlsc4KkZGF0Yc4Gfexgo3B1cqdibG9iX2lk--651dd80922ea608b3dd39e3527e7fbd56388b8ab"]
   public readonly signed_id: string;
-  // samples: ["dms_file"]
   public readonly type: string;
-  // samples: ["2025-05-08T07:53:09.036275Z"]
   public readonly updated_at: string;
   public static Parse(d: string): ItemsEntity {
     return ItemsEntity.Create(JSON.parse(d));
@@ -157,15 +132,10 @@ export class ItemsEntity {
 }
 
 export class Creator {
-  // samples: ["david@gabison.com"]
   public readonly email: string;
-  // samples: ["David"]
   public readonly first_name: string;
-  // samples: ["David Gabison"]
   public readonly full_name: string;
-  // samples: ["Gabison"]
   public readonly last_name: string;
-  // samples: ["external_accountant"]
   public readonly role: string;
   public static Parse(d: string): Creator {
     return Creator.Create(JSON.parse(d));
@@ -202,19 +172,12 @@ export class Creator {
 }
 
 export class Pagination {
-  // samples: [false]
   public readonly hasNextPage: boolean;
-  // samples: [0]
   public readonly page: number;
-  // samples: [1]
   public readonly pages: number;
-  // samples: [20]
   public readonly pageSize: number;
-  // samples: [0]
   public readonly totalEntries: number;
-  // samples: ["exact"]
   public readonly totalEntriesPrecision: string;
-  // samples: ["0"]
   public readonly totalEntriesStr: string;
   public static Parse(d: string): Pagination {
     return Pagination.Create(JSON.parse(d));
@@ -254,13 +217,13 @@ export class Pagination {
   }
 }
 
-function throwNull2NonNull(field: string, value: any, multiple?: string): never {
+function throwNull2NonNull(field: string, value: any, multiple?: string): void {
   return errorHelper(field, value, multiple ?? "non-nullable object");
 }
-function throwNotObject(field: string, value: any, multiple?: string): never {
+function throwNotObject(field: string, value: any, multiple?: string): void {
   return errorHelper(field, value, multiple ?? "object");
 }
-function throwIsArray(field: string, value: any, multiple?: string): never {
+function throwIsArray(field: string, value: any, multiple?: string): void {
   return errorHelper(field, value, multiple ?? "object");
 }
 function checkArray(value: any, field: string, multiple?: string): void {
@@ -278,7 +241,7 @@ function checkString(value: any, field: string, multiple?: string): void {
 function checkNull(value: any, field: string, multiple?: string): void {
   if (value !== null) errorHelper(field, value, multiple ?? "null");
 }
-function errorHelper(field: string, d: any, type: string): never {
+function errorHelper(field: string, d: any, type: string): void {
   if (!type.includes(' | ')) {
     let jsonClone = obj;
     try {
@@ -289,5 +252,4 @@ function errorHelper(field: string, d: any, type: string): never {
     console.log('Expected ' + type + " at " + field + " but found:\n" + JSON.stringify(d), jsonClone);
     prompt(proxyName+':', JSON.stringify(obj));
   }
-  throw new TypeError('Expected ' + type + " at " + field + " but found:\n" + JSON.stringify(d) + "\n\nFull object:\n" + JSON.stringify(obj));
 }

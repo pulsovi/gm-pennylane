@@ -26,16 +26,16 @@ export class APIDMSCreateLink {
   }
 }
 
-function throwNull2NonNull(field: string, value: any, multiple?: string): never {
+function throwNull2NonNull(field: string, value: any, multiple?: string): void {
   return errorHelper(field, value, multiple ?? "non-nullable object");
 }
-function throwNotObject(field: string, value: any, multiple?: string): never {
+function throwNotObject(field: string, value: any, multiple?: string): void {
   return errorHelper(field, value, multiple ?? "object");
 }
-function throwIsArray(field: string, value: any, multiple?: string): never {
+function throwIsArray(field: string, value: any, multiple?: string): void {
   return errorHelper(field, value, multiple ?? "object");
 }
-function errorHelper(field: string, d: any, type: string): never {
+function errorHelper(field: string, d: any, type: string): void {
   if (!type.includes(' | ')) {
     let jsonClone = obj;
     try {
@@ -46,5 +46,4 @@ function errorHelper(field: string, d: any, type: string): never {
     console.log('Expected ' + type + " at " + field + " but found:\n" + JSON.stringify(d), jsonClone);
     prompt(proxyName+':', JSON.stringify(obj));
   }
-  throw new TypeError('Expected ' + type + " at " + field + " but found:\n" + JSON.stringify(d) + "\n\nFull object:\n" + JSON.stringify(obj));
 }

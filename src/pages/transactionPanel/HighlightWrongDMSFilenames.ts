@@ -1,4 +1,4 @@
-import { $$, findElem, HTMLToString } from "../../_/dom.js";
+import { $, $$, findElem, HTMLToString } from "../../_/dom.js";
 import { getReactProps } from "../../_/react.js";
 import { sleep } from "../../_/time.js";
 import { APIDMSItem } from "../../api/DMS/Item.js";
@@ -16,7 +16,7 @@ export default class HighlightWrongDMSFilenames extends Service {
 
   async watch () {
     while (await waitPage('transactionDetail')) {
-      const unmanagedDMSItems = $$('span.tiny-caption').filter(span => (
+      const unmanagedDMSItems = $$('.ui-card:not(.GM) span.tiny-caption').filter(span => (
         !span.classList.contains('GM')
         && span.innerText.startsWith('ajouté dans la GED le ')
       ));
@@ -25,14 +25,21 @@ export default class HighlightWrongDMSFilenames extends Service {
         continue;
       }
       for (const span of unmanagedDMSItems) {
-        this.log({span});
+        this.debug({span});
         const files = getReactProps(span, 11).files as APIDMSLink[];
         for (const file of files) {
           const dmsItem = new DMSItem({id:file.item_id});
           const status = await dmsItem.getValidMessage();
-          const nameDiv = findElem('div.d-block', file.name);
-          const targetSpan = nameDiv.nextElementSibling;
-          targetSpan.classList.add('GM');
+          const card = $(`a[href$="${file.item_id}"]`).closest('.ui-card');
+          const nameDiv = $('div.d-block', card);
+          if (!card || !nameDiv) {
+            this.log('nameDiv is null', {
+              span, file, files, status, dmsItem, card, nameDiv
+            });
+            continue;
+          }
+          card.classList.add('GM');
+          this.debug({nameDiv, file, files, status, closest: nameDiv.closest('.ui-card'), dmsItem});
           if (status !== 'OK') {
             nameDiv.classList.add('bg-warning-100');
             Tooltip.make({target: nameDiv, text: HTMLToString(status)});

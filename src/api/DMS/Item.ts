@@ -2,47 +2,26 @@
 const proxyName = 'APIDMSItem';
 let obj: any = null;
 export class APIDMSItem {
-  // samples: [null]
   public readonly archived_at: null;
-  // samples: [0]
   public readonly comments_count: number;
-  // samples: ["2025-04-27T09:37:01.953459Z","2024-12-17T18:09:06.981297Z"]
   public readonly created_at: string;
-  // samples: [{"first_name":"David","last_name":"Gabison","full_name":"David Gabison","email":"david@gabison.com","role":"external_accountant"}]
   public readonly creator: Creator;
-  // samples: [false]
   public readonly favorite: boolean;
-  // samples: ["pdf"]
   public readonly file_extension: string;
-  // samples: [174491,1092695]
   public readonly file_size: number;
-  // samples: ["/rails/active_storage/blobs/redirect/zICBpl9yYWlsc4KkZGF0Yc4XCAP+o3B1cqdibG9iX2lk--f88731e378363972012d93566c1d8bc1c7f96c62/undefined%20-%202025-04-11%20-%20IMPORT%20WHATSAPP.pdf","/rails/active_storage/blobs/redirect/zICBpl9yYWlsc4KkZGF0Yc4PXGauo3B1cqdibG9iX2lk--c340f26c76474ce524ab0f6bb2573860177ad059/Adobe%20Scan%2012%20mars%202024%20(1).pdf%20-%202024-03-12%20-%20IMPORT%20WHATSAPP.pdf"]
   public readonly file_url: string;
-  // samples: [90315271,62139089]
   public readonly id: number;
-  // samples: [false]
   public readonly imports_allowed: boolean;
-  // samples: [47272416,30380956]
   public readonly itemable_id: number;
-  // samples: ["GET"]
   public readonly method: string;
-  // samples: ["undefined - 2025-04-11 - IMPORT WHATSAPP.pdf","Adobe Scan 12 mars 2024 (1).pdf - 2024-03-12 - IMPORT WHATSAPP.pdf"]
   public readonly name: string;
-  // samples: [21994065,null]
   public readonly parent_id: number | null;
-  // samples: ["private-gid---jeancaisse-DmsItem-90315271","private-gid---jeancaisse-DmsItem-62139089"]
   public readonly pusher_channel: string;
-  // samples: [false]
   public readonly readonly: boolean;
-  // samples: [null]
   public readonly reference_link: null;
-  // samples: [false]
   public readonly shared: boolean;
-  // samples: ["zICBpl9yYWlsc4KkZGF0Yc4XCAP+o3B1cqdibG9iX2lk--f88731e378363972012d93566c1d8bc1c7f96c62","zICBpl9yYWlsc4KkZGF0Yc4PXGauo3B1cqdibG9iX2lk--c340f26c76474ce524ab0f6bb2573860177ad059"]
   public readonly signed_id: string;
-  // samples: ["dms_file"]
   public readonly type: string;
-  // samples: ["2025-04-27T09:37:01.965145Z","2024-12-17T18:09:06.992389Z"]
   public readonly updated_at: string;
   public static Parse(d: string): APIDMSItem {
     return APIDMSItem.Create(JSON.parse(d));
@@ -80,7 +59,6 @@ export class APIDMSItem {
         checkNull(d.parent_id, field + ".parent_id", "number | null");
       } catch (e) {
         prompt(proxyName+':', JSON.stringify(obj));
-        throw e;
       }
     }
     checkString(d.pusher_channel, field + ".pusher_channel");
@@ -121,15 +99,10 @@ export class APIDMSItem {
 }
 
 export class Creator {
-  // samples: ["david@gabison.com"]
   public readonly email: string;
-  // samples: ["David"]
   public readonly first_name: string;
-  // samples: ["David Gabison"]
   public readonly full_name: string;
-  // samples: ["Gabison"]
   public readonly last_name: string;
-  // samples: ["external_accountant"]
   public readonly role: string;
   public static Parse(d: string): Creator {
     return Creator.Create(JSON.parse(d));
@@ -165,13 +138,13 @@ export class Creator {
   }
 }
 
-function throwNull2NonNull(field: string, value: any, multiple?: string): never {
+function throwNull2NonNull(field: string, value: any, multiple?: string): void {
   return errorHelper(field, value, multiple ?? "non-nullable object");
 }
-function throwNotObject(field: string, value: any, multiple?: string): never {
+function throwNotObject(field: string, value: any, multiple?: string): void {
   return errorHelper(field, value, multiple ?? "object");
 }
-function throwIsArray(field: string, value: any, multiple?: string): never {
+function throwIsArray(field: string, value: any, multiple?: string): void {
   return errorHelper(field, value, multiple ?? "object");
 }
 function checkNumber(value: any, field: string, multiple?: string): void {
@@ -186,7 +159,7 @@ function checkString(value: any, field: string, multiple?: string): void {
 function checkNull(value: any, field: string, multiple?: string): void {
   if (value !== null) errorHelper(field, value, multiple ?? "null");
 }
-function errorHelper(field: string, d: any, type: string): never {
+function errorHelper(field: string, d: any, type: string): void {
   if (!type.includes(' | ')) {
     let jsonClone = obj;
     try {
@@ -197,5 +170,4 @@ function errorHelper(field: string, d: any, type: string): never {
     console.log('Expected ' + type + " at " + field + " but found:\n" + JSON.stringify(d), jsonClone);
     prompt(proxyName+':', JSON.stringify(obj));
   }
-  throw new TypeError('Expected ' + type + " at " + field + " but found:\n" + JSON.stringify(d) + "\n\nFull object:\n" + JSON.stringify(obj));
 }

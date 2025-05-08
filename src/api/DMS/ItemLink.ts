@@ -2,15 +2,10 @@
 const proxyName = 'APIDMSItemLink';
 let obj: any = null;
 export class APIDMSItemLink {
-  // samples: [33144913]
   public readonly id: number;
-  // samples: [1938208033]
   public readonly record_id: number;
-  // samples: ["REMISE CHEQUE 0000304 107 DE 1 CHQ 03421 0000304"]
   public readonly record_name: string;
-  // samples: ["BankTransaction"]
   public readonly record_type: string;
-  // samples: ["https://app.pennylane.com/companies/21936866/accountants/transactions?transaction_id=1938208033&period_start=2025-01-01&period_end=2025-12-31&filter=%5B%7B%22field%22%3A%22id%22%2C%22operator%22%3A%22eq%22%2C%22value%22%3A1938208033%7D%5D"]
   public readonly record_url: string;
   public static Parse(d: string): APIDMSItemLink {
     return APIDMSItemLink.Create(JSON.parse(d));
@@ -46,13 +41,13 @@ export class APIDMSItemLink {
   }
 }
 
-function throwNull2NonNull(field: string, value: any, multiple?: string): never {
+function throwNull2NonNull(field: string, value: any, multiple?: string): void {
   return errorHelper(field, value, multiple ?? "non-nullable object");
 }
-function throwNotObject(field: string, value: any, multiple?: string): never {
+function throwNotObject(field: string, value: any, multiple?: string): void {
   return errorHelper(field, value, multiple ?? "object");
 }
-function throwIsArray(field: string, value: any, multiple?: string): never {
+function throwIsArray(field: string, value: any, multiple?: string): void {
   return errorHelper(field, value, multiple ?? "object");
 }
 function checkNumber(value: any, field: string, multiple?: string): void {
@@ -61,7 +56,7 @@ function checkNumber(value: any, field: string, multiple?: string): void {
 function checkString(value: any, field: string, multiple?: string): void {
   if (typeof(value) !== 'string') errorHelper(field, value, multiple ?? "string");
 }
-function errorHelper(field: string, d: any, type: string): never {
+function errorHelper(field: string, d: any, type: string): void {
   if (!type.includes(' | ')) {
     let jsonClone = obj;
     try {
@@ -72,5 +67,4 @@ function errorHelper(field: string, d: any, type: string): never {
     console.log('Expected ' + type + " at " + field + " but found:\n" + JSON.stringify(d), jsonClone);
     prompt(proxyName+':', JSON.stringify(obj));
   }
-  throw new TypeError('Expected ' + type + " at " + field + " but found:\n" + JSON.stringify(d) + "\n\nFull object:\n" + JSON.stringify(obj));
 }

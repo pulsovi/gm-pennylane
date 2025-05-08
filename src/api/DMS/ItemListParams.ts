@@ -2,9 +2,7 @@
 const proxyName = 'APIDMSItemListParams';
 let obj: any = null;
 export class APIDMSItemListParams {
-  // samples: [[{"field":"name","operator":"search_all","value":"Scan2024-01-22_184251.jpg"}],"[{\"field\":\"name\",\"operator\":\"search_all\",\"value\":\"Scan2024-01-22_184251.jpg\"}]","[{\"field\":\"name\",\"operator\":\"search_all\",\"value\":\"Scan2024-01-22_184251\"}]"]
   public readonly filter?: FilterEntity[] | string;
-  // samples: ["all"]
   public readonly page_name?: string;
   public static Parse(d: string): APIDMSItemListParams {
     return APIDMSItemListParams.Create(JSON.parse(d));
@@ -35,7 +33,6 @@ export class APIDMSItemListParams {
           checkString(d.filter, field + ".filter", "FilterEntity[] | string");
         } catch (e) {
           prompt(proxyName+':', JSON.stringify(obj));
-          throw e;
         }
       }
     }
@@ -54,11 +51,8 @@ export class APIDMSItemListParams {
 }
 
 export class FilterEntity {
-  // samples: ["name"]
   public readonly field: string;
-  // samples: ["search_all"]
   public readonly operator: string;
-  // samples: ["Scan2024-01-22_184251.jpg"]
   public readonly value: string;
   public static Parse(d: string): FilterEntity {
     return FilterEntity.Create(JSON.parse(d));
@@ -90,13 +84,13 @@ export class FilterEntity {
   }
 }
 
-function throwNull2NonNull(field: string, value: any, multiple?: string): never {
+function throwNull2NonNull(field: string, value: any, multiple?: string): void {
   return errorHelper(field, value, multiple ?? "non-nullable object");
 }
-function throwNotObject(field: string, value: any, multiple?: string): never {
+function throwNotObject(field: string, value: any, multiple?: string): void {
   return errorHelper(field, value, multiple ?? "object");
 }
-function throwIsArray(field: string, value: any, multiple?: string): never {
+function throwIsArray(field: string, value: any, multiple?: string): void {
   return errorHelper(field, value, multiple ?? "object");
 }
 function checkArray(value: any, field: string, multiple?: string): void {
@@ -105,7 +99,7 @@ function checkArray(value: any, field: string, multiple?: string): void {
 function checkString(value: any, field: string, multiple?: string): void {
   if (typeof(value) !== 'string') errorHelper(field, value, multiple ?? "string");
 }
-function errorHelper(field: string, d: any, type: string): never {
+function errorHelper(field: string, d: any, type: string): void {
   if (!type.includes(' | ')) {
     let jsonClone = obj;
     try {
@@ -116,5 +110,4 @@ function errorHelper(field: string, d: any, type: string): never {
     console.log('Expected ' + type + " at " + field + " but found:\n" + JSON.stringify(d), jsonClone);
     prompt(proxyName+':', JSON.stringify(obj));
   }
-  throw new TypeError('Expected ' + type + " at " + field + " but found:\n" + JSON.stringify(d) + "\n\nFull object:\n" + JSON.stringify(obj));
 }

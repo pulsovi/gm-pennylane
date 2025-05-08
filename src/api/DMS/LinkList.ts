@@ -90,7 +90,7 @@ export class DmsLinksEntity {
 }
 
 export class Linkable {
-  public readonly comments: never[];
+  public readonly comments: CommentsEntity[];
   public readonly creator: Creator;
   public readonly file_extension: string;
   public readonly file_size: number;
@@ -115,7 +115,7 @@ export class Linkable {
     checkArray(d.comments, field + ".comments");
     if (d.comments) {
       for (let i = 0; i < d.comments.length; i++) {
-        checkNever(d.comments[i], field + ".comments" + "[" + i + "]");
+        d.comments[i] = CommentsEntity.Create(d.comments[i], field + ".comments" + "[" + i + "]", undefined);
       }
     }
     d.creator = Creator.Create(d.creator, field + ".creator", undefined);
@@ -137,6 +137,37 @@ export class Linkable {
     this.file_url = d.file_url;
     this.itemable_id = d.itemable_id;
     this.url = d.url;
+  }
+}
+
+export class CommentsEntity {
+  public readonly content: string;
+  public readonly created_at: string;
+  public static Parse(d: string): CommentsEntity {
+    return CommentsEntity.Create(JSON.parse(d));
+  }
+  public static Create(d: any, field?: string, multiple ?: string): CommentsEntity {
+    if (!field) {
+      obj = d;
+      field = "root";
+    }
+    if (!d) {
+      throwNull2NonNull(field, d, multiple ?? this.name);
+    } else if (typeof(d) !== 'object') {
+      throwNotObject(field, d);
+    } else if (Array.isArray(d)) {
+      throwIsArray(field, d);
+    }
+    checkString(d.content, field + ".content");
+    checkString(d.created_at, field + ".created_at");
+    const knownProperties = ["content","created_at"];
+    const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
+    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    return new CommentsEntity(d);
+  }
+  private constructor(d: any) {
+    this.content = d.content;
+    this.created_at = d.created_at;
   }
 }
 
@@ -200,9 +231,6 @@ function checkString(value: any, field: string, multiple?: string): void {
 }
 function checkNull(value: any, field: string, multiple?: string): void {
   if (value !== null) errorHelper(field, value, multiple ?? "null");
-}
-function checkNever(value: any, field: string, multiple?: string): void {
-  return errorHelper(field, value, multiple ?? "never");
 }
 function errorHelper(field: string, d: any, type: string): void {
   if (!type.includes(' | ')) {
