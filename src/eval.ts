@@ -25,6 +25,7 @@ import AutoSearchTransaction from './pages/invoicePanel/AutoSearchTransaction.js
 import { getButtonClassName } from './_/getButtonClassName.js';
 import DMSRotateImg from './pages/DMS/RotateImg.js';
 import { GMXmlHttpRequest } from './_/gmXhr.js';
+import OpenRefTransaction from './pages/invoicePanel/OpenRefTransaction.js';
 import ImproveMatchSuggestions from './pages/transactionPanel/ImproveMatchSuggestions.js';
 
 last7DaysFilter();
@@ -39,6 +40,7 @@ ImproveMatchSuggestions.start();
 InvoiceDisplayInfos.start();
 NextInvalidInvoice.start();
 NextInvalidTransaction.start();
+OpenRefTransaction.start();
 RotateImg.start();
 TransactionAddByIdButton.start();
 TransactionPanelHotkeys.start();
