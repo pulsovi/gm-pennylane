@@ -1,16 +1,18 @@
+import { injectCSS } from '../../_/css.js';
 import { $, findElem, waitElem } from '../../_/dom.js';
 import { waitFunc } from '../../_/time.js';
 import Service from '../../framework/Service.js';
 
 export default class TransactionPannelStyle extends Service {
-  async init () {
+  async init() {
     this.hideOldDateBanner();
+    this.fixAccountNumbersOweflow();
   }
 
-  private async hideOldDateBanner () {
+  private async hideOldDateBanner() {
     const ref = await waitElem<HTMLSpanElement>('span', 'Vous êtes en train de visualiser un exercice antérieur à l’exercice courant.');
     const banner = ref.closest<HTMLDivElement>('main>div>div.d-block');
-    this.log({ref, banner});
+    this.log({ ref, banner });
     if (banner) {
       banner.style.height = '0';
       banner.style.overflow = 'hidden';
@@ -19,5 +21,13 @@ export default class TransactionPannelStyle extends Service {
     }
     await waitFunc(() => findElem('span', 'Vous êtes en train de visualiser un exercice antérieur à l’exercice courant.') !== ref);
     this.hideOldDateBanner();
+  }
+
+  private fixAccountNumbersOweflow() {
+    injectCSS(`
+      html body .ui-transition-collapse.ui-transition-collapse {
+        overflow: unset;
+      }
+    `);
   }
 }
