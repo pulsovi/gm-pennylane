@@ -65,7 +65,17 @@ DMSItem extends Logger {
           title: 'Talon du chèque',
           text: 'CHQ&lt;numéro du chèque&gt; - &lt;destinataire du chèque&gt; - &lt;montant&gt;€',
           regex: /^CHQ ?\d* - .* - [\d .]*(?:,\d\d)? ?€$/u,
-        }
+        },
+        {
+          title: 'Reçu de don à une association',
+          text: 'CERFA n°&lt;n° de cerfa&gt; - &lt;nom bénéficiaire&gt; - jj/mm/aaa - &lt;montant&gt;€',
+          regex: /^CERFA n° ?\d* - .* - [01]\d\/\d\d\/\d{4} - [\d .]*(?:,\d\d)? ?€$/u,
+        },
+        {
+          title: 'Reçu d\'octroi d\'aide',
+          text: 'AIDES - &lt;nom bénéficiaire !!sans le prénom!!&gt; - jj/mm/aaa - &lt;montant&gt;€',
+          regex: /^AIDES?\d* - .* - [01]\d\/\d\d\/\d{4} - [\d .]*(?:,\d\d)? ?€$/u,
+        },
       ];
       const match = templates.some(template => template.regex.test(item.name));
       if (!match) {
