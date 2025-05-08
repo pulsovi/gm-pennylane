@@ -16,7 +16,7 @@ export default class Logger extends EventEmitter {
 
   private getStyles () {
     if (!('logColor' in this)) {
-      const background = textToColor(this.loggerName);
+      const background = textToColor(this.loggerName ?? this.constructor.name);
       const foreground = contrastScore(background, '#ffffff') > contrastScore(background, '#000000')
           ? '#ffffff' : '#000000';
       this.logColor = { bg: background, fg: foreground}
@@ -31,7 +31,7 @@ export default class Logger extends EventEmitter {
   public log (...messages: unknown[]): void {
     const date = new Date().toISOString().replace(/^[^T]*T([\d:]*).*$/, '[$1]');
     console.log(
-      `${date} %cGM_Pennylane%c${this.loggerName}`,
+      `${date} %cGM_Pennylane%c${this.loggerName ?? this.constructor.name}`,
       ...this.getStyles().slice(0, 2),
       ...messages
     );
@@ -40,7 +40,7 @@ export default class Logger extends EventEmitter {
   public error (...messages: unknown[]): void {
     const date = new Date().toISOString().replace(/^[^T]*T([\d:]*).*$/, '[$1]');
     console.error(
-      `${date} %cGM_Pennylane%c${this.loggerName}`,
+      `${date} %cGM_Pennylane%c${this.loggerName ?? this.constructor.name}`,
       ...this.getStyles().slice(0, 2),
       ...messages
     );
@@ -51,7 +51,7 @@ export default class Logger extends EventEmitter {
     if (!GM_Pennylane_debug) return;
     const date = new Date().toISOString().replace(/^[^T]*T([\d:]*).*$/, '[$1]');
     console.log(
-      `${date} %cGM_Pennylane%c${this.loggerName}%cDebug`,
+      `${date} %cGM_Pennylane%c${this.loggerName ?? this.constructor.name}%cDebug`,
       ...this.getStyles(),
       ...messages
     );
