@@ -37,6 +37,9 @@ export default class DMSDisplayStatus extends Service {
     const item = new DMSItem(ref);
     const message = await item.getValidMessage();
     this.container.innerHTML = message;
+    const isOk = message === 'OK';
+    this.container.classList.toggle('bg-warning-100', !isOk);
+    this.container.classList.toggle('bg-primary-100', isOk);
 
     await waitFunc(() => getReactProps(rightList, 7).item !== ref);
     this.emit('reload');
