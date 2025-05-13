@@ -5,6 +5,7 @@ import { APIDMSItem } from './DMS/Item.js';
 import { APIDMSItemLink } from './DMS/ItemLink.js';
 import { APIDMSItemList } from './DMS/ItemList.js';
 import { APIDMSItemListParams } from './DMS/ItemListParams.js';
+import { APIDMSItemSettings } from './DMS/ItemSettings.js';
 import { APIDMSLink } from './DMS/Link.js';
 import { APIDMSLinkList } from './DMS/LinkList.js';
 import { APIDMSUpdateItem } from './DMS/UpdateItem.js';
@@ -21,15 +22,15 @@ export async function getDMSLinks (recordId: number, recordType?: string): Promi
   return list.dms_links.map(link => APIDMSLink.Create(link));
 }
 
-export async function getDMSItem (id: number) {
-  const response = await apiRequest(`dms/items/${id}.json`, null, 'GET');
+export async function getDMSItem (id: number): Promise<APIDMSItem> {
+  const response = await apiRequest(`dms/items/${id}`, null, 'GET');
   const data = await response?.json();
-  if (!data) return data;
+  if (!data) return (await getDMSItemSettings(id)).item;
   return APIDMSItem.Create(data);
 }
 
 export async function getDMSItemLinks(dmsFileId: number): Promise<APIDMSItemLink[] | null> {
-  const response = await apiRequest(`dms/files/${dmsFileId}/links`, null, 'GET');
+  const response = await dmsRequest({url: `dms/files/${dmsFileId}/links`});
   const data = await response?.json();
   if (!data) return data;
   if (!Array.isArray(data)) {
@@ -40,9 +41,12 @@ export async function getDMSItemLinks(dmsFileId: number): Promise<APIDMSItemLink
   return links;
 }
 
-/**
- * Récupérer les infos sur un item DMS : https://app.pennylane.com/companies/21936866/dms/items/settings.json?sort=%2Bname&filter=&item_id=90315271
- */
+export async function getDMSItemSettings(id: number): Promise<APIDMSItemSettings> {
+  const response = await apiRequest(`dms/items/settings.json?filter=&item_id=${id}`, null, 'GET');
+  const data = await response?.json();
+  if (!data) return data;
+  return APIDMSItemSettings.Create(data);
+}
 
 
 /**
@@ -83,4 +87,16 @@ export async function createDMSLink(dmsFileId: number, recordId: number, recordT
     'POST'
   );
   return APIDMSCreateLink.Create(await response.json());
+}
+
+
+/**
+ * Api request without X-... headers
+ */
+async function dmsRequest (options: RequestInit & { url: string }) {
+  return await apiRequest({
+    headers: { Accept: 'application/json' },
+    method: 'GET',
+    ...options,
+  });
 }

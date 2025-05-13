@@ -1,3 +1,4 @@
+import { isAwaitKeyword } from "typescript";
 import { $, $$, findElem, parseHTML } from "../../_/dom.js";
 import { getReactProps } from "../../_/react.js";
 import { waitFunc } from "../../_/time.js";
@@ -35,6 +36,12 @@ export default class DMSDisplayStatus extends Service {
     const isOk = message === 'OK';
     this.container.classList.toggle('bg-warning-100', !isOk);
     this.container.classList.toggle('bg-primary-100', isOk);
+
+    if (!isOk) {
+      const input = $<HTMLInputElement>('input[name="name"]');
+      input?.focus();
+      input?.select();
+    }
 
     await waitFunc(() => getReactProps(rightList, 7).item !== ref);
     this.emit('reload');

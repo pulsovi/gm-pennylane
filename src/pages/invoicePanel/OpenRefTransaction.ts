@@ -8,7 +8,7 @@ import { openInTab } from "../../GM/openInTab.js";
 import { waitPage } from "../../navigation/waitPage.js";
 
 export default class OpenRefTransaction extends Service {
-  private container: HTMLButtonElement;
+  private container: HTMLAnchorElement;
 
   protected async init() {
     await waitPage("invoiceDetail");
@@ -17,10 +17,11 @@ export default class OpenRefTransaction extends Service {
   }
 
   private createButton(): void {
-    this.container = parseHTML(`<button
+    this.container = parseHTML(`<a
       class="${getButtonClassName()} auto-find-transaction-button"
       style="margin-left: 1em; padding: .2em;"
-    >${openInNewTabIcon()}</button>`).firstElementChild as HTMLButtonElement;
+      target="_blank"
+    >${openInNewTabIcon()}</a>`).firstElementChild as HTMLAnchorElement;
     const tooltip = Tooltip.make({
       target: this.container,
       text: 'Ouvrir la reference dans un nouvel onglet'
@@ -39,7 +40,12 @@ export default class OpenRefTransaction extends Service {
       }
       const urlRoot = location.href.split('/').slice(0, 5).join('/');
       const url = `${urlRoot}/documents/${refId}.html`;
-      openInTab(url);
+      if (this.container.href !== url) {
+        event.preventDefault();
+        event.stopPropagation();
+        this.container.href = url;
+        openInTab(url);
+      }
     }, true);
   }
 

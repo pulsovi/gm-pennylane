@@ -46,14 +46,18 @@ export default abstract class Invoice extends ValidableDocument {
     const invoice = await this.getInvoice();
     const filename = invoice.filename;
     const fileId = invoice.file_signed_id;
-    const invoiceName = invoice.invoice_number;
+    const invoiceName = `${invoice.invoice_number} - ${invoice.amount}€`;
     await moveToDms(this.id, destId);
     const files = await getDMSItemList({
-      filter:[{field: 'name', operator: 'search_all', value: filename}]
+      filter: [{ field: 'name', operator: 'search_all', value: filename }]
     });
     const item: APIDMSItem = files.items.find(fileItem => fileItem.signed_id === fileId);
     await updateDMSItem({ id: item.id, name: invoiceName });
-    return new DMSItem({id: item.id});
+    return new DMSItem({ id: item.id });
+  }
+
+  isCurrent() {
+    return getParam(location.href, 'id') === String(this.id);
   }
 }
 
@@ -69,103 +73,133 @@ class SupplierInvoice extends Invoice {
   public readonly direction = 'supplier';
 
   async loadValidMessage() {
-    const current = Number(getParam(location.href, 'id'));
-    const isCurrent = current === this.id;
+    if (this.isCurrent()) this.log('loadValidMessage', this);
 
+    return (
+      await this.isUnreachable()
+      ?? await this.isClosed()
+      ?? await this.isArchived()
+      ?? await this.is2025()
+      ?? await this.isMissingThirdparty()
+      ?? await this.isMissingCounterpart()
+      ?? await this.isTrashCounterpart()
+      ?? await this.isAid()
+      ?? await this.hasWrongChangeOffset()
+      ?? await this.isMissingLettering()
+      ?? await this.hasToSendToDMS()
+      ?? await this.isMissingDate()
+      ?? ((this.isCurrent() && this.log('loadValidMessage', 'fin des contrôles')), 'OK')
+    );
+  }
+
+  private async isUnreachable() {
     const invoice = await this.getInvoice().catch((error: Error) => error);
 
     if (!(invoice instanceof APIInvoice)) {
       this.log('loadValidMessage', invoice);
       alert(invoice.message);
-      return null;
+      return `Impossible de valider : ${invoice.message}`;
     }
+  }
+
+  private async isClosed() {
+    const invoice = await this.getInvoice();
 
     // Fait partie d'un exercice clôturé
     if (invoice.has_closed_ledger_events) {
       this.log('Fait partie d\'un exercice clos');
       if (invoice.date) return 'OK';
     }
+
     const ledgerEvents = await this.getLedgerEvents();
+
     if (ledgerEvents.some(levent => levent.closed)) {
       this.log("Est attaché à une écriture faisant partie d'un exercice clos");
       if (invoice.date) return 'OK';
     }
+  }
 
-    if (!invoice) this.log('loadValidMessage', { Invoice: this, invoice });
-
-    const doc = await this.getDocument();
-    if (isCurrent)
-      this.log('loadValidMessage', this);
-
-    const groupedDocuments = await this.getGroupedDocuments();
+  private async isArchived() {
+    const invoice = await this.getInvoice();
+    const archivedAllowed = [
+      '§ #',
+      '¤ CARTE ETRANGERE',
+      '¤ PIECE ETRANGERE',
+      '¤ TRANSACTION INTROUVABLE',
+      'CHQ DÉCHIRÉ',
+    ];
 
     // Archived
-    const archivedAllowed = ['§ #', '¤ PIECE ETRANGERE', '¤ TRANSACTION INTROUVABLE', 'CHQ DÉCHIRÉ'];
     if (invoice.archived) {
-      if (
-        //legacy :
-        !invoice.invoice_number.startsWith('¤ CARTE ETRANGERE') &&
-
-        !archivedAllowed.some(allowedItem => invoice.invoice_number.startsWith(allowedItem))
-      )
-        return `<a
-          title="Le numéro de facture d'une facture archivée doit commencer par une de ces possibilités. Cliquer ici pour plus d'informations."
-          href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Facture%20archiv%C3%A9e"
-        >Facture archivée sans référence ⓘ</a><ul style="margin:0;padding:0.8em;">${archivedAllowed.map(it => `<li>${it}</li>`).join('')}</ul>`;
-      if (isCurrent) this.log('loadValidMessage', 'archivé avec numéro de facture correct');
-      return 'OK';
+      if (archivedAllowed.some(allowedItem => invoice.invoice_number.startsWith(allowedItem))) {
+        if (this.isCurrent()) this.log('loadValidMessage', 'archivé avec numéro de facture correct');
+        return 'OK';
+      }
+      return `<a
+        title="Le numéro de facture d'une facture archivée doit commencer par une de ces possibilités. Cliquer ici pour plus d'informations."
+        href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Facture%20archiv%C3%A9e"
+      >Facture archivée sans référence ⓘ</a><ul style="margin:0;padding:0.8em;">${archivedAllowed.map(it => `<li>${it}</li>`).join('')}</ul>`;
+    } else if (
+      archivedAllowed.some(allowedItem => invoice.invoice_number.startsWith(allowedItem))
+    ) {
+      return `<a
+        title="Archiver la facture : ⁝ &gt; Archiver la facture.\nCliquer ici pour plus d'informations"
+        href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Fournisseur%20inconnu"
+      >Archiver la facture ⓘ</a><br/>Les factures dont le numéro de facture commence par ${archivedAllowed.find(allowedItem => invoice.invoice_number.startsWith(allowedItem))
+        } doivent être archivées.`;
     }
+  }
+
+  private async is2025 () {
+    const doc = await this.getDocument();
+    const groupedDocuments = await this.getGroupedDocuments();
+
+    if (doc.date?.startsWith('2025') || groupedDocuments.some(gdoc => gdoc.date?.startsWith('2025'))) {
+      return (
+        await this.isMissingLettering()
+        ?? ((this.isCurrent()) && this.log('2025'), 'OK')
+      );
+    }
+  }
+
+  private async isMissingThirdparty() {
+    const invoice = await this.getInvoice();
 
     // Pas de tiers
-    else if (!invoice.thirdparty_id && !invoice.thirdparty) {
-      if (invoice.invoice_number.startsWith('CHQ DÉCHIRÉ - CHQ')) {
-        return `<a
-          title="Archiver la facture : ⁝ > Archiver la facture.\nCliquer ici pour plus d'informations"
-          href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Fournisseur%20inconnu"
-        >Archiver le chèque déchiré ⓘ</a></ul>`;
-      }
+    if (!invoice.thirdparty_id && !invoice.thirdparty) {
       return `<a
         title="Cliquer ici pour plus d'informations"
         href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Fournisseur%20inconnu"
       >Ajouter un fournisseur ⓘ</a><ul style="margin:0;padding:0.8em;"><li>CHQ DÉCHIRÉ - CHQ###</li></ul>`;
     }
+  }
 
-    else if (
-      archivedAllowed.some(allowedItem => invoice.invoice_number.startsWith(allowedItem))
-    ) {
-      return `<a
-        title="Archiver la facture : ⁝ > Archiver la facture.\nCliquer ici pour plus d'informations"
-        href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Fournisseur%20inconnu"
-      >Archiver la facture ⓘ</a></ul>`;
-    }
+  private async isMissingCounterpart() {
+    const thirdparty = await this.getThirdparty();
 
     // Pas de compte de charge associé
-    const thirdparty = await this.getThirdparty();
     if (!thirdparty?.thirdparty_invoice_line_rules?.[0]?.pnl_plan_item) {
       return `<a
           title="Cliquer ici pour plus d'informations"
           href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Fournisseur%20inconnu"
         >Fournisseur inconnu ⓘ</a>`;
     }
+  }
+
+  private async isTrashCounterpart() {
+    const invoice = await this.getInvoice();
 
     // exclude 6288
     if (invoice.invoice_lines?.some(line => line.pnl_plan_item?.number == '6288'))
       return 'compte tiers 6288';
+  }
 
-    // CHQ "Taxi"
-    if (
-      invoice.thirdparty_id === 98348455
-      && !invoice.invoice_number.includes('|TAXI|')
-    ) {
-      return `<a
-        title="Le fournisseur 'TAXI' est trop souvent attribué aux chèques par Pennylane.\nSi le fournisseur est réélement 'TAXI' ajouter |TAXI| à la fin du numéro de facture.\nCliquer ici pour plus d'informations"
-        href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20CHQ%20TAXI"
-      >Ajouter le fournisseur ⓘ</a><ul style="margin:0;padding:0.8em;"><li>|TAXI|</li><li>CHQ#</li></ul>`;
-    }
+  private async isAid() {
+    const invoice = await this.getInvoice();
 
     // Aides octroyées sans numéro de facture
     if (
-      106438171 === invoice.thirdparty_id
+      106438171 === invoice.thirdparty_id // AIDES OCTROYÉES
       && !['AIDES - ', 'CHQ', 'CERFA - '].some(label => invoice.invoice_number.startsWith(label))
     ) {
       if (invoice.invoice_number.startsWith('§ #')) return "Archiver le reçu.";
@@ -188,6 +222,15 @@ class SupplierInvoice extends Invoice {
     if (invoice.thirdparty?.name === "PIECE ID" && invoice.thirdparty.id !== 106519227)
       return 'Il ne doit y avoir qu\'un seul compte "PIECE ID", et ce n\'est pas le bon...';
 
+    // ID card
+    if (invoice.thirdparty?.id === 106519227 && !invoice.invoice_number?.startsWith('ID ')) {
+      return 'Le "Numéro de facture" des pièces d\'identité commence obligatoirement par "ID "';
+    }
+  }
+
+  private async hasWrongChangeOffset() {
+    const invoice = await this.getInvoice();
+    const ledgerEvents = await this.getLedgerEvents();
 
     // Ecarts de conversion de devise
     if (invoice.currency !== 'EUR') {
@@ -204,39 +247,47 @@ class SupplierInvoice extends Invoice {
         }
       }
     }
+  }
 
-    // Stripe fees invoice
-    if (invoice.thirdparty?.id === 115640202) {
-      if (isCurrent) this.log('loadValidMessage', 'facture Stripe');
-      return 'OK';
-    }
-
-    // ID card
-    if (invoice.thirdparty?.id === 106519227 && !invoice.invoice_number?.startsWith('ID ')) {
-      return 'Le "Numéro de facture" des pièces d\'identité commence obligatoirement par "ID "';
-    }
+  private async isMissingLettering() {
+    const invoice = await this.getInvoice();
+    const doc = await this.getDocument();
+    const groupedDocuments = await this.getGroupedDocuments();
+    const transactions = groupedDocuments.filter(doc => doc.type === 'Transaction');
 
     // Has transaction attached
-    const transactions = groupedDocuments.filter(doc => doc.type === 'Transaction');
     const documentDate = new Date(doc.date);
-    const day = 86_400_000;
-    const isRecent = (Date.now() - documentDate.getTime()) < (15 * day);
+    const dayInMs = 86_400_000;
+    const isRecent = (Date.now() - documentDate.getTime()) < (10 * dayInMs);
     if (!isRecent && !transactions.length) {
-      const orphanAllowed = ['¤ TRANSACTION INTROUVABLE'];
-      if (!orphanAllowed.some(label => invoice.invoice_number.startsWith(label))) {
-        const archiveLabel = archivedAllowed.find(label => invoice.invoice_number.startsWith(label));
-        if (archiveLabel) {
-          return `<a
-            title="Archiver la facture : ⁝ > Archiver la facture.\nCliquer ici pour plus d'informations"
-            href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Facture%20archiv%C3%A9e"
-          >Archiver ${archiveLabel} ⓘ</a><ul style="margin:0;padding:0.8em;">`;
-        }
+      const orphanAllowedThirdparties = [
+        115640202, // Stripe - facture de frais bancaires réparties sur toutes les transactions de don
+      ];
+      const orphanAllowedNumbers = [
+        '¤ TRANSACTION INTROUVABLE'
+      ];
+      const archivedAllowedNumbers = [
+        '§ #',
+        '¤ CARTE ETRANGERE',
+        '¤ PIECE ETRANGERE',
+        'CHQ DÉCHIRÉ',
+      ];
+      if (
+        !orphanAllowedNumbers.some(label => invoice.invoice_number.startsWith(label))
+        && !orphanAllowedThirdparties.some(tpid => invoice.thirdparty_id === tpid)
+      ) {
         return `<a
-            title="Cliquer ici pour plus d'informations"
-            href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Pas%20de%20transaction%20attach%C3%A9e"
-          >Pas de transaction attachée ⓘ</a><ul style="margin:0;padding:0.8em;">${orphanAllowed.concat(archivedAllowed).map(it => `<li>${it}</li>`).join('')}</ul>`;
+          title="Cliquer ici pour plus d'informations"
+          href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Pas%20de%20transaction%20attach%C3%A9e"
+        >Pas de transaction attachée ⓘ</a><ul style="margin:0;padding:0.8em;">${orphanAllowedNumbers.concat(archivedAllowedNumbers).map(it => `<li>${it}</li>`).join('')}</ul>`;
       }
     }
+  }
+
+  private async hasToSendToDMS () {
+    const invoice = await this.getInvoice();
+    const groupedDocuments = await this.getGroupedDocuments();
+    const transactions = groupedDocuments.filter(doc => doc.type === 'Transaction');
 
     // Justificatif ne donnant pas lieu à une écriture
     if (
@@ -251,24 +302,16 @@ class SupplierInvoice extends Invoice {
     ) {
       if (transactions.find(transaction => transaction.date.startsWith('2023'))) {
         const dmsItem = await this.moveToDms(57983091 /*2023 - Compta - Fournisseurs*/);
-        this.log({dmsItem});
-        if (isCurrent) this.log('moved to DMS', { invoice: this });
+        this.log({ dmsItem });
+        if (this.isCurrent()) this.log('moved to DMS', { invoice: this });
         return (await Invoice.load(this.id)).loadValidMessage();
       }
       if (transactions.find(transaction => transaction.date.startsWith('2024'))) {
         const dmsItem = await this.moveToDms(21994050 /*2024 - Compta - Fournisseurs*/);
-        this.log({dmsItem});
-        if (isCurrent) this.log('moved to DMS', { invoice: this });
+        this.log({ dmsItem });
+        if (this.isCurrent()) this.log('moved to DMS', { invoice: this });
         return (await Invoice.load(this.id)).loadValidMessage();
       }
-      /**
-      if (transactions.find(transaction => transaction.date.startsWith('2025'))) {
-        const dmsItem = await this.moveToDms(21994065 /*2025 - Compta - Fournisseurs*);
-        this.log({dmsItem});
-        if (isCurrent) this.log('moved to DMS', { invoice: this });
-        return (await Invoice.load(this.id)).loadValidMessage();
-      }
-      /**/
       if (!transactions.find(transaction => transaction.date.startsWith('2025'))) {
         this.log('Envoyer en GED', transactions);
         return `<a
@@ -277,22 +320,22 @@ class SupplierInvoice extends Invoice {
         >Envoyer en GED ⓘ</a>`;
       }
     }
+  }
+
+  private async isMissingDate () {
+    const invoice = await this.getInvoice();
+    const ledgerEvents = await this.getLedgerEvents();
+    const groupedDocuments = await this.getGroupedDocuments();
+    const transactions = groupedDocuments.filter(doc => doc.type === 'Transaction');
 
     // Date manquante
     if (!invoice.date) {
-      const archiveLabel = archivedAllowed.find(label => invoice.invoice_number.startsWith(label));
-      if (archiveLabel) {
-        return `<a
-          title="Archiver la facture : ⁝ > Archiver la facture.\nCliquer ici pour plus d'informations"
-          href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Facture%20archiv%C3%A9e"
-        >Archiver ${archiveLabel} ⓘ</a><ul style="margin:0;padding:0.8em;">`;
-      }
       if (invoice.has_closed_ledger_events || ledgerEvents.some(levent => levent.closed)) {
         this.log('exercice clos, on ne peut plus remplir la date');
         if (transactions.find(transaction => transaction.date.startsWith('2023'))) {
           const dmsItem = await this.moveToDms(57983091 /*2023 - Compta - Fournisseurs*/);
-          this.log({dmsItem});
-          if (isCurrent) this.log('moved to DMS', { invoice: this });
+          this.log({ dmsItem });
+          if (this.isCurrent()) this.log('moved to DMS', { invoice: this });
           return (await Invoice.load(this.id)).loadValidMessage();
         }
         return 'envoyer en GED';
@@ -303,9 +346,6 @@ class SupplierInvoice extends Invoice {
         >Date de facture vide ⓘ</a>`;
       }
     }
-
-    if (isCurrent) this.log('loadValidMessage', 'fin des contrôles');
-    return 'OK';
   }
 }
 
@@ -313,14 +353,12 @@ class CustomerInvoice extends Invoice {
   public readonly direction = 'customer';
 
   async loadValidMessage() {
-    const current = Number(getParam(location.href, 'id'));
-    const isCurrent = current === this.id;
     const invoice = await this.getInvoice();
 
     // Fait partie d'un exercis clôt
     const closed = invoice.has_closed_ledger_events;
 
-    if (isCurrent) this.log('loadValidMessage', this);
+    if (this.isCurrent()) this.log('loadValidMessage', this);
 
     // Archived
     const archivedAllowed = ['§ #', '¤ TRANSACTION INTROUVABLE'];
@@ -392,15 +430,15 @@ class CustomerInvoice extends Invoice {
 
     if (transactions.find(transaction => transaction.date.startsWith('2024'))) {
       const dmsItem = await this.moveToDms(21994051 /*2024 - Compta - Clients */);
-      this.log({dmsItem});
-      if (isCurrent) this.log('moved to DMS', { invoice: this });
+      this.log({ dmsItem });
+      if (this.isCurrent()) this.log('moved to DMS', { invoice: this });
       return (await Invoice.load(this.id)).loadValidMessage();
     }
 
     if (transactions.find(transaction => transaction.date.startsWith('2023'))) {
       const dmsItem = await this.moveToDms(57983092 /*2023 - Compta - Clients */);
-      this.log({dmsItem});
-      if (isCurrent) this.log('moved to DMS', { invoice: this });
+      this.log({ dmsItem });
+      if (this.isCurrent()) this.log('moved to DMS', { invoice: this });
       return (await Invoice.load(this.id)).loadValidMessage();
     }
 

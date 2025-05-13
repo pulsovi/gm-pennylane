@@ -120,7 +120,7 @@ export default class ValidMessage extends Service {
       transactionId,
       hasComment: Boolean(transaction?.client_comments?.length),
     };
-    this.reload();
+    this.displayMessage();
   }
 }
 

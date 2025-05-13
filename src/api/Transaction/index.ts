@@ -11,11 +11,11 @@ export class APITransaction {
   public readonly company_id: number;
   public readonly currency: string;
   public readonly currency_amount: string;
-  public readonly currency_fee: string;
+  public readonly currency_fee: string | null;
   public readonly date: string;
-  public readonly dump: null;
-  public readonly dump_id: null;
-  public readonly fee: string;
+  public readonly dump: null | Dump;
+  public readonly dump_id: null | number;
+  public readonly fee: string | null;
   public readonly files_count: number;
   public readonly gross_amount: string;
   public readonly group_uuid: string;
@@ -64,11 +64,47 @@ export class APITransaction {
     checkNumber(d.company_id, field + ".company_id");
     checkString(d.currency, field + ".currency");
     checkString(d.currency_amount, field + ".currency_amount");
-    checkString(d.currency_fee, field + ".currency_fee");
+    // This will be refactored in the next release.
+    try {
+      checkString(d.currency_fee, field + ".currency_fee", "string | null");
+    } catch (e) {
+      try {
+        checkNull(d.currency_fee, field + ".currency_fee", "string | null");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+      }
+    }
     checkString(d.date, field + ".date");
-    checkNull(d.dump, field + ".dump");
-    checkNull(d.dump_id, field + ".dump_id");
-    checkString(d.fee, field + ".fee");
+    // This will be refactored in the next release.
+    try {
+      checkNull(d.dump, field + ".dump", "null | Dump");
+    } catch (e) {
+      try {
+        d.dump = Dump.Create(d.dump, field + ".dump", "null | Dump");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+      }
+    }
+    // This will be refactored in the next release.
+    try {
+      checkNull(d.dump_id, field + ".dump_id", "null | number");
+    } catch (e) {
+      try {
+        checkNumber(d.dump_id, field + ".dump_id", "null | number");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+      }
+    }
+    // This will be refactored in the next release.
+    try {
+      checkString(d.fee, field + ".fee", "string | null");
+    } catch (e) {
+      try {
+        checkNull(d.fee, field + ".fee", "string | null");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+      }
+    }
     checkNumber(d.files_count, field + ".files_count");
     checkString(d.gross_amount, field + ".gross_amount");
     checkString(d.group_uuid, field + ".group_uuid");
@@ -123,9 +159,9 @@ export class APITransaction {
 }
 
 export class AccountSynchronization {
-  public readonly created_at: string;
+  public readonly created_at: string | null;
   public readonly error_message: null;
-  public readonly triggered_manually: boolean;
+  public readonly triggered_manually: boolean | null;
   public static Parse(d: string): AccountSynchronization {
     return AccountSynchronization.Create(JSON.parse(d));
   }
@@ -141,9 +177,27 @@ export class AccountSynchronization {
     } else if (Array.isArray(d)) {
       throwIsArray(field, d);
     }
-    checkString(d.created_at, field + ".created_at");
+    // This will be refactored in the next release.
+    try {
+      checkString(d.created_at, field + ".created_at", "string | null");
+    } catch (e) {
+      try {
+        checkNull(d.created_at, field + ".created_at", "string | null");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+      }
+    }
     checkNull(d.error_message, field + ".error_message");
-    checkBoolean(d.triggered_manually, field + ".triggered_manually");
+    // This will be refactored in the next release.
+    try {
+      checkBoolean(d.triggered_manually, field + ".triggered_manually", "boolean | null");
+    } catch (e) {
+      try {
+        checkNull(d.triggered_manually, field + ".triggered_manually", "boolean | null");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+      }
+    }
     const knownProperties = ["created_at","error_message","triggered_manually"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
     if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
@@ -153,6 +207,40 @@ export class AccountSynchronization {
     this.created_at = d.created_at;
     this.error_message = d.error_message;
     this.triggered_manually = d.triggered_manually;
+  }
+}
+
+export class Dump {
+  public readonly created_at: string;
+  public readonly creator: string;
+  public readonly type: string;
+  public static Parse(d: string): Dump {
+    return Dump.Create(JSON.parse(d));
+  }
+  public static Create(d: any, field?: string, multiple ?: string): Dump {
+    if (!field) {
+      obj = d;
+      field = "root";
+    }
+    if (!d) {
+      throwNull2NonNull(field, d, multiple ?? this.name);
+    } else if (typeof(d) !== 'object') {
+      throwNotObject(field, d);
+    } else if (Array.isArray(d)) {
+      throwIsArray(field, d);
+    }
+    checkString(d.created_at, field + ".created_at");
+    checkString(d.creator, field + ".creator");
+    checkString(d.type, field + ".type");
+    const knownProperties = ["created_at","creator","type"];
+    const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
+    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    return new Dump(d);
+  }
+  private constructor(d: any) {
+    this.created_at = d.created_at;
+    this.creator = d.creator;
+    this.type = d.type;
   }
 }
 

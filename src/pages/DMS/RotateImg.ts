@@ -134,8 +134,14 @@ export default class DMSRotateImg extends Service {
     this.panContainer.addEventListener('wheel', (event: WheelEvent) => {
       event.stopPropagation();
       event.preventDefault();
-      this.state.matrix.zoom = Math.max(this.state.zoomMin, this.state.matrix.zoom + (event.deltaY / 50));
+      const absDelta = Math.abs(event.deltaY);
+      const isTrackpad = absDelta !== Math.floor(absDelta) || absDelta < 80;
+      const offset = event.deltaY / (isTrackpad ? 50 : -4000);
+      this.state.matrix.zoom = Math.max(this.state.zoomMin, this.state.matrix.zoom + offset);
       this.setMatrix();
+    });
+    this.panContainer.addEventListener('mouseup', () => {
+      $<HTMLInputElement>('input[name="name"]').focus();
     });
   }
 
