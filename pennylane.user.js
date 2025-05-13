@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name     Pennylane
-// @version  0.1.28
+// @version  0.1.29
 // @grant    unsafeWindow
 // @grant    GM.openInTab
 // @grant    GM.xmlHttpRequest
@@ -323,6 +323,17 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    return div.innerText;\n" +
 "}\n" +
 "\n" +
+"function jsonClone(obj) {\n" +
+"    try {\n" +
+"        return JSON.parse(JSON.stringify(obj));\n" +
+"    }\n" +
+"    catch (error) {\n" +
+"        console.log('unable to jsonClone this object', obj);\n" +
+"        console.log(error);\n" +
+"        return obj;\n" +
+"    }\n" +
+"}\n" +
+"\n" +
 "/**\n" +
 " * Find the React component that rendered the given element.\n" +
 " * @param elem The element to find the React component for.\n" +
@@ -599,25 +610,27 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    ;\n" +
 "}\n" +
 "\n" +
+"function isString(data) {\n" +
+"    return typeof data === 'string';\n" +
+"}\n" +
+"\n" +
+"const logger$1 = new Logger('apiRequest');\n" +
 "let apiRequestWait = null;\n" +
 "async function apiRequest(endpoint, data = null, method = 'POST') {\n" +
 "    if (apiRequestWait)\n" +
 "        await apiRequestWait;\n" +
-"    const response = await fetch(`${location.href.split('/').slice(0, 5).join('/')}/${endpoint}`, {\n" +
+"    const options = isString(endpoint) ? {} : endpoint;\n" +
+"    const rawUrl = isString(endpoint) ? endpoint : endpoint.url;\n" +
+"    const url = rawUrl.startsWith('http') ? rawUrl : `${location.href.split('/').slice(0, 5).join('/')}/${rawUrl}`;\n" +
+"    const response = await fetch(url, {\n" +
 "        method,\n" +
 "        headers: {\n" +
-"            \"Content-Type\": \"application/json\",\n" +
-"            \"X-COMPANY-CONTEXT-DATA-UPDATED-AT\": \"2024-03-25T20:22:38.289Z\",\n" +
-"            \"X-PLAN-USED-BY-FRONT-END\": \"v1_saas_free\",\n" +
-"            \"X-FRONTEND-LAST-APPLICATION-LOADED-AT\": \"2024-03-25T20:22:37.968Z\",\n" +
 "            \"X-CSRF-TOKEN\": getCookies('my_csrf_token'),\n" +
-"            \"X-DEPLOYMENT\": \"2023-04-19\",\n" +
-"            \"X-SOURCE-VERSION\": \"e0c18c0\",\n" +
-"            \"X-SOURCE-VERSION-BUILT-AT\": \"2024-03-25T18:05:09.769Z\",\n" +
-"            \"X-DOCUMENT-REFERRER\": location.origin + location.pathname,\n" +
+"            \"Content-Type\": \"application/json\",\n" +
 "            Accept: 'application/json'\n" +
 "        },\n" +
 "        body: data ? JSON.stringify(data) : null,\n" +
+"        ...options\n" +
 "    }).catch(error => ({ error }));\n" +
 "    if ('error' in response) {\n" +
 "        console.log('API request error :', { endpoint, data, method, error: response.error });\n" +
@@ -634,19 +647,52 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    if (response.status === 422) {\n" +
 "        const message = (await response.clone().json()).message;\n" +
+"        logger$1.log(message, { endpoint, method, data });\n" +
+"        if (typeof endpoint === 'string') {\n" +
+"            endpoint = {\n" +
+"                url: endpoint,\n" +
+"                method,\n" +
+"                body: data ? JSON.stringify(data) : null,\n" +
+"                headers: {\n" +
+"                    \"Content-Type\": \"application/json\",\n" +
+"                    Accept: 'application/json',\n" +
+"                },\n" +
+"            };\n" +
+"        }\n" +
+"        if (!endpoint.headers?.['X-DOCUMENT-REFERRER']) {\n" +
+"            return apiRequest({\n" +
+"                ...endpoint,\n" +
+"                headers: {\n" +
+"                    \"X-CSRF-TOKEN\": getCookies('my_csrf_token'),\n" +
+"                    /*\n" +
+"                    \"X-COMPANY-CONTEXT-DATA-UPDATED-AT\": \"2025-05-11T19:23:33.772Z\",\n" +
+"                    \"X-PLAN-USED-BY-FRONT-END\": \"v1_saas_free\",\n" +
+"                    \"X-FRONTEND-LAST-APPLICATION-LOADED-AT\": \"2025-05-11T19:23:30.880Z\",\n" +
+"                    \"X-Reseller\": \"pennylane\",\n" +
+"                    \"X-DEPLOYMENT\": \"2025-05-09\",\n" +
+"                    \"X-SOURCE-VERSION\": \"853861f\",\n" +
+"                    \"X-SOURCE-VERSION-BUILT-AT\": \"2025-05-09T18:17:28.976Z\",\n" +
+"                    \"X-DOCUMENT-REFERRER\": location.origin + location.pathname,\n" +
+"                    \"X-TAB-ID\": \"0f97ec55-8b4f-44b8-bdd5-4232d75772c9\",\n" +
+"                    \"traceparent\": \"00-000000000000000024a046b489ead241-33404d6d5ea99f22-01\",\n" +
+"                    */\n" +
+"                    ...endpoint.headers,\n" +
+"                }\n" +
+"            });\n" +
+"        }\n" +
 "        if (message) {\n" +
 "            alert(message);\n" +
 "            return null;\n" +
 "        }\n" +
 "    }\n" +
-"    if (response.status === 429\n" +
-"        && await response.clone().text() === \"You made too many requests. Time to take a break?\") {\n" +
+"    if (response.status === 429 || response.status === 418) {\n" +
 "        apiRequestWait = sleep(1000).then(() => { apiRequestWait = null; });\n" +
 "        return apiRequest(endpoint, data, method);\n" +
 "    }\n" +
 "    if (response.status !== 200) {\n" +
-"        console.log('apiRequest response status is not 200', { response });\n" +
-"        throw new Error('Todo : Créer un gestionnaire pour le code error status = ' + response.status);\n" +
+"        console.log('apiRequest response status is not 200', { response, status: response.status });\n" +
+"        console.error('Todo : Créer un gestionnaire pour le code error status = ' + response.status);\n" +
+"        return null;\n" +
 "    }\n" +
 "    return response;\n" +
 "}\n" +
@@ -657,60 +703,60 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "Object.assign(window, { apiRequest });\n" +
 "\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
-"const proxyName$k = 'APIDocument';\n" +
-"let obj$k = null;\n" +
+"const proxyName$l = 'APIDocument';\n" +
+"let obj$l = null;\n" +
 "class APIDocument {\n" +
 "    static Parse(d) {\n" +
 "        return APIDocument.Create(JSON.parse(d));\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$k = d;\n" +
+"            obj$l = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
 "        if (!d) {\n" +
-"            throwNull2NonNull$k(field, d, multiple ?? this.name);\n" +
+"            throwNull2NonNull$l(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$k(field, d);\n" +
+"            throwNotObject$l(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$k(field, d);\n" +
+"            throwIsArray$l(field, d);\n" +
 "        }\n" +
 "        if (\"account_id\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkNumber$g(d.account_id, field + \".account_id\", \"number | null\");\n" +
+"                checkNumber$h(d.account_id, field + \".account_id\", \"number | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.account_id, field + \".account_id\", \"number | null\");\n" +
+"                    checkNull$f(d.account_id, field + \".account_id\", \"number | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkBoolean$b(d.accounting_type, field + \".accounting_type\");\n" +
-"        checkString$i(d.amount, field + \".amount\");\n" +
-"        checkBoolean$b(d.archived, field + \".archived\");\n" +
+"        checkBoolean$c(d.accounting_type, field + \".accounting_type\");\n" +
+"        checkString$j(d.amount, field + \".amount\");\n" +
+"        checkBoolean$c(d.archived, field + \".archived\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$e(d.archived_at, field + \".archived_at\", \"null | string\");\n" +
+"            checkNull$f(d.archived_at, field + \".archived_at\", \"null | string\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkString$i(d.archived_at, field + \".archived_at\", \"null | string\");\n" +
+"                checkString$j(d.archived_at, field + \".archived_at\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
-"                prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "            }\n" +
 "        }\n" +
-"        checkBoolean$b(d.attachment_lost, field + \".attachment_lost\");\n" +
-"        checkBoolean$b(d.attachment_required, field + \".attachment_required\");\n" +
-"        checkNull$e(d.billing_subscription_id, field + \".billing_subscription_id\");\n" +
+"        checkBoolean$c(d.attachment_lost, field + \".attachment_lost\");\n" +
+"        checkBoolean$c(d.attachment_required, field + \".attachment_required\");\n" +
+"        checkNull$f(d.billing_subscription_id, field + \".billing_subscription_id\");\n" +
 "        if (\"can_be_stamped_as_paid_in_pdf\" in d) {\n" +
-"            checkBoolean$b(d.can_be_stamped_as_paid_in_pdf, field + \".can_be_stamped_as_paid_in_pdf\");\n" +
+"            checkBoolean$c(d.can_be_stamped_as_paid_in_pdf, field + \".can_be_stamped_as_paid_in_pdf\");\n" +
 "        }\n" +
 "        if (\"company\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
@@ -719,311 +765,311 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.company, field + \".company\", \"Company | null\");\n" +
+"                    checkNull$f(d.company, field + \".company\", \"Company | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkNumber$g(d.company_id, field + \".company_id\");\n" +
+"        checkNumber$h(d.company_id, field + \".company_id\");\n" +
 "        if (\"complete\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkBoolean$b(d.complete, field + \".complete\", \"boolean | null\");\n" +
+"                checkBoolean$c(d.complete, field + \".complete\", \"boolean | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.complete, field + \".complete\", \"boolean | null\");\n" +
+"                    checkNull$f(d.complete, field + \".complete\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"completeness\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkNumber$g(d.completeness, field + \".completeness\", \"number | null\");\n" +
+"                checkNumber$h(d.completeness, field + \".completeness\", \"number | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.completeness, field + \".completeness\", \"number | null\");\n" +
+"                    checkNull$f(d.completeness, field + \".completeness\", \"number | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkString$i(d.created_at, field + \".created_at\");\n" +
+"        checkString$j(d.created_at, field + \".created_at\");\n" +
 "        if (\"credit_notes_amount\" in d) {\n" +
-"            checkString$i(d.credit_notes_amount, field + \".credit_notes_amount\");\n" +
+"            checkString$j(d.credit_notes_amount, field + \".credit_notes_amount\");\n" +
 "        }\n" +
-"        checkString$i(d.currency, field + \".currency\");\n" +
-"        checkString$i(d.currency_amount, field + \".currency_amount\");\n" +
+"        checkString$j(d.currency, field + \".currency\");\n" +
+"        checkString$j(d.currency_amount, field + \".currency_amount\");\n" +
 "        if (\"currency_amount_before_tax\" in d) {\n" +
-"            checkString$i(d.currency_amount_before_tax, field + \".currency_amount_before_tax\");\n" +
+"            checkString$j(d.currency_amount_before_tax, field + \".currency_amount_before_tax\");\n" +
 "        }\n" +
 "        if (\"currency_price_before_tax\" in d) {\n" +
-"            checkString$i(d.currency_price_before_tax, field + \".currency_price_before_tax\");\n" +
+"            checkString$j(d.currency_price_before_tax, field + \".currency_price_before_tax\");\n" +
 "        }\n" +
 "        if (\"currency_tax\" in d) {\n" +
-"            checkString$i(d.currency_tax, field + \".currency_tax\");\n" +
+"            checkString$j(d.currency_tax, field + \".currency_tax\");\n" +
 "        }\n" +
 "        if (\"custom_payment_reference\" in d) {\n" +
-"            checkString$i(d.custom_payment_reference, field + \".custom_payment_reference\");\n" +
+"            checkString$j(d.custom_payment_reference, field + \".custom_payment_reference\");\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkString$i(d.date, field + \".date\", \"string | null\");\n" +
+"            checkString$j(d.date, field + \".date\", \"string | null\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$e(d.date, field + \".date\", \"string | null\");\n" +
+"                checkNull$f(d.date, field + \".date\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
-"                prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"deadline\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkString$i(d.deadline, field + \".deadline\", \"string | null\");\n" +
+"                checkString$j(d.deadline, field + \".deadline\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.deadline, field + \".deadline\", \"string | null\");\n" +
+"                    checkNull$f(d.deadline, field + \".deadline\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"direction\" in d) {\n" +
-"            checkString$i(d.direction, field + \".direction\");\n" +
+"            checkString$j(d.direction, field + \".direction\");\n" +
 "        }\n" +
 "        if (\"discount\" in d) {\n" +
-"            checkString$i(d.discount, field + \".discount\");\n" +
+"            checkString$j(d.discount, field + \".discount\");\n" +
 "        }\n" +
 "        if (\"discount_type\" in d) {\n" +
-"            checkString$i(d.discount_type, field + \".discount_type\");\n" +
+"            checkString$j(d.discount_type, field + \".discount_type\");\n" +
 "        }\n" +
-"        checkBoolean$b(d.draft, field + \".draft\");\n" +
-"        checkNull$e(d.email_from, field + \".email_from\");\n" +
+"        checkBoolean$c(d.draft, field + \".draft\");\n" +
+"        checkNull$f(d.email_from, field + \".email_from\");\n" +
 "        if (\"estimate_status\" in d) {\n" +
-"            checkNull$e(d.estimate_status, field + \".estimate_status\");\n" +
+"            checkNull$f(d.estimate_status, field + \".estimate_status\");\n" +
 "        }\n" +
-"        checkString$i(d.external_id, field + \".external_id\");\n" +
+"        checkString$j(d.external_id, field + \".external_id\");\n" +
 "        if (\"factor_status\" in d) {\n" +
-"            checkString$i(d.factor_status, field + \".factor_status\");\n" +
+"            checkString$j(d.factor_status, field + \".factor_status\");\n" +
 "        }\n" +
-"        checkString$i(d.fec_pieceref, field + \".fec_pieceref\");\n" +
+"        checkString$j(d.fec_pieceref, field + \".fec_pieceref\");\n" +
 "        if (\"finalized_at\" in d) {\n" +
-"            checkNull$e(d.finalized_at, field + \".finalized_at\");\n" +
+"            checkNull$f(d.finalized_at, field + \".finalized_at\");\n" +
 "        }\n" +
 "        if (\"from_estimate_id\" in d) {\n" +
-"            checkNull$e(d.from_estimate_id, field + \".from_estimate_id\");\n" +
+"            checkNull$f(d.from_estimate_id, field + \".from_estimate_id\");\n" +
 "        }\n" +
 "        if (\"future_in_days\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkNumber$g(d.future_in_days, field + \".future_in_days\", \"number | null\");\n" +
+"                checkNumber$h(d.future_in_days, field + \".future_in_days\", \"number | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.future_in_days, field + \".future_in_days\", \"number | null\");\n" +
+"                    checkNull$f(d.future_in_days, field + \".future_in_days\", \"number | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$e(d.gdrive_path, field + \".gdrive_path\", \"null | string\");\n" +
+"            checkNull$f(d.gdrive_path, field + \".gdrive_path\", \"null | string\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkString$i(d.gdrive_path, field + \".gdrive_path\", \"null | string\");\n" +
+"                checkString$j(d.gdrive_path, field + \".gdrive_path\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
-"                prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"gross_amount\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkString$i(d.gross_amount, field + \".gross_amount\", \"string | null\");\n" +
+"                checkString$j(d.gross_amount, field + \".gross_amount\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.gross_amount, field + \".gross_amount\", \"string | null\");\n" +
+"                    checkNull$f(d.gross_amount, field + \".gross_amount\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkString$i(d.group_uuid, field + \".group_uuid\");\n" +
+"        checkString$j(d.group_uuid, field + \".group_uuid\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$e(d.grouped_at, field + \".grouped_at\", \"null | string\");\n" +
+"            checkNull$f(d.grouped_at, field + \".grouped_at\", \"null | string\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkString$i(d.grouped_at, field + \".grouped_at\", \"null | string\");\n" +
+"                checkString$j(d.grouped_at, field + \".grouped_at\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
-"                prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "            }\n" +
 "        }\n" +
-"        checkArray$9(d.grouped_documents, field + \".grouped_documents\");\n" +
+"        checkArray$a(d.grouped_documents, field + \".grouped_documents\");\n" +
 "        if (d.grouped_documents) {\n" +
 "            for (let i = 0; i < d.grouped_documents.length; i++) {\n" +
 "                d.grouped_documents[i] = GroupedDocumentsEntity.Create(d.grouped_documents[i], field + \".grouped_documents\" + \"[\" + i + \"]\", undefined);\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"iban\" in d) {\n" +
-"            checkString$i(d.iban, field + \".iban\");\n" +
+"            checkString$j(d.iban, field + \".iban\");\n" +
 "        }\n" +
-"        checkNumber$g(d.id, field + \".id\");\n" +
+"        checkNumber$h(d.id, field + \".id\");\n" +
 "        if (\"invoice_kind\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkNull$e(d.invoice_kind, field + \".invoice_kind\", \"null | string\");\n" +
+"                checkNull$f(d.invoice_kind, field + \".invoice_kind\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkString$i(d.invoice_kind, field + \".invoice_kind\", \"null | string\");\n" +
+"                    checkString$j(d.invoice_kind, field + \".invoice_kind\", \"null | string\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"invoice_number\" in d) {\n" +
-"            checkString$i(d.invoice_number, field + \".invoice_number\");\n" +
+"            checkString$j(d.invoice_number, field + \".invoice_number\");\n" +
 "        }\n" +
 "        if (\"invoicing_detailed_source\" in d) {\n" +
-"            checkNull$e(d.invoicing_detailed_source, field + \".invoicing_detailed_source\");\n" +
+"            checkNull$f(d.invoicing_detailed_source, field + \".invoicing_detailed_source\");\n" +
 "        }\n" +
 "        if (\"is_credit_note\" in d) {\n" +
-"            checkBoolean$b(d.is_credit_note, field + \".is_credit_note\");\n" +
+"            checkBoolean$c(d.is_credit_note, field + \".is_credit_note\");\n" +
 "        }\n" +
 "        if (\"is_destroyable\" in d) {\n" +
-"            checkBoolean$b(d.is_destroyable, field + \".is_destroyable\");\n" +
+"            checkBoolean$c(d.is_destroyable, field + \".is_destroyable\");\n" +
 "        }\n" +
 "        if (\"is_estimate\" in d) {\n" +
-"            checkBoolean$b(d.is_estimate, field + \".is_estimate\");\n" +
+"            checkBoolean$c(d.is_estimate, field + \".is_estimate\");\n" +
 "        }\n" +
-"        checkBoolean$b(d.is_waiting_details, field + \".is_waiting_details\");\n" +
+"        checkBoolean$c(d.is_waiting_details, field + \".is_waiting_details\");\n" +
 "        if (\"is_waiting_for_ocr\" in d) {\n" +
-"            checkBoolean$b(d.is_waiting_for_ocr, field + \".is_waiting_for_ocr\");\n" +
+"            checkBoolean$c(d.is_waiting_for_ocr, field + \".is_waiting_for_ocr\");\n" +
 "        }\n" +
-"        checkNumber$g(d.journal_id, field + \".journal_id\");\n" +
-"        checkString$i(d.label, field + \".label\");\n" +
+"        checkNumber$h(d.journal_id, field + \".journal_id\");\n" +
+"        checkString$j(d.label, field + \".label\");\n" +
 "        if (\"language\" in d) {\n" +
-"            checkString$i(d.language, field + \".language\");\n" +
+"            checkString$j(d.language, field + \".language\");\n" +
 "        }\n" +
 "        if (\"manual_partial_invoices\" in d) {\n" +
-"            checkBoolean$b(d.manual_partial_invoices, field + \".manual_partial_invoices\");\n" +
+"            checkBoolean$c(d.manual_partial_invoices, field + \".manual_partial_invoices\");\n" +
 "        }\n" +
-"        checkString$i(d.method, field + \".method\");\n" +
+"        checkString$j(d.method, field + \".method\");\n" +
 "        if (\"multiplier\" in d) {\n" +
-"            checkNumber$g(d.multiplier, field + \".multiplier\");\n" +
+"            checkNumber$h(d.multiplier, field + \".multiplier\");\n" +
 "        }\n" +
 "        if (\"not_duplicate\" in d) {\n" +
-"            checkBoolean$b(d.not_duplicate, field + \".not_duplicate\");\n" +
+"            checkBoolean$c(d.not_duplicate, field + \".not_duplicate\");\n" +
 "        }\n" +
 "        if (\"ocr_thirdparty_id\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkNull$e(d.ocr_thirdparty_id, field + \".ocr_thirdparty_id\", \"null | number\");\n" +
+"                checkNull$f(d.ocr_thirdparty_id, field + \".ocr_thirdparty_id\", \"null | number\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNumber$g(d.ocr_thirdparty_id, field + \".ocr_thirdparty_id\", \"null | number\");\n" +
+"                    checkNumber$h(d.ocr_thirdparty_id, field + \".ocr_thirdparty_id\", \"null | number\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkString$i(d.outstanding_balance, field + \".outstanding_balance\");\n" +
+"        checkString$j(d.outstanding_balance, field + \".outstanding_balance\");\n" +
 "        if (\"paid\" in d) {\n" +
-"            checkBoolean$b(d.paid, field + \".paid\");\n" +
+"            checkBoolean$c(d.paid, field + \".paid\");\n" +
 "        }\n" +
 "        if (\"payment_id\" in d) {\n" +
-"            checkNull$e(d.payment_id, field + \".payment_id\");\n" +
+"            checkNull$f(d.payment_id, field + \".payment_id\");\n" +
 "        }\n" +
 "        if (\"payment_method\" in d) {\n" +
-"            checkNull$e(d.payment_method, field + \".payment_method\");\n" +
+"            checkNull$f(d.payment_method, field + \".payment_method\");\n" +
 "        }\n" +
 "        if (\"payment_reference\" in d) {\n" +
-"            checkString$i(d.payment_reference, field + \".payment_reference\");\n" +
+"            checkString$j(d.payment_reference, field + \".payment_reference\");\n" +
 "        }\n" +
 "        if (\"payment_reminder_enabled\" in d) {\n" +
-"            checkBoolean$b(d.payment_reminder_enabled, field + \".payment_reminder_enabled\");\n" +
+"            checkBoolean$c(d.payment_reminder_enabled, field + \".payment_reminder_enabled\");\n" +
 "        }\n" +
 "        if (\"payment_status\" in d) {\n" +
-"            checkString$i(d.payment_status, field + \".payment_status\");\n" +
+"            checkString$j(d.payment_status, field + \".payment_status\");\n" +
 "        }\n" +
-"        checkString$i(d.pdf_generation_status, field + \".pdf_generation_status\");\n" +
+"        checkString$j(d.pdf_generation_status, field + \".pdf_generation_status\");\n" +
 "        if (\"pdf_invoice_display_products_list\" in d) {\n" +
-"            checkBoolean$b(d.pdf_invoice_display_products_list, field + \".pdf_invoice_display_products_list\");\n" +
+"            checkBoolean$c(d.pdf_invoice_display_products_list, field + \".pdf_invoice_display_products_list\");\n" +
 "        }\n" +
 "        if (\"pdf_invoice_free_text\" in d) {\n" +
-"            checkString$i(d.pdf_invoice_free_text, field + \".pdf_invoice_free_text\");\n" +
+"            checkString$j(d.pdf_invoice_free_text, field + \".pdf_invoice_free_text\");\n" +
 "        }\n" +
 "        if (\"pdf_invoice_free_text_enabled\" in d) {\n" +
-"            checkBoolean$b(d.pdf_invoice_free_text_enabled, field + \".pdf_invoice_free_text_enabled\");\n" +
+"            checkBoolean$c(d.pdf_invoice_free_text_enabled, field + \".pdf_invoice_free_text_enabled\");\n" +
 "        }\n" +
 "        if (\"pdf_invoice_subject\" in d) {\n" +
-"            checkString$i(d.pdf_invoice_subject, field + \".pdf_invoice_subject\");\n" +
+"            checkString$j(d.pdf_invoice_subject, field + \".pdf_invoice_subject\");\n" +
 "        }\n" +
 "        if (\"pdf_invoice_subject_enabled\" in d) {\n" +
-"            checkBoolean$b(d.pdf_invoice_subject_enabled, field + \".pdf_invoice_subject_enabled\");\n" +
+"            checkBoolean$c(d.pdf_invoice_subject_enabled, field + \".pdf_invoice_subject_enabled\");\n" +
 "        }\n" +
 "        if (\"pdf_invoice_title\" in d) {\n" +
-"            checkString$i(d.pdf_invoice_title, field + \".pdf_invoice_title\");\n" +
+"            checkString$j(d.pdf_invoice_title, field + \".pdf_invoice_title\");\n" +
 "        }\n" +
 "        if (\"pdf_paid_stamp\" in d) {\n" +
-"            checkBoolean$b(d.pdf_paid_stamp, field + \".pdf_paid_stamp\");\n" +
+"            checkBoolean$c(d.pdf_paid_stamp, field + \".pdf_paid_stamp\");\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$e(d.preview_status, field + \".preview_status\", \"null | string\");\n" +
+"            checkNull$f(d.preview_status, field + \".preview_status\", \"null | string\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkString$i(d.preview_status, field + \".preview_status\", \"null | string\");\n" +
+"                checkString$j(d.preview_status, field + \".preview_status\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
-"                prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"price_before_tax\" in d) {\n" +
-"            checkString$i(d.price_before_tax, field + \".price_before_tax\");\n" +
+"            checkString$j(d.price_before_tax, field + \".price_before_tax\");\n" +
 "        }\n" +
-"        checkString$i(d.pusher_channel, field + \".pusher_channel\");\n" +
+"        checkString$j(d.pusher_channel, field + \".pusher_channel\");\n" +
 "        if (\"quote_group_uuid\" in d) {\n" +
-"            checkString$i(d.quote_group_uuid, field + \".quote_group_uuid\");\n" +
+"            checkString$j(d.quote_group_uuid, field + \".quote_group_uuid\");\n" +
 "        }\n" +
 "        if (\"quote_uid\" in d) {\n" +
-"            checkNull$e(d.quote_uid, field + \".quote_uid\");\n" +
+"            checkNull$f(d.quote_uid, field + \".quote_uid\");\n" +
 "        }\n" +
-"        checkBoolean$b(d.quotes, field + \".quotes\");\n" +
-"        checkBoolean$b(d.readonly, field + \".readonly\");\n" +
+"        checkBoolean$c(d.quotes, field + \".quotes\");\n" +
+"        checkBoolean$c(d.readonly, field + \".readonly\");\n" +
 "        if (\"recipients\" in d) {\n" +
-"            checkArray$9(d.recipients, field + \".recipients\");\n" +
+"            checkArray$a(d.recipients, field + \".recipients\");\n" +
 "            if (d.recipients) {\n" +
 "                for (let i = 0; i < d.recipients.length; i++) {\n" +
-"                    checkNever$2(d.recipients[i], field + \".recipients\" + \"[\" + i + \"]\");\n" +
+"                    checkNever$3(d.recipients[i], field + \".recipients\" + \"[\" + i + \"]\");\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkNull$e(d.reversal_origin_id, field + \".reversal_origin_id\");\n" +
-"        checkNull$e(d.score, field + \".score\");\n" +
+"        checkNull$f(d.reversal_origin_id, field + \".reversal_origin_id\");\n" +
+"        checkNull$f(d.score, field + \".score\");\n" +
 "        if (\"scored_invoices\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
@@ -1031,64 +1077,64 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.scored_invoices, field + \".scored_invoices\", \"ScoredInvoices | null\");\n" +
+"                    checkNull$f(d.scored_invoices, field + \".scored_invoices\", \"ScoredInvoices | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"scored_transactions\" in d) {\n" +
-"            checkArray$9(d.scored_transactions, field + \".scored_transactions\");\n" +
+"            checkArray$a(d.scored_transactions, field + \".scored_transactions\");\n" +
 "            if (d.scored_transactions) {\n" +
 "                for (let i = 0; i < d.scored_transactions.length; i++) {\n" +
-"                    checkNever$2(d.scored_transactions[i], field + \".scored_transactions\" + \"[\" + i + \"]\");\n" +
+"                    checkNever$3(d.scored_transactions[i], field + \".scored_transactions\" + \"[\" + i + \"]\");\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkString$i(d.source, field + \".source\");\n" +
+"        checkString$j(d.source, field + \".source\");\n" +
 "        if (\"special_mention\" in d) {\n" +
-"            checkNull$e(d.special_mention, field + \".special_mention\");\n" +
+"            checkNull$f(d.special_mention, field + \".special_mention\");\n" +
 "        }\n" +
 "        if (\"status\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkString$i(d.status, field + \".status\", \"string | null\");\n" +
+"                checkString$j(d.status, field + \".status\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.status, field + \".status\", \"string | null\");\n" +
+"                    checkNull$f(d.status, field + \".status\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"tax\" in d) {\n" +
-"            checkString$i(d.tax, field + \".tax\");\n" +
+"            checkString$j(d.tax, field + \".tax\");\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$e(d.thirdparty_id, field + \".thirdparty_id\", \"null | number\");\n" +
+"            checkNull$f(d.thirdparty_id, field + \".thirdparty_id\", \"null | number\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNumber$g(d.thirdparty_id, field + \".thirdparty_id\", \"null | number\");\n" +
+"                checkNumber$h(d.thirdparty_id, field + \".thirdparty_id\", \"null | number\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
-"                prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "            }\n" +
 "        }\n" +
-"        checkString$i(d.type, field + \".type\");\n" +
-"        checkString$i(d.updated_at, field + \".updated_at\");\n" +
-"        checkString$i(d.url, field + \".url\");\n" +
+"        checkString$j(d.type, field + \".type\");\n" +
+"        checkString$j(d.updated_at, field + \".updated_at\");\n" +
+"        checkString$j(d.url, field + \".url\");\n" +
 "        if (\"validation_needed\" in d) {\n" +
-"            checkBoolean$b(d.validation_needed, field + \".validation_needed\");\n" +
+"            checkBoolean$c(d.validation_needed, field + \".validation_needed\");\n" +
 "        }\n" +
 "        const knownProperties = [\"account_id\", \"accounting_type\", \"amount\", \"archived\", \"archived_at\", \"attachment_lost\", \"attachment_required\", \"billing_subscription_id\", \"can_be_stamped_as_paid_in_pdf\", \"company\", \"company_id\", \"complete\", \"completeness\", \"created_at\", \"credit_notes_amount\", \"currency\", \"currency_amount\", \"currency_amount_before_tax\", \"currency_price_before_tax\", \"currency_tax\", \"custom_payment_reference\", \"date\", \"deadline\", \"direction\", \"discount\", \"discount_type\", \"draft\", \"email_from\", \"estimate_status\", \"external_id\", \"factor_status\", \"fec_pieceref\", \"finalized_at\", \"from_estimate_id\", \"future_in_days\", \"gdrive_path\", \"gross_amount\", \"group_uuid\", \"grouped_at\", \"grouped_documents\", \"iban\", \"id\", \"invoice_kind\", \"invoice_number\", \"invoicing_detailed_source\", \"is_credit_note\", \"is_destroyable\", \"is_estimate\", \"is_waiting_details\", \"is_waiting_for_ocr\", \"journal_id\", \"label\", \"language\", \"manual_partial_invoices\", \"method\", \"multiplier\", \"not_duplicate\", \"ocr_thirdparty_id\", \"outstanding_balance\", \"paid\", \"payment_id\", \"payment_method\", \"payment_reference\", \"payment_reminder_enabled\", \"payment_status\", \"pdf_generation_status\", \"pdf_invoice_display_products_list\", \"pdf_invoice_free_text\", \"pdf_invoice_free_text_enabled\", \"pdf_invoice_subject\", \"pdf_invoice_subject_enabled\", \"pdf_invoice_title\", \"pdf_paid_stamp\", \"preview_status\", \"price_before_tax\", \"pusher_channel\", \"quote_group_uuid\", \"quote_uid\", \"quotes\", \"readonly\", \"recipients\", \"reversal_origin_id\", \"score\", \"scored_invoices\", \"scored_transactions\", \"source\", \"special_mention\", \"status\", \"tax\", \"thirdparty_id\", \"type\", \"updated_at\", \"url\", \"validation_needed\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$k(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$l(unknownProperty, d, \"never (unknown property)\");\n" +
 "        return new APIDocument(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -1250,23 +1296,23 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$k = d;\n" +
+"            obj$l = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
 "        if (!d) {\n" +
-"            throwNull2NonNull$k(field, d, multiple ?? this.name);\n" +
+"            throwNull2NonNull$l(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$k(field, d);\n" +
+"            throwNotObject$l(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$k(field, d);\n" +
+"            throwIsArray$l(field, d);\n" +
 "        }\n" +
-"        checkString$i(d.name, field + \".name\");\n" +
+"        checkString$j(d.name, field + \".name\");\n" +
 "        const knownProperties = [\"name\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$k(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$l(unknownProperty, d, \"never (unknown property)\");\n" +
 "        return new Company(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -1279,107 +1325,107 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$k = d;\n" +
+"            obj$l = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
 "        if (!d) {\n" +
-"            throwNull2NonNull$k(field, d, multiple ?? this.name);\n" +
+"            throwNull2NonNull$l(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$k(field, d);\n" +
+"            throwNotObject$l(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$k(field, d);\n" +
+"            throwIsArray$l(field, d);\n" +
 "        }\n" +
 "        if (\"account\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkNull$e(d.account, field + \".account\", \"null | Account\");\n" +
+"                checkNull$f(d.account, field + \".account\", \"null | Account\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
 "                    d.account = Account.Create(d.account, field + \".account\", \"null | Account\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"account_id\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkNull$e(d.account_id, field + \".account_id\", \"null | number\");\n" +
+"                checkNull$f(d.account_id, field + \".account_id\", \"null | number\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNumber$g(d.account_id, field + \".account_id\", \"null | number\");\n" +
+"                    checkNumber$h(d.account_id, field + \".account_id\", \"null | number\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"accounting_status\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkNull$e(d.accounting_status, field + \".accounting_status\", \"null | string\");\n" +
+"                checkNull$f(d.accounting_status, field + \".accounting_status\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkString$i(d.accounting_status, field + \".accounting_status\", \"null | string\");\n" +
+"                    checkString$j(d.accounting_status, field + \".accounting_status\", \"null | string\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkBoolean$b(d.accounting_type, field + \".accounting_type\");\n" +
-"        checkString$i(d.amount, field + \".amount\");\n" +
-"        checkBoolean$b(d.archived, field + \".archived\");\n" +
+"        checkBoolean$c(d.accounting_type, field + \".accounting_type\");\n" +
+"        checkString$j(d.amount, field + \".amount\");\n" +
+"        checkBoolean$c(d.archived, field + \".archived\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$e(d.archived_at, field + \".archived_at\", \"null | string\");\n" +
+"            checkNull$f(d.archived_at, field + \".archived_at\", \"null | string\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkString$i(d.archived_at, field + \".archived_at\", \"null | string\");\n" +
+"                checkString$j(d.archived_at, field + \".archived_at\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
-"                prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"attachment_label\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkString$i(d.attachment_label, field + \".attachment_label\", \"string | null\");\n" +
+"                checkString$j(d.attachment_label, field + \".attachment_label\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.attachment_label, field + \".attachment_label\", \"string | null\");\n" +
+"                    checkNull$f(d.attachment_label, field + \".attachment_label\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkBoolean$b(d.attachment_lost, field + \".attachment_lost\");\n" +
-"        checkBoolean$b(d.attachment_required, field + \".attachment_required\");\n" +
-"        checkNull$e(d.billing_subscription_id, field + \".billing_subscription_id\");\n" +
+"        checkBoolean$c(d.attachment_lost, field + \".attachment_lost\");\n" +
+"        checkBoolean$c(d.attachment_required, field + \".attachment_required\");\n" +
+"        checkNull$f(d.billing_subscription_id, field + \".billing_subscription_id\");\n" +
 "        if (\"can_be_stamped_as_paid_in_pdf\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkBoolean$b(d.can_be_stamped_as_paid_in_pdf, field + \".can_be_stamped_as_paid_in_pdf\", \"boolean | null\");\n" +
+"                checkBoolean$c(d.can_be_stamped_as_paid_in_pdf, field + \".can_be_stamped_as_paid_in_pdf\", \"boolean | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.can_be_stamped_as_paid_in_pdf, field + \".can_be_stamped_as_paid_in_pdf\", \"boolean | null\");\n" +
+"                    checkNull$f(d.can_be_stamped_as_paid_in_pdf, field + \".can_be_stamped_as_paid_in_pdf\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkArray$9(d.client_comments, field + \".client_comments\");\n" +
+"        checkArray$a(d.client_comments, field + \".client_comments\");\n" +
 "        if (d.client_comments) {\n" +
 "            for (let i = 0; i < d.client_comments.length; i++) {\n" +
 "                d.client_comments[i] = ClientCommentsEntityOrEstablishmentComment.Create(d.client_comments[i], field + \".client_comments\" + \"[\" + i + \"]\", undefined);\n" +
@@ -1388,372 +1434,372 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"company\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkNull$e(d.company, field + \".company\", \"null | Company1\");\n" +
+"                checkNull$f(d.company, field + \".company\", \"null | Company1\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
 "                    d.company = Company1.Create(d.company, field + \".company\", \"null | Company1\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkNumber$g(d.company_id, field + \".company_id\");\n" +
-"        checkBoolean$b(d.complete, field + \".complete\");\n" +
-"        checkNumber$g(d.completeness, field + \".completeness\");\n" +
-"        checkString$i(d.created_at, field + \".created_at\");\n" +
+"        checkNumber$h(d.company_id, field + \".company_id\");\n" +
+"        checkBoolean$c(d.complete, field + \".complete\");\n" +
+"        checkNumber$h(d.completeness, field + \".completeness\");\n" +
+"        checkString$j(d.created_at, field + \".created_at\");\n" +
 "        if (\"credit_notes_amount\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkString$i(d.credit_notes_amount, field + \".credit_notes_amount\", \"string | null\");\n" +
+"                checkString$j(d.credit_notes_amount, field + \".credit_notes_amount\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.credit_notes_amount, field + \".credit_notes_amount\", \"string | null\");\n" +
+"                    checkNull$f(d.credit_notes_amount, field + \".credit_notes_amount\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkString$i(d.currency, field + \".currency\");\n" +
-"        checkString$i(d.currency_amount, field + \".currency_amount\");\n" +
+"        checkString$j(d.currency, field + \".currency\");\n" +
+"        checkString$j(d.currency_amount, field + \".currency_amount\");\n" +
 "        if (\"currency_amount_before_tax\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkString$i(d.currency_amount_before_tax, field + \".currency_amount_before_tax\", \"string | null\");\n" +
+"                checkString$j(d.currency_amount_before_tax, field + \".currency_amount_before_tax\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.currency_amount_before_tax, field + \".currency_amount_before_tax\", \"string | null\");\n" +
+"                    checkNull$f(d.currency_amount_before_tax, field + \".currency_amount_before_tax\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"currency_price_before_tax\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkString$i(d.currency_price_before_tax, field + \".currency_price_before_tax\", \"string | null\");\n" +
+"                checkString$j(d.currency_price_before_tax, field + \".currency_price_before_tax\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.currency_price_before_tax, field + \".currency_price_before_tax\", \"string | null\");\n" +
+"                    checkNull$f(d.currency_price_before_tax, field + \".currency_price_before_tax\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"currency_tax\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkString$i(d.currency_tax, field + \".currency_tax\", \"string | null\");\n" +
+"                checkString$j(d.currency_tax, field + \".currency_tax\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.currency_tax, field + \".currency_tax\", \"string | null\");\n" +
+"                    checkNull$f(d.currency_tax, field + \".currency_tax\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"current_account_plan_item\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkNull$e(d.current_account_plan_item, field + \".current_account_plan_item\", \"null | PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem\");\n" +
+"                checkNull$f(d.current_account_plan_item, field + \".current_account_plan_item\", \"null | PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
 "                    d.current_account_plan_item = PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem.Create(d.current_account_plan_item, field + \".current_account_plan_item\", \"null | PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"custom_payment_reference\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkString$i(d.custom_payment_reference, field + \".custom_payment_reference\", \"string | null\");\n" +
+"                checkString$j(d.custom_payment_reference, field + \".custom_payment_reference\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.custom_payment_reference, field + \".custom_payment_reference\", \"string | null\");\n" +
+"                    checkNull$f(d.custom_payment_reference, field + \".custom_payment_reference\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$e(d.date, field + \".date\", \"null | string\");\n" +
+"            checkNull$f(d.date, field + \".date\", \"null | string\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkString$i(d.date, field + \".date\", \"null | string\");\n" +
+"                checkString$j(d.date, field + \".date\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
-"                prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"deadline\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkNull$e(d.deadline, field + \".deadline\", \"null | string\");\n" +
+"                checkNull$f(d.deadline, field + \".deadline\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkString$i(d.deadline, field + \".deadline\", \"null | string\");\n" +
+"                    checkString$j(d.deadline, field + \".deadline\", \"null | string\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"direction\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkString$i(d.direction, field + \".direction\", \"string | null\");\n" +
+"                checkString$j(d.direction, field + \".direction\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.direction, field + \".direction\", \"string | null\");\n" +
+"                    checkNull$f(d.direction, field + \".direction\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"discount\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkString$i(d.discount, field + \".discount\", \"string | null\");\n" +
+"                checkString$j(d.discount, field + \".discount\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.discount, field + \".discount\", \"string | null\");\n" +
+"                    checkNull$f(d.discount, field + \".discount\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"discount_type\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkString$i(d.discount_type, field + \".discount_type\", \"string | null\");\n" +
+"                checkString$j(d.discount_type, field + \".discount_type\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.discount_type, field + \".discount_type\", \"string | null\");\n" +
+"                    checkNull$f(d.discount_type, field + \".discount_type\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkBoolean$b(d.draft, field + \".draft\");\n" +
-"        checkNull$e(d.email_from, field + \".email_from\");\n" +
+"        checkBoolean$c(d.draft, field + \".draft\");\n" +
+"        checkNull$f(d.email_from, field + \".email_from\");\n" +
 "        if (\"embeddable_in_browser\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkBoolean$b(d.embeddable_in_browser, field + \".embeddable_in_browser\", \"boolean | null\");\n" +
+"                checkBoolean$c(d.embeddable_in_browser, field + \".embeddable_in_browser\", \"boolean | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.embeddable_in_browser, field + \".embeddable_in_browser\", \"boolean | null\");\n" +
+"                    checkNull$f(d.embeddable_in_browser, field + \".embeddable_in_browser\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"establishment_comment\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkNull$e(d.establishment_comment, field + \".establishment_comment\", \"null | EstablishmentCommentOrClientCommentsEntity\");\n" +
+"                checkNull$f(d.establishment_comment, field + \".establishment_comment\", \"null | EstablishmentCommentOrClientCommentsEntity\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
 "                    d.establishment_comment = EstablishmentCommentOrClientCommentsEntity.Create(d.establishment_comment, field + \".establishment_comment\", \"null | EstablishmentCommentOrClientCommentsEntity\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"estimate_status\" in d) {\n" +
-"            checkNull$e(d.estimate_status, field + \".estimate_status\");\n" +
+"            checkNull$f(d.estimate_status, field + \".estimate_status\");\n" +
 "        }\n" +
-"        checkString$i(d.external_id, field + \".external_id\");\n" +
+"        checkString$j(d.external_id, field + \".external_id\");\n" +
 "        if (\"factor_status\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkString$i(d.factor_status, field + \".factor_status\", \"string | null\");\n" +
+"                checkString$j(d.factor_status, field + \".factor_status\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.factor_status, field + \".factor_status\", \"string | null\");\n" +
+"                    checkNull$f(d.factor_status, field + \".factor_status\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkString$i(d.fec_pieceref, field + \".fec_pieceref\");\n" +
+"        checkString$j(d.fec_pieceref, field + \".fec_pieceref\");\n" +
 "        if (\"file_signed_id\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkString$i(d.file_signed_id, field + \".file_signed_id\", \"string | null\");\n" +
+"                checkString$j(d.file_signed_id, field + \".file_signed_id\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.file_signed_id, field + \".file_signed_id\", \"string | null\");\n" +
+"                    checkNull$f(d.file_signed_id, field + \".file_signed_id\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$e(d.filename, field + \".filename\", \"null | string\");\n" +
+"            checkNull$f(d.filename, field + \".filename\", \"null | string\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkString$i(d.filename, field + \".filename\", \"null | string\");\n" +
+"                checkString$j(d.filename, field + \".filename\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
-"                prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"finalized_at\" in d) {\n" +
-"            checkNull$e(d.finalized_at, field + \".finalized_at\");\n" +
+"            checkNull$f(d.finalized_at, field + \".finalized_at\");\n" +
 "        }\n" +
 "        if (\"from_estimate_id\" in d) {\n" +
-"            checkNull$e(d.from_estimate_id, field + \".from_estimate_id\");\n" +
+"            checkNull$f(d.from_estimate_id, field + \".from_estimate_id\");\n" +
 "        }\n" +
 "        if (\"future_in_days\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkNumber$g(d.future_in_days, field + \".future_in_days\", \"number | null\");\n" +
+"                checkNumber$h(d.future_in_days, field + \".future_in_days\", \"number | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.future_in_days, field + \".future_in_days\", \"number | null\");\n" +
+"                    checkNull$f(d.future_in_days, field + \".future_in_days\", \"number | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkString$i(d.gdrive_path, field + \".gdrive_path\", \"string | null\");\n" +
+"            checkString$j(d.gdrive_path, field + \".gdrive_path\", \"string | null\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$e(d.gdrive_path, field + \".gdrive_path\", \"string | null\");\n" +
+"                checkNull$f(d.gdrive_path, field + \".gdrive_path\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
-"                prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"gross_amount\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkNull$e(d.gross_amount, field + \".gross_amount\", \"null | string\");\n" +
+"                checkNull$f(d.gross_amount, field + \".gross_amount\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkString$i(d.gross_amount, field + \".gross_amount\", \"null | string\");\n" +
+"                    checkString$j(d.gross_amount, field + \".gross_amount\", \"null | string\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkString$i(d.group_uuid, field + \".group_uuid\");\n" +
+"        checkString$j(d.group_uuid, field + \".group_uuid\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$e(d.grouped_at, field + \".grouped_at\", \"null | string\");\n" +
+"            checkNull$f(d.grouped_at, field + \".grouped_at\", \"null | string\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkString$i(d.grouped_at, field + \".grouped_at\", \"null | string\");\n" +
+"                checkString$j(d.grouped_at, field + \".grouped_at\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
-"                prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "            }\n" +
 "        }\n" +
-"        checkBoolean$b(d.has_file, field + \".has_file\");\n" +
+"        checkBoolean$c(d.has_file, field + \".has_file\");\n" +
 "        if (\"has_linked_quotes\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkBoolean$b(d.has_linked_quotes, field + \".has_linked_quotes\", \"boolean | null\");\n" +
+"                checkBoolean$c(d.has_linked_quotes, field + \".has_linked_quotes\", \"boolean | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.has_linked_quotes, field + \".has_linked_quotes\", \"boolean | null\");\n" +
+"                    checkNull$f(d.has_linked_quotes, field + \".has_linked_quotes\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkBoolean$b(d.hasTooManyLedgerEvents, field + \".hasTooManyLedgerEvents\");\n" +
+"        checkBoolean$c(d.hasTooManyLedgerEvents, field + \".hasTooManyLedgerEvents\");\n" +
 "        if (\"iban\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkString$i(d.iban, field + \".iban\", \"string | null\");\n" +
+"                checkString$j(d.iban, field + \".iban\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.iban, field + \".iban\", \"string | null\");\n" +
+"                    checkNull$f(d.iban, field + \".iban\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkNumber$g(d.id, field + \".id\");\n" +
+"        checkNumber$h(d.id, field + \".id\");\n" +
 "        if (\"incomplete\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkBoolean$b(d.incomplete, field + \".incomplete\", \"boolean | null\");\n" +
+"                checkBoolean$c(d.incomplete, field + \".incomplete\", \"boolean | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.incomplete, field + \".incomplete\", \"boolean | null\");\n" +
+"                    checkNull$f(d.incomplete, field + \".incomplete\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"invoice_kind\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkString$i(d.invoice_kind, field + \".invoice_kind\", \"string | null\");\n" +
+"                checkString$j(d.invoice_kind, field + \".invoice_kind\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.invoice_kind, field + \".invoice_kind\", \"string | null\");\n" +
+"                    checkNull$f(d.invoice_kind, field + \".invoice_kind\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"invoice_lines\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkArray$9(d.invoice_lines, field + \".invoice_lines\", \"InvoiceLinesEntity[] | null\");\n" +
+"                checkArray$a(d.invoice_lines, field + \".invoice_lines\", \"InvoiceLinesEntity[] | null\");\n" +
 "                if (d.invoice_lines) {\n" +
 "                    for (let i = 0; i < d.invoice_lines.length; i++) {\n" +
 "                        d.invoice_lines[i] = InvoiceLinesEntity$2.Create(d.invoice_lines[i], field + \".invoice_lines\" + \"[\" + i + \"]\", undefined);\n" +
@@ -1762,540 +1808,540 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.invoice_lines, field + \".invoice_lines\", \"InvoiceLinesEntity[] | null\");\n" +
+"                    checkNull$f(d.invoice_lines, field + \".invoice_lines\", \"InvoiceLinesEntity[] | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"invoice_number\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkString$i(d.invoice_number, field + \".invoice_number\", \"string | null\");\n" +
+"                checkString$j(d.invoice_number, field + \".invoice_number\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.invoice_number, field + \".invoice_number\", \"string | null\");\n" +
+"                    checkNull$f(d.invoice_number, field + \".invoice_number\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"invoicing_detailed_source\" in d) {\n" +
-"            checkNull$e(d.invoicing_detailed_source, field + \".invoicing_detailed_source\");\n" +
+"            checkNull$f(d.invoicing_detailed_source, field + \".invoicing_detailed_source\");\n" +
 "        }\n" +
 "        if (\"is_accounting_needed\" in d) {\n" +
-"            checkNull$e(d.is_accounting_needed, field + \".is_accounting_needed\");\n" +
+"            checkNull$f(d.is_accounting_needed, field + \".is_accounting_needed\");\n" +
 "        }\n" +
 "        if (\"is_credit_note\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkBoolean$b(d.is_credit_note, field + \".is_credit_note\", \"boolean | null\");\n" +
+"                checkBoolean$c(d.is_credit_note, field + \".is_credit_note\", \"boolean | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.is_credit_note, field + \".is_credit_note\", \"boolean | null\");\n" +
+"                    checkNull$f(d.is_credit_note, field + \".is_credit_note\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"is_destroyable\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkBoolean$b(d.is_destroyable, field + \".is_destroyable\", \"boolean | null\");\n" +
+"                checkBoolean$c(d.is_destroyable, field + \".is_destroyable\", \"boolean | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.is_destroyable, field + \".is_destroyable\", \"boolean | null\");\n" +
+"                    checkNull$f(d.is_destroyable, field + \".is_destroyable\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"is_estimate\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkBoolean$b(d.is_estimate, field + \".is_estimate\", \"boolean | null\");\n" +
+"                checkBoolean$c(d.is_estimate, field + \".is_estimate\", \"boolean | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.is_estimate, field + \".is_estimate\", \"boolean | null\");\n" +
+"                    checkNull$f(d.is_estimate, field + \".is_estimate\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"is_sendable\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkBoolean$b(d.is_sendable, field + \".is_sendable\", \"boolean | null\");\n" +
+"                checkBoolean$c(d.is_sendable, field + \".is_sendable\", \"boolean | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.is_sendable, field + \".is_sendable\", \"boolean | null\");\n" +
+"                    checkNull$f(d.is_sendable, field + \".is_sendable\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkBoolean$b(d.is_waiting_details, field + \".is_waiting_details\");\n" +
+"        checkBoolean$c(d.is_waiting_details, field + \".is_waiting_details\");\n" +
 "        if (\"is_waiting_for_ocr\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkBoolean$b(d.is_waiting_for_ocr, field + \".is_waiting_for_ocr\", \"boolean | null\");\n" +
+"                checkBoolean$c(d.is_waiting_for_ocr, field + \".is_waiting_for_ocr\", \"boolean | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.is_waiting_for_ocr, field + \".is_waiting_for_ocr\", \"boolean | null\");\n" +
+"                    checkNull$f(d.is_waiting_for_ocr, field + \".is_waiting_for_ocr\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        d.journal = Journal$1.Create(d.journal, field + \".journal\", undefined);\n" +
-"        checkNumber$g(d.journal_id, field + \".journal_id\");\n" +
-"        checkString$i(d.label, field + \".label\");\n" +
+"        checkNumber$h(d.journal_id, field + \".journal_id\");\n" +
+"        checkString$j(d.label, field + \".label\");\n" +
 "        if (\"language\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkString$i(d.language, field + \".language\", \"string | null\");\n" +
+"                checkString$j(d.language, field + \".language\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.language, field + \".language\", \"string | null\");\n" +
+"                    checkNull$f(d.language, field + \".language\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkArray$9(d.ledgerEvents, field + \".ledgerEvents\");\n" +
+"        checkArray$a(d.ledgerEvents, field + \".ledgerEvents\");\n" +
 "        if (d.ledgerEvents) {\n" +
 "            for (let i = 0; i < d.ledgerEvents.length; i++) {\n" +
 "                d.ledgerEvents[i] = LedgerEventsEntity.Create(d.ledgerEvents[i], field + \".ledgerEvents\" + \"[\" + i + \"]\", undefined);\n" +
 "            }\n" +
 "        }\n" +
-"        checkNumber$g(d.ledgerEventsCount, field + \".ledgerEventsCount\");\n" +
+"        checkNumber$h(d.ledgerEventsCount, field + \".ledgerEventsCount\");\n" +
 "        if (\"manual_partial_invoices\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkBoolean$b(d.manual_partial_invoices, field + \".manual_partial_invoices\", \"boolean | null\");\n" +
+"                checkBoolean$c(d.manual_partial_invoices, field + \".manual_partial_invoices\", \"boolean | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.manual_partial_invoices, field + \".manual_partial_invoices\", \"boolean | null\");\n" +
+"                    checkNull$f(d.manual_partial_invoices, field + \".manual_partial_invoices\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkString$i(d.method, field + \".method\");\n" +
+"        checkString$j(d.method, field + \".method\");\n" +
 "        if (\"multiplier\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkNumber$g(d.multiplier, field + \".multiplier\", \"number | null\");\n" +
+"                checkNumber$h(d.multiplier, field + \".multiplier\", \"number | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.multiplier, field + \".multiplier\", \"number | null\");\n" +
+"                    checkNull$f(d.multiplier, field + \".multiplier\", \"number | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"not_duplicate\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkBoolean$b(d.not_duplicate, field + \".not_duplicate\", \"boolean | null\");\n" +
+"                checkBoolean$c(d.not_duplicate, field + \".not_duplicate\", \"boolean | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.not_duplicate, field + \".not_duplicate\", \"boolean | null\");\n" +
+"                    checkNull$f(d.not_duplicate, field + \".not_duplicate\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"ocr_thirdparty_id\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkNull$e(d.ocr_thirdparty_id, field + \".ocr_thirdparty_id\", \"null | number\");\n" +
+"                checkNull$f(d.ocr_thirdparty_id, field + \".ocr_thirdparty_id\", \"null | number\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNumber$g(d.ocr_thirdparty_id, field + \".ocr_thirdparty_id\", \"null | number\");\n" +
+"                    checkNumber$h(d.ocr_thirdparty_id, field + \".ocr_thirdparty_id\", \"null | number\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkString$i(d.outstanding_balance, field + \".outstanding_balance\");\n" +
+"        checkString$j(d.outstanding_balance, field + \".outstanding_balance\");\n" +
 "        if (\"pages_count\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkNumber$g(d.pages_count, field + \".pages_count\", \"number | null\");\n" +
+"                checkNumber$h(d.pages_count, field + \".pages_count\", \"number | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.pages_count, field + \".pages_count\", \"number | null\");\n" +
+"                    checkNull$f(d.pages_count, field + \".pages_count\", \"number | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"paid\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkBoolean$b(d.paid, field + \".paid\", \"boolean | null\");\n" +
+"                checkBoolean$c(d.paid, field + \".paid\", \"boolean | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.paid, field + \".paid\", \"boolean | null\");\n" +
+"                    checkNull$f(d.paid, field + \".paid\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"payment_id\" in d) {\n" +
-"            checkNull$e(d.payment_id, field + \".payment_id\");\n" +
+"            checkNull$f(d.payment_id, field + \".payment_id\");\n" +
 "        }\n" +
 "        if (\"payment_method\" in d) {\n" +
-"            checkNull$e(d.payment_method, field + \".payment_method\");\n" +
+"            checkNull$f(d.payment_method, field + \".payment_method\");\n" +
 "        }\n" +
 "        if (\"payment_reference\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkString$i(d.payment_reference, field + \".payment_reference\", \"string | null\");\n" +
+"                checkString$j(d.payment_reference, field + \".payment_reference\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.payment_reference, field + \".payment_reference\", \"string | null\");\n" +
+"                    checkNull$f(d.payment_reference, field + \".payment_reference\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"payment_reminder_enabled\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkBoolean$b(d.payment_reminder_enabled, field + \".payment_reminder_enabled\", \"boolean | null\");\n" +
+"                checkBoolean$c(d.payment_reminder_enabled, field + \".payment_reminder_enabled\", \"boolean | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.payment_reminder_enabled, field + \".payment_reminder_enabled\", \"boolean | null\");\n" +
+"                    checkNull$f(d.payment_reminder_enabled, field + \".payment_reminder_enabled\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"payment_status\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkString$i(d.payment_status, field + \".payment_status\", \"string | null\");\n" +
+"                checkString$j(d.payment_status, field + \".payment_status\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.payment_status, field + \".payment_status\", \"string | null\");\n" +
+"                    checkNull$f(d.payment_status, field + \".payment_status\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkString$i(d.pdf_generation_status, field + \".pdf_generation_status\");\n" +
+"        checkString$j(d.pdf_generation_status, field + \".pdf_generation_status\");\n" +
 "        if (\"pdf_invoice_display_products_list\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkBoolean$b(d.pdf_invoice_display_products_list, field + \".pdf_invoice_display_products_list\", \"boolean | null\");\n" +
+"                checkBoolean$c(d.pdf_invoice_display_products_list, field + \".pdf_invoice_display_products_list\", \"boolean | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.pdf_invoice_display_products_list, field + \".pdf_invoice_display_products_list\", \"boolean | null\");\n" +
+"                    checkNull$f(d.pdf_invoice_display_products_list, field + \".pdf_invoice_display_products_list\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"pdf_invoice_free_text\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkString$i(d.pdf_invoice_free_text, field + \".pdf_invoice_free_text\", \"string | null\");\n" +
+"                checkString$j(d.pdf_invoice_free_text, field + \".pdf_invoice_free_text\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.pdf_invoice_free_text, field + \".pdf_invoice_free_text\", \"string | null\");\n" +
+"                    checkNull$f(d.pdf_invoice_free_text, field + \".pdf_invoice_free_text\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"pdf_invoice_free_text_enabled\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkBoolean$b(d.pdf_invoice_free_text_enabled, field + \".pdf_invoice_free_text_enabled\", \"boolean | null\");\n" +
+"                checkBoolean$c(d.pdf_invoice_free_text_enabled, field + \".pdf_invoice_free_text_enabled\", \"boolean | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.pdf_invoice_free_text_enabled, field + \".pdf_invoice_free_text_enabled\", \"boolean | null\");\n" +
+"                    checkNull$f(d.pdf_invoice_free_text_enabled, field + \".pdf_invoice_free_text_enabled\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"pdf_invoice_subject\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkString$i(d.pdf_invoice_subject, field + \".pdf_invoice_subject\", \"string | null\");\n" +
+"                checkString$j(d.pdf_invoice_subject, field + \".pdf_invoice_subject\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.pdf_invoice_subject, field + \".pdf_invoice_subject\", \"string | null\");\n" +
+"                    checkNull$f(d.pdf_invoice_subject, field + \".pdf_invoice_subject\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"pdf_invoice_subject_enabled\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkBoolean$b(d.pdf_invoice_subject_enabled, field + \".pdf_invoice_subject_enabled\", \"boolean | null\");\n" +
+"                checkBoolean$c(d.pdf_invoice_subject_enabled, field + \".pdf_invoice_subject_enabled\", \"boolean | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.pdf_invoice_subject_enabled, field + \".pdf_invoice_subject_enabled\", \"boolean | null\");\n" +
+"                    checkNull$f(d.pdf_invoice_subject_enabled, field + \".pdf_invoice_subject_enabled\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"pdf_invoice_title\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkString$i(d.pdf_invoice_title, field + \".pdf_invoice_title\", \"string | null\");\n" +
+"                checkString$j(d.pdf_invoice_title, field + \".pdf_invoice_title\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.pdf_invoice_title, field + \".pdf_invoice_title\", \"string | null\");\n" +
+"                    checkNull$f(d.pdf_invoice_title, field + \".pdf_invoice_title\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"pdf_paid_stamp\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkBoolean$b(d.pdf_paid_stamp, field + \".pdf_paid_stamp\", \"boolean | null\");\n" +
+"                checkBoolean$c(d.pdf_paid_stamp, field + \".pdf_paid_stamp\", \"boolean | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.pdf_paid_stamp, field + \".pdf_paid_stamp\", \"boolean | null\");\n" +
+"                    checkNull$f(d.pdf_paid_stamp, field + \".pdf_paid_stamp\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkBoolean$b(d.pending, field + \".pending\");\n" +
+"        checkBoolean$c(d.pending, field + \".pending\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$e(d.preview_status, field + \".preview_status\", \"null | string\");\n" +
+"            checkNull$f(d.preview_status, field + \".preview_status\", \"null | string\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkString$i(d.preview_status, field + \".preview_status\", \"null | string\");\n" +
+"                checkString$j(d.preview_status, field + \".preview_status\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
-"                prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "            }\n" +
 "        }\n" +
-"        checkArray$9(d.preview_urls, field + \".preview_urls\");\n" +
+"        checkArray$a(d.preview_urls, field + \".preview_urls\");\n" +
 "        if (d.preview_urls) {\n" +
 "            for (let i = 0; i < d.preview_urls.length; i++) {\n" +
-"                checkString$i(d.preview_urls[i], field + \".preview_urls\" + \"[\" + i + \"]\");\n" +
+"                checkString$j(d.preview_urls[i], field + \".preview_urls\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"price_before_tax\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkString$i(d.price_before_tax, field + \".price_before_tax\", \"string | null\");\n" +
+"                checkString$j(d.price_before_tax, field + \".price_before_tax\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.price_before_tax, field + \".price_before_tax\", \"string | null\");\n" +
+"                    checkNull$f(d.price_before_tax, field + \".price_before_tax\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkString$i(d.pusher_channel, field + \".pusher_channel\");\n" +
+"        checkString$j(d.pusher_channel, field + \".pusher_channel\");\n" +
 "        if (\"quote_group_uuid\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkString$i(d.quote_group_uuid, field + \".quote_group_uuid\", \"string | null\");\n" +
+"                checkString$j(d.quote_group_uuid, field + \".quote_group_uuid\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.quote_group_uuid, field + \".quote_group_uuid\", \"string | null\");\n" +
+"                    checkNull$f(d.quote_group_uuid, field + \".quote_group_uuid\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"quote_uid\" in d) {\n" +
-"            checkNull$e(d.quote_uid, field + \".quote_uid\");\n" +
+"            checkNull$f(d.quote_uid, field + \".quote_uid\");\n" +
 "        }\n" +
-"        checkBoolean$b(d.quotes, field + \".quotes\");\n" +
-"        checkBoolean$b(d.readonly, field + \".readonly\");\n" +
+"        checkBoolean$c(d.quotes, field + \".quotes\");\n" +
+"        checkBoolean$c(d.readonly, field + \".readonly\");\n" +
 "        if (\"recipients\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkArray$9(d.recipients, field + \".recipients\", \"never[] | null\");\n" +
+"                checkArray$a(d.recipients, field + \".recipients\", \"never[] | null\");\n" +
 "                if (d.recipients) {\n" +
 "                    for (let i = 0; i < d.recipients.length; i++) {\n" +
-"                        checkNever$2(d.recipients[i], field + \".recipients\" + \"[\" + i + \"]\");\n" +
+"                        checkNever$3(d.recipients[i], field + \".recipients\" + \"[\" + i + \"]\");\n" +
 "                    }\n" +
 "                }\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.recipients, field + \".recipients\", \"never[] | null\");\n" +
+"                    checkNull$f(d.recipients, field + \".recipients\", \"never[] | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkBoolean$b(d.reconciled, field + \".reconciled\");\n" +
-"        checkNull$e(d.reversal_origin_id, field + \".reversal_origin_id\");\n" +
-"        checkNull$e(d.score, field + \".score\");\n" +
+"        checkBoolean$c(d.reconciled, field + \".reconciled\");\n" +
+"        checkNull$f(d.reversal_origin_id, field + \".reversal_origin_id\");\n" +
+"        checkNull$f(d.score, field + \".score\");\n" +
 "        if (\"scored_invoices\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkNull$e(d.scored_invoices, field + \".scored_invoices\", \"null | ScoredInvoices1\");\n" +
+"                checkNull$f(d.scored_invoices, field + \".scored_invoices\", \"null | ScoredInvoices1\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
 "                    d.scored_invoices = ScoredInvoices1.Create(d.scored_invoices, field + \".scored_invoices\", \"null | ScoredInvoices1\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"scored_transactions\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkArray$9(d.scored_transactions, field + \".scored_transactions\", \"never[] | null\");\n" +
+"                checkArray$a(d.scored_transactions, field + \".scored_transactions\", \"never[] | null\");\n" +
 "                if (d.scored_transactions) {\n" +
 "                    for (let i = 0; i < d.scored_transactions.length; i++) {\n" +
-"                        checkNever$2(d.scored_transactions[i], field + \".scored_transactions\" + \"[\" + i + \"]\");\n" +
+"                        checkNever$3(d.scored_transactions[i], field + \".scored_transactions\" + \"[\" + i + \"]\");\n" +
 "                    }\n" +
 "                }\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.scored_transactions, field + \".scored_transactions\", \"never[] | null\");\n" +
+"                    checkNull$f(d.scored_transactions, field + \".scored_transactions\", \"never[] | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"size\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkString$i(d.size, field + \".size\", \"string | null\");\n" +
+"                checkString$j(d.size, field + \".size\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.size, field + \".size\", \"string | null\");\n" +
+"                    checkNull$f(d.size, field + \".size\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkString$i(d.source, field + \".source\");\n" +
+"        checkString$j(d.source, field + \".source\");\n" +
 "        if (\"special_mention\" in d) {\n" +
-"            checkNull$e(d.special_mention, field + \".special_mention\");\n" +
+"            checkNull$f(d.special_mention, field + \".special_mention\");\n" +
 "        }\n" +
 "        if (\"status\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkNull$e(d.status, field + \".status\", \"null | string\");\n" +
+"                checkNull$f(d.status, field + \".status\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkString$i(d.status, field + \".status\", \"null | string\");\n" +
+"                    checkString$j(d.status, field + \".status\", \"null | string\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"subcomplete\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkBoolean$b(d.subcomplete, field + \".subcomplete\", \"boolean | null\");\n" +
+"                checkBoolean$c(d.subcomplete, field + \".subcomplete\", \"boolean | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.subcomplete, field + \".subcomplete\", \"boolean | null\");\n" +
+"                    checkNull$f(d.subcomplete, field + \".subcomplete\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"tagged_at_ledger_events_level\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkBoolean$b(d.tagged_at_ledger_events_level, field + \".tagged_at_ledger_events_level\", \"boolean | null\");\n" +
+"                checkBoolean$c(d.tagged_at_ledger_events_level, field + \".tagged_at_ledger_events_level\", \"boolean | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.tagged_at_ledger_events_level, field + \".tagged_at_ledger_events_level\", \"boolean | null\");\n" +
+"                    checkNull$f(d.tagged_at_ledger_events_level, field + \".tagged_at_ledger_events_level\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"tax\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkString$i(d.tax, field + \".tax\", \"string | null\");\n" +
+"                checkString$j(d.tax, field + \".tax\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.tax, field + \".tax\", \"string | null\");\n" +
+"                    checkNull$f(d.tax, field + \".tax\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -2306,46 +2352,46 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.thirdparty, field + \".thirdparty\", \"Thirdparty | null\");\n" +
+"                    checkNull$f(d.thirdparty, field + \".thirdparty\", \"Thirdparty | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$e(d.thirdparty_id, field + \".thirdparty_id\", \"null | number\");\n" +
+"            checkNull$f(d.thirdparty_id, field + \".thirdparty_id\", \"null | number\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNumber$g(d.thirdparty_id, field + \".thirdparty_id\", \"null | number\");\n" +
+"                checkNumber$h(d.thirdparty_id, field + \".thirdparty_id\", \"null | number\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
-"                prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "            }\n" +
 "        }\n" +
-"        checkString$i(d.type, field + \".type\");\n" +
-"        checkString$i(d.updated_at, field + \".updated_at\");\n" +
-"        checkString$i(d.url, field + \".url\");\n" +
+"        checkString$j(d.type, field + \".type\");\n" +
+"        checkString$j(d.updated_at, field + \".updated_at\");\n" +
+"        checkString$j(d.url, field + \".url\");\n" +
 "        if (\"validation_needed\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkBoolean$b(d.validation_needed, field + \".validation_needed\", \"boolean | null\");\n" +
+"                checkBoolean$c(d.validation_needed, field + \".validation_needed\", \"boolean | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.validation_needed, field + \".validation_needed\", \"boolean | null\");\n" +
+"                    checkNull$f(d.validation_needed, field + \".validation_needed\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        const knownProperties = [\"account\", \"account_id\", \"accounting_status\", \"accounting_type\", \"amount\", \"archived\", \"archived_at\", \"attachment_label\", \"attachment_lost\", \"attachment_required\", \"billing_subscription_id\", \"can_be_stamped_as_paid_in_pdf\", \"client_comments\", \"company\", \"company_id\", \"complete\", \"completeness\", \"created_at\", \"credit_notes_amount\", \"currency\", \"currency_amount\", \"currency_amount_before_tax\", \"currency_price_before_tax\", \"currency_tax\", \"current_account_plan_item\", \"custom_payment_reference\", \"date\", \"deadline\", \"direction\", \"discount\", \"discount_type\", \"draft\", \"email_from\", \"embeddable_in_browser\", \"establishment_comment\", \"estimate_status\", \"external_id\", \"factor_status\", \"fec_pieceref\", \"file_signed_id\", \"filename\", \"finalized_at\", \"from_estimate_id\", \"future_in_days\", \"gdrive_path\", \"gross_amount\", \"group_uuid\", \"grouped_at\", \"has_file\", \"has_linked_quotes\", \"hasTooManyLedgerEvents\", \"iban\", \"id\", \"incomplete\", \"invoice_kind\", \"invoice_lines\", \"invoice_number\", \"invoicing_detailed_source\", \"is_accounting_needed\", \"is_credit_note\", \"is_destroyable\", \"is_estimate\", \"is_sendable\", \"is_waiting_details\", \"is_waiting_for_ocr\", \"journal\", \"journal_id\", \"label\", \"language\", \"ledgerEvents\", \"ledgerEventsCount\", \"manual_partial_invoices\", \"method\", \"multiplier\", \"not_duplicate\", \"ocr_thirdparty_id\", \"outstanding_balance\", \"pages_count\", \"paid\", \"payment_id\", \"payment_method\", \"payment_reference\", \"payment_reminder_enabled\", \"payment_status\", \"pdf_generation_status\", \"pdf_invoice_display_products_list\", \"pdf_invoice_free_text\", \"pdf_invoice_free_text_enabled\", \"pdf_invoice_subject\", \"pdf_invoice_subject_enabled\", \"pdf_invoice_title\", \"pdf_paid_stamp\", \"pending\", \"preview_status\", \"preview_urls\", \"price_before_tax\", \"pusher_channel\", \"quote_group_uuid\", \"quote_uid\", \"quotes\", \"readonly\", \"recipients\", \"reconciled\", \"reversal_origin_id\", \"score\", \"scored_invoices\", \"scored_transactions\", \"size\", \"source\", \"special_mention\", \"status\", \"subcomplete\", \"tagged_at_ledger_events_level\", \"tax\", \"thirdparty\", \"thirdparty_id\", \"type\", \"updated_at\", \"url\", \"validation_needed\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$k(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$l(unknownProperty, d, \"never (unknown property)\");\n" +
 "        return new GroupedDocumentsEntity(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -2548,99 +2594,99 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$k = d;\n" +
+"            obj$l = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
 "        if (!d) {\n" +
-"            throwNull2NonNull$k(field, d, multiple ?? this.name);\n" +
+"            throwNull2NonNull$l(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$k(field, d);\n" +
+"            throwNotObject$l(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$k(field, d);\n" +
+"            throwIsArray$l(field, d);\n" +
 "        }\n" +
-"        checkString$i(d.balance, field + \".balance\");\n" +
-"        checkString$i(d.bic, field + \".bic\");\n" +
-"        checkNumber$g(d.company_id, field + \".company_id\");\n" +
+"        checkString$j(d.balance, field + \".balance\");\n" +
+"        checkString$j(d.bic, field + \".bic\");\n" +
+"        checkNumber$h(d.company_id, field + \".company_id\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkString$i(d.connection, field + \".connection\", \"string | null\");\n" +
+"            checkString$j(d.connection, field + \".connection\", \"string | null\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$e(d.connection, field + \".connection\", \"string | null\");\n" +
+"                checkNull$f(d.connection, field + \".connection\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
-"                prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "            }\n" +
 "        }\n" +
-"        checkString$i(d.currency, field + \".currency\");\n" +
-"        checkString$i(d.currency_balance, field + \".currency_balance\");\n" +
+"        checkString$j(d.currency, field + \".currency\");\n" +
+"        checkString$j(d.currency_balance, field + \".currency_balance\");\n" +
 "        d.establishment = Establishment.Create(d.establishment, field + \".establishment\", undefined);\n" +
-"        checkNumber$g(d.establishment_id, field + \".establishment_id\");\n" +
+"        checkNumber$h(d.establishment_id, field + \".establishment_id\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkString$i(d.iban, field + \".iban\", \"string | null\");\n" +
+"            checkString$j(d.iban, field + \".iban\", \"string | null\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$e(d.iban, field + \".iban\", \"string | null\");\n" +
+"                checkNull$f(d.iban, field + \".iban\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
-"                prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "            }\n" +
 "        }\n" +
-"        checkNumber$g(d.id, field + \".id\");\n" +
-"        checkString$i(d.label, field + \".label\");\n" +
+"        checkNumber$h(d.id, field + \".id\");\n" +
+"        checkString$j(d.label, field + \".label\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkString$i(d.last_successful_sync_at, field + \".last_successful_sync_at\", \"string | null\");\n" +
+"            checkString$j(d.last_successful_sync_at, field + \".last_successful_sync_at\", \"string | null\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$e(d.last_successful_sync_at, field + \".last_successful_sync_at\", \"string | null\");\n" +
+"                checkNull$f(d.last_successful_sync_at, field + \".last_successful_sync_at\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
-"                prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "            }\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkString$i(d.last_sync_at, field + \".last_sync_at\", \"string | null\");\n" +
+"            checkString$j(d.last_sync_at, field + \".last_sync_at\", \"string | null\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$e(d.last_sync_at, field + \".last_sync_at\", \"string | null\");\n" +
+"                checkNull$f(d.last_sync_at, field + \".last_sync_at\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
-"                prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "            }\n" +
 "        }\n" +
-"        checkNull$e(d.last_sync_error, field + \".last_sync_error\");\n" +
-"        checkNumber$g(d.last_sync_http_code, field + \".last_sync_http_code\");\n" +
-"        checkNull$e(d.ledger_events_count, field + \".ledger_events_count\");\n" +
-"        checkNull$e(d.ledger_events_max_date, field + \".ledger_events_max_date\");\n" +
-"        checkNull$e(d.ledger_events_min_date, field + \".ledger_events_min_date\");\n" +
-"        checkString$i(d.merge_url, field + \".merge_url\");\n" +
-"        checkString$i(d.method, field + \".method\");\n" +
-"        checkString$i(d.name, field + \".name\");\n" +
-"        checkString$i(d.pusher_channel, field + \".pusher_channel\");\n" +
-"        checkBoolean$b(d.swan, field + \".swan\");\n" +
-"        checkNull$e(d.swan_number, field + \".swan_number\");\n" +
-"        checkBoolean$b(d.sync_attachments, field + \".sync_attachments\");\n" +
-"        checkBoolean$b(d.sync_customers, field + \".sync_customers\");\n" +
-"        checkNull$e(d.sync_since, field + \".sync_since\");\n" +
-"        checkBoolean$b(d.synchronized, field + \".synchronized\");\n" +
-"        checkNull$e(d.transactions_count, field + \".transactions_count\");\n" +
-"        checkString$i(d.updated_at, field + \".updated_at\");\n" +
-"        checkString$i(d.url, field + \".url\");\n" +
-"        checkBoolean$b(d.use_as_default_for_vat_return, field + \".use_as_default_for_vat_return\");\n" +
-"        checkBoolean$b(d.visible, field + \".visible\");\n" +
+"        checkNull$f(d.last_sync_error, field + \".last_sync_error\");\n" +
+"        checkNumber$h(d.last_sync_http_code, field + \".last_sync_http_code\");\n" +
+"        checkNull$f(d.ledger_events_count, field + \".ledger_events_count\");\n" +
+"        checkNull$f(d.ledger_events_max_date, field + \".ledger_events_max_date\");\n" +
+"        checkNull$f(d.ledger_events_min_date, field + \".ledger_events_min_date\");\n" +
+"        checkString$j(d.merge_url, field + \".merge_url\");\n" +
+"        checkString$j(d.method, field + \".method\");\n" +
+"        checkString$j(d.name, field + \".name\");\n" +
+"        checkString$j(d.pusher_channel, field + \".pusher_channel\");\n" +
+"        checkBoolean$c(d.swan, field + \".swan\");\n" +
+"        checkNull$f(d.swan_number, field + \".swan_number\");\n" +
+"        checkBoolean$c(d.sync_attachments, field + \".sync_attachments\");\n" +
+"        checkBoolean$c(d.sync_customers, field + \".sync_customers\");\n" +
+"        checkNull$f(d.sync_since, field + \".sync_since\");\n" +
+"        checkBoolean$c(d.synchronized, field + \".synchronized\");\n" +
+"        checkNull$f(d.transactions_count, field + \".transactions_count\");\n" +
+"        checkString$j(d.updated_at, field + \".updated_at\");\n" +
+"        checkString$j(d.url, field + \".url\");\n" +
+"        checkBoolean$c(d.use_as_default_for_vat_return, field + \".use_as_default_for_vat_return\");\n" +
+"        checkBoolean$c(d.visible, field + \".visible\");\n" +
 "        const knownProperties = [\"balance\", \"bic\", \"company_id\", \"connection\", \"currency\", \"currency_balance\", \"establishment\", \"establishment_id\", \"iban\", \"id\", \"label\", \"last_successful_sync_at\", \"last_sync_at\", \"last_sync_error\", \"last_sync_http_code\", \"ledger_events_count\", \"ledger_events_max_date\", \"ledger_events_min_date\", \"merge_url\", \"method\", \"name\", \"pusher_channel\", \"swan\", \"swan_number\", \"sync_attachments\", \"sync_customers\", \"sync_since\", \"synchronized\", \"transactions_count\", \"updated_at\", \"url\", \"use_as_default_for_vat_return\", \"visible\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$k(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$l(unknownProperty, d, \"never (unknown property)\");\n" +
 "        return new Account(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -2685,35 +2731,35 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$k = d;\n" +
+"            obj$l = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
 "        if (!d) {\n" +
-"            throwNull2NonNull$k(field, d, multiple ?? this.name);\n" +
+"            throwNull2NonNull$l(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$k(field, d);\n" +
+"            throwNotObject$l(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$k(field, d);\n" +
+"            throwIsArray$l(field, d);\n" +
 "        }\n" +
-"        checkNumber$g(d.accounts_count, field + \".accounts_count\");\n" +
-"        checkArray$9(d.bridge_ids, field + \".bridge_ids\");\n" +
+"        checkNumber$h(d.accounts_count, field + \".accounts_count\");\n" +
+"        checkArray$a(d.bridge_ids, field + \".bridge_ids\");\n" +
 "        if (d.bridge_ids) {\n" +
 "            for (let i = 0; i < d.bridge_ids.length; i++) {\n" +
-"                checkNumber$g(d.bridge_ids[i], field + \".bridge_ids\" + \"[\" + i + \"]\");\n" +
+"                checkNumber$h(d.bridge_ids[i], field + \".bridge_ids\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
-"        checkNull$e(d.budgetinsight_id, field + \".budgetinsight_id\");\n" +
-"        checkString$i(d.crm_url, field + \".crm_url\");\n" +
-"        checkNumber$g(d.id, field + \".id\");\n" +
-"        checkString$i(d.logo_url, field + \".logo_url\");\n" +
-"        checkString$i(d.method, field + \".method\");\n" +
-"        checkString$i(d.name, field + \".name\");\n" +
+"        checkNull$f(d.budgetinsight_id, field + \".budgetinsight_id\");\n" +
+"        checkString$j(d.crm_url, field + \".crm_url\");\n" +
+"        checkNumber$h(d.id, field + \".id\");\n" +
+"        checkString$j(d.logo_url, field + \".logo_url\");\n" +
+"        checkString$j(d.method, field + \".method\");\n" +
+"        checkString$j(d.name, field + \".name\");\n" +
 "        const knownProperties = [\"accounts_count\", \"bridge_ids\", \"budgetinsight_id\", \"crm_url\", \"id\", \"logo_url\", \"method\", \"name\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$k(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$l(unknownProperty, d, \"never (unknown property)\");\n" +
 "        return new Establishment(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -2733,33 +2779,33 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$k = d;\n" +
+"            obj$l = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
 "        if (!d) {\n" +
-"            throwNull2NonNull$k(field, d, multiple ?? this.name);\n" +
+"            throwNull2NonNull$l(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$k(field, d);\n" +
+"            throwNotObject$l(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$k(field, d);\n" +
+"            throwIsArray$l(field, d);\n" +
 "        }\n" +
-"        checkString$i(d.content, field + \".content\");\n" +
-"        checkString$i(d.created_at, field + \".created_at\");\n" +
-"        checkNumber$g(d.id, field + \".id\");\n" +
-"        checkString$i(d.name, field + \".name\");\n" +
-"        checkNumber$g(d.record_id, field + \".record_id\");\n" +
-"        checkString$i(d.record_type, field + \".record_type\");\n" +
-"        checkNull$e(d.rich_content, field + \".rich_content\");\n" +
-"        checkBoolean$b(d.seen, field + \".seen\");\n" +
-"        checkString$i(d.updated_at, field + \".updated_at\");\n" +
+"        checkString$j(d.content, field + \".content\");\n" +
+"        checkString$j(d.created_at, field + \".created_at\");\n" +
+"        checkNumber$h(d.id, field + \".id\");\n" +
+"        checkString$j(d.name, field + \".name\");\n" +
+"        checkNumber$h(d.record_id, field + \".record_id\");\n" +
+"        checkString$j(d.record_type, field + \".record_type\");\n" +
+"        checkNull$f(d.rich_content, field + \".rich_content\");\n" +
+"        checkBoolean$c(d.seen, field + \".seen\");\n" +
+"        checkString$j(d.updated_at, field + \".updated_at\");\n" +
 "        d.user = User.Create(d.user, field + \".user\", undefined);\n" +
-"        checkNumber$g(d.user_id, field + \".user_id\");\n" +
+"        checkNumber$h(d.user_id, field + \".user_id\");\n" +
 "        const knownProperties = [\"content\", \"created_at\", \"id\", \"name\", \"record_id\", \"record_type\", \"rich_content\", \"seen\", \"updated_at\", \"user\", \"user_id\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$k(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$l(unknownProperty, d, \"never (unknown property)\");\n" +
 "        return new ClientCommentsEntityOrEstablishmentComment(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -2782,27 +2828,27 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$k = d;\n" +
+"            obj$l = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
 "        if (!d) {\n" +
-"            throwNull2NonNull$k(field, d, multiple ?? this.name);\n" +
+"            throwNull2NonNull$l(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$k(field, d);\n" +
+"            throwNotObject$l(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$k(field, d);\n" +
+"            throwIsArray$l(field, d);\n" +
 "        }\n" +
-"        checkString$i(d.first_name, field + \".first_name\");\n" +
-"        checkString$i(d.full_name, field + \".full_name\");\n" +
-"        checkNumber$g(d.id, field + \".id\");\n" +
-"        checkString$i(d.last_name, field + \".last_name\");\n" +
-"        checkNull$e(d.profile_picture_url, field + \".profile_picture_url\");\n" +
+"        checkString$j(d.first_name, field + \".first_name\");\n" +
+"        checkString$j(d.full_name, field + \".full_name\");\n" +
+"        checkNumber$h(d.id, field + \".id\");\n" +
+"        checkString$j(d.last_name, field + \".last_name\");\n" +
+"        checkNull$f(d.profile_picture_url, field + \".profile_picture_url\");\n" +
 "        const knownProperties = [\"first_name\", \"full_name\", \"id\", \"last_name\", \"profile_picture_url\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$k(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$l(unknownProperty, d, \"never (unknown property)\");\n" +
 "        return new User(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -2819,23 +2865,23 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$k = d;\n" +
+"            obj$l = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
 "        if (!d) {\n" +
-"            throwNull2NonNull$k(field, d, multiple ?? this.name);\n" +
+"            throwNull2NonNull$l(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$k(field, d);\n" +
+"            throwNotObject$l(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$k(field, d);\n" +
+"            throwIsArray$l(field, d);\n" +
 "        }\n" +
-"        checkString$i(d.name, field + \".name\");\n" +
+"        checkString$j(d.name, field + \".name\");\n" +
 "        const knownProperties = [\"name\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$k(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$l(unknownProperty, d, \"never (unknown property)\");\n" +
 "        return new Company1(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -2848,31 +2894,31 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$k = d;\n" +
+"            obj$l = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
 "        if (!d) {\n" +
-"            throwNull2NonNull$k(field, d, multiple ?? this.name);\n" +
+"            throwNull2NonNull$l(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$k(field, d);\n" +
+"            throwNotObject$l(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$k(field, d);\n" +
+"            throwIsArray$l(field, d);\n" +
 "        }\n" +
-"        checkNumber$g(d.company_id, field + \".company_id\");\n" +
-"        checkString$i(d[\"country_alpha2\"], field + \".country_alpha2\");\n" +
-"        checkBoolean$b(d.enabled, field + \".enabled\");\n" +
-"        checkNumber$g(d.id, field + \".id\");\n" +
-"        checkNull$e(d.internal_identifier, field + \".internal_identifier\");\n" +
-"        checkString$i(d.label, field + \".label\");\n" +
-"        checkBoolean$b(d.label_is_editable, field + \".label_is_editable\");\n" +
-"        checkString$i(d.number, field + \".number\");\n" +
-"        checkString$i(d.vat_rate, field + \".vat_rate\");\n" +
+"        checkNumber$h(d.company_id, field + \".company_id\");\n" +
+"        checkString$j(d[\"country_alpha2\"], field + \".country_alpha2\");\n" +
+"        checkBoolean$c(d.enabled, field + \".enabled\");\n" +
+"        checkNumber$h(d.id, field + \".id\");\n" +
+"        checkNull$f(d.internal_identifier, field + \".internal_identifier\");\n" +
+"        checkString$j(d.label, field + \".label\");\n" +
+"        checkBoolean$c(d.label_is_editable, field + \".label_is_editable\");\n" +
+"        checkString$j(d.number, field + \".number\");\n" +
+"        checkString$j(d.vat_rate, field + \".vat_rate\");\n" +
 "        const knownProperties = [\"company_id\", \"country_alpha2\", \"enabled\", \"id\", \"internal_identifier\", \"label\", \"label_is_editable\", \"number\", \"vat_rate\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$k(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$l(unknownProperty, d, \"never (unknown property)\");\n" +
 "        return new PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -2893,58 +2939,58 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$k = d;\n" +
+"            obj$l = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
 "        if (!d) {\n" +
-"            throwNull2NonNull$k(field, d, multiple ?? this.name);\n" +
+"            throwNull2NonNull$l(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$k(field, d);\n" +
+"            throwNotObject$l(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$k(field, d);\n" +
+"            throwIsArray$l(field, d);\n" +
 "        }\n" +
 "        if (\"author\" in d) {\n" +
-"            checkNull$e(d.author, field + \".author\");\n" +
+"            checkNull$f(d.author, field + \".author\");\n" +
 "        }\n" +
-"        checkString$i(d.content, field + \".content\");\n" +
-"        checkString$i(d.created_at, field + \".created_at\");\n" +
-"        checkNumber$g(d.id, field + \".id\");\n" +
-"        checkString$i(d.name, field + \".name\");\n" +
-"        checkNumber$g(d.record_id, field + \".record_id\");\n" +
-"        checkString$i(d.record_type, field + \".record_type\");\n" +
-"        checkNull$e(d.rich_content, field + \".rich_content\");\n" +
-"        checkBoolean$b(d.seen, field + \".seen\");\n" +
-"        checkString$i(d.updated_at, field + \".updated_at\");\n" +
+"        checkString$j(d.content, field + \".content\");\n" +
+"        checkString$j(d.created_at, field + \".created_at\");\n" +
+"        checkNumber$h(d.id, field + \".id\");\n" +
+"        checkString$j(d.name, field + \".name\");\n" +
+"        checkNumber$h(d.record_id, field + \".record_id\");\n" +
+"        checkString$j(d.record_type, field + \".record_type\");\n" +
+"        checkNull$f(d.rich_content, field + \".rich_content\");\n" +
+"        checkBoolean$c(d.seen, field + \".seen\");\n" +
+"        checkString$j(d.updated_at, field + \".updated_at\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$e(d.user, field + \".user\", \"null | User\");\n" +
+"            checkNull$f(d.user, field + \".user\", \"null | User\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
 "                d.user = User.Create(d.user, field + \".user\", \"null | User\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
-"                prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "            }\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$e(d.user_id, field + \".user_id\", \"null | number\");\n" +
+"            checkNull$f(d.user_id, field + \".user_id\", \"null | number\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNumber$g(d.user_id, field + \".user_id\", \"null | number\");\n" +
+"                checkNumber$h(d.user_id, field + \".user_id\", \"null | number\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
-"                prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "            }\n" +
 "        }\n" +
 "        const knownProperties = [\"author\", \"content\", \"created_at\", \"id\", \"name\", \"record_id\", \"record_type\", \"rich_content\", \"seen\", \"updated_at\", \"user\", \"user_id\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$k(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$l(unknownProperty, d, \"never (unknown property)\");\n" +
 "        return new EstablishmentCommentOrClientCommentsEntity(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -2969,109 +3015,109 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$k = d;\n" +
+"            obj$l = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
 "        if (!d) {\n" +
-"            throwNull2NonNull$k(field, d, multiple ?? this.name);\n" +
+"            throwNull2NonNull$l(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$k(field, d);\n" +
+"            throwNotObject$l(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$k(field, d);\n" +
+"            throwIsArray$l(field, d);\n" +
 "        }\n" +
-"        checkNull$e(d.advance_id, field + \".advance_id\");\n" +
-"        checkString$i(d.amount, field + \".amount\");\n" +
+"        checkNull$f(d.advance_id, field + \".advance_id\");\n" +
+"        checkString$j(d.amount, field + \".amount\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNumber$g(d.asset_id, field + \".asset_id\", \"number | null\");\n" +
+"            checkNumber$h(d.asset_id, field + \".asset_id\", \"number | null\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$e(d.asset_id, field + \".asset_id\", \"number | null\");\n" +
+"                checkNull$f(d.asset_id, field + \".asset_id\", \"number | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
-"                prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "            }\n" +
 "        }\n" +
-"        checkNumber$g(d.company_id, field + \".company_id\");\n" +
-"        checkString$i(d.created_at, field + \".created_at\");\n" +
-"        checkString$i(d.currency_amount, field + \".currency_amount\");\n" +
-"        checkString$i(d.currency_price_before_tax, field + \".currency_price_before_tax\");\n" +
-"        checkString$i(d.currency_tax, field + \".currency_tax\");\n" +
-"        checkString$i(d.currency_unit_price_before_tax, field + \".currency_unit_price_before_tax\");\n" +
-"        checkNull$e(d.deferral_id, field + \".deferral_id\");\n" +
-"        checkString$i(d.description, field + \".description\");\n" +
-"        checkString$i(d.discount, field + \".discount\");\n" +
-"        checkString$i(d.discount_type, field + \".discount_type\");\n" +
-"        checkNumber$g(d.document_id, field + \".document_id\");\n" +
-"        checkBoolean$b(d.global_vat, field + \".global_vat\");\n" +
-"        checkNumber$g(d.id, field + \".id\");\n" +
+"        checkNumber$h(d.company_id, field + \".company_id\");\n" +
+"        checkString$j(d.created_at, field + \".created_at\");\n" +
+"        checkString$j(d.currency_amount, field + \".currency_amount\");\n" +
+"        checkString$j(d.currency_price_before_tax, field + \".currency_price_before_tax\");\n" +
+"        checkString$j(d.currency_tax, field + \".currency_tax\");\n" +
+"        checkString$j(d.currency_unit_price_before_tax, field + \".currency_unit_price_before_tax\");\n" +
+"        checkNull$f(d.deferral_id, field + \".deferral_id\");\n" +
+"        checkString$j(d.description, field + \".description\");\n" +
+"        checkString$j(d.discount, field + \".discount\");\n" +
+"        checkString$j(d.discount_type, field + \".discount_type\");\n" +
+"        checkNumber$h(d.document_id, field + \".document_id\");\n" +
+"        checkBoolean$c(d.global_vat, field + \".global_vat\");\n" +
+"        checkNumber$h(d.id, field + \".id\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNumber$g(d.invoice_line_section_id, field + \".invoice_line_section_id\", \"number | null\");\n" +
+"            checkNumber$h(d.invoice_line_section_id, field + \".invoice_line_section_id\", \"number | null\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$e(d.invoice_line_section_id, field + \".invoice_line_section_id\", \"number | null\");\n" +
+"                checkNull$f(d.invoice_line_section_id, field + \".invoice_line_section_id\", \"number | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
-"                prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "            }\n" +
 "        }\n" +
-"        checkString$i(d.label, field + \".label\");\n" +
-"        checkBoolean$b(d.manual_vat_mode, field + \".manual_vat_mode\");\n" +
+"        checkString$j(d.label, field + \".label\");\n" +
+"        checkBoolean$c(d.manual_vat_mode, field + \".manual_vat_mode\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$e(d.ocr_vat_rate, field + \".ocr_vat_rate\", \"null | string\");\n" +
+"            checkNull$f(d.ocr_vat_rate, field + \".ocr_vat_rate\", \"null | string\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkString$i(d.ocr_vat_rate, field + \".ocr_vat_rate\", \"null | string\");\n" +
+"                checkString$j(d.ocr_vat_rate, field + \".ocr_vat_rate\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
-"                prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "            }\n" +
 "        }\n" +
 "        d.pnl_plan_item = PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem1.Create(d.pnl_plan_item, field + \".pnl_plan_item\", undefined);\n" +
-"        checkNumber$g(d.pnl_plan_item_id, field + \".pnl_plan_item_id\");\n" +
-"        checkBoolean$b(d.prepaid_pnl, field + \".prepaid_pnl\");\n" +
-"        checkString$i(d.price_before_tax, field + \".price_before_tax\");\n" +
-"        checkNull$e(d.product_id, field + \".product_id\");\n" +
-"        checkString$i(d.quantity, field + \".quantity\");\n" +
+"        checkNumber$h(d.pnl_plan_item_id, field + \".pnl_plan_item_id\");\n" +
+"        checkBoolean$c(d.prepaid_pnl, field + \".prepaid_pnl\");\n" +
+"        checkString$j(d.price_before_tax, field + \".price_before_tax\");\n" +
+"        checkNull$f(d.product_id, field + \".product_id\");\n" +
+"        checkString$j(d.quantity, field + \".quantity\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNumber$g(d.rank, field + \".rank\", \"number | null\");\n" +
+"            checkNumber$h(d.rank, field + \".rank\", \"number | null\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$e(d.rank, field + \".rank\", \"number | null\");\n" +
+"                checkNull$f(d.rank, field + \".rank\", \"number | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
-"                prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "            }\n" +
 "        }\n" +
-"        checkString$i(d.raw_currency_unit_price, field + \".raw_currency_unit_price\");\n" +
-"        checkString$i(d.tax, field + \".tax\");\n" +
-"        checkString$i(d.undiscounted_currency_price_before_tax, field + \".undiscounted_currency_price_before_tax\");\n" +
+"        checkString$j(d.raw_currency_unit_price, field + \".raw_currency_unit_price\");\n" +
+"        checkString$j(d.tax, field + \".tax\");\n" +
+"        checkString$j(d.undiscounted_currency_price_before_tax, field + \".undiscounted_currency_price_before_tax\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkString$i(d.unit, field + \".unit\", \"string | null\");\n" +
+"            checkString$j(d.unit, field + \".unit\", \"string | null\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$e(d.unit, field + \".unit\", \"string | null\");\n" +
+"                checkNull$f(d.unit, field + \".unit\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
-"                prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "            }\n" +
 "        }\n" +
-"        checkString$i(d.vat_rate, field + \".vat_rate\");\n" +
+"        checkString$j(d.vat_rate, field + \".vat_rate\");\n" +
 "        const knownProperties = [\"advance_id\", \"amount\", \"asset_id\", \"company_id\", \"created_at\", \"currency_amount\", \"currency_price_before_tax\", \"currency_tax\", \"currency_unit_price_before_tax\", \"deferral_id\", \"description\", \"discount\", \"discount_type\", \"document_id\", \"global_vat\", \"id\", \"invoice_line_section_id\", \"label\", \"manual_vat_mode\", \"ocr_vat_rate\", \"pnl_plan_item\", \"pnl_plan_item_id\", \"prepaid_pnl\", \"price_before_tax\", \"product_id\", \"quantity\", \"rank\", \"raw_currency_unit_price\", \"tax\", \"undiscounted_currency_price_before_tax\", \"unit\", \"vat_rate\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$k(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$l(unknownProperty, d, \"never (unknown property)\");\n" +
 "        return new InvoiceLinesEntity(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -3115,42 +3161,42 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$k = d;\n" +
+"            obj$l = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
 "        if (!d) {\n" +
-"            throwNull2NonNull$k(field, d, multiple ?? this.name);\n" +
+"            throwNull2NonNull$l(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$k(field, d);\n" +
+"            throwNotObject$l(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$k(field, d);\n" +
+"            throwIsArray$l(field, d);\n" +
 "        }\n" +
-"        checkNumber$g(d.company_id, field + \".company_id\");\n" +
-"        checkString$i(d[\"country_alpha2\"], field + \".country_alpha2\");\n" +
-"        checkBoolean$b(d.enabled, field + \".enabled\");\n" +
-"        checkNumber$g(d.id, field + \".id\");\n" +
+"        checkNumber$h(d.company_id, field + \".company_id\");\n" +
+"        checkString$j(d[\"country_alpha2\"], field + \".country_alpha2\");\n" +
+"        checkBoolean$c(d.enabled, field + \".enabled\");\n" +
+"        checkNumber$h(d.id, field + \".id\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$e(d.internal_identifier, field + \".internal_identifier\", \"null | string\");\n" +
+"            checkNull$f(d.internal_identifier, field + \".internal_identifier\", \"null | string\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkString$i(d.internal_identifier, field + \".internal_identifier\", \"null | string\");\n" +
+"                checkString$j(d.internal_identifier, field + \".internal_identifier\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
-"                prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "            }\n" +
 "        }\n" +
-"        checkString$i(d.label, field + \".label\");\n" +
-"        checkBoolean$b(d.label_is_editable, field + \".label_is_editable\");\n" +
-"        checkString$i(d.number, field + \".number\");\n" +
-"        checkString$i(d.vat_rate, field + \".vat_rate\");\n" +
+"        checkString$j(d.label, field + \".label\");\n" +
+"        checkBoolean$c(d.label_is_editable, field + \".label_is_editable\");\n" +
+"        checkString$j(d.number, field + \".number\");\n" +
+"        checkString$j(d.vat_rate, field + \".vat_rate\");\n" +
 "        const knownProperties = [\"company_id\", \"country_alpha2\", \"enabled\", \"id\", \"internal_identifier\", \"label\", \"label_is_editable\", \"number\", \"vat_rate\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$k(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$l(unknownProperty, d, \"never (unknown property)\");\n" +
 "        return new PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem1(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -3171,25 +3217,25 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$k = d;\n" +
+"            obj$l = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
 "        if (!d) {\n" +
-"            throwNull2NonNull$k(field, d, multiple ?? this.name);\n" +
+"            throwNull2NonNull$l(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$k(field, d);\n" +
+"            throwNotObject$l(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$k(field, d);\n" +
+"            throwIsArray$l(field, d);\n" +
 "        }\n" +
-"        checkString$i(d.code, field + \".code\");\n" +
-"        checkNumber$g(d.id, field + \".id\");\n" +
-"        checkString$i(d.label, field + \".label\");\n" +
+"        checkString$j(d.code, field + \".code\");\n" +
+"        checkNumber$h(d.id, field + \".id\");\n" +
+"        checkString$j(d.label, field + \".label\");\n" +
 "        const knownProperties = [\"code\", \"id\", \"label\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$k(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$l(unknownProperty, d, \"never (unknown property)\");\n" +
 "        return new Journal(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -3204,39 +3250,39 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$k = d;\n" +
+"            obj$l = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
 "        if (!d) {\n" +
-"            throwNull2NonNull$k(field, d, multiple ?? this.name);\n" +
+"            throwNull2NonNull$l(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$k(field, d);\n" +
+"            throwNotObject$l(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$k(field, d);\n" +
+"            throwIsArray$l(field, d);\n" +
 "        }\n" +
-"        checkString$i(d.balance, field + \".balance\");\n" +
-"        checkNumber$g(d.company_id, field + \".company_id\");\n" +
-"        checkString$i(d.created_at, field + \".created_at\");\n" +
-"        checkString$i(d.credit, field + \".credit\");\n" +
-"        checkString$i(d.date, field + \".date\");\n" +
-"        checkString$i(d.debit, field + \".debit\");\n" +
-"        checkNumber$g(d.document_id, field + \".document_id\");\n" +
+"        checkString$j(d.balance, field + \".balance\");\n" +
+"        checkNumber$h(d.company_id, field + \".company_id\");\n" +
+"        checkString$j(d.created_at, field + \".created_at\");\n" +
+"        checkString$j(d.credit, field + \".credit\");\n" +
+"        checkString$j(d.date, field + \".date\");\n" +
+"        checkString$j(d.debit, field + \".debit\");\n" +
+"        checkNumber$h(d.document_id, field + \".document_id\");\n" +
 "        if (\"document_label\" in d) {\n" +
-"            checkString$i(d.document_label, field + \".document_label\");\n" +
+"            checkString$j(d.document_label, field + \".document_label\");\n" +
 "        }\n" +
-"        checkNumber$g(d.id, field + \".id\");\n" +
+"        checkNumber$h(d.id, field + \".id\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkString$i(d.label, field + \".label\", \"string | null\");\n" +
+"            checkString$j(d.label, field + \".label\", \"string | null\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$e(d.label, field + \".label\", \"string | null\");\n" +
+"                checkNull$f(d.label, field + \".label\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
-"                prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"lettering\" in d) {\n" +
@@ -3246,32 +3292,32 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.lettering, field + \".lettering\", \"Lettering | null\");\n" +
+"                    checkNull$f(d.lettering, field + \".lettering\", \"Lettering | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNumber$g(d.lettering_id, field + \".lettering_id\", \"number | null\");\n" +
+"            checkNumber$h(d.lettering_id, field + \".lettering_id\", \"number | null\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$e(d.lettering_id, field + \".lettering_id\", \"number | null\");\n" +
+"                checkNull$f(d.lettering_id, field + \".lettering_id\", \"number | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
-"                prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "            }\n" +
 "        }\n" +
-"        checkNumber$g(d.plan_item_id, field + \".plan_item_id\");\n" +
+"        checkNumber$h(d.plan_item_id, field + \".plan_item_id\");\n" +
 "        d.planItem = PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem2.Create(d.planItem, field + \".planItem\", undefined);\n" +
 "        if (\"processed_label\" in d) {\n" +
-"            checkString$i(d.processed_label, field + \".processed_label\");\n" +
+"            checkString$j(d.processed_label, field + \".processed_label\");\n" +
 "        }\n" +
-"        checkBoolean$b(d.readonly, field + \".readonly\");\n" +
-"        checkBoolean$b(d.readonlyAmounts, field + \".readonlyAmounts\");\n" +
+"        checkBoolean$c(d.readonly, field + \".readonly\");\n" +
+"        checkBoolean$c(d.readonlyAmounts, field + \".readonlyAmounts\");\n" +
 "        if (\"reallocation\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
@@ -3279,42 +3325,42 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$e(d.reallocation, field + \".reallocation\", \"Reallocation | null\");\n" +
+"                    checkNull$f(d.reallocation, field + \".reallocation\", \"Reallocation | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
-"                    prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                    prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$e(d.reallocation_id, field + \".reallocation_id\", \"null | number\");\n" +
+"            checkNull$f(d.reallocation_id, field + \".reallocation_id\", \"null | number\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNumber$g(d.reallocation_id, field + \".reallocation_id\", \"null | number\");\n" +
+"                checkNumber$h(d.reallocation_id, field + \".reallocation_id\", \"null | number\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
-"                prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "            }\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNumber$g(d.reconciliation_id, field + \".reconciliation_id\", \"number | null\");\n" +
+"            checkNumber$h(d.reconciliation_id, field + \".reconciliation_id\", \"number | null\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$e(d.reconciliation_id, field + \".reconciliation_id\", \"number | null\");\n" +
+"                checkNull$f(d.reconciliation_id, field + \".reconciliation_id\", \"number | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
-"                prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "            }\n" +
 "        }\n" +
-"        checkString$i(d.source, field + \".source\");\n" +
+"        checkString$j(d.source, field + \".source\");\n" +
 "        const knownProperties = [\"balance\", \"company_id\", \"created_at\", \"credit\", \"date\", \"debit\", \"document_id\", \"document_label\", \"id\", \"label\", \"lettering\", \"lettering_id\", \"plan_item_id\", \"planItem\", \"processed_label\", \"readonly\", \"readonlyAmounts\", \"reallocation\", \"reallocation_id\", \"reconciliation_id\", \"source\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$k(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$l(unknownProperty, d, \"never (unknown property)\");\n" +
 "        return new LedgerEventsEntity(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -3351,25 +3397,25 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$k = d;\n" +
+"            obj$l = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
 "        if (!d) {\n" +
-"            throwNull2NonNull$k(field, d, multiple ?? this.name);\n" +
+"            throwNull2NonNull$l(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$k(field, d);\n" +
+"            throwNotObject$l(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$k(field, d);\n" +
+"            throwIsArray$l(field, d);\n" +
 "        }\n" +
-"        checkString$i(d.balance, field + \".balance\");\n" +
-"        checkNumber$g(d.id, field + \".id\");\n" +
-"        checkString$i(d.plan_item_number, field + \".plan_item_number\");\n" +
+"        checkString$j(d.balance, field + \".balance\");\n" +
+"        checkNumber$h(d.id, field + \".id\");\n" +
+"        checkString$j(d.plan_item_number, field + \".plan_item_number\");\n" +
 "        const knownProperties = [\"balance\", \"id\", \"plan_item_number\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$k(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$l(unknownProperty, d, \"never (unknown property)\");\n" +
 "        return new Lettering(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -3384,42 +3430,42 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$k = d;\n" +
+"            obj$l = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
 "        if (!d) {\n" +
-"            throwNull2NonNull$k(field, d, multiple ?? this.name);\n" +
+"            throwNull2NonNull$l(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$k(field, d);\n" +
+"            throwNotObject$l(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$k(field, d);\n" +
+"            throwIsArray$l(field, d);\n" +
 "        }\n" +
-"        checkNumber$g(d.company_id, field + \".company_id\");\n" +
-"        checkString$i(d[\"country_alpha2\"], field + \".country_alpha2\");\n" +
-"        checkBoolean$b(d.enabled, field + \".enabled\");\n" +
-"        checkNumber$g(d.id, field + \".id\");\n" +
+"        checkNumber$h(d.company_id, field + \".company_id\");\n" +
+"        checkString$j(d[\"country_alpha2\"], field + \".country_alpha2\");\n" +
+"        checkBoolean$c(d.enabled, field + \".enabled\");\n" +
+"        checkNumber$h(d.id, field + \".id\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$e(d.internal_identifier, field + \".internal_identifier\", \"null | string\");\n" +
+"            checkNull$f(d.internal_identifier, field + \".internal_identifier\", \"null | string\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkString$i(d.internal_identifier, field + \".internal_identifier\", \"null | string\");\n" +
+"                checkString$j(d.internal_identifier, field + \".internal_identifier\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
-"                prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "            }\n" +
 "        }\n" +
-"        checkString$i(d.label, field + \".label\");\n" +
-"        checkBoolean$b(d.label_is_editable, field + \".label_is_editable\");\n" +
-"        checkString$i(d.number, field + \".number\");\n" +
-"        checkString$i(d.vat_rate, field + \".vat_rate\");\n" +
+"        checkString$j(d.label, field + \".label\");\n" +
+"        checkBoolean$c(d.label_is_editable, field + \".label_is_editable\");\n" +
+"        checkString$j(d.number, field + \".number\");\n" +
+"        checkString$j(d.vat_rate, field + \".vat_rate\");\n" +
 "        const knownProperties = [\"company_id\", \"country_alpha2\", \"enabled\", \"id\", \"internal_identifier\", \"label\", \"label_is_editable\", \"number\", \"vat_rate\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$k(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$l(unknownProperty, d, \"never (unknown property)\");\n" +
 "        return new PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem2(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -3440,25 +3486,25 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$k = d;\n" +
+"            obj$l = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
 "        if (!d) {\n" +
-"            throwNull2NonNull$k(field, d, multiple ?? this.name);\n" +
+"            throwNull2NonNull$l(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$k(field, d);\n" +
+"            throwNotObject$l(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$k(field, d);\n" +
+"            throwIsArray$l(field, d);\n" +
 "        }\n" +
-"        checkString$i(d.created_at, field + \".created_at\");\n" +
+"        checkString$j(d.created_at, field + \".created_at\");\n" +
 "        d.fromPlanItem = PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem3.Create(d.fromPlanItem, field + \".fromPlanItem\", undefined);\n" +
-"        checkNumber$g(d.id, field + \".id\");\n" +
+"        checkNumber$h(d.id, field + \".id\");\n" +
 "        const knownProperties = [\"created_at\", \"fromPlanItem\", \"id\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$k(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$l(unknownProperty, d, \"never (unknown property)\");\n" +
 "        return new Reallocation(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -3473,42 +3519,42 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$k = d;\n" +
+"            obj$l = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
 "        if (!d) {\n" +
-"            throwNull2NonNull$k(field, d, multiple ?? this.name);\n" +
+"            throwNull2NonNull$l(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$k(field, d);\n" +
+"            throwNotObject$l(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$k(field, d);\n" +
+"            throwIsArray$l(field, d);\n" +
 "        }\n" +
-"        checkNumber$g(d.company_id, field + \".company_id\");\n" +
-"        checkString$i(d[\"country_alpha2\"], field + \".country_alpha2\");\n" +
-"        checkBoolean$b(d.enabled, field + \".enabled\");\n" +
-"        checkNumber$g(d.id, field + \".id\");\n" +
+"        checkNumber$h(d.company_id, field + \".company_id\");\n" +
+"        checkString$j(d[\"country_alpha2\"], field + \".country_alpha2\");\n" +
+"        checkBoolean$c(d.enabled, field + \".enabled\");\n" +
+"        checkNumber$h(d.id, field + \".id\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkString$i(d.internal_identifier, field + \".internal_identifier\", \"string | null\");\n" +
+"            checkString$j(d.internal_identifier, field + \".internal_identifier\", \"string | null\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$e(d.internal_identifier, field + \".internal_identifier\", \"string | null\");\n" +
+"                checkNull$f(d.internal_identifier, field + \".internal_identifier\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
-"                prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "            }\n" +
 "        }\n" +
-"        checkString$i(d.label, field + \".label\");\n" +
-"        checkBoolean$b(d.label_is_editable, field + \".label_is_editable\");\n" +
-"        checkString$i(d.number, field + \".number\");\n" +
-"        checkString$i(d.vat_rate, field + \".vat_rate\");\n" +
+"        checkString$j(d.label, field + \".label\");\n" +
+"        checkBoolean$c(d.label_is_editable, field + \".label_is_editable\");\n" +
+"        checkString$j(d.number, field + \".number\");\n" +
+"        checkString$j(d.vat_rate, field + \".vat_rate\");\n" +
 "        const knownProperties = [\"company_id\", \"country_alpha2\", \"enabled\", \"id\", \"internal_identifier\", \"label\", \"label_is_editable\", \"number\", \"vat_rate\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$k(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$l(unknownProperty, d, \"never (unknown property)\");\n" +
 "        return new PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem3(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -3529,22 +3575,22 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$k = d;\n" +
+"            obj$l = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
 "        if (!d) {\n" +
-"            throwNull2NonNull$k(field, d, multiple ?? this.name);\n" +
+"            throwNull2NonNull$l(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$k(field, d);\n" +
+"            throwNotObject$l(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$k(field, d);\n" +
+"            throwIsArray$l(field, d);\n" +
 "        }\n" +
 "        const knownProperties = [];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$k(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$l(unknownProperty, d, \"never (unknown property)\");\n" +
 "        return new ScoredInvoices1(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -3556,179 +3602,179 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$k = d;\n" +
+"            obj$l = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
 "        if (!d) {\n" +
-"            throwNull2NonNull$k(field, d, multiple ?? this.name);\n" +
+"            throwNull2NonNull$l(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$k(field, d);\n" +
+"            throwNotObject$l(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$k(field, d);\n" +
+"            throwIsArray$l(field, d);\n" +
 "        }\n" +
-"        checkString$i(d.activity_code, field + \".activity_code\");\n" +
-"        checkString$i(d.activity_nomenclature, field + \".activity_nomenclature\");\n" +
-"        checkString$i(d.address, field + \".address\");\n" +
-"        checkString$i(d.address_additional_info, field + \".address_additional_info\");\n" +
-"        checkNull$e(d.admin_city_code, field + \".admin_city_code\");\n" +
-"        checkNull$e(d.balance, field + \".balance\");\n" +
-"        checkNull$e(d.billing_bank, field + \".billing_bank\");\n" +
-"        checkNull$e(d.billing_bic, field + \".billing_bic\");\n" +
-"        checkNull$e(d.billing_footer_invoice_id, field + \".billing_footer_invoice_id\");\n" +
-"        checkNull$e(d.billing_footer_invoice_label, field + \".billing_footer_invoice_label\");\n" +
-"        checkNull$e(d.billing_iban, field + \".billing_iban\");\n" +
-"        checkString$i(d.billing_language, field + \".billing_language\");\n" +
-"        checkString$i(d.city, field + \".city\");\n" +
-"        checkNumber$g(d.company_id, field + \".company_id\");\n" +
-"        checkBoolean$b(d.complete, field + \".complete\");\n" +
+"        checkString$j(d.activity_code, field + \".activity_code\");\n" +
+"        checkString$j(d.activity_nomenclature, field + \".activity_nomenclature\");\n" +
+"        checkString$j(d.address, field + \".address\");\n" +
+"        checkString$j(d.address_additional_info, field + \".address_additional_info\");\n" +
+"        checkNull$f(d.admin_city_code, field + \".admin_city_code\");\n" +
+"        checkNull$f(d.balance, field + \".balance\");\n" +
+"        checkNull$f(d.billing_bank, field + \".billing_bank\");\n" +
+"        checkNull$f(d.billing_bic, field + \".billing_bic\");\n" +
+"        checkNull$f(d.billing_footer_invoice_id, field + \".billing_footer_invoice_id\");\n" +
+"        checkNull$f(d.billing_footer_invoice_label, field + \".billing_footer_invoice_label\");\n" +
+"        checkNull$f(d.billing_iban, field + \".billing_iban\");\n" +
+"        checkString$j(d.billing_language, field + \".billing_language\");\n" +
+"        checkString$j(d.city, field + \".city\");\n" +
+"        checkNumber$h(d.company_id, field + \".company_id\");\n" +
+"        checkBoolean$c(d.complete, field + \".complete\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$e(d.country, field + \".country\", \"null | string\");\n" +
+"            checkNull$f(d.country, field + \".country\", \"null | string\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkString$i(d.country, field + \".country\", \"null | string\");\n" +
+"                checkString$j(d.country, field + \".country\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
-"                prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "            }\n" +
 "        }\n" +
-"        checkString$i(d[\"country_alpha2\"], field + \".country_alpha2\");\n" +
-"        checkNull$e(d.credits, field + \".credits\");\n" +
-"        checkNull$e(d.current_mandate, field + \".current_mandate\");\n" +
-"        checkString$i(d.customer_type, field + \".customer_type\");\n" +
-"        checkNull$e(d.debits, field + \".debits\");\n" +
-"        checkString$i(d.delivery_address, field + \".delivery_address\");\n" +
-"        checkString$i(d.delivery_address_additional_info, field + \".delivery_address_additional_info\");\n" +
-"        checkString$i(d.delivery_city, field + \".delivery_city\");\n" +
-"        checkNull$e(d.delivery_country, field + \".delivery_country\");\n" +
-"        checkString$i(d[\"delivery_country_alpha2\"], field + \".delivery_country_alpha2\");\n" +
-"        checkString$i(d.delivery_postal_code, field + \".delivery_postal_code\");\n" +
-"        checkBoolean$b(d.disable_pending_vat, field + \".disable_pending_vat\");\n" +
-"        checkNull$e(d.display_name, field + \".display_name\");\n" +
-"        checkArray$9(d.emails, field + \".emails\");\n" +
+"        checkString$j(d[\"country_alpha2\"], field + \".country_alpha2\");\n" +
+"        checkNull$f(d.credits, field + \".credits\");\n" +
+"        checkNull$f(d.current_mandate, field + \".current_mandate\");\n" +
+"        checkString$j(d.customer_type, field + \".customer_type\");\n" +
+"        checkNull$f(d.debits, field + \".debits\");\n" +
+"        checkString$j(d.delivery_address, field + \".delivery_address\");\n" +
+"        checkString$j(d.delivery_address_additional_info, field + \".delivery_address_additional_info\");\n" +
+"        checkString$j(d.delivery_city, field + \".delivery_city\");\n" +
+"        checkNull$f(d.delivery_country, field + \".delivery_country\");\n" +
+"        checkString$j(d[\"delivery_country_alpha2\"], field + \".delivery_country_alpha2\");\n" +
+"        checkString$j(d.delivery_postal_code, field + \".delivery_postal_code\");\n" +
+"        checkBoolean$c(d.disable_pending_vat, field + \".disable_pending_vat\");\n" +
+"        checkNull$f(d.display_name, field + \".display_name\");\n" +
+"        checkArray$a(d.emails, field + \".emails\");\n" +
 "        if (d.emails) {\n" +
 "            for (let i = 0; i < d.emails.length; i++) {\n" +
-"                checkNever$2(d.emails[i], field + \".emails\" + \"[\" + i + \"]\");\n" +
+"                checkNever$3(d.emails[i], field + \".emails\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$e(d.establishment_no, field + \".establishment_no\", \"null | string\");\n" +
+"            checkNull$f(d.establishment_no, field + \".establishment_no\", \"null | string\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkString$i(d.establishment_no, field + \".establishment_no\", \"null | string\");\n" +
+"                checkString$j(d.establishment_no, field + \".establishment_no\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
-"                prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "            }\n" +
 "        }\n" +
-"        checkNull$e(d.estimate_count, field + \".estimate_count\");\n" +
-"        checkString$i(d.first_name, field + \".first_name\");\n" +
-"        checkBoolean$b(d.force_pending_vat, field + \".force_pending_vat\");\n" +
-"        checkNull$e(d.gender, field + \".gender\");\n" +
-"        checkNull$e(d.gocardless_id, field + \".gocardless_id\");\n" +
-"        checkString$i(d.iban, field + \".iban\");\n" +
-"        checkNumber$g(d.id, field + \".id\");\n" +
-"        checkNull$e(d.invoice_count, field + \".invoice_count\");\n" +
-"        checkNull$e(d.invoice_dump_id, field + \".invoice_dump_id\");\n" +
-"        checkBoolean$b(d.invoices_auto_generated, field + \".invoices_auto_generated\");\n" +
-"        checkBoolean$b(d.invoices_auto_validated, field + \".invoices_auto_validated\");\n" +
+"        checkNull$f(d.estimate_count, field + \".estimate_count\");\n" +
+"        checkString$j(d.first_name, field + \".first_name\");\n" +
+"        checkBoolean$c(d.force_pending_vat, field + \".force_pending_vat\");\n" +
+"        checkNull$f(d.gender, field + \".gender\");\n" +
+"        checkNull$f(d.gocardless_id, field + \".gocardless_id\");\n" +
+"        checkString$j(d.iban, field + \".iban\");\n" +
+"        checkNumber$h(d.id, field + \".id\");\n" +
+"        checkNull$f(d.invoice_count, field + \".invoice_count\");\n" +
+"        checkNull$f(d.invoice_dump_id, field + \".invoice_dump_id\");\n" +
+"        checkBoolean$c(d.invoices_auto_generated, field + \".invoices_auto_generated\");\n" +
+"        checkBoolean$c(d.invoices_auto_validated, field + \".invoices_auto_validated\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$e(d.known_supplier_id, field + \".known_supplier_id\", \"null | number\");\n" +
+"            checkNull$f(d.known_supplier_id, field + \".known_supplier_id\", \"null | number\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNumber$g(d.known_supplier_id, field + \".known_supplier_id\", \"null | number\");\n" +
+"                checkNumber$h(d.known_supplier_id, field + \".known_supplier_id\", \"null | number\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
-"                prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "            }\n" +
 "        }\n" +
-"        checkString$i(d.last_name, field + \".last_name\");\n" +
-"        checkNull$e(d.ledger_events_count, field + \".ledger_events_count\");\n" +
-"        checkString$i(d.legal_form_code, field + \".legal_form_code\");\n" +
-"        checkString$i(d.method, field + \".method\");\n" +
-"        checkString$i(d.name, field + \".name\");\n" +
-"        checkString$i(d.notes, field + \".notes\");\n" +
-"        checkNull$e(d.notes_comment, field + \".notes_comment\");\n" +
-"        checkString$i(d.payment_conditions, field + \".payment_conditions\");\n" +
-"        checkString$i(d.phone, field + \".phone\");\n" +
-"        checkNull$e(d.plan_item, field + \".plan_item\");\n" +
-"        checkNull$e(d.plan_item_attributes, field + \".plan_item_attributes\");\n" +
-"        checkNumber$g(d.plan_item_id, field + \".plan_item_id\");\n" +
-"        checkNull$e(d.pnl_plan_item, field + \".pnl_plan_item\");\n" +
+"        checkString$j(d.last_name, field + \".last_name\");\n" +
+"        checkNull$f(d.ledger_events_count, field + \".ledger_events_count\");\n" +
+"        checkString$j(d.legal_form_code, field + \".legal_form_code\");\n" +
+"        checkString$j(d.method, field + \".method\");\n" +
+"        checkString$j(d.name, field + \".name\");\n" +
+"        checkString$j(d.notes, field + \".notes\");\n" +
+"        checkNull$f(d.notes_comment, field + \".notes_comment\");\n" +
+"        checkString$j(d.payment_conditions, field + \".payment_conditions\");\n" +
+"        checkString$j(d.phone, field + \".phone\");\n" +
+"        checkNull$f(d.plan_item, field + \".plan_item\");\n" +
+"        checkNull$f(d.plan_item_attributes, field + \".plan_item_attributes\");\n" +
+"        checkNumber$h(d.plan_item_id, field + \".plan_item_id\");\n" +
+"        checkNull$f(d.pnl_plan_item, field + \".pnl_plan_item\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNumber$g(d.pnl_plan_item_id, field + \".pnl_plan_item_id\", \"number | null\");\n" +
+"            checkNumber$h(d.pnl_plan_item_id, field + \".pnl_plan_item_id\", \"number | null\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$e(d.pnl_plan_item_id, field + \".pnl_plan_item_id\", \"number | null\");\n" +
+"                checkNull$f(d.pnl_plan_item_id, field + \".pnl_plan_item_id\", \"number | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
-"                prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "            }\n" +
 "        }\n" +
-"        checkString$i(d.postal_code, field + \".postal_code\");\n" +
-"        checkNull$e(d.purchase_request_count, field + \".purchase_request_count\");\n" +
-"        checkBoolean$b(d.received_a_mandate_request, field + \".received_a_mandate_request\");\n" +
-"        checkString$i(d.recipient, field + \".recipient\");\n" +
-"        checkBoolean$b(d.recurrent, field + \".recurrent\");\n" +
-"        checkString$i(d.reference, field + \".reference\");\n" +
-"        checkString$i(d.reg_no, field + \".reg_no\");\n" +
-"        checkString$i(d.role, field + \".role\");\n" +
-"        checkBoolean$b(d.rule_enabled, field + \".rule_enabled\");\n" +
-"        checkArray$9(d.search_terms, field + \".search_terms\");\n" +
+"        checkString$j(d.postal_code, field + \".postal_code\");\n" +
+"        checkNull$f(d.purchase_request_count, field + \".purchase_request_count\");\n" +
+"        checkBoolean$c(d.received_a_mandate_request, field + \".received_a_mandate_request\");\n" +
+"        checkString$j(d.recipient, field + \".recipient\");\n" +
+"        checkBoolean$c(d.recurrent, field + \".recurrent\");\n" +
+"        checkString$j(d.reference, field + \".reference\");\n" +
+"        checkString$j(d.reg_no, field + \".reg_no\");\n" +
+"        checkString$j(d.role, field + \".role\");\n" +
+"        checkBoolean$c(d.rule_enabled, field + \".rule_enabled\");\n" +
+"        checkArray$a(d.search_terms, field + \".search_terms\");\n" +
 "        if (d.search_terms) {\n" +
 "            for (let i = 0; i < d.search_terms.length; i++) {\n" +
-"                checkString$i(d.search_terms[i], field + \".search_terms\" + \"[\" + i + \"]\");\n" +
+"                checkString$j(d.search_terms[i], field + \".search_terms\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
-"        checkString$i(d.source_id, field + \".source_id\");\n" +
-"        checkNull$e(d.stripe_id, field + \".stripe_id\");\n" +
-"        checkNull$e(d.supplier_payment_method, field + \".supplier_payment_method\");\n" +
+"        checkString$j(d.source_id, field + \".source_id\");\n" +
+"        checkNull$f(d.stripe_id, field + \".stripe_id\");\n" +
+"        checkNull$f(d.supplier_payment_method, field + \".supplier_payment_method\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkString$i(d.supplier_payment_method_last_updated_at, field + \".supplier_payment_method_last_updated_at\", \"string | null\");\n" +
+"            checkString$j(d.supplier_payment_method_last_updated_at, field + \".supplier_payment_method_last_updated_at\", \"string | null\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$e(d.supplier_payment_method_last_updated_at, field + \".supplier_payment_method_last_updated_at\", \"string | null\");\n" +
+"                checkNull$f(d.supplier_payment_method_last_updated_at, field + \".supplier_payment_method_last_updated_at\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
-"                prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "            }\n" +
 "        }\n" +
-"        checkArray$9(d.tags, field + \".tags\");\n" +
+"        checkArray$a(d.tags, field + \".tags\");\n" +
 "        if (d.tags) {\n" +
 "            for (let i = 0; i < d.tags.length; i++) {\n" +
-"                checkNever$2(d.tags[i], field + \".tags\" + \"[\" + i + \"]\");\n" +
+"                checkNever$3(d.tags[i], field + \".tags\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
-"        checkNull$e(d.turnover, field + \".turnover\");\n" +
-"        checkString$i(d.url, field + \".url\");\n" +
-"        checkString$i(d.vat_number, field + \".vat_number\");\n" +
+"        checkNull$f(d.turnover, field + \".turnover\");\n" +
+"        checkString$j(d.url, field + \".url\");\n" +
+"        checkString$j(d.vat_number, field + \".vat_number\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkString$i(d.vat_rate, field + \".vat_rate\", \"string | null\");\n" +
+"            checkString$j(d.vat_rate, field + \".vat_rate\", \"string | null\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$e(d.vat_rate, field + \".vat_rate\", \"string | null\");\n" +
+"                checkNull$f(d.vat_rate, field + \".vat_rate\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
-"                prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"                prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "            }\n" +
 "        }\n" +
 "        const knownProperties = [\"activity_code\", \"activity_nomenclature\", \"address\", \"address_additional_info\", \"admin_city_code\", \"balance\", \"billing_bank\", \"billing_bic\", \"billing_footer_invoice_id\", \"billing_footer_invoice_label\", \"billing_iban\", \"billing_language\", \"city\", \"company_id\", \"complete\", \"country\", \"country_alpha2\", \"credits\", \"current_mandate\", \"customer_type\", \"debits\", \"delivery_address\", \"delivery_address_additional_info\", \"delivery_city\", \"delivery_country\", \"delivery_country_alpha2\", \"delivery_postal_code\", \"disable_pending_vat\", \"display_name\", \"emails\", \"establishment_no\", \"estimate_count\", \"first_name\", \"force_pending_vat\", \"gender\", \"gocardless_id\", \"iban\", \"id\", \"invoice_count\", \"invoice_dump_id\", \"invoices_auto_generated\", \"invoices_auto_validated\", \"known_supplier_id\", \"last_name\", \"ledger_events_count\", \"legal_form_code\", \"method\", \"name\", \"notes\", \"notes_comment\", \"payment_conditions\", \"phone\", \"plan_item\", \"plan_item_attributes\", \"plan_item_id\", \"pnl_plan_item\", \"pnl_plan_item_id\", \"postal_code\", \"purchase_request_count\", \"received_a_mandate_request\", \"recipient\", \"recurrent\", \"reference\", \"reg_no\", \"role\", \"rule_enabled\", \"search_terms\", \"source_id\", \"stripe_id\", \"supplier_payment_method\", \"supplier_payment_method_last_updated_at\", \"tags\", \"turnover\", \"url\", \"vat_number\", \"vat_rate\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$k(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$l(unknownProperty, d, \"never (unknown property)\");\n" +
 "        return new Thirdparty(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -3816,6 +3862,90 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
+"            obj$l = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$l(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$l(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$l(field, d);\n" +
+"        }\n" +
+"        const knownProperties = [];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$l(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new ScoredInvoices(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"    }\n" +
+"}\n" +
+"function throwNull2NonNull$l(field, value, multiple) {\n" +
+"    return errorHelper$l(field, value, multiple ?? \"non-nullable object\");\n" +
+"}\n" +
+"function throwNotObject$l(field, value, multiple) {\n" +
+"    return errorHelper$l(field, value, \"object\");\n" +
+"}\n" +
+"function throwIsArray$l(field, value, multiple) {\n" +
+"    return errorHelper$l(field, value, \"object\");\n" +
+"}\n" +
+"function checkArray$a(value, field, multiple) {\n" +
+"    if (!Array.isArray(value))\n" +
+"        errorHelper$l(field, value, multiple ?? \"array\");\n" +
+"}\n" +
+"function checkNumber$h(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'number')\n" +
+"        errorHelper$l(field, value, multiple ?? \"number\");\n" +
+"}\n" +
+"function checkBoolean$c(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'boolean')\n" +
+"        errorHelper$l(field, value, multiple ?? \"boolean\");\n" +
+"}\n" +
+"function checkString$j(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'string')\n" +
+"        errorHelper$l(field, value, multiple ?? \"string\");\n" +
+"}\n" +
+"function checkNull$f(value, field, multiple) {\n" +
+"    if (value !== null)\n" +
+"        errorHelper$l(field, value, multiple ?? \"null\");\n" +
+"}\n" +
+"function checkNever$3(value, field, multiple) {\n" +
+"    return errorHelper$l(field, value, \"never\");\n" +
+"}\n" +
+"function errorHelper$l(field, d, type) {\n" +
+"    if (type.includes(' | ')) {\n" +
+"        throw new TypeError('Expected ' + type + \" at \" + field + \" but found:\\n" +
+"\" + JSON.stringify(d) + \"\\n" +
+"\\n" +
+"Full object:\\n" +
+"\" + JSON.stringify(obj$l));\n" +
+"    }\n" +
+"    else {\n" +
+"        let jsonClone = obj$l;\n" +
+"        try {\n" +
+"            jsonClone = JSON.parse(JSON.stringify(obj$l));\n" +
+"        }\n" +
+"        catch (error) {\n" +
+"            console.log(error);\n" +
+"        }\n" +
+"        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
+"\" + JSON.stringify(d), jsonClone);\n" +
+"        prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
+"    }\n" +
+"}\n" +
+"\n" +
+"// Stores the currently-being-typechecked object for error messages.\n" +
+"const proxyName$k = 'APIDocumentMatching';\n" +
+"let obj$k = null;\n" +
+"class APIDocumentMatching {\n" +
+"    static Parse(d) {\n" +
+"        return APIDocumentMatching.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
 "            obj$k = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
@@ -3828,13 +3958,35 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$k(field, d);\n" +
 "        }\n" +
-"        const knownProperties = [];\n" +
+"        checkString$i(d.amount, field + \".amount\");\n" +
+"        checkNumber$g(d.company_id, field + \".company_id\");\n" +
+"        checkString$i(d.currency, field + \".currency\");\n" +
+"        checkString$i(d.date, field + \".date\");\n" +
+"        checkString$i(d.gross_amount, field + \".gross_amount\");\n" +
+"        checkString$i(d.group_uuid, field + \".group_uuid\");\n" +
+"        checkNumber$g(d.id, field + \".id\");\n" +
+"        checkString$i(d.outstanding_balance, field + \".outstanding_balance\");\n" +
+"        checkNull$e(d.proof_count, field + \".proof_count\");\n" +
+"        checkString$i(d.type, field + \".type\");\n" +
+"        checkString$i(d.updated_at, field + \".updated_at\");\n" +
+"        const knownProperties = [\"amount\", \"company_id\", \"currency\", \"date\", \"gross_amount\", \"group_uuid\", \"id\", \"outstanding_balance\", \"proof_count\", \"type\", \"updated_at\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
 "            errorHelper$k(unknownProperty, d, \"never (unknown property)\");\n" +
-"        return new ScoredInvoices(d);\n" +
+"        return new APIDocumentMatching(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
+"        this.amount = d.amount;\n" +
+"        this.company_id = d.company_id;\n" +
+"        this.currency = d.currency;\n" +
+"        this.date = d.date;\n" +
+"        this.gross_amount = d.gross_amount;\n" +
+"        this.group_uuid = d.group_uuid;\n" +
+"        this.id = d.id;\n" +
+"        this.outstanding_balance = d.outstanding_balance;\n" +
+"        this.proof_count = d.proof_count;\n" +
+"        this.type = d.type;\n" +
+"        this.updated_at = d.updated_at;\n" +
 "    }\n" +
 "}\n" +
 "function throwNull2NonNull$k(field, value, multiple) {\n" +
@@ -3846,28 +3998,17 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "function throwIsArray$k(field, value, multiple) {\n" +
 "    return errorHelper$k(field, value, \"object\");\n" +
 "}\n" +
-"function checkArray$9(value, field, multiple) {\n" +
-"    if (!Array.isArray(value))\n" +
-"        errorHelper$k(field, value, multiple ?? \"array\");\n" +
-"}\n" +
 "function checkNumber$g(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'number')\n" +
-"        errorHelper$k(field, value, multiple ?? \"number\");\n" +
-"}\n" +
-"function checkBoolean$b(value, field, multiple) {\n" +
-"    if (typeof (value) !== 'boolean')\n" +
-"        errorHelper$k(field, value, multiple ?? \"boolean\");\n" +
+"        errorHelper$k(field, value, \"number\");\n" +
 "}\n" +
 "function checkString$i(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'string')\n" +
-"        errorHelper$k(field, value, multiple ?? \"string\");\n" +
+"        errorHelper$k(field, value, \"string\");\n" +
 "}\n" +
 "function checkNull$e(value, field, multiple) {\n" +
 "    if (value !== null)\n" +
-"        errorHelper$k(field, value, multiple ?? \"null\");\n" +
-"}\n" +
-"function checkNever$2(value, field, multiple) {\n" +
-"    return errorHelper$k(field, value, \"never\");\n" +
+"        errorHelper$k(field, value, \"null\");\n" +
 "}\n" +
 "function errorHelper$k(field, d, type) {\n" +
 "    if (type.includes(' | ')) {\n" +
@@ -3888,101 +4029,6 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
 "\" + JSON.stringify(d), jsonClone);\n" +
 "        prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
-"    }\n" +
-"}\n" +
-"\n" +
-"// Stores the currently-being-typechecked object for error messages.\n" +
-"const proxyName$j = 'APIDocumentMatching';\n" +
-"let obj$j = null;\n" +
-"class APIDocumentMatching {\n" +
-"    static Parse(d) {\n" +
-"        return APIDocumentMatching.Create(JSON.parse(d));\n" +
-"    }\n" +
-"    static Create(d, field, multiple) {\n" +
-"        if (!field) {\n" +
-"            obj$j = d;\n" +
-"            field = \"root\";\n" +
-"        }\n" +
-"        if (!d) {\n" +
-"            throwNull2NonNull$j(field, d, multiple ?? this.name);\n" +
-"        }\n" +
-"        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$j(field, d);\n" +
-"        }\n" +
-"        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$j(field, d);\n" +
-"        }\n" +
-"        checkString$h(d.amount, field + \".amount\");\n" +
-"        checkNumber$f(d.company_id, field + \".company_id\");\n" +
-"        checkString$h(d.currency, field + \".currency\");\n" +
-"        checkString$h(d.date, field + \".date\");\n" +
-"        checkString$h(d.gross_amount, field + \".gross_amount\");\n" +
-"        checkString$h(d.group_uuid, field + \".group_uuid\");\n" +
-"        checkNumber$f(d.id, field + \".id\");\n" +
-"        checkString$h(d.outstanding_balance, field + \".outstanding_balance\");\n" +
-"        checkNull$d(d.proof_count, field + \".proof_count\");\n" +
-"        checkString$h(d.type, field + \".type\");\n" +
-"        checkString$h(d.updated_at, field + \".updated_at\");\n" +
-"        const knownProperties = [\"amount\", \"company_id\", \"currency\", \"date\", \"gross_amount\", \"group_uuid\", \"id\", \"outstanding_balance\", \"proof_count\", \"type\", \"updated_at\"];\n" +
-"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
-"        if (unknownProperty)\n" +
-"            errorHelper$j(unknownProperty, d, \"never (unknown property)\");\n" +
-"        return new APIDocumentMatching(d);\n" +
-"    }\n" +
-"    constructor(d) {\n" +
-"        this.amount = d.amount;\n" +
-"        this.company_id = d.company_id;\n" +
-"        this.currency = d.currency;\n" +
-"        this.date = d.date;\n" +
-"        this.gross_amount = d.gross_amount;\n" +
-"        this.group_uuid = d.group_uuid;\n" +
-"        this.id = d.id;\n" +
-"        this.outstanding_balance = d.outstanding_balance;\n" +
-"        this.proof_count = d.proof_count;\n" +
-"        this.type = d.type;\n" +
-"        this.updated_at = d.updated_at;\n" +
-"    }\n" +
-"}\n" +
-"function throwNull2NonNull$j(field, value, multiple) {\n" +
-"    return errorHelper$j(field, value, multiple ?? \"non-nullable object\");\n" +
-"}\n" +
-"function throwNotObject$j(field, value, multiple) {\n" +
-"    return errorHelper$j(field, value, \"object\");\n" +
-"}\n" +
-"function throwIsArray$j(field, value, multiple) {\n" +
-"    return errorHelper$j(field, value, \"object\");\n" +
-"}\n" +
-"function checkNumber$f(value, field, multiple) {\n" +
-"    if (typeof (value) !== 'number')\n" +
-"        errorHelper$j(field, value, \"number\");\n" +
-"}\n" +
-"function checkString$h(value, field, multiple) {\n" +
-"    if (typeof (value) !== 'string')\n" +
-"        errorHelper$j(field, value, \"string\");\n" +
-"}\n" +
-"function checkNull$d(value, field, multiple) {\n" +
-"    if (value !== null)\n" +
-"        errorHelper$j(field, value, \"null\");\n" +
-"}\n" +
-"function errorHelper$j(field, d, type) {\n" +
-"    if (type.includes(' | ')) {\n" +
-"        throw new TypeError('Expected ' + type + \" at \" + field + \" but found:\\n" +
-"\" + JSON.stringify(d) + \"\\n" +
-"\\n" +
-"Full object:\\n" +
-"\" + JSON.stringify(obj$j));\n" +
-"    }\n" +
-"    else {\n" +
-"        let jsonClone = obj$j;\n" +
-"        try {\n" +
-"            jsonClone = JSON.parse(JSON.stringify(obj$j));\n" +
-"        }\n" +
-"        catch (error) {\n" +
-"            console.log(error);\n" +
-"        }\n" +
-"        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
-"\" + JSON.stringify(d), jsonClone);\n" +
-"        prompt(proxyName$j + ':', JSON.stringify(obj$j));\n" +
 "    }\n" +
 "}\n" +
 "\n" +
@@ -4022,11 +4068,72 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "}\n" +
 "\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
-"const proxyName$i = 'APIDMSCreateLink';\n" +
-"let obj$i = null;\n" +
+"const proxyName$j = 'APIDMSCreateLink';\n" +
+"let obj$j = null;\n" +
 "class APIDMSCreateLink {\n" +
 "    static Parse(d) {\n" +
 "        return APIDMSCreateLink.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$j = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$j(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$j(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$j(field, d);\n" +
+"        }\n" +
+"        const knownProperties = [];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$j(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new APIDMSCreateLink(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"    }\n" +
+"}\n" +
+"function throwNull2NonNull$j(field, value, multiple) {\n" +
+"    return errorHelper$j(field, value, multiple ?? \"non-nullable object\");\n" +
+"}\n" +
+"function throwNotObject$j(field, value, multiple) {\n" +
+"    return errorHelper$j(field, value, \"object\");\n" +
+"}\n" +
+"function throwIsArray$j(field, value, multiple) {\n" +
+"    return errorHelper$j(field, value, \"object\");\n" +
+"}\n" +
+"function errorHelper$j(field, d, type) {\n" +
+"    if (type.includes(' | ')) {\n" +
+"        throw new TypeError('Expected ' + type + \" at \" + field + \" but found:\\n" +
+"\" + JSON.stringify(d) + \"\\n" +
+"\\n" +
+"Full object:\\n" +
+"\" + JSON.stringify(obj$j));\n" +
+"    }\n" +
+"    else {\n" +
+"        let jsonClone = obj$j;\n" +
+"        try {\n" +
+"            jsonClone = JSON.parse(JSON.stringify(obj$j));\n" +
+"        }\n" +
+"        catch (error) {\n" +
+"            console.log(error);\n" +
+"        }\n" +
+"        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
+"\" + JSON.stringify(d), jsonClone);\n" +
+"        prompt(proxyName$j + ':', JSON.stringify(obj$j));\n" +
+"    }\n" +
+"}\n" +
+"\n" +
+"// Stores the currently-being-typechecked object for error messages.\n" +
+"const proxyName$i = 'APIDMSItem';\n" +
+"let obj$i = null;\n" +
+"class APIDMSItem {\n" +
+"    static Parse(d) {\n" +
+"        return APIDMSItem.Create(JSON.parse(d));\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
@@ -4042,15 +4149,105 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$i(field, d);\n" +
 "        }\n" +
-"        const knownProperties = [];\n" +
+"        checkNull$d(d.archived_at, field + \".archived_at\");\n" +
+"        checkNumber$f(d.comments_count, field + \".comments_count\");\n" +
+"        checkString$h(d.created_at, field + \".created_at\");\n" +
+"        d.creator = Creator$5.Create(d.creator, field + \".creator\", undefined);\n" +
+"        checkBoolean$b(d.favorite, field + \".favorite\");\n" +
+"        checkString$h(d.file_extension, field + \".file_extension\");\n" +
+"        checkNumber$f(d.file_size, field + \".file_size\");\n" +
+"        checkString$h(d.file_url, field + \".file_url\");\n" +
+"        checkNumber$f(d.id, field + \".id\");\n" +
+"        checkBoolean$b(d.imports_allowed, field + \".imports_allowed\");\n" +
+"        checkNumber$f(d.itemable_id, field + \".itemable_id\");\n" +
+"        checkString$h(d.method, field + \".method\");\n" +
+"        checkString$h(d.name, field + \".name\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNumber$f(d.parent_id, field + \".parent_id\", \"number | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$d(d.parent_id, field + \".parent_id\", \"number | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$i + ':', JSON.stringify(obj$i));\n" +
+"            }\n" +
+"        }\n" +
+"        checkString$h(d.pusher_channel, field + \".pusher_channel\");\n" +
+"        checkBoolean$b(d.readonly, field + \".readonly\");\n" +
+"        checkNull$d(d.reference_link, field + \".reference_link\");\n" +
+"        checkBoolean$b(d.shared, field + \".shared\");\n" +
+"        checkString$h(d.signed_id, field + \".signed_id\");\n" +
+"        checkString$h(d.type, field + \".type\");\n" +
+"        checkString$h(d.updated_at, field + \".updated_at\");\n" +
+"        const knownProperties = [\"archived_at\", \"comments_count\", \"created_at\", \"creator\", \"favorite\", \"file_extension\", \"file_size\", \"file_url\", \"id\", \"imports_allowed\", \"itemable_id\", \"method\", \"name\", \"parent_id\", \"pusher_channel\", \"readonly\", \"reference_link\", \"shared\", \"signed_id\", \"type\", \"updated_at\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
 "            errorHelper$i(unknownProperty, d, \"never (unknown property)\");\n" +
-"        return new APIDMSCreateLink(d);\n" +
+"        return new APIDMSItem(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
+"        this.archived_at = d.archived_at;\n" +
+"        this.comments_count = d.comments_count;\n" +
+"        this.created_at = d.created_at;\n" +
+"        this.creator = d.creator;\n" +
+"        this.favorite = d.favorite;\n" +
+"        this.file_extension = d.file_extension;\n" +
+"        this.file_size = d.file_size;\n" +
+"        this.file_url = d.file_url;\n" +
+"        this.id = d.id;\n" +
+"        this.imports_allowed = d.imports_allowed;\n" +
+"        this.itemable_id = d.itemable_id;\n" +
+"        this.method = d.method;\n" +
+"        this.name = d.name;\n" +
+"        this.parent_id = d.parent_id;\n" +
+"        this.pusher_channel = d.pusher_channel;\n" +
+"        this.readonly = d.readonly;\n" +
+"        this.reference_link = d.reference_link;\n" +
+"        this.shared = d.shared;\n" +
+"        this.signed_id = d.signed_id;\n" +
+"        this.type = d.type;\n" +
+"        this.updated_at = d.updated_at;\n" +
 "    }\n" +
 "}\n" +
+"let Creator$5 = class Creator {\n" +
+"    static Parse(d) {\n" +
+"        return Creator.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$i = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$i(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$i(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$i(field, d);\n" +
+"        }\n" +
+"        checkString$h(d.email, field + \".email\");\n" +
+"        checkString$h(d.first_name, field + \".first_name\");\n" +
+"        checkString$h(d.full_name, field + \".full_name\");\n" +
+"        checkString$h(d.last_name, field + \".last_name\");\n" +
+"        checkString$h(d.role, field + \".role\");\n" +
+"        const knownProperties = [\"email\", \"first_name\", \"full_name\", \"last_name\", \"role\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$i(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new Creator(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.email = d.email;\n" +
+"        this.first_name = d.first_name;\n" +
+"        this.full_name = d.full_name;\n" +
+"        this.last_name = d.last_name;\n" +
+"        this.role = d.role;\n" +
+"    }\n" +
+"};\n" +
 "function throwNull2NonNull$i(field, value, multiple) {\n" +
 "    return errorHelper$i(field, value, multiple ?? \"non-nullable object\");\n" +
 "}\n" +
@@ -4059,6 +4256,22 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "}\n" +
 "function throwIsArray$i(field, value, multiple) {\n" +
 "    return errorHelper$i(field, value, \"object\");\n" +
+"}\n" +
+"function checkNumber$f(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'number')\n" +
+"        errorHelper$i(field, value, multiple ?? \"number\");\n" +
+"}\n" +
+"function checkBoolean$b(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'boolean')\n" +
+"        errorHelper$i(field, value, \"boolean\");\n" +
+"}\n" +
+"function checkString$h(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'string')\n" +
+"        errorHelper$i(field, value, \"string\");\n" +
+"}\n" +
+"function checkNull$d(value, field, multiple) {\n" +
+"    if (value !== null)\n" +
+"        errorHelper$i(field, value, multiple ?? \"null\");\n" +
 "}\n" +
 "function errorHelper$i(field, d, type) {\n" +
 "    if (type.includes(' | ')) {\n" +
@@ -4083,11 +4296,11 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "}\n" +
 "\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
-"const proxyName$h = 'APIDMSItem';\n" +
+"const proxyName$h = 'APIDMSItemLink';\n" +
 "let obj$h = null;\n" +
-"class APIDMSItem {\n" +
+"class APIDMSItemLink {\n" +
 "    static Parse(d) {\n" +
-"        return APIDMSItem.Create(JSON.parse(d));\n" +
+"        return APIDMSItemLink.Create(JSON.parse(d));\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
@@ -4103,43 +4316,151 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$h(field, d);\n" +
 "        }\n" +
-"        checkNull$c(d.archived_at, field + \".archived_at\");\n" +
-"        checkNumber$e(d.comments_count, field + \".comments_count\");\n" +
-"        checkString$g(d.created_at, field + \".created_at\");\n" +
-"        d.creator = Creator$4.Create(d.creator, field + \".creator\", undefined);\n" +
-"        checkBoolean$a(d.favorite, field + \".favorite\");\n" +
-"        checkString$g(d.file_extension, field + \".file_extension\");\n" +
-"        checkNumber$e(d.file_size, field + \".file_size\");\n" +
-"        checkString$g(d.file_url, field + \".file_url\");\n" +
 "        checkNumber$e(d.id, field + \".id\");\n" +
-"        checkBoolean$a(d.imports_allowed, field + \".imports_allowed\");\n" +
-"        checkNumber$e(d.itemable_id, field + \".itemable_id\");\n" +
-"        checkString$g(d.method, field + \".method\");\n" +
-"        checkString$g(d.name, field + \".name\");\n" +
-"        // This will be refactored in the next release.\n" +
-"        try {\n" +
-"            checkNumber$e(d.parent_id, field + \".parent_id\", \"number | null\");\n" +
-"        }\n" +
-"        catch (e) {\n" +
-"            try {\n" +
-"                checkNull$c(d.parent_id, field + \".parent_id\", \"number | null\");\n" +
-"            }\n" +
-"            catch (e) {\n" +
-"                prompt(proxyName$h + ':', JSON.stringify(obj$h));\n" +
-"            }\n" +
-"        }\n" +
-"        checkString$g(d.pusher_channel, field + \".pusher_channel\");\n" +
-"        checkBoolean$a(d.readonly, field + \".readonly\");\n" +
-"        checkNull$c(d.reference_link, field + \".reference_link\");\n" +
-"        checkBoolean$a(d.shared, field + \".shared\");\n" +
-"        checkString$g(d.signed_id, field + \".signed_id\");\n" +
-"        checkString$g(d.type, field + \".type\");\n" +
-"        checkString$g(d.updated_at, field + \".updated_at\");\n" +
-"        const knownProperties = [\"archived_at\", \"comments_count\", \"created_at\", \"creator\", \"favorite\", \"file_extension\", \"file_size\", \"file_url\", \"id\", \"imports_allowed\", \"itemable_id\", \"method\", \"name\", \"parent_id\", \"pusher_channel\", \"readonly\", \"reference_link\", \"shared\", \"signed_id\", \"type\", \"updated_at\"];\n" +
+"        checkNumber$e(d.record_id, field + \".record_id\");\n" +
+"        checkString$g(d.record_name, field + \".record_name\");\n" +
+"        checkString$g(d.record_type, field + \".record_type\");\n" +
+"        checkString$g(d.record_url, field + \".record_url\");\n" +
+"        const knownProperties = [\"id\", \"record_id\", \"record_name\", \"record_type\", \"record_url\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
 "            errorHelper$h(unknownProperty, d, \"never (unknown property)\");\n" +
-"        return new APIDMSItem(d);\n" +
+"        return new APIDMSItemLink(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.id = d.id;\n" +
+"        this.record_id = d.record_id;\n" +
+"        this.record_name = d.record_name;\n" +
+"        this.record_type = d.record_type;\n" +
+"        this.record_url = d.record_url;\n" +
+"    }\n" +
+"}\n" +
+"function throwNull2NonNull$h(field, value, multiple) {\n" +
+"    return errorHelper$h(field, value, multiple ?? \"non-nullable object\");\n" +
+"}\n" +
+"function throwNotObject$h(field, value, multiple) {\n" +
+"    return errorHelper$h(field, value, \"object\");\n" +
+"}\n" +
+"function throwIsArray$h(field, value, multiple) {\n" +
+"    return errorHelper$h(field, value, \"object\");\n" +
+"}\n" +
+"function checkNumber$e(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'number')\n" +
+"        errorHelper$h(field, value, \"number\");\n" +
+"}\n" +
+"function checkString$g(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'string')\n" +
+"        errorHelper$h(field, value, \"string\");\n" +
+"}\n" +
+"function errorHelper$h(field, d, type) {\n" +
+"    if (type.includes(' | ')) {\n" +
+"        throw new TypeError('Expected ' + type + \" at \" + field + \" but found:\\n" +
+"\" + JSON.stringify(d) + \"\\n" +
+"\\n" +
+"Full object:\\n" +
+"\" + JSON.stringify(obj$h));\n" +
+"    }\n" +
+"    else {\n" +
+"        let jsonClone = obj$h;\n" +
+"        try {\n" +
+"            jsonClone = JSON.parse(JSON.stringify(obj$h));\n" +
+"        }\n" +
+"        catch (error) {\n" +
+"            console.log(error);\n" +
+"        }\n" +
+"        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
+"\" + JSON.stringify(d), jsonClone);\n" +
+"        prompt(proxyName$h + ':', JSON.stringify(obj$h));\n" +
+"    }\n" +
+"}\n" +
+"\n" +
+"// Stores the currently-being-typechecked object for error messages.\n" +
+"const proxyName$g = 'APIDMSItemList';\n" +
+"let obj$g = null;\n" +
+"class APIDMSItemList {\n" +
+"    static Parse(d) {\n" +
+"        return APIDMSItemList.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$g = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$g(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$g(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$g(field, d);\n" +
+"        }\n" +
+"        checkString$f(d.filters, field + \".filters\");\n" +
+"        checkArray$9(d.items, field + \".items\");\n" +
+"        if (d.items) {\n" +
+"            for (let i = 0; i < d.items.length; i++) {\n" +
+"                d.items[i] = ItemsEntity.Create(d.items[i], field + \".items\" + \"[\" + i + \"]\", undefined);\n" +
+"            }\n" +
+"        }\n" +
+"        d.pagination = Pagination$2.Create(d.pagination, field + \".pagination\", undefined);\n" +
+"        checkString$f(d.sort, field + \".sort\");\n" +
+"        const knownProperties = [\"filters\", \"items\", \"pagination\", \"sort\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$g(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new APIDMSItemList(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.filters = d.filters;\n" +
+"        this.items = d.items;\n" +
+"        this.pagination = d.pagination;\n" +
+"        this.sort = d.sort;\n" +
+"    }\n" +
+"}\n" +
+"class ItemsEntity {\n" +
+"    static Parse(d) {\n" +
+"        return ItemsEntity.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$g = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$g(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$g(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$g(field, d);\n" +
+"        }\n" +
+"        checkNull$c(d.archived_at, field + \".archived_at\");\n" +
+"        checkNumber$d(d.comments_count, field + \".comments_count\");\n" +
+"        checkString$f(d.created_at, field + \".created_at\");\n" +
+"        d.creator = Creator$4.Create(d.creator, field + \".creator\", undefined);\n" +
+"        checkBoolean$a(d.favorite, field + \".favorite\");\n" +
+"        checkString$f(d.file_extension, field + \".file_extension\");\n" +
+"        checkNumber$d(d.file_size, field + \".file_size\");\n" +
+"        checkString$f(d.file_url, field + \".file_url\");\n" +
+"        checkNumber$d(d.id, field + \".id\");\n" +
+"        checkBoolean$a(d.imports_allowed, field + \".imports_allowed\");\n" +
+"        checkNumber$d(d.itemable_id, field + \".itemable_id\");\n" +
+"        checkString$f(d.method, field + \".method\");\n" +
+"        checkString$f(d.name, field + \".name\");\n" +
+"        checkNumber$d(d.parent_id, field + \".parent_id\");\n" +
+"        checkString$f(d.pusher_channel, field + \".pusher_channel\");\n" +
+"        checkBoolean$a(d.readonly, field + \".readonly\");\n" +
+"        checkNull$c(d.reference_link, field + \".reference_link\");\n" +
+"        checkBoolean$a(d.shared, field + \".shared\");\n" +
+"        checkString$f(d.signed_id, field + \".signed_id\");\n" +
+"        checkString$f(d.type, field + \".type\");\n" +
+"        checkString$f(d.updated_at, field + \".updated_at\");\n" +
+"        const knownProperties = [\"archived_at\", \"comments_count\", \"created_at\", \"creator\", \"favorite\", \"file_extension\", \"file_size\", \"file_url\", \"id\", \"imports_allowed\", \"itemable_id\", \"method\", \"name\", \"parent_id\", \"pusher_channel\", \"readonly\", \"reference_link\", \"shared\", \"signed_id\", \"type\", \"updated_at\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$g(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new ItemsEntity(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
 "        this.archived_at = d.archived_at;\n" +
@@ -4171,27 +4492,27 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$h = d;\n" +
+"            obj$g = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
 "        if (!d) {\n" +
-"            throwNull2NonNull$h(field, d, multiple ?? this.name);\n" +
+"            throwNull2NonNull$g(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$h(field, d);\n" +
+"            throwNotObject$g(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$h(field, d);\n" +
+"            throwIsArray$g(field, d);\n" +
 "        }\n" +
-"        checkString$g(d.email, field + \".email\");\n" +
-"        checkString$g(d.first_name, field + \".first_name\");\n" +
-"        checkString$g(d.full_name, field + \".full_name\");\n" +
-"        checkString$g(d.last_name, field + \".last_name\");\n" +
-"        checkString$g(d.role, field + \".role\");\n" +
+"        checkString$f(d.email, field + \".email\");\n" +
+"        checkString$f(d.first_name, field + \".first_name\");\n" +
+"        checkString$f(d.full_name, field + \".full_name\");\n" +
+"        checkString$f(d.last_name, field + \".last_name\");\n" +
+"        checkString$f(d.role, field + \".role\");\n" +
 "        const knownProperties = [\"email\", \"first_name\", \"full_name\", \"last_name\", \"role\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$h(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$g(unknownProperty, d, \"never (unknown property)\");\n" +
 "        return new Creator(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -4202,59 +4523,9 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        this.role = d.role;\n" +
 "    }\n" +
 "};\n" +
-"function throwNull2NonNull$h(field, value, multiple) {\n" +
-"    return errorHelper$h(field, value, multiple ?? \"non-nullable object\");\n" +
-"}\n" +
-"function throwNotObject$h(field, value, multiple) {\n" +
-"    return errorHelper$h(field, value, \"object\");\n" +
-"}\n" +
-"function throwIsArray$h(field, value, multiple) {\n" +
-"    return errorHelper$h(field, value, \"object\");\n" +
-"}\n" +
-"function checkNumber$e(value, field, multiple) {\n" +
-"    if (typeof (value) !== 'number')\n" +
-"        errorHelper$h(field, value, multiple ?? \"number\");\n" +
-"}\n" +
-"function checkBoolean$a(value, field, multiple) {\n" +
-"    if (typeof (value) !== 'boolean')\n" +
-"        errorHelper$h(field, value, \"boolean\");\n" +
-"}\n" +
-"function checkString$g(value, field, multiple) {\n" +
-"    if (typeof (value) !== 'string')\n" +
-"        errorHelper$h(field, value, \"string\");\n" +
-"}\n" +
-"function checkNull$c(value, field, multiple) {\n" +
-"    if (value !== null)\n" +
-"        errorHelper$h(field, value, multiple ?? \"null\");\n" +
-"}\n" +
-"function errorHelper$h(field, d, type) {\n" +
-"    if (type.includes(' | ')) {\n" +
-"        throw new TypeError('Expected ' + type + \" at \" + field + \" but found:\\n" +
-"\" + JSON.stringify(d) + \"\\n" +
-"\\n" +
-"Full object:\\n" +
-"\" + JSON.stringify(obj$h));\n" +
-"    }\n" +
-"    else {\n" +
-"        let jsonClone = obj$h;\n" +
-"        try {\n" +
-"            jsonClone = JSON.parse(JSON.stringify(obj$h));\n" +
-"        }\n" +
-"        catch (error) {\n" +
-"            console.log(error);\n" +
-"        }\n" +
-"        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
-"\" + JSON.stringify(d), jsonClone);\n" +
-"        prompt(proxyName$h + ':', JSON.stringify(obj$h));\n" +
-"    }\n" +
-"}\n" +
-"\n" +
-"// Stores the currently-being-typechecked object for error messages.\n" +
-"const proxyName$g = 'APIDMSItemLink';\n" +
-"let obj$g = null;\n" +
-"class APIDMSItemLink {\n" +
+"let Pagination$2 = class Pagination {\n" +
 "    static Parse(d) {\n" +
-"        return APIDMSItemLink.Create(JSON.parse(d));\n" +
+"        return Pagination.Create(JSON.parse(d));\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
@@ -4270,25 +4541,29 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$g(field, d);\n" +
 "        }\n" +
-"        checkNumber$d(d.id, field + \".id\");\n" +
-"        checkNumber$d(d.record_id, field + \".record_id\");\n" +
-"        checkString$f(d.record_name, field + \".record_name\");\n" +
-"        checkString$f(d.record_type, field + \".record_type\");\n" +
-"        checkString$f(d.record_url, field + \".record_url\");\n" +
-"        const knownProperties = [\"id\", \"record_id\", \"record_name\", \"record_type\", \"record_url\"];\n" +
+"        checkBoolean$a(d.hasNextPage, field + \".hasNextPage\");\n" +
+"        checkNumber$d(d.page, field + \".page\");\n" +
+"        checkNumber$d(d.pages, field + \".pages\");\n" +
+"        checkNumber$d(d.pageSize, field + \".pageSize\");\n" +
+"        checkNumber$d(d.totalEntries, field + \".totalEntries\");\n" +
+"        checkString$f(d.totalEntriesPrecision, field + \".totalEntriesPrecision\");\n" +
+"        checkString$f(d.totalEntriesStr, field + \".totalEntriesStr\");\n" +
+"        const knownProperties = [\"hasNextPage\", \"page\", \"pages\", \"pageSize\", \"totalEntries\", \"totalEntriesPrecision\", \"totalEntriesStr\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
 "            errorHelper$g(unknownProperty, d, \"never (unknown property)\");\n" +
-"        return new APIDMSItemLink(d);\n" +
+"        return new Pagination(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
-"        this.id = d.id;\n" +
-"        this.record_id = d.record_id;\n" +
-"        this.record_name = d.record_name;\n" +
-"        this.record_type = d.record_type;\n" +
-"        this.record_url = d.record_url;\n" +
+"        this.hasNextPage = d.hasNextPage;\n" +
+"        this.page = d.page;\n" +
+"        this.pages = d.pages;\n" +
+"        this.pageSize = d.pageSize;\n" +
+"        this.totalEntries = d.totalEntries;\n" +
+"        this.totalEntriesPrecision = d.totalEntriesPrecision;\n" +
+"        this.totalEntriesStr = d.totalEntriesStr;\n" +
 "    }\n" +
-"}\n" +
+"};\n" +
 "function throwNull2NonNull$g(field, value, multiple) {\n" +
 "    return errorHelper$g(field, value, multiple ?? \"non-nullable object\");\n" +
 "}\n" +
@@ -4298,13 +4573,25 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "function throwIsArray$g(field, value, multiple) {\n" +
 "    return errorHelper$g(field, value, \"object\");\n" +
 "}\n" +
+"function checkArray$9(value, field, multiple) {\n" +
+"    if (!Array.isArray(value))\n" +
+"        errorHelper$g(field, value, \"array\");\n" +
+"}\n" +
 "function checkNumber$d(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'number')\n" +
 "        errorHelper$g(field, value, \"number\");\n" +
 "}\n" +
+"function checkBoolean$a(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'boolean')\n" +
+"        errorHelper$g(field, value, \"boolean\");\n" +
+"}\n" +
 "function checkString$f(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'string')\n" +
 "        errorHelper$g(field, value, \"string\");\n" +
+"}\n" +
+"function checkNull$c(value, field, multiple) {\n" +
+"    if (value !== null)\n" +
+"        errorHelper$g(field, value, \"null\");\n" +
 "}\n" +
 "function errorHelper$g(field, d, type) {\n" +
 "    if (type.includes(' | ')) {\n" +
@@ -4329,11 +4616,11 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "}\n" +
 "\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
-"const proxyName$f = 'APIDMSItemList';\n" +
+"const proxyName$f = 'APIDMSItemListParams';\n" +
 "let obj$f = null;\n" +
-"class APIDMSItemList {\n" +
+"class APIDMSItemListParams {\n" +
 "    static Parse(d) {\n" +
-"        return APIDMSItemList.Create(JSON.parse(d));\n" +
+"        return APIDMSItemListParams.Create(JSON.parse(d));\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
@@ -4349,72 +4636,298 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$f(field, d);\n" +
 "        }\n" +
-"        checkString$e(d.filters, field + \".filters\");\n" +
-"        checkArray$8(d.items, field + \".items\");\n" +
-"        if (d.items) {\n" +
-"            for (let i = 0; i < d.items.length; i++) {\n" +
-"                d.items[i] = ItemsEntity.Create(d.items[i], field + \".items\" + \"[\" + i + \"]\", undefined);\n" +
+"        if (\"filter\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkArray$8(d.filter, field + \".filter\", \"FilterEntity[] | string\");\n" +
+"                if (d.filter) {\n" +
+"                    for (let i = 0; i < d.filter.length; i++) {\n" +
+"                        d.filter[i] = FilterEntity.Create(d.filter[i], field + \".filter\" + \"[\" + i + \"]\", undefined);\n" +
+"                    }\n" +
+"                }\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkString$e(d.filter, field + \".filter\", \"FilterEntity[] | string\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                    prompt(proxyName$f + ':', JSON.stringify(obj$f));\n" +
+"                }\n" +
 "            }\n" +
 "        }\n" +
-"        d.pagination = Pagination$2.Create(d.pagination, field + \".pagination\", undefined);\n" +
-"        checkString$e(d.sort, field + \".sort\");\n" +
-"        const knownProperties = [\"filters\", \"items\", \"pagination\", \"sort\"];\n" +
+"        if (\"page_name\" in d) {\n" +
+"            checkString$e(d.page_name, field + \".page_name\");\n" +
+"        }\n" +
+"        const knownProperties = [\"filter\", \"page_name\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
 "            errorHelper$f(unknownProperty, d, \"never (unknown property)\");\n" +
-"        return new APIDMSItemList(d);\n" +
+"        return new APIDMSItemListParams(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        if (\"filter\" in d)\n" +
+"            this.filter = d.filter;\n" +
+"        if (\"page_name\" in d)\n" +
+"            this.page_name = d.page_name;\n" +
+"    }\n" +
+"}\n" +
+"class FilterEntity {\n" +
+"    static Parse(d) {\n" +
+"        return FilterEntity.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$f = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$f(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$f(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$f(field, d);\n" +
+"        }\n" +
+"        checkString$e(d.field, field + \".field\");\n" +
+"        checkString$e(d.operator, field + \".operator\");\n" +
+"        checkString$e(d.value, field + \".value\");\n" +
+"        const knownProperties = [\"field\", \"operator\", \"value\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$f(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new FilterEntity(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.field = d.field;\n" +
+"        this.operator = d.operator;\n" +
+"        this.value = d.value;\n" +
+"    }\n" +
+"}\n" +
+"function throwNull2NonNull$f(field, value, multiple) {\n" +
+"    return errorHelper$f(field, value, multiple ?? \"non-nullable object\");\n" +
+"}\n" +
+"function throwNotObject$f(field, value, multiple) {\n" +
+"    return errorHelper$f(field, value, \"object\");\n" +
+"}\n" +
+"function throwIsArray$f(field, value, multiple) {\n" +
+"    return errorHelper$f(field, value, \"object\");\n" +
+"}\n" +
+"function checkArray$8(value, field, multiple) {\n" +
+"    if (!Array.isArray(value))\n" +
+"        errorHelper$f(field, value, multiple);\n" +
+"}\n" +
+"function checkString$e(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'string')\n" +
+"        errorHelper$f(field, value, multiple ?? \"string\");\n" +
+"}\n" +
+"function errorHelper$f(field, d, type) {\n" +
+"    if (type.includes(' | ')) {\n" +
+"        throw new TypeError('Expected ' + type + \" at \" + field + \" but found:\\n" +
+"\" + JSON.stringify(d) + \"\\n" +
+"\\n" +
+"Full object:\\n" +
+"\" + JSON.stringify(obj$f));\n" +
+"    }\n" +
+"    else {\n" +
+"        let jsonClone = obj$f;\n" +
+"        try {\n" +
+"            jsonClone = JSON.parse(JSON.stringify(obj$f));\n" +
+"        }\n" +
+"        catch (error) {\n" +
+"            console.log(error);\n" +
+"        }\n" +
+"        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
+"\" + JSON.stringify(d), jsonClone);\n" +
+"        prompt(proxyName$f + ':', JSON.stringify(obj$f));\n" +
+"    }\n" +
+"}\n" +
+"\n" +
+"// Stores the currently-being-typechecked object for error messages.\n" +
+"const proxyName$e = 'APIDMSItemSettings';\n" +
+"let obj$e = null;\n" +
+"class APIDMSItemSettings {\n" +
+"    static Parse(d) {\n" +
+"        return APIDMSItemSettings.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$e = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$e(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$e(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$e(field, d);\n" +
+"        }\n" +
+"        checkString$d(d.filters, field + \".filters\");\n" +
+"        checkArray$7(d.firm_admins, field + \".firm_admins\");\n" +
+"        if (d.firm_admins) {\n" +
+"            for (let i = 0; i < d.firm_admins.length; i++) {\n" +
+"                checkNever$2(d.firm_admins[i], field + \".firm_admins\" + \"[\" + i + \"]\");\n" +
+"            }\n" +
+"        }\n" +
+"        d.folder = Folder.Create(d.folder, field + \".folder\", undefined);\n" +
+"        checkBoolean$9(d.is_dms_activated_on_firm, field + \".is_dms_activated_on_firm\");\n" +
+"        checkBoolean$9(d.is_firm_admin, field + \".is_firm_admin\");\n" +
+"        d.item = Item.Create(d.item, field + \".item\", undefined);\n" +
+"        checkString$d(d.sort, field + \".sort\");\n" +
+"        const knownProperties = [\"filters\", \"firm_admins\", \"folder\", \"is_dms_activated_on_firm\", \"is_firm_admin\", \"item\", \"sort\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$e(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new APIDMSItemSettings(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
 "        this.filters = d.filters;\n" +
-"        this.items = d.items;\n" +
-"        this.pagination = d.pagination;\n" +
+"        this.firm_admins = d.firm_admins;\n" +
+"        this.folder = d.folder;\n" +
+"        this.is_dms_activated_on_firm = d.is_dms_activated_on_firm;\n" +
+"        this.is_firm_admin = d.is_firm_admin;\n" +
+"        this.item = d.item;\n" +
 "        this.sort = d.sort;\n" +
 "    }\n" +
 "}\n" +
-"class ItemsEntity {\n" +
+"class Folder {\n" +
 "    static Parse(d) {\n" +
-"        return ItemsEntity.Create(JSON.parse(d));\n" +
+"        return Folder.Create(JSON.parse(d));\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$f = d;\n" +
+"            obj$e = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
 "        if (!d) {\n" +
-"            throwNull2NonNull$f(field, d, multiple ?? this.name);\n" +
+"            throwNull2NonNull$e(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$f(field, d);\n" +
+"            throwNotObject$e(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$f(field, d);\n" +
+"            throwIsArray$e(field, d);\n" +
 "        }\n" +
 "        checkNull$b(d.archived_at, field + \".archived_at\");\n" +
-"        checkNumber$c(d.comments_count, field + \".comments_count\");\n" +
-"        checkString$e(d.created_at, field + \".created_at\");\n" +
+"        checkString$d(d.created_at, field + \".created_at\");\n" +
 "        d.creator = Creator$3.Create(d.creator, field + \".creator\", undefined);\n" +
-"        checkBoolean$9(d.favorite, field + \".favorite\");\n" +
-"        checkString$e(d.file_extension, field + \".file_extension\");\n" +
-"        checkNumber$c(d.file_size, field + \".file_size\");\n" +
-"        checkString$e(d.file_url, field + \".file_url\");\n" +
+"        checkBoolean$9(d.fixed, field + \".fixed\");\n" +
 "        checkNumber$c(d.id, field + \".id\");\n" +
 "        checkBoolean$9(d.imports_allowed, field + \".imports_allowed\");\n" +
 "        checkNumber$c(d.itemable_id, field + \".itemable_id\");\n" +
-"        checkString$e(d.method, field + \".method\");\n" +
-"        checkString$e(d.name, field + \".name\");\n" +
+"        checkString$d(d.method, field + \".method\");\n" +
+"        checkString$d(d.name, field + \".name\");\n" +
 "        checkNumber$c(d.parent_id, field + \".parent_id\");\n" +
-"        checkString$e(d.pusher_channel, field + \".pusher_channel\");\n" +
+"        checkBoolean$9(d.shared, field + \".shared\");\n" +
+"        checkString$d(d.type, field + \".type\");\n" +
+"        checkString$d(d.updated_at, field + \".updated_at\");\n" +
+"        checkBoolean$9(d.visible, field + \".visible\");\n" +
+"        const knownProperties = [\"archived_at\", \"created_at\", \"creator\", \"fixed\", \"id\", \"imports_allowed\", \"itemable_id\", \"method\", \"name\", \"parent_id\", \"shared\", \"type\", \"updated_at\", \"visible\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$e(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new Folder(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.archived_at = d.archived_at;\n" +
+"        this.created_at = d.created_at;\n" +
+"        this.creator = d.creator;\n" +
+"        this.fixed = d.fixed;\n" +
+"        this.id = d.id;\n" +
+"        this.imports_allowed = d.imports_allowed;\n" +
+"        this.itemable_id = d.itemable_id;\n" +
+"        this.method = d.method;\n" +
+"        this.name = d.name;\n" +
+"        this.parent_id = d.parent_id;\n" +
+"        this.shared = d.shared;\n" +
+"        this.type = d.type;\n" +
+"        this.updated_at = d.updated_at;\n" +
+"        this.visible = d.visible;\n" +
+"    }\n" +
+"}\n" +
+"let Creator$3 = class Creator {\n" +
+"    static Parse(d) {\n" +
+"        return Creator.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$e = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$e(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$e(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$e(field, d);\n" +
+"        }\n" +
+"        checkString$d(d.email, field + \".email\");\n" +
+"        checkString$d(d.first_name, field + \".first_name\");\n" +
+"        checkString$d(d.full_name, field + \".full_name\");\n" +
+"        checkString$d(d.last_name, field + \".last_name\");\n" +
+"        checkString$d(d.role, field + \".role\");\n" +
+"        const knownProperties = [\"email\", \"first_name\", \"full_name\", \"last_name\", \"role\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$e(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new Creator(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.email = d.email;\n" +
+"        this.first_name = d.first_name;\n" +
+"        this.full_name = d.full_name;\n" +
+"        this.last_name = d.last_name;\n" +
+"        this.role = d.role;\n" +
+"    }\n" +
+"};\n" +
+"class Item {\n" +
+"    static Parse(d) {\n" +
+"        return Item.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$e = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$e(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$e(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$e(field, d);\n" +
+"        }\n" +
+"        checkNull$b(d.archived_at, field + \".archived_at\");\n" +
+"        checkNumber$c(d.comments_count, field + \".comments_count\");\n" +
+"        checkString$d(d.created_at, field + \".created_at\");\n" +
+"        d.creator = Creator$3.Create(d.creator, field + \".creator\", undefined);\n" +
+"        checkBoolean$9(d.favorite, field + \".favorite\");\n" +
+"        checkString$d(d.file_extension, field + \".file_extension\");\n" +
+"        checkNumber$c(d.file_size, field + \".file_size\");\n" +
+"        checkString$d(d.file_url, field + \".file_url\");\n" +
+"        checkNumber$c(d.id, field + \".id\");\n" +
+"        checkBoolean$9(d.imports_allowed, field + \".imports_allowed\");\n" +
+"        checkNumber$c(d.itemable_id, field + \".itemable_id\");\n" +
+"        checkString$d(d.method, field + \".method\");\n" +
+"        checkString$d(d.name, field + \".name\");\n" +
+"        checkNumber$c(d.parent_id, field + \".parent_id\");\n" +
+"        checkString$d(d.pusher_channel, field + \".pusher_channel\");\n" +
 "        checkBoolean$9(d.readonly, field + \".readonly\");\n" +
 "        checkNull$b(d.reference_link, field + \".reference_link\");\n" +
 "        checkBoolean$9(d.shared, field + \".shared\");\n" +
-"        checkString$e(d.signed_id, field + \".signed_id\");\n" +
-"        checkString$e(d.type, field + \".type\");\n" +
-"        checkString$e(d.updated_at, field + \".updated_at\");\n" +
+"        checkString$d(d.signed_id, field + \".signed_id\");\n" +
+"        checkString$d(d.type, field + \".type\");\n" +
+"        checkString$d(d.updated_at, field + \".updated_at\");\n" +
 "        const knownProperties = [\"archived_at\", \"comments_count\", \"created_at\", \"creator\", \"favorite\", \"file_extension\", \"file_size\", \"file_url\", \"id\", \"imports_allowed\", \"itemable_id\", \"method\", \"name\", \"parent_id\", \"pusher_channel\", \"readonly\", \"reference_link\", \"shared\", \"signed_id\", \"type\", \"updated_at\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$f(unknownProperty, d, \"never (unknown property)\");\n" +
-"        return new ItemsEntity(d);\n" +
+"            errorHelper$e(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new Item(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
 "        this.archived_at = d.archived_at;\n" +
@@ -4440,224 +4953,6 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        this.updated_at = d.updated_at;\n" +
 "    }\n" +
 "}\n" +
-"let Creator$3 = class Creator {\n" +
-"    static Parse(d) {\n" +
-"        return Creator.Create(JSON.parse(d));\n" +
-"    }\n" +
-"    static Create(d, field, multiple) {\n" +
-"        if (!field) {\n" +
-"            obj$f = d;\n" +
-"            field = \"root\";\n" +
-"        }\n" +
-"        if (!d) {\n" +
-"            throwNull2NonNull$f(field, d, multiple ?? this.name);\n" +
-"        }\n" +
-"        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$f(field, d);\n" +
-"        }\n" +
-"        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$f(field, d);\n" +
-"        }\n" +
-"        checkString$e(d.email, field + \".email\");\n" +
-"        checkString$e(d.first_name, field + \".first_name\");\n" +
-"        checkString$e(d.full_name, field + \".full_name\");\n" +
-"        checkString$e(d.last_name, field + \".last_name\");\n" +
-"        checkString$e(d.role, field + \".role\");\n" +
-"        const knownProperties = [\"email\", \"first_name\", \"full_name\", \"last_name\", \"role\"];\n" +
-"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
-"        if (unknownProperty)\n" +
-"            errorHelper$f(unknownProperty, d, \"never (unknown property)\");\n" +
-"        return new Creator(d);\n" +
-"    }\n" +
-"    constructor(d) {\n" +
-"        this.email = d.email;\n" +
-"        this.first_name = d.first_name;\n" +
-"        this.full_name = d.full_name;\n" +
-"        this.last_name = d.last_name;\n" +
-"        this.role = d.role;\n" +
-"    }\n" +
-"};\n" +
-"let Pagination$2 = class Pagination {\n" +
-"    static Parse(d) {\n" +
-"        return Pagination.Create(JSON.parse(d));\n" +
-"    }\n" +
-"    static Create(d, field, multiple) {\n" +
-"        if (!field) {\n" +
-"            obj$f = d;\n" +
-"            field = \"root\";\n" +
-"        }\n" +
-"        if (!d) {\n" +
-"            throwNull2NonNull$f(field, d, multiple ?? this.name);\n" +
-"        }\n" +
-"        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$f(field, d);\n" +
-"        }\n" +
-"        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$f(field, d);\n" +
-"        }\n" +
-"        checkBoolean$9(d.hasNextPage, field + \".hasNextPage\");\n" +
-"        checkNumber$c(d.page, field + \".page\");\n" +
-"        checkNumber$c(d.pages, field + \".pages\");\n" +
-"        checkNumber$c(d.pageSize, field + \".pageSize\");\n" +
-"        checkNumber$c(d.totalEntries, field + \".totalEntries\");\n" +
-"        checkString$e(d.totalEntriesPrecision, field + \".totalEntriesPrecision\");\n" +
-"        checkString$e(d.totalEntriesStr, field + \".totalEntriesStr\");\n" +
-"        const knownProperties = [\"hasNextPage\", \"page\", \"pages\", \"pageSize\", \"totalEntries\", \"totalEntriesPrecision\", \"totalEntriesStr\"];\n" +
-"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
-"        if (unknownProperty)\n" +
-"            errorHelper$f(unknownProperty, d, \"never (unknown property)\");\n" +
-"        return new Pagination(d);\n" +
-"    }\n" +
-"    constructor(d) {\n" +
-"        this.hasNextPage = d.hasNextPage;\n" +
-"        this.page = d.page;\n" +
-"        this.pages = d.pages;\n" +
-"        this.pageSize = d.pageSize;\n" +
-"        this.totalEntries = d.totalEntries;\n" +
-"        this.totalEntriesPrecision = d.totalEntriesPrecision;\n" +
-"        this.totalEntriesStr = d.totalEntriesStr;\n" +
-"    }\n" +
-"};\n" +
-"function throwNull2NonNull$f(field, value, multiple) {\n" +
-"    return errorHelper$f(field, value, multiple ?? \"non-nullable object\");\n" +
-"}\n" +
-"function throwNotObject$f(field, value, multiple) {\n" +
-"    return errorHelper$f(field, value, \"object\");\n" +
-"}\n" +
-"function throwIsArray$f(field, value, multiple) {\n" +
-"    return errorHelper$f(field, value, \"object\");\n" +
-"}\n" +
-"function checkArray$8(value, field, multiple) {\n" +
-"    if (!Array.isArray(value))\n" +
-"        errorHelper$f(field, value, \"array\");\n" +
-"}\n" +
-"function checkNumber$c(value, field, multiple) {\n" +
-"    if (typeof (value) !== 'number')\n" +
-"        errorHelper$f(field, value, \"number\");\n" +
-"}\n" +
-"function checkBoolean$9(value, field, multiple) {\n" +
-"    if (typeof (value) !== 'boolean')\n" +
-"        errorHelper$f(field, value, \"boolean\");\n" +
-"}\n" +
-"function checkString$e(value, field, multiple) {\n" +
-"    if (typeof (value) !== 'string')\n" +
-"        errorHelper$f(field, value, \"string\");\n" +
-"}\n" +
-"function checkNull$b(value, field, multiple) {\n" +
-"    if (value !== null)\n" +
-"        errorHelper$f(field, value, \"null\");\n" +
-"}\n" +
-"function errorHelper$f(field, d, type) {\n" +
-"    if (type.includes(' | ')) {\n" +
-"        throw new TypeError('Expected ' + type + \" at \" + field + \" but found:\\n" +
-"\" + JSON.stringify(d) + \"\\n" +
-"\\n" +
-"Full object:\\n" +
-"\" + JSON.stringify(obj$f));\n" +
-"    }\n" +
-"    else {\n" +
-"        let jsonClone = obj$f;\n" +
-"        try {\n" +
-"            jsonClone = JSON.parse(JSON.stringify(obj$f));\n" +
-"        }\n" +
-"        catch (error) {\n" +
-"            console.log(error);\n" +
-"        }\n" +
-"        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
-"\" + JSON.stringify(d), jsonClone);\n" +
-"        prompt(proxyName$f + ':', JSON.stringify(obj$f));\n" +
-"    }\n" +
-"}\n" +
-"\n" +
-"// Stores the currently-being-typechecked object for error messages.\n" +
-"const proxyName$e = 'APIDMSItemListParams';\n" +
-"let obj$e = null;\n" +
-"class APIDMSItemListParams {\n" +
-"    static Parse(d) {\n" +
-"        return APIDMSItemListParams.Create(JSON.parse(d));\n" +
-"    }\n" +
-"    static Create(d, field, multiple) {\n" +
-"        if (!field) {\n" +
-"            obj$e = d;\n" +
-"            field = \"root\";\n" +
-"        }\n" +
-"        if (!d) {\n" +
-"            throwNull2NonNull$e(field, d, multiple ?? this.name);\n" +
-"        }\n" +
-"        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$e(field, d);\n" +
-"        }\n" +
-"        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$e(field, d);\n" +
-"        }\n" +
-"        if (\"filter\" in d) {\n" +
-"            // This will be refactored in the next release.\n" +
-"            try {\n" +
-"                checkArray$7(d.filter, field + \".filter\", \"FilterEntity[] | string\");\n" +
-"                if (d.filter) {\n" +
-"                    for (let i = 0; i < d.filter.length; i++) {\n" +
-"                        d.filter[i] = FilterEntity.Create(d.filter[i], field + \".filter\" + \"[\" + i + \"]\", undefined);\n" +
-"                    }\n" +
-"                }\n" +
-"            }\n" +
-"            catch (e) {\n" +
-"                try {\n" +
-"                    checkString$d(d.filter, field + \".filter\", \"FilterEntity[] | string\");\n" +
-"                }\n" +
-"                catch (e) {\n" +
-"                    prompt(proxyName$e + ':', JSON.stringify(obj$e));\n" +
-"                }\n" +
-"            }\n" +
-"        }\n" +
-"        if (\"page_name\" in d) {\n" +
-"            checkString$d(d.page_name, field + \".page_name\");\n" +
-"        }\n" +
-"        const knownProperties = [\"filter\", \"page_name\"];\n" +
-"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
-"        if (unknownProperty)\n" +
-"            errorHelper$e(unknownProperty, d, \"never (unknown property)\");\n" +
-"        return new APIDMSItemListParams(d);\n" +
-"    }\n" +
-"    constructor(d) {\n" +
-"        if (\"filter\" in d)\n" +
-"            this.filter = d.filter;\n" +
-"        if (\"page_name\" in d)\n" +
-"            this.page_name = d.page_name;\n" +
-"    }\n" +
-"}\n" +
-"class FilterEntity {\n" +
-"    static Parse(d) {\n" +
-"        return FilterEntity.Create(JSON.parse(d));\n" +
-"    }\n" +
-"    static Create(d, field, multiple) {\n" +
-"        if (!field) {\n" +
-"            obj$e = d;\n" +
-"            field = \"root\";\n" +
-"        }\n" +
-"        if (!d) {\n" +
-"            throwNull2NonNull$e(field, d, multiple ?? this.name);\n" +
-"        }\n" +
-"        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$e(field, d);\n" +
-"        }\n" +
-"        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$e(field, d);\n" +
-"        }\n" +
-"        checkString$d(d.field, field + \".field\");\n" +
-"        checkString$d(d.operator, field + \".operator\");\n" +
-"        checkString$d(d.value, field + \".value\");\n" +
-"        const knownProperties = [\"field\", \"operator\", \"value\"];\n" +
-"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
-"        if (unknownProperty)\n" +
-"            errorHelper$e(unknownProperty, d, \"never (unknown property)\");\n" +
-"        return new FilterEntity(d);\n" +
-"    }\n" +
-"    constructor(d) {\n" +
-"        this.field = d.field;\n" +
-"        this.operator = d.operator;\n" +
-"        this.value = d.value;\n" +
-"    }\n" +
-"}\n" +
 "function throwNull2NonNull$e(field, value, multiple) {\n" +
 "    return errorHelper$e(field, value, multiple ?? \"non-nullable object\");\n" +
 "}\n" +
@@ -4669,11 +4964,26 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "}\n" +
 "function checkArray$7(value, field, multiple) {\n" +
 "    if (!Array.isArray(value))\n" +
-"        errorHelper$e(field, value, multiple);\n" +
+"        errorHelper$e(field, value, \"array\");\n" +
+"}\n" +
+"function checkNumber$c(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'number')\n" +
+"        errorHelper$e(field, value, \"number\");\n" +
+"}\n" +
+"function checkBoolean$9(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'boolean')\n" +
+"        errorHelper$e(field, value, \"boolean\");\n" +
 "}\n" +
 "function checkString$d(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'string')\n" +
-"        errorHelper$e(field, value, multiple ?? \"string\");\n" +
+"        errorHelper$e(field, value, \"string\");\n" +
+"}\n" +
+"function checkNull$b(value, field, multiple) {\n" +
+"    if (value !== null)\n" +
+"        errorHelper$e(field, value, \"null\");\n" +
+"}\n" +
+"function checkNever$2(value, field, multiple) {\n" +
+"    return errorHelper$e(field, value, \"never\");\n" +
 "}\n" +
 "function errorHelper$e(field, d, type) {\n" +
 "    if (type.includes(' | ')) {\n" +
@@ -5319,14 +5629,14 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    return list.dms_links.map(link => APIDMSLink.Create(link));\n" +
 "}\n" +
 "async function getDMSItem(id) {\n" +
-"    const response = await apiRequest(`dms/items/${id}.json`, null, 'GET');\n" +
+"    const response = await apiRequest(`dms/items/${id}`, null, 'GET');\n" +
 "    const data = await response?.json();\n" +
 "    if (!data)\n" +
-"        return data;\n" +
+"        return (await getDMSItemSettings(id)).item;\n" +
 "    return APIDMSItem.Create(data);\n" +
 "}\n" +
 "async function getDMSItemLinks(dmsFileId) {\n" +
-"    const response = await apiRequest(`dms/files/${dmsFileId}/links`, null, 'GET');\n" +
+"    const response = await dmsRequest({ url: `dms/files/${dmsFileId}/links` });\n" +
 "    const data = await response?.json();\n" +
 "    if (!data)\n" +
 "        return data;\n" +
@@ -5337,9 +5647,13 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    const links = data.map(item => APIDMSItemLink.Create(item));\n" +
 "    return links;\n" +
 "}\n" +
-"/**\n" +
-" * Récupérer les infos sur un item DMS : https://app.pennylane.com/companies/21936866/dms/items/settings.json?sort=%2Bname&filter=&item_id=90315271\n" +
-" */\n" +
+"async function getDMSItemSettings(id) {\n" +
+"    const response = await apiRequest(`dms/items/settings.json?filter=&item_id=${id}`, null, 'GET');\n" +
+"    const data = await response?.json();\n" +
+"    if (!data)\n" +
+"        return data;\n" +
+"    return APIDMSItemSettings.Create(data);\n" +
+"}\n" +
 "/**\n" +
 " * Load list of DMS from API. paginated.\n" +
 " */\n" +
@@ -5369,6 +5683,16 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "async function createDMSLink(dmsFileId, recordId, recordType) {\n" +
 "    const response = await apiRequest('dms/links/batch_create', { dms_links: { record_ids: [recordId], record_type: recordType, dms_file_ids: [dmsFileId] } }, 'POST');\n" +
 "    return APIDMSCreateLink.Create(await response.json());\n" +
+"}\n" +
+"/**\n" +
+" * Api request without X-... headers\n" +
+" */\n" +
+"async function dmsRequest(options) {\n" +
+"    return await apiRequest({\n" +
+"        headers: { Accept: 'application/json' },\n" +
+"        method: 'GET',\n" +
+"        ...options,\n" +
+"    });\n" +
 "}\n" +
 "\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
@@ -8399,7 +8723,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                d.dump = Dump.Create(d.dump, field + \".dump\", \"null | Dump\");\n" +
+"                d.dump = Dump$1.Create(d.dump, field + \".dump\", \"null | Dump\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                prompt(proxyName$2 + ':', JSON.stringify(obj$2));\n" +
@@ -8537,7 +8861,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        this.triggered_manually = d.triggered_manually;\n" +
 "    }\n" +
 "};\n" +
-"class Dump {\n" +
+"let Dump$1 = class Dump {\n" +
 "    static Parse(d) {\n" +
 "        return Dump.Create(JSON.parse(d));\n" +
 "    }\n" +
@@ -8569,7 +8893,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        this.creator = d.creator;\n" +
 "        this.type = d.type;\n" +
 "    }\n" +
-"}\n" +
+"};\n" +
 "function throwNull2NonNull$2(field, value, multiple) {\n" +
 "    return errorHelper$2(field, value, multiple ?? \"non-nullable object\");\n" +
 "}\n" +
@@ -8662,11 +8986,55 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkNumber(d.company_id, field + \".company_id\");\n" +
 "        checkString(d.currency, field + \".currency\");\n" +
 "        checkString(d.currency_amount, field + \".currency_amount\");\n" +
-"        checkString(d.currency_fee, field + \".currency_fee\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkString(d.currency_fee, field + \".currency_fee\", \"string | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$1(d.currency_fee, field + \".currency_fee\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$1 + ':', JSON.stringify(obj$1));\n" +
+"            }\n" +
+"        }\n" +
 "        checkString(d.date, field + \".date\");\n" +
-"        checkNull$1(d.dump, field + \".dump\");\n" +
-"        checkNull$1(d.dump_id, field + \".dump_id\");\n" +
-"        checkString(d.fee, field + \".fee\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$1(d.dump, field + \".dump\", \"null | Dump\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                d.dump = Dump.Create(d.dump, field + \".dump\", \"null | Dump\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$1 + ':', JSON.stringify(obj$1));\n" +
+"            }\n" +
+"        }\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$1(d.dump_id, field + \".dump_id\", \"null | number\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNumber(d.dump_id, field + \".dump_id\", \"null | number\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$1 + ':', JSON.stringify(obj$1));\n" +
+"            }\n" +
+"        }\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkString(d.fee, field + \".fee\", \"string | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$1(d.fee, field + \".fee\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$1 + ':', JSON.stringify(obj$1));\n" +
+"            }\n" +
+"        }\n" +
 "        checkNumber(d.files_count, field + \".files_count\");\n" +
 "        checkString(d.gross_amount, field + \".gross_amount\");\n" +
 "        checkString(d.group_uuid, field + \".group_uuid\");\n" +
@@ -8738,9 +9106,31 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$1(field, d);\n" +
 "        }\n" +
-"        checkString(d.created_at, field + \".created_at\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkString(d.created_at, field + \".created_at\", \"string | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$1(d.created_at, field + \".created_at\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$1 + ':', JSON.stringify(obj$1));\n" +
+"            }\n" +
+"        }\n" +
 "        checkNull$1(d.error_message, field + \".error_message\");\n" +
-"        checkBoolean(d.triggered_manually, field + \".triggered_manually\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkBoolean(d.triggered_manually, field + \".triggered_manually\", \"boolean | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$1(d.triggered_manually, field + \".triggered_manually\", \"boolean | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$1 + ':', JSON.stringify(obj$1));\n" +
+"            }\n" +
+"        }\n" +
 "        const knownProperties = [\"created_at\", \"error_message\", \"triggered_manually\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -8751,6 +9141,39 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        this.created_at = d.created_at;\n" +
 "        this.error_message = d.error_message;\n" +
 "        this.triggered_manually = d.triggered_manually;\n" +
+"    }\n" +
+"}\n" +
+"class Dump {\n" +
+"    static Parse(d) {\n" +
+"        return Dump.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$1 = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$1(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$1(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$1(field, d);\n" +
+"        }\n" +
+"        checkString(d.created_at, field + \".created_at\");\n" +
+"        checkString(d.creator, field + \".creator\");\n" +
+"        checkString(d.type, field + \".type\");\n" +
+"        const knownProperties = [\"created_at\", \"creator\", \"type\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$1(unknownProperty, d, \"never (unknown property)\");\n" +
+"        return new Dump(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.created_at = d.created_at;\n" +
+"        this.creator = d.creator;\n" +
+"        this.type = d.type;\n" +
 "    }\n" +
 "}\n" +
 "function throwNull2NonNull$1(field, value, multiple) {\n" +
@@ -8764,11 +9187,11 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "}\n" +
 "function checkNumber(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'number')\n" +
-"        errorHelper$1(field, value, \"number\");\n" +
+"        errorHelper$1(field, value, multiple ?? \"number\");\n" +
 "}\n" +
 "function checkBoolean(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'boolean')\n" +
-"        errorHelper$1(field, value, \"boolean\");\n" +
+"        errorHelper$1(field, value, multiple ?? \"boolean\");\n" +
 "}\n" +
 "function checkString(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'string')\n" +
@@ -9000,7 +9423,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                {\n" +
 "                    title: 'Reçu de don',\n" +
 "                    text: 'CERFA n°&lt;n° de cerfa&gt; - &lt;nom donateur&gt; - jj/mm/aaa - &lt;montant&gt;€',\n" +
-"                    regex: /^CERFA n° ?\\d* - .* - [0123]\\d\\/[01]\\d\\/\\d{4} - [\\d .]*(?:,\\d\\d)? ?€$/u,\n" +
+"                    regex: /^CERFA n° ?[\\d-]* - .* - [0123]\\d\\/[01]\\d\\/\\d{4} - [\\d .]*(?:,\\d\\d)? ?€$/u,\n" +
 "                }\n" +
 "            ];\n" +
 "            const match = templates.some(template => template.regex.test(item.name));\n" +
@@ -9023,7 +9446,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                {\n" +
 "                    title: 'Reçu de don à une association',\n" +
 "                    text: 'CERFA n°&lt;n° de cerfa&gt; - &lt;nom bénéficiaire&gt; - jj/mm/aaa - &lt;montant&gt;€',\n" +
-"                    regex: /^CERFA n° ?\\d* - .* - [0123]\\d\\/[01]\\d\\/\\d{4} - [\\d .]*(?:,\\d\\d)? ?€$/u,\n" +
+"                    regex: /^CERFA n° ?[\\d-]* - .* - [0123]\\d\\/[01]\\d\\/\\d{4} - [\\d .]*(?:,\\d\\d)? ?€$/u,\n" +
 "                },\n" +
 "                {\n" +
 "                    title: 'Reçu d\\'octroi d\\'aide',\n" +
@@ -9039,10 +9462,57 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        >Le nom de fichier doit correspondre à un de ces modèles ⓘ</a><ul style=\"margin:0;padding:0.8em;\">${templates.map(it => `<li><b>${it.title} :</b><code>${it.text}</code></li>`).join('')}</ul>`;\n" +
 "            }\n" +
 "        }\n" +
+"        const isReceivedTransfer = transactions.some(transaction => [\n" +
+"            'VIR INST RE',\n" +
+"            'VIR RECU',\n" +
+"            'VIR INSTANTANE RECU DE:',\n" +
+"        ].some(label => transaction.record_name.startsWith(label)));\n" +
+"        if (isReceivedTransfer) {\n" +
+"            const templates = [\n" +
+"                {\n" +
+"                    title: 'Reçu de don',\n" +
+"                    text: 'CERFA n°&lt;n° de cerfa&gt; - &lt;nom donateur&gt; - jj/mm/aaa - &lt;montant&gt;€',\n" +
+"                    regex: /^CERFA n° ?[\\d-]* - .* - [0123]\\d\\/[01]\\d\\/\\d{4} - [\\d .]*(?:,\\d\\d)? ?€$/u,\n" +
+"                },\n" +
+"            ];\n" +
+"            const match = templates.some(template => template.regex.test(item.name));\n" +
+"            if (!match) {\n" +
+"                return `<a\n" +
+"          title=\"Le nom des fichiers attachés à un virement reçu doit correspondre à un de ces modèles. Cliquer ici pour plus d'informations.\"\n" +
+"          href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Nom%20fichier%20GED\"\n" +
+"        >Le nom de fichier doit correspondre à un de ces modèles ⓘ</a><ul style=\"margin:0;padding:0.8em;\">${templates.map(it => `<li><b>${it.title} :</b><code>${it.text}</code></li>`).join('')}</ul>`;\n" +
+"            }\n" +
+"        }\n" +
+"        const isEmittedTransfer = transactions.some(transaction => [\n" +
+"            'VIR EUROPEEN EMIS'\n" +
+"        ].some(label => transaction.record_name.includes(label)));\n" +
+"        if (isEmittedTransfer) {\n" +
+"            const templates = [\n" +
+"                {\n" +
+"                    title: 'Reçu de don à une association',\n" +
+"                    text: 'CERFA n°&lt;n° de cerfa&gt; - &lt;nom bénéficiaire&gt; - jj/mm/aaa - &lt;montant&gt;€',\n" +
+"                    regex: /^CERFA n° ?[\\d-]* - .* - [0123]\\d\\/[01]\\d\\/\\d{4} - [\\d .]*(?:,\\d\\d)? ?€$/u,\n" +
+"                },\n" +
+"                {\n" +
+"                    title: 'Reçu d\\'octroi d\\'aide',\n" +
+"                    text: 'AIDES - &lt;nom bénéficiaire !!sans le prénom!!&gt; - jj/mm/aaa - &lt;montant&gt;€',\n" +
+"                    regex: /^AIDES?\\d* - .* - [0123]\\d\\/[01]\\d\\/\\d{4} - [\\d .]*(?:,\\d\\d)? ?€$/u,\n" +
+"                },\n" +
+"            ];\n" +
+"            const match = templates.some(template => template.regex.test(item.name));\n" +
+"            if (!match) {\n" +
+"                return `<a\n" +
+"          title=\"Le nom des fichiers attachés à un virement émis doit correspondre à un de ces modèles. Cliquer ici pour plus d'informations.\"\n" +
+"          href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Nom%20fichier%20GED\"\n" +
+"        >Le nom de fichier doit correspondre à un de ces modèles ⓘ</a><ul style=\"margin:0;padding:0.8em;\">${templates.map(it => `<li><b>${it.title} :</b><code>${it.text}</code></li>`).join('')}</ul>`;\n" +
+"            }\n" +
+"        }\n" +
 "        return 'OK';\n" +
 "    }\n" +
 "}\n" +
 "\n" +
+"const user = localStorage.getItem('user') ?? 'assistant';\n" +
+"/// DMS 2025 - Clients Ventes : 21994066\n" +
 "class Transaction extends ValidableDocument {\n" +
 "    constructor(raw) {\n" +
 "        super(raw);\n" +
@@ -9058,24 +9528,65 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    async getDMSLinks() {\n" +
 "        return await super.getDMSLinks('Transaction');\n" +
 "    }\n" +
+"    isCurrent() {\n" +
+"        return String(this.id) === getParam(location.href, 'transaction_id');\n" +
+"    }\n" +
 "    async loadValidMessage() {\n" +
-"        const isCurrent = String(this.id) === getParam(location.href, 'transaction_id');\n" +
-"        if (isCurrent)\n" +
+"        if (this.isCurrent())\n" +
 "            this.log('loadValidMessage', this);\n" +
+"        const status = (await this.isClosed()\n" +
+"            ?? await this.isArchived()\n" +
+"            ?? await this.hasMalnammedDMSLink()\n" +
+"            ?? await this.is2025()\n" +
+"            ?? await this.hasVAT()\n" +
+"            ?? await this.isMissingBanking()\n" +
+"            ?? await this.isUnbalanced()\n" +
+"            ?? await this.isMissingCounterpart()\n" +
+"            ?? await this.isWrongDonationCounterpart()\n" +
+"            ?? await this.isTrashCounterpart()\n" +
+"            //?? await this.isMissingAttachment() // déjà inclus dans isUnbalanced()\n" +
+"            ?? await this.isOldUnbalanced()\n" +
+"            ?? await this.isBankFees()\n" +
+"            ?? await this.isAllodons()\n" +
+"            ?? await this.isDonationRenewal()\n" +
+"            ?? await this.isTransfer()\n" +
+"            ?? await this.isAid()\n" +
+"            ?? 'OK');\n" +
+"        const assistant = [\n" +
+"            'orange',\n" +
+"        ];\n" +
+"        if (assistant.some(needle => status.includes(needle)) === (user === 'assistant')\n" +
+"            || this.isCurrent())\n" +
+"            return status;\n" +
+"        return 'OK';\n" +
+"    }\n" +
+"    async is2025() {\n" +
+"        const doc = await this.getDocument();\n" +
+"        if (doc.date.startsWith('2025')) {\n" +
+"            return (await this.isUnbalanced()\n" +
+"                ?? await this.isMissingAttachment()\n" +
+"                ?? 'OK');\n" +
+"        }\n" +
+"    }\n" +
+"    async isClosed() {\n" +
 "        const ledgerEvents = await this.getLedgerEvents();\n" +
 "        // Fait partie d'un exercice clos\n" +
 "        if (ledgerEvents.some(event => event.closed)) {\n" +
-"            if (isCurrent)\n" +
+"            if (this.isCurrent())\n" +
 "                this.log('fait partie d\\'un exercice clos');\n" +
 "            return 'OK';\n" +
 "        }\n" +
+"    }\n" +
+"    async isArchived() {\n" +
 "        // Transaction archivée\n" +
 "        const doc = await this.getDocument();\n" +
 "        if (doc.archived) {\n" +
-"            if (isCurrent)\n" +
+"            if (this.isCurrent())\n" +
 "                this.log('transaction archivée');\n" +
 "            return 'OK';\n" +
 "        }\n" +
+"    }\n" +
+"    async hasMalnammedDMSLink() {\n" +
 "        // Fichiers DMS mal nommés\n" +
 "        const dmsLinks = await this.getDMSLinks();\n" +
 "        for (const dmsLink of dmsLinks) {\n" +
@@ -9084,46 +9595,281 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            if (dmsStatus !== 'OK')\n" +
 "                return `Corriger les noms des fichiers attachés dans l'onglet \"Réconciliation\" (surlignés en orange)`;\n" +
 "        }\n" +
+"    }\n" +
+"    async isMissingBanking() {\n" +
 "        // Pas de rapprochement bancaire\n" +
+"        const doc = await this.getDocument();\n" +
 "        const groupedDocuments = await this.getGroupedDocuments();\n" +
 "        const groupedDoc = groupedDocuments.find(gdoc => gdoc.id === doc.id);\n" +
 "        const recent = (Date.now() - new Date(doc.date).getTime()) < 86400000 * 30;\n" +
-"        if (!recent && !groupedDoc.reconciled)\n" +
-"            return 'Cette transaction n\\'est pas rattachée à un rapprochement bancaire';\n" +
+"        if (!recent && !groupedDoc.reconciled) {\n" +
+"            return `<a\n" +
+"        title=\"Cliquer ici pour plus d'informations.\"\n" +
+"        href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FRapprochements%20bancaires\"\n" +
+"      >Cette transaction n\\'est pas rattachée à un rapprochement bancaire ⓘ</a>`;\n" +
+"        }\n" +
 "        this.debug('loadValidMessage > rapprochement bancaire', {\n" +
 "            recent,\n" +
 "            reconciled: groupedDocuments.find(gdoc => gdoc.id === doc.id),\n" +
 "        });\n" +
+"    }\n" +
+"    async isUnbalanced() {\n" +
+"        const ledgerEvents = await this.getLedgerEvents();\n" +
+"        const groupedDocuments = await this.getGroupedDocuments();\n" +
+"        const dmsLinks = await this.getDMSLinks();\n" +
+"        // balance déséquilibrée - version exigeante\n" +
+"        const balance = { transaction: 0 };\n" +
+"        groupedDocuments\n" +
+"            .sort((a, b) => Number(b.type === 'Transaction') - Number(a.type === 'Transaction'))\n" +
+"            .forEach(gdoc => {\n" +
+"            if (this.isCurrent())\n" +
+"                this.debug('balance counting', jsonClone({ gdoc, balance }));\n" +
+"            const coeff = (gdoc.type === 'Invoice' && gdoc.journal.code === 'HA') ? -1 : 1;\n" +
+"            const value = parseFloat(gdoc.amount) * coeff;\n" +
+"            if (gdoc.type === 'Transaction')\n" +
+"                balance.transaction += value;\n" +
+"            else if (/ CERFA | AIDES - /u.test(gdoc.label))\n" +
+"                balance.Reçu = (balance.Reçu ?? 0) + (value * Math.sign(balance.transaction));\n" +
+"            else if (/ CHQ(?:\\d|\\s)/u.test(gdoc.label))\n" +
+"                balance.CHQ = (balance.CHQ ?? 0) + (value * Math.sign(balance.transaction));\n" +
+"            else\n" +
+"                balance.autre = (balance.autre ?? 0) + value;\n" +
+"        });\n" +
+"        dmsLinks.forEach(dmsLink => {\n" +
+"            if (this.isCurrent())\n" +
+"                this.debug('balance counting', jsonClone({ dmsLink, balance }));\n" +
+"            if (dmsLink.name.startsWith('CHQ')) {\n" +
+"                const amount = dmsLink.name.match(/- (?<amount>[\\d \\.]*) ?€$/u)?.groups.amount;\n" +
+"                balance.CHQ = (balance.CHQ ?? 0) + (parseFloat(amount ?? '0') * Math.sign(balance.transaction));\n" +
+"            }\n" +
+"            if (/^(?:CERFA|AIDES) /u.test(dmsLink.name)) {\n" +
+"                if (this.isCurrent())\n" +
+"                    this.log('aide trouvée', { dmsLink });\n" +
+"                const amount = dmsLink.name.match(/- (?<amount>[\\d \\.]*) ?€$/u)?.groups.amount;\n" +
+"                balance.Reçu = (balance.Reçu ?? 0) + (parseFloat(amount ?? '0') * Math.sign(balance.transaction));\n" +
+"            }\n" +
+"        });\n" +
+"        ledgerEvents.forEach(event => {\n" +
+"            // pertes/gains de change\n" +
+"            if (['47600001', '656', '75800002'].includes(event.planItem.number)) {\n" +
+"                balance.autre = (balance.autre ?? 0) + parseFloat(event.amount);\n" +
+"            }\n" +
+"        });\n" +
+"        if (this.isCurrent())\n" +
+"            this.log({ balance });\n" +
+"        let message = (await this.isCheckRemittance(balance)\n" +
+"            ?? await this.hasUnbalancedReceipt(balance)\n" +
+"            ?? await this.isOtherUnbalanced(balance));\n" +
+"        if (this.isCurrent())\n" +
+"            this.log('balance:', balance);\n" +
+"        if (message) {\n" +
+"            return `<a\n" +
+"        title=\"Cliquer ici pour plus d'informations.\"\n" +
+"        href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Transaction%20-%20Balance%20v2#${escape(message)}\"\n" +
+"      >Balance déséquilibrée: ${message} ⓘ</a><ul>${Object.entries(balance)\n" +
+"                .sort(([keya], [keyb]) => {\n" +
+"                const keys = ['transaction', 'CHQ', 'Reçu', 'autre'];\n" +
+"                return keys.indexOf(keya) - keys.indexOf(keyb);\n" +
+"            })\n" +
+"                .map(([key, value]) => `<li><strong>${key} :</strong>${value}${(key !== 'transaction' && balance.transaction && value !== balance.transaction) ? ` (diff : ${balance.transaction - value})` : ''}</li>`)\n" +
+"                .join('')}</ul>`;\n" +
+"        }\n" +
+"        if (this.isCurrent())\n" +
+"            this.log('fin contrôle balance', { message });\n" +
+"    }\n" +
+"    async isCheckRemittance(balance) {\n" +
+"        const doc = await this.getDocument();\n" +
+"        const ledgerEvents = await this.getLedgerEvents();\n" +
+"        const aidLedgerEvent = ledgerEvents.find(line => line.planItem.number.startsWith('6571'));\n" +
+"        // Pour les remises de chèques, on a deux pièces justificatives necessaires : le chèque et le cerfa\n" +
+"        if (doc.label.startsWith('REMISE CHEQUE ')\n" +
+"            || aidLedgerEvent && doc.label.startsWith('CHEQUE ')) {\n" +
+"            // Pour les remises de chèques, on a deux pièces justificatives necessaires : le chèque et le cerfa\n" +
+"            // On a parfois des calculs qui ne tombent pas très juste en JS\n" +
+"            if ((Math.abs(balance.transaction ?? 0) - Math.abs(balance.Reçu ?? 0)) > 0.001) {\n" +
+"                balance.Reçu = balance.Reçu ?? 0;\n" +
+"                if (this.isCurrent())\n" +
+"                    this.log('isCheckRemittance(): somme des reçus incorrecte');\n" +
+"                return 'La somme des reçus doit valoir le montant de la transaction';\n" +
+"            }\n" +
+"            // On a parfois des calculs qui ne tombent pas très juste en JS\n" +
+"            if ((Math.abs(balance.transaction ?? 0) - Math.abs(balance.CHQ ?? 0)) > 0.001) {\n" +
+"                balance.CHQ = balance.CHQ ?? 0;\n" +
+"                if (this.isCurrent())\n" +
+"                    this.log('isCheckRemittance(): somme des chèques incorrecte');\n" +
+"                return 'La somme des chèques doit valoir le montant de la transaction';\n" +
+"            }\n" +
+"        }\n" +
+"    }\n" +
+"    async hasUnbalancedReceipt(balance) {\n" +
+"        if (balance.Reçu) {\n" +
+"            if ((Math.abs(balance.Reçu ?? 0) - Math.abs(balance.transaction ?? 0)) > 0.001) {\n" +
+"                if (this.isCurrent())\n" +
+"                    this.log('hasUnbalancedReceipt(): somme des reçus incorrecte');\n" +
+"                return 'La somme des reçus doit valoir le montant de la transaction';\n" +
+"            }\n" +
+"            this.log('balance avec reçus équilibrée', balance);\n" +
+"            return '';\n" +
+"        }\n" +
+"    }\n" +
+"    async isOtherUnbalanced(balance) {\n" +
+"        const ledgerEvents = await this.getLedgerEvents();\n" +
+"        const optionalProof = [\n" +
+"            '58000004', // Virements internes société générale\n" +
+"            '58000001', // Virements internes Stripe\n" +
+"            '754110002', // Dons Manuels - Stripe\n" +
+"            '754110001', // Dons Manuels - Allodons\n" +
+"            '6270005', // Frais Bancaires Société Générale\n" +
+"            '6270001', // Frais Stripe\n" +
+"        ];\n" +
+"        if (ledgerEvents.some(line => optionalProof.some(number => line.planItem.number === number)))\n" +
+"            return;\n" +
+"        // perte de reçu acceptable pour les petits montants\n" +
+"        if (Math.abs(balance.transaction) < 100 && (balance.autre ?? 0) === 0)\n" +
+"            return;\n" +
+"        if (Math.abs((balance.transaction ?? 0) - (balance.autre ?? 0)) > 0.001) {\n" +
+"            balance.autre = balance.autre ?? 0;\n" +
+"            return 'La somme des autres justificatifs doit valoir le montant de la transaction';\n" +
+"        }\n" +
+"    }\n" +
+"    async hasVAT() {\n" +
+"        const ledgerEvents = await this.getLedgerEvents();\n" +
+"        // Les associations ne gèrent pas la TVA\n" +
+"        if (ledgerEvents.some(line => line.planItem.number.startsWith('445'))) {\n" +
+"            return 'Une écriture comporte un compte de TVA';\n" +
+"        }\n" +
+"    }\n" +
+"    async isTrashCounterpart() {\n" +
+"        const ledgerEvents = await this.getLedgerEvents();\n" +
+"        if (ledgerEvents.find(line => line.planItem.number === '6288')) {\n" +
+"            return 'Une ligne d\\'écriture comporte le numéro de compte 6288';\n" +
+"        }\n" +
+"    }\n" +
+"    async isMissingCounterpart() {\n" +
+"        const ledgerEvents = await this.getLedgerEvents();\n" +
+"        if (ledgerEvents.find(line => line.planItem.number === '4716001')) {\n" +
+"            return `<a\n" +
+"            title=\"Cliquer ici pour plus d'informations.\"\n" +
+"            href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Transaction%20attribu%C3%A9e%20%C3%A0%20un%20compte%20d'attente\"\n" +
+"          >Une ligne d'écriture utilise un compte d'attente: 4716001 ⓘ</a>`;\n" +
+"        }\n" +
+"        if (ledgerEvents.some(line => line.planItem.number.startsWith('47')\n" +
+"            && line.planItem.number !== '47600001')) {\n" +
+"            return `<a\n" +
+"            title=\"Cliquer ici pour plus d'informations.\"\n" +
+"            href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Transaction%20attribu%C3%A9e%20%C3%A0%20un%20compte%20d'attente\"\n" +
+"          >Une écriture comporte un compte d\\'attente (commençant par 47) ⓘ</a>`;\n" +
+"        }\n" +
+"    }\n" +
+"    async isWrongDonationCounterpart() {\n" +
+"        const ledgerEvents = await this.getLedgerEvents();\n" +
+"        const groupedDocuments = await this.getGroupedDocuments();\n" +
+"        const dmsLinks = await this.getDMSLinks();\n" +
+"        const isDonation = groupedDocuments.some(gdoc => / CERFA | AIDES - /u.test(gdoc.label))\n" +
+"            || dmsLinks.some(dmsLink => /^(?:CERFA|AIDES) /u.test(dmsLink.name));\n" +
+"        const donationCounterparts = [\n" +
+"            '75411', // Dons manuels\n" +
+"            '6571', // Aides financières accordées à un particulier\n" +
+"        ];\n" +
+"        if (isDonation && !ledgerEvents.some(line => donationCounterparts.includes(line.planItem.number))) {\n" +
+"            return 'La contrepartie devrait commencer par \"6571\" ou \"7541\" (onglet \"Écritures)';\n" +
+"        }\n" +
+"    }\n" +
+"    async isOldUnbalanced() {\n" +
+"        const ledgerEvents = await this.getLedgerEvents();\n" +
+"        // balance déséquilibrée\n" +
+"        const third = ledgerEvents.find(line => line.planItem.number.startsWith('40'))?.planItem?.number;\n" +
+"        if (third) {\n" +
+"            const thirdEvents = ledgerEvents.filter(line => line.planItem.number === third);\n" +
+"            const balance = thirdEvents.reduce((sum, line) => sum + parseFloat(line.amount), 0);\n" +
+"            if (this.isCurrent())\n" +
+"                this.log('loadValidMessage: Balance', Math.abs(balance) > 0.001 ? 'déséquilibrée' : 'OK', this);\n" +
+"            // On a parfois des calculs qui ne tombent pas très juste en JS\n" +
+"            //if (Math.abs(balance) > 0.001) {\n" +
+"            if (Math.abs(balance) > 100) {\n" +
+"                return `Balance déséquilibrée avec Tiers spécifié : ${balance}`;\n" +
+"            }\n" +
+"        }\n" +
+"    }\n" +
+"    async isMissingAttachment() {\n" +
+"        const doc = await this.getDocument();\n" +
+"        const ledgerEvents = await this.getLedgerEvents();\n" +
+"        const groupedDocuments = await this.getGroupedDocuments();\n" +
+"        const dmsLinks = await this.getDMSLinks();\n" +
+"        // Justificatif manquant\n" +
+"        if (!ledgerEvents.some(levent => levent.closed) // Exercice clos\n" +
+"            && Math.abs(parseFloat(doc.currency_amount)) >= 100) ;\n" +
+"        const attachmentOptional = (!this.isCurrent() && Math.abs(parseFloat(doc.currency_amount)) < 100) // Justificatif pas exigé pour les petits montants\n" +
+"            || [\n" +
+"                ' DE: STRIPE MOTIF: ALLODONS REF: ',\n" +
+"            ].some(label => doc.label.includes(label))\n" +
+"            || [\n" +
+"                'REMISE CHEQUE ',\n" +
+"                'VIR RECU ',\n" +
+"                'VIR INST RE ',\n" +
+"                'VIR INSTANTANE RECU DE: ',\n" +
+"            ].some(label => doc.label.startsWith(label));\n" +
+"        const attachmentRequired = doc.attachment_required && !doc.attachment_lost\n" +
+"            && (!attachmentOptional || this.isCurrent());\n" +
+"        const hasAttachment = (groupedDocuments.length + dmsLinks.length) > 1;\n" +
+"        if (this.isCurrent())\n" +
+"            this.log({ attachmentOptional, attachmentRequired, groupedDocuments, hasAttachment });\n" +
+"        if (attachmentRequired && !hasAttachment)\n" +
+"            return 'Justificatif manquant';\n" +
+"    }\n" +
+"    async isBankFees() {\n" +
+"        return (await this.isIntlTransferFees()\n" +
+"            ?? await this.isStripeFees());\n" +
+"    }\n" +
+"    async isIntlTransferFees() {\n" +
+"        const doc = await this.getDocument();\n" +
+"        const ledgerEvents = await this.getLedgerEvents();\n" +
+"        const groupedDocuments = await this.getGroupedDocuments();\n" +
 "        if (doc.label.startsWith('FRAIS VIR INTL ELEC ')) {\n" +
 "            if (ledgerEvents.length !== 2\n" +
 "                || groupedDocuments.length > 1\n" +
 "                || ledgerEvents.reduce((acc, ev) => acc + parseFloat(ev.amount), 0) !== 0\n" +
 "                || !ledgerEvents.find(ev => ev.planItem.number === '6270005'))\n" +
 "                return 'Frais bancaires SG mal attribué (=> 6270005)';\n" +
-"            if (isCurrent)\n" +
+"            if (this.isCurrent())\n" +
 "                this.log('frais bancaires OK');\n" +
 "            return 'OK';\n" +
 "        }\n" +
-"        if (doc.label.includes(' DE: STRIPE MOTIF: ALLODONS REF: ')) {\n" +
-"            if (ledgerEvents.length !== 2\n" +
-"                || groupedDocuments.length > 1\n" +
-"                || ledgerEvents.reduce((acc, ev) => acc + parseFloat(ev.amount), 0) !== 0\n" +
-"                || !ledgerEvents.find(ev => ev.planItem.number === '754110001'))\n" +
-"                return 'Virement Allodons mal attribué (=>754110001)';\n" +
-"            if (isCurrent)\n" +
-"                this.log('virement allodon OK');\n" +
-"            return 'OK';\n" +
-"        }\n" +
+"    }\n" +
+"    async isStripeFees() {\n" +
+"        const doc = await this.getDocument();\n" +
+"        const ledgerEvents = await this.getLedgerEvents();\n" +
+"        const groupedDocuments = await this.getGroupedDocuments();\n" +
 "        if (doc.label.startsWith('Fee: Billing - Usage Fee (')) {\n" +
 "            if (ledgerEvents.length !== 2\n" +
 "                || groupedDocuments.length > 1\n" +
 "                || ledgerEvents.reduce((acc, ev) => acc + parseFloat(ev.amount), 0) !== 0\n" +
 "                || !ledgerEvents.find(ev => ev.planItem.number === '6270001'))\n" +
 "                return 'Frais Stripe mal attribués (=>6270001)';\n" +
-"            if (isCurrent)\n" +
+"            if (this.isCurrent())\n" +
 "                this.log('frais bancaires Stripe OK');\n" +
 "            return 'OK';\n" +
 "        }\n" +
+"    }\n" +
+"    async isAllodons() {\n" +
+"        const doc = await this.getDocument();\n" +
+"        const ledgerEvents = await this.getLedgerEvents();\n" +
+"        const groupedDocuments = await this.getGroupedDocuments();\n" +
+"        if (doc.label.includes(' DE: STRIPE MOTIF: ALLODONS REF: ')) {\n" +
+"            if (ledgerEvents.length !== 2\n" +
+"                || groupedDocuments.length > 1\n" +
+"                || ledgerEvents.reduce((acc, ev) => acc + parseFloat(ev.amount), 0) !== 0\n" +
+"                || !ledgerEvents.find(ev => ev.planItem.number === '754110001'))\n" +
+"                return 'Virement Allodons mal attribué (=>754110001)';\n" +
+"            if (this.isCurrent())\n" +
+"                this.log('virement allodon OK');\n" +
+"            return 'OK';\n" +
+"        }\n" +
+"    }\n" +
+"    async isDonationRenewal() {\n" +
+"        const doc = await this.getDocument();\n" +
+"        const ledgerEvents = await this.getLedgerEvents();\n" +
+"        const groupedDocuments = await this.getGroupedDocuments();\n" +
 "        if (doc.label.startsWith('Charge: ')) {\n" +
 "            if (ledgerEvents.length !== 3\n" +
 "                || groupedDocuments.length > 1\n" +
@@ -9131,72 +9877,112 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                || !ledgerEvents.find(ev => ev.planItem.number === '6270001')\n" +
 "                || !ledgerEvents.find(ev => ev.planItem.number === '754110002'))\n" +
 "                return 'Renouvellement de don mal attribués';\n" +
-"            if (isCurrent)\n" +
+"            if (this.isCurrent())\n" +
 "                this.log('Renouvellement de don OK');\n" +
 "            return 'OK';\n" +
 "        }\n" +
+"    }\n" +
+"    async isTransfer() {\n" +
+"        const doc = await this.getDocument();\n" +
 "        if (['VIR ', 'Payout: '].some(label => doc.label.startsWith(label))) {\n" +
-"            if ([\n" +
-"                ' DE: Stripe Technology Europe Ltd MOTIF: STRIPE ',\n" +
-"                ' DE: STRIPE MOTIF: STRIPE REF: STRIPE-',\n" +
-"                'Payout: STRIPE PAYOUT (',\n" +
-"            ].some(label => doc.label.includes(label))) {\n" +
-"                if (ledgerEvents.length !== 2\n" +
-"                    || groupedDocuments.length > 1\n" +
-"                    || ledgerEvents.reduce((acc, ev) => acc + parseFloat(ev.amount), 0) !== 0\n" +
-"                    || !ledgerEvents.find(ev => ev.planItem.number === '58000001'))\n" +
-"                    return 'Virement interne Stripe mal attribué (=>58000001)';\n" +
-"                if (isCurrent)\n" +
-"                    this.log('virement interne Stripe OK');\n" +
-"                return 'OK';\n" +
-"            }\n" +
-"            const assos = [\n" +
-"                ' DE: ALEF.ASSOC ETUDE ENSEIGNEMENT FO',\n" +
-"                ' DE: ASS UNE LUMIERE POUR MILLE',\n" +
-"                ' DE: COLLEL EREV KINIAN AVRAM (C E K ',\n" +
-"                ' DE: ESPACE CULTUREL ET UNIVERSITAIRE ',\n" +
-"                ' DE: JEOM MOTIF: ',\n" +
-"                ' DE: MIKDACH MEAT ',\n" +
-"                ' DE: YECHIVA AZ YACHIR MOCHE MOTIF: ',\n" +
-"                ' DE: ASSOCIATION BEER MOTIF: ',\n" +
-"            ];\n" +
-"            if (assos.some(label => doc.label.includes(label))) {\n" +
-"                if (ledgerEvents.length !== 2\n" +
-"                    || groupedDocuments.length > 1\n" +
-"                    || ledgerEvents.reduce((acc, ev) => acc + parseFloat(ev.amount), 0) !== 0\n" +
-"                    || !ledgerEvents.find(ev => ev.planItem.number === '75411'))\n" +
-"                    return 'Virement reçu d\\'une association mal attribué';\n" +
-"                if (isCurrent)\n" +
-"                    this.log('virement reçu d\\'une association OK');\n" +
-"                return 'OK';\n" +
-"            }\n" +
-"            const sansCerfa = [\n" +
-"                ' DE: MONSIEUR FABRICE HARARI MOTIF: ',\n" +
-"                ' DE: MR ET MADAME DENIS LEVY',\n" +
-"                ' DE: Zacharie Mimoun ',\n" +
-"                ' DE: M OU MME MIMOUN ZACHARIE MOTIF: ',\n" +
-"            ];\n" +
-"            if (sansCerfa.some(label => doc.label.includes(label))) {\n" +
-"                if (ledgerEvents.length !== 2\n" +
-"                    || groupedDocuments.length > 1\n" +
-"                    || ledgerEvents.reduce((acc, ev) => acc + parseFloat(ev.amount), 0) !== 0\n" +
-"                    || !ledgerEvents.find(ev => ev.planItem.number === '75411'))\n" +
-"                    return 'Virement reçu avec CERFA optionel mal attribué (=>75411)';\n" +
-"                if (isCurrent)\n" +
-"                    this.log('Virement reçu avec CERFA optionel OK');\n" +
-"                return 'OK';\n" +
-"            }\n" +
-"            if (groupedDocuments.length < 2)\n" +
-"                return `<a\n" +
-"          title=\"Ajouter le CERFA dans les pièces de réconciliation. Cliquer ici pour plus d'informations.\"\n" +
-"          href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Transaction%20-%20Virement%20re%C3%A7u%20sans%20justificatif\"\n" +
-"        >Virement reçu sans justificatif ⓘ</a>`;\n" +
-"            if (!groupedDocuments.find(gdoc => gdoc.label.includes('CERFA')))\n" +
-"                return 'Les virements reçus doivent être justifiés par un CERFA';\n" +
+"            return (await this.isStripeInternalTransfer()\n" +
+"                ?? await this.isAssociationDonation()\n" +
+"            // ?? await this.isOptionalReceiptDonation() // Les CERFAs ne sont pas optionel, seul leur envoi au donateur peut l'être\n" +
+"            // ?? await this.isNormalDonation()          // inclus dans la balance\n" +
+"            );\n" +
 "        }\n" +
+"    }\n" +
+"    async isStripeInternalTransfer() {\n" +
+"        const doc = await this.getDocument();\n" +
+"        const ledgerEvents = await this.getLedgerEvents();\n" +
+"        const groupedDocuments = await this.getGroupedDocuments();\n" +
+"        if ([\n" +
+"            ' DE: Stripe Technology Europe Ltd MOTIF: STRIPE ',\n" +
+"            ' DE: STRIPE MOTIF: STRIPE REF: STRIPE-',\n" +
+"            'Payout: STRIPE PAYOUT (',\n" +
+"        ].some(label => doc.label.includes(label))) {\n" +
+"            if (ledgerEvents.length !== 2\n" +
+"                || groupedDocuments.length > 1\n" +
+"                || ledgerEvents.reduce((acc, ev) => acc + parseFloat(ev.amount), 0) !== 0\n" +
+"                || !ledgerEvents.find(ev => ev.planItem.number === '58000001'))\n" +
+"                return 'Virement interne Stripe mal attribué (=>58000001)';\n" +
+"            if (this.isCurrent())\n" +
+"                this.log('virement interne Stripe OK');\n" +
+"            return 'OK';\n" +
+"        }\n" +
+"    }\n" +
+"    async isAssociationDonation() {\n" +
+"        const doc = await this.getDocument();\n" +
+"        const ledgerEvents = await this.getLedgerEvents();\n" +
+"        const groupedDocuments = await this.getGroupedDocuments();\n" +
+"        const assos = [\n" +
+"            ' DE: ALEF.ASSOC ETUDE ENSEIGNEMENT FO',\n" +
+"            ' DE: ASS UNE LUMIERE POUR MILLE',\n" +
+"            ' DE: COLLEL EREV KINIAN AVRAM (C E K ',\n" +
+"            ' DE: ESPACE CULTUREL ET UNIVERSITAIRE ',\n" +
+"            ' DE: JEOM MOTIF: ',\n" +
+"            ' DE: MIKDACH MEAT ',\n" +
+"            ' DE: YECHIVA AZ YACHIR MOCHE MOTIF: ',\n" +
+"            ' DE: ASSOCIATION BEER MOTIF: ',\n" +
+"        ];\n" +
+"        if (assos.some(label => doc.label.includes(label))) {\n" +
+"            if (ledgerEvents.length !== 2\n" +
+"                || groupedDocuments.length > 1\n" +
+"                || ledgerEvents.reduce((acc, ev) => acc + parseFloat(ev.amount), 0) !== 0\n" +
+"                || !ledgerEvents.find(ev => ev.planItem.number === '75411'))\n" +
+"                return 'Virement reçu d\\'une association mal attribué';\n" +
+"            if (this.isCurrent())\n" +
+"                this.log('virement reçu d\\'une association OK');\n" +
+"            return 'OK';\n" +
+"        }\n" +
+"    }\n" +
+"    async isOptionalReceiptDonation() {\n" +
+"        const doc = await this.getDocument();\n" +
+"        const ledgerEvents = await this.getLedgerEvents();\n" +
+"        const groupedDocuments = await this.getGroupedDocuments();\n" +
+"        const sansCerfa = [\n" +
+"            ' DE: MONSIEUR FABRICE HARARI MOTIF: ',\n" +
+"            ' DE: MR ET MADAME DENIS LEVY',\n" +
+"            ' DE: Zacharie Mimoun ',\n" +
+"            ' DE: M OU MME MIMOUN ZACHARIE MOTIF: ',\n" +
+"        ];\n" +
+"        if (sansCerfa.some(label => doc.label.includes(label))) {\n" +
+"            if (ledgerEvents.length !== 2\n" +
+"                || groupedDocuments.length > 1\n" +
+"                || ledgerEvents.reduce((acc, ev) => acc + parseFloat(ev.amount), 0) !== 0\n" +
+"                || !ledgerEvents.find(ev => ev.planItem.number === '75411'))\n" +
+"                return 'Virement reçu avec CERFA optionel mal attribué (=>75411)';\n" +
+"            if (this.isCurrent())\n" +
+"                this.log('Virement reçu avec CERFA optionel OK');\n" +
+"            return 'OK';\n" +
+"        }\n" +
+"    }\n" +
+"    async isNormalDonation() {\n" +
+"        const groupedDocuments = await this.getGroupedDocuments();\n" +
+"        if (groupedDocuments.length < 2) {\n" +
+"            return `<a\n" +
+"        title=\"Ajouter le CERFA dans les pièces de réconciliation. Cliquer ici pour plus d'informations.\"\n" +
+"        href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Transaction%20-%20Virement%20re%C3%A7u%20sans%20justificatif\"\n" +
+"      >Virement reçu sans justificatif ⓘ</a>`;\n" +
+"        }\n" +
+"        if (!groupedDocuments.find(gdoc => gdoc.label.includes('CERFA'))) {\n" +
+"            return 'Les virements reçus doivent être justifiés par un CERFA';\n" +
+"        }\n" +
+"    }\n" +
+"    async isAid() {\n" +
 "        // Aides octroyées\n" +
+"        return (await this.isAssociationAid()\n" +
+"            ?? await this.isMissingBeneficiaryName()\n" +
+"            ?? await this.isMissingCounterpartLabel());\n" +
+"    }\n" +
+"    async isAssociationAid() {\n" +
+"        const ledgerEvents = await this.getLedgerEvents();\n" +
 "        const aidLedgerEvent = ledgerEvents.find(line => line.planItem.number.startsWith('6571'));\n" +
 "        if (aidLedgerEvent?.planItem.number === '6571002') ;\n" +
+"    }\n" +
+"    async isMissingBeneficiaryName() {\n" +
+"        const ledgerEvents = await this.getLedgerEvents();\n" +
+"        const aidLedgerEvent = ledgerEvents.find(line => line.planItem.number.startsWith('6571'));\n" +
 "        if (aidLedgerEvent && !aidLedgerEvent.label) {\n" +
 "            // Aides octroyées sans label\n" +
 "            return `<a\n" +
@@ -9204,6 +9990,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FProcessus%20-%20Traitement%20des%20re%C3%A7us%20d'aides%20octroy%C3%A9es#nom%20du%20bénéficiaire%20manquant%20dans%20l'écriture%20%226571%22\"\n" +
 "      >nom du bénéficiaire manquant dans l\\'écriture \"6571\" ⓘ</a>`;\n" +
 "        }\n" +
+"    }\n" +
+"    async isMissingCounterpartLabel() {\n" +
+"        const doc = await this.getDocument();\n" +
+"        const ledgerEvents = await this.getLedgerEvents();\n" +
+"        const groupedDocuments = await this.getGroupedDocuments();\n" +
+"        const aidLedgerEvent = ledgerEvents.find(line => line.planItem.number.startsWith('6571'));\n" +
 "        if (!aidLedgerEvent && parseFloat(doc.amount) < 0) {\n" +
 "            for (const gdoc of groupedDocuments) {\n" +
 "                if (gdoc.type !== 'Invoice')\n" +
@@ -9219,120 +10011,6 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        // balance déséquilibrée - version exigeante\n" +
-"        const balance = { transaction: 0 };\n" +
-"        groupedDocuments.forEach(gdoc => {\n" +
-"            const coeff = (gdoc.type === 'Invoice' && gdoc.journal.code === 'HA') ? -1 : 1;\n" +
-"            const value = parseFloat(gdoc.amount) * coeff;\n" +
-"            if (gdoc.type === 'Transaction')\n" +
-"                balance.transaction += value;\n" +
-"            else if (/ CERFA | AIDES - /u.test(gdoc.label))\n" +
-"                balance.Reçu = (balance.Reçu ?? 0) + value;\n" +
-"            else if (/ CHQ(?:\\d|\\s)/u.test(gdoc.label))\n" +
-"                balance.CHQ = (balance.CHQ ?? 0) + value;\n" +
-"            else\n" +
-"                balance.autre = (balance.autre ?? 0) + value;\n" +
-"        });\n" +
-"        for (const dmsLink of dmsLinks) {\n" +
-"            if (dmsLink.name.startsWith('CHQ'))\n" +
-"                balance.CHQ = (balance.CHQ ?? 0) - Number(dmsLink.name.match(/- (?<amount>[\\d \\.]*) ?€$/u)?.groups.amount);\n" +
-"            if (/^(?:CERFA|AIDES) /u.test(dmsLink.name))\n" +
-"                balance.Reçu = (balance.Reçu ?? 0) - Number(dmsLink.name.match(/- (?<amount>[\\d \\.]*) ?€$/u)?.groups.amount);\n" +
-"        }\n" +
-"        ledgerEvents.forEach(event => {\n" +
-"            // pertes/gains de change\n" +
-"            if (['47600001', '656', '75800002'].includes(event.planItem.number)) {\n" +
-"                balance.autre = (balance.autre ?? 0) - parseFloat(event.amount);\n" +
-"            }\n" +
-"        });\n" +
-"        if (isCurrent)\n" +
-"            this.log({ balance });\n" +
-"        let message = '';\n" +
-"        if (doc.label.startsWith('REMISE CHEQUE ')\n" +
-"            || doc.label.toUpperCase().startsWith('VIR ')\n" +
-"            || aidLedgerEvent) {\n" +
-"            // On a parfois des calculs qui ne tombent pas très juste en JS\n" +
-"            if (Math.abs((balance.transaction ?? 0) - (balance.Reçu ?? 0)) > 0.001) {\n" +
-"                // Pour les remises de chèques, on a deux pièces justificatives necessaires : le chèque et le cerfa\n" +
-"                message = 'La somme des reçus doit valoir le montant de la transaction';\n" +
-"                balance.Reçu = balance.Reçu ?? 0;\n" +
-"            }\n" +
-"        }\n" +
-"        else if (balance.Reçu) {\n" +
-"            message = 'La contrepartie devrait commencer par \"6571\" (onglet \"Écritures)';\n" +
-"        }\n" +
-"        else {\n" +
-"            if (Math.abs((balance.transaction ?? 0) - (balance.autre ?? 0)) > 0.001) {\n" +
-"                message = 'La somme des autres justificatifs doit valoir le montant de la transaction';\n" +
-"                balance.autre = balance.autre ?? 0;\n" +
-"            }\n" +
-"        }\n" +
-"        if (isCurrent)\n" +
-"            this.log('balance:', balance);\n" +
-"        const toSkip = balance.transaction && Math.abs(balance.transaction) < 100 && Object.keys(balance).every(key => key === 'transaction' || key === 'autre');\n" +
-"        if (message && !toSkip) {\n" +
-"            return `<a\n" +
-"          title=\"Cliquer ici pour plus d'informations.\"\n" +
-"          href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Transaction%20-%20Balance%20v2#${escape(message)}\"\n" +
-"        >Balance déséquilibrée: ${message} ⓘ</a><ul>${Object.entries(balance)\n" +
-"                .sort(([keya], [keyb]) => {\n" +
-"                const keys = ['transaction', 'CHQ', 'Reçu', 'autre'];\n" +
-"                return keys.indexOf(keya) - keys.indexOf(keyb);\n" +
-"            })\n" +
-"                .map(([key, value]) => `<li><strong>${key} :</strong>${value}${(key !== 'transaction' && balance.transaction && value !== balance.transaction) ? ` (diff : ${balance.transaction - value})` : ''}</li>`)\n" +
-"                .join('')}</ul>`;\n" +
-"        }\n" +
-"        // Les associations ne gèrent pas la TVA\n" +
-"        if (ledgerEvents.some(line => line.planItem.number.startsWith('445')))\n" +
-"            return 'Une écriture comporte un compte de TVA';\n" +
-"        if (ledgerEvents.find(line => line.planItem.number === '6288'))\n" +
-"            return 'Une ligne d\\'écriture comporte le numéro de compte 6288';\n" +
-"        if (ledgerEvents.find(line => line.planItem.number === '4716001')) {\n" +
-"            return `<a\n" +
-"            title=\"Cliquer ici pour plus d'informations.\"\n" +
-"            href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Transaction%20attribu%C3%A9e%20%C3%A0%20un%20compte%20d'attente\"\n" +
-"          >Une ligne d'écriture utilise un compte d'attente: 4716001 ⓘ</a>`;\n" +
-"        }\n" +
-"        if (ledgerEvents.some(line => line.planItem.number.startsWith('47') && line.planItem.number !== '47600001')) {\n" +
-"            return `<a\n" +
-"            title=\"Cliquer ici pour plus d'informations.\"\n" +
-"            href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Transaction%20attribu%C3%A9e%20%C3%A0%20un%20compte%20d'attente\"\n" +
-"          >Une écriture comporte un compte d\\'attente (commençant par 47) ⓘ</a>`;\n" +
-"        }\n" +
-"        // balance déséquilibrée\n" +
-"        const third = ledgerEvents.find(line => line.planItem.number.startsWith('40'))?.planItem?.number;\n" +
-"        if (third) {\n" +
-"            const thirdEvents = ledgerEvents.filter(line => line.planItem.number === third);\n" +
-"            const balance = thirdEvents.reduce((sum, line) => sum + parseFloat(line.amount), 0);\n" +
-"            if (isCurrent)\n" +
-"                this.log('loadValidMessage: Balance', Math.abs(balance) > 0.001 ? 'déséquilibrée' : 'OK', this);\n" +
-"            // On a parfois des calculs qui ne tombent pas très juste en JS\n" +
-"            //if (Math.abs(balance) > 0.001) {\n" +
-"            if (Math.abs(balance) > 100) {\n" +
-"                return `Balance déséquilibrée avec Tiers spécifié : ${balance}`;\n" +
-"            }\n" +
-"        }\n" +
-"        // Justificatif manquant\n" +
-"        if (!ledgerEvents.some(levent => levent.closed) // Exercice clos\n" +
-"            && Math.abs(parseFloat(doc.currency_amount)) >= 100) ;\n" +
-"        const attachmentOptional = (!isCurrent && Math.abs(parseFloat(doc.currency_amount)) < 100) // Justificatif pas exigé pour les petits montants\n" +
-"            || [\n" +
-"                ' DE: STRIPE MOTIF: ALLODONS REF: ',\n" +
-"            ].some(label => doc.label.includes(label))\n" +
-"            || [\n" +
-"                'REMISE CHEQUE ',\n" +
-"                'VIR RECU ',\n" +
-"                'VIR INST RE ',\n" +
-"                'VIR INSTANTANE RECU DE: ',\n" +
-"            ].some(label => doc.label.startsWith(label));\n" +
-"        const attachmentRequired = doc.attachment_required && !doc.attachment_lost\n" +
-"            && (!attachmentOptional || isCurrent);\n" +
-"        const hasAttachment = (groupedDocuments.length + dmsLinks.length) > 1;\n" +
-"        if (isCurrent)\n" +
-"            this.log({ attachmentOptional, attachmentRequired, groupedDocuments, hasAttachment });\n" +
-"        if (attachmentRequired && !hasAttachment)\n" +
-"            return 'Justificatif manquant';\n" +
-"        return 'OK';\n" +
 "    }\n" +
 "    /** Add item to this transaction's group */\n" +
 "    async groupAdd(id) {\n" +
@@ -9446,7 +10124,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            transactionId,\n" +
 "            hasComment: Boolean(transaction?.client_comments?.length),\n" +
 "        };\n" +
-"        this.reload();\n" +
+"        this.displayMessage();\n" +
 "    }\n" +
 "}\n" +
 "/** Open next invalid transaction */\n" +
@@ -10381,7 +11059,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const invoice = await this.getInvoice();\n" +
 "        const filename = invoice.filename;\n" +
 "        const fileId = invoice.file_signed_id;\n" +
-"        const invoiceName = invoice.invoice_number;\n" +
+"        const invoiceName = `${invoice.invoice_number} - ${invoice.amount}€`;\n" +
 "        await moveToDms(this.id, destId);\n" +
 "        const files = await getDMSItemList({\n" +
 "            filter: [{ field: 'name', operator: 'search_all', value: filename }]\n" +
@@ -10389,6 +11067,9 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const item = files.items.find(fileItem => fileItem.signed_id === fileId);\n" +
 "        await updateDMSItem({ id: item.id, name: invoiceName });\n" +
 "        return new DMSItem({ id: item.id });\n" +
+"    }\n" +
+"    isCurrent() {\n" +
+"        return getParam(location.href, 'id') === String(this.id);\n" +
 "    }\n" +
 "}\n" +
 "class NotFoundInvoice extends Invoice {\n" +
@@ -10406,14 +11087,32 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        this.direction = 'supplier';\n" +
 "    }\n" +
 "    async loadValidMessage() {\n" +
-"        const current = Number(getParam(location.href, 'id'));\n" +
-"        const isCurrent = current === this.id;\n" +
+"        if (this.isCurrent())\n" +
+"            this.log('loadValidMessage', this);\n" +
+"        return (await this.isUnreachable()\n" +
+"            ?? await this.isClosed()\n" +
+"            ?? await this.isArchived()\n" +
+"            ?? await this.is2025()\n" +
+"            ?? await this.isMissingThirdparty()\n" +
+"            ?? await this.isMissingCounterpart()\n" +
+"            ?? await this.isTrashCounterpart()\n" +
+"            ?? await this.isAid()\n" +
+"            ?? await this.hasWrongChangeOffset()\n" +
+"            ?? await this.isMissingLettering()\n" +
+"            ?? await this.hasToSendToDMS()\n" +
+"            ?? await this.isMissingDate()\n" +
+"            ?? ((this.isCurrent() && this.log('loadValidMessage', 'fin des contrôles')), 'OK'));\n" +
+"    }\n" +
+"    async isUnreachable() {\n" +
 "        const invoice = await this.getInvoice().catch((error) => error);\n" +
 "        if (!(invoice instanceof APIInvoice)) {\n" +
 "            this.log('loadValidMessage', invoice);\n" +
 "            alert(invoice.message);\n" +
-"            return null;\n" +
+"            return `Impossible de valider : ${invoice.message}`;\n" +
 "        }\n" +
+"    }\n" +
+"    async isClosed() {\n" +
+"        const invoice = await this.getInvoice();\n" +
 "        // Fait partie d'un exercice clôturé\n" +
 "        if (invoice.has_closed_ledger_events) {\n" +
 "            this.log('Fait partie d\\'un exercice clos');\n" +
@@ -10426,71 +11125,74 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            if (invoice.date)\n" +
 "                return 'OK';\n" +
 "        }\n" +
-"        if (!invoice)\n" +
-"            this.log('loadValidMessage', { Invoice: this, invoice });\n" +
-"        const doc = await this.getDocument();\n" +
-"        if (isCurrent)\n" +
-"            this.log('loadValidMessage', this);\n" +
-"        const groupedDocuments = await this.getGroupedDocuments();\n" +
+"    }\n" +
+"    async isArchived() {\n" +
+"        const invoice = await this.getInvoice();\n" +
+"        const archivedAllowed = [\n" +
+"            '§ #',\n" +
+"            '¤ CARTE ETRANGERE',\n" +
+"            '¤ PIECE ETRANGERE',\n" +
+"            '¤ TRANSACTION INTROUVABLE',\n" +
+"            'CHQ DÉCHIRÉ',\n" +
+"        ];\n" +
 "        // Archived\n" +
-"        const archivedAllowed = ['§ #', '¤ PIECE ETRANGERE', '¤ TRANSACTION INTROUVABLE', 'CHQ DÉCHIRÉ'];\n" +
 "        if (invoice.archived) {\n" +
-"            if (\n" +
-"            //legacy :\n" +
-"            !invoice.invoice_number.startsWith('¤ CARTE ETRANGERE') &&\n" +
-"                !archivedAllowed.some(allowedItem => invoice.invoice_number.startsWith(allowedItem)))\n" +
-"                return `<a\n" +
-"          title=\"Le numéro de facture d'une facture archivée doit commencer par une de ces possibilités. Cliquer ici pour plus d'informations.\"\n" +
-"          href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Facture%20archiv%C3%A9e\"\n" +
-"        >Facture archivée sans référence ⓘ</a><ul style=\"margin:0;padding:0.8em;\">${archivedAllowed.map(it => `<li>${it}</li>`).join('')}</ul>`;\n" +
-"            if (isCurrent)\n" +
-"                this.log('loadValidMessage', 'archivé avec numéro de facture correct');\n" +
-"            return 'OK';\n" +
-"        }\n" +
-"        // Pas de tiers\n" +
-"        else if (!invoice.thirdparty_id && !invoice.thirdparty) {\n" +
-"            if (invoice.invoice_number.startsWith('CHQ DÉCHIRÉ - CHQ')) {\n" +
-"                return `<a\n" +
-"          title=\"Archiver la facture : ⁝ > Archiver la facture.\\n" +
-"Cliquer ici pour plus d'informations\"\n" +
-"          href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Fournisseur%20inconnu\"\n" +
-"        >Archiver le chèque déchiré ⓘ</a></ul>`;\n" +
+"            if (archivedAllowed.some(allowedItem => invoice.invoice_number.startsWith(allowedItem))) {\n" +
+"                if (this.isCurrent())\n" +
+"                    this.log('loadValidMessage', 'archivé avec numéro de facture correct');\n" +
+"                return 'OK';\n" +
 "            }\n" +
+"            return `<a\n" +
+"        title=\"Le numéro de facture d'une facture archivée doit commencer par une de ces possibilités. Cliquer ici pour plus d'informations.\"\n" +
+"        href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Facture%20archiv%C3%A9e\"\n" +
+"      >Facture archivée sans référence ⓘ</a><ul style=\"margin:0;padding:0.8em;\">${archivedAllowed.map(it => `<li>${it}</li>`).join('')}</ul>`;\n" +
+"        }\n" +
+"        else if (archivedAllowed.some(allowedItem => invoice.invoice_number.startsWith(allowedItem))) {\n" +
+"            return `<a\n" +
+"        title=\"Archiver la facture : ⁝ &gt; Archiver la facture.\\n" +
+"Cliquer ici pour plus d'informations\"\n" +
+"        href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Fournisseur%20inconnu\"\n" +
+"      >Archiver la facture ⓘ</a><br/>Les factures dont le numéro de facture commence par ${archivedAllowed.find(allowedItem => invoice.invoice_number.startsWith(allowedItem))} doivent être archivées.`;\n" +
+"        }\n" +
+"    }\n" +
+"    async is2025() {\n" +
+"        const doc = await this.getDocument();\n" +
+"        const groupedDocuments = await this.getGroupedDocuments();\n" +
+"        if (doc.date?.startsWith('2025') || groupedDocuments.some(gdoc => gdoc.date?.startsWith('2025'))) {\n" +
+"            return (await this.isMissingLettering()\n" +
+"                ?? ((this.isCurrent()) && this.log('2025'), 'OK'));\n" +
+"        }\n" +
+"    }\n" +
+"    async isMissingThirdparty() {\n" +
+"        const invoice = await this.getInvoice();\n" +
+"        // Pas de tiers\n" +
+"        if (!invoice.thirdparty_id && !invoice.thirdparty) {\n" +
 "            return `<a\n" +
 "        title=\"Cliquer ici pour plus d'informations\"\n" +
 "        href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Fournisseur%20inconnu\"\n" +
 "      >Ajouter un fournisseur ⓘ</a><ul style=\"margin:0;padding:0.8em;\"><li>CHQ DÉCHIRÉ - CHQ###</li></ul>`;\n" +
 "        }\n" +
-"        else if (archivedAllowed.some(allowedItem => invoice.invoice_number.startsWith(allowedItem))) {\n" +
-"            return `<a\n" +
-"        title=\"Archiver la facture : ⁝ > Archiver la facture.\\n" +
-"Cliquer ici pour plus d'informations\"\n" +
-"        href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Fournisseur%20inconnu\"\n" +
-"      >Archiver la facture ⓘ</a></ul>`;\n" +
-"        }\n" +
-"        // Pas de compte de charge associé\n" +
+"    }\n" +
+"    async isMissingCounterpart() {\n" +
 "        const thirdparty = await this.getThirdparty();\n" +
+"        // Pas de compte de charge associé\n" +
 "        if (!thirdparty?.thirdparty_invoice_line_rules?.[0]?.pnl_plan_item) {\n" +
 "            return `<a\n" +
 "          title=\"Cliquer ici pour plus d'informations\"\n" +
 "          href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Fournisseur%20inconnu\"\n" +
 "        >Fournisseur inconnu ⓘ</a>`;\n" +
 "        }\n" +
+"    }\n" +
+"    async isTrashCounterpart() {\n" +
+"        const invoice = await this.getInvoice();\n" +
 "        // exclude 6288\n" +
 "        if (invoice.invoice_lines?.some(line => line.pnl_plan_item?.number == '6288'))\n" +
 "            return 'compte tiers 6288';\n" +
-"        // CHQ \"Taxi\"\n" +
-"        if (invoice.thirdparty_id === 98348455\n" +
-"            && !invoice.invoice_number.includes('|TAXI|')) {\n" +
-"            return `<a\n" +
-"        title=\"Le fournisseur 'TAXI' est trop souvent attribué aux chèques par Pennylane.\\n" +
-"Si le fournisseur est réélement 'TAXI' ajouter |TAXI| à la fin du numéro de facture.\\n" +
-"Cliquer ici pour plus d'informations\"\n" +
-"        href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20CHQ%20TAXI\"\n" +
-"      >Ajouter le fournisseur ⓘ</a><ul style=\"margin:0;padding:0.8em;\"><li>|TAXI|</li><li>CHQ#</li></ul>`;\n" +
-"        }\n" +
+"    }\n" +
+"    async isAid() {\n" +
+"        const invoice = await this.getInvoice();\n" +
 "        // Aides octroyées sans numéro de facture\n" +
-"        if (106438171 === invoice.thirdparty_id\n" +
+"        if (106438171 === invoice.thirdparty_id // AIDES OCTROYÉES\n" +
 "            && !['AIDES - ', 'CHQ', 'CERFA - '].some(label => invoice.invoice_number.startsWith(label))) {\n" +
 "            if (invoice.invoice_number.startsWith('§ #'))\n" +
 "                return \"Archiver le reçu.\";\n" +
@@ -10510,6 +11212,14 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        // Piece d'identité avec mauvais ID\n" +
 "        if (invoice.thirdparty?.name === \"PIECE ID\" && invoice.thirdparty.id !== 106519227)\n" +
 "            return 'Il ne doit y avoir qu\\'un seul compte \"PIECE ID\", et ce n\\'est pas le bon...';\n" +
+"        // ID card\n" +
+"        if (invoice.thirdparty?.id === 106519227 && !invoice.invoice_number?.startsWith('ID ')) {\n" +
+"            return 'Le \"Numéro de facture\" des pièces d\\'identité commence obligatoirement par \"ID \"';\n" +
+"        }\n" +
+"    }\n" +
+"    async hasWrongChangeOffset() {\n" +
+"        const invoice = await this.getInvoice();\n" +
+"        const ledgerEvents = await this.getLedgerEvents();\n" +
 "        // Ecarts de conversion de devise\n" +
 "        if (invoice.currency !== 'EUR') {\n" +
 "            const diffLine = ledgerEvents.find(line => line.planItem.number === '4716001');\n" +
@@ -10526,38 +11236,42 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        // Stripe fees invoice\n" +
-"        if (invoice.thirdparty?.id === 115640202) {\n" +
-"            if (isCurrent)\n" +
-"                this.log('loadValidMessage', 'facture Stripe');\n" +
-"            return 'OK';\n" +
-"        }\n" +
-"        // ID card\n" +
-"        if (invoice.thirdparty?.id === 106519227 && !invoice.invoice_number?.startsWith('ID ')) {\n" +
-"            return 'Le \"Numéro de facture\" des pièces d\\'identité commence obligatoirement par \"ID \"';\n" +
-"        }\n" +
-"        // Has transaction attached\n" +
+"    }\n" +
+"    async isMissingLettering() {\n" +
+"        const invoice = await this.getInvoice();\n" +
+"        const doc = await this.getDocument();\n" +
+"        const groupedDocuments = await this.getGroupedDocuments();\n" +
 "        const transactions = groupedDocuments.filter(doc => doc.type === 'Transaction');\n" +
+"        // Has transaction attached\n" +
 "        const documentDate = new Date(doc.date);\n" +
-"        const day = 86400000;\n" +
-"        const isRecent = (Date.now() - documentDate.getTime()) < (15 * day);\n" +
+"        const dayInMs = 86400000;\n" +
+"        const isRecent = (Date.now() - documentDate.getTime()) < (10 * dayInMs);\n" +
 "        if (!isRecent && !transactions.length) {\n" +
-"            const orphanAllowed = ['¤ TRANSACTION INTROUVABLE'];\n" +
-"            if (!orphanAllowed.some(label => invoice.invoice_number.startsWith(label))) {\n" +
-"                const archiveLabel = archivedAllowed.find(label => invoice.invoice_number.startsWith(label));\n" +
-"                if (archiveLabel) {\n" +
-"                    return `<a\n" +
-"            title=\"Archiver la facture : ⁝ > Archiver la facture.\\n" +
-"Cliquer ici pour plus d'informations\"\n" +
-"            href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Facture%20archiv%C3%A9e\"\n" +
-"          >Archiver ${archiveLabel} ⓘ</a><ul style=\"margin:0;padding:0.8em;\">`;\n" +
-"                }\n" +
+"            const orphanAllowedThirdparties = [\n" +
+"                115640202, // Stripe - facture de frais bancaires réparties sur toutes les transactions de don\n" +
+"            ];\n" +
+"            const orphanAllowedNumbers = [\n" +
+"                '¤ TRANSACTION INTROUVABLE'\n" +
+"            ];\n" +
+"            const archivedAllowedNumbers = [\n" +
+"                '§ #',\n" +
+"                '¤ CARTE ETRANGERE',\n" +
+"                '¤ PIECE ETRANGERE',\n" +
+"                'CHQ DÉCHIRÉ',\n" +
+"            ];\n" +
+"            if (!orphanAllowedNumbers.some(label => invoice.invoice_number.startsWith(label))\n" +
+"                && !orphanAllowedThirdparties.some(tpid => invoice.thirdparty_id === tpid)) {\n" +
 "                return `<a\n" +
-"            title=\"Cliquer ici pour plus d'informations\"\n" +
-"            href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Pas%20de%20transaction%20attach%C3%A9e\"\n" +
-"          >Pas de transaction attachée ⓘ</a><ul style=\"margin:0;padding:0.8em;\">${orphanAllowed.concat(archivedAllowed).map(it => `<li>${it}</li>`).join('')}</ul>`;\n" +
+"          title=\"Cliquer ici pour plus d'informations\"\n" +
+"          href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Pas%20de%20transaction%20attach%C3%A9e\"\n" +
+"        >Pas de transaction attachée ⓘ</a><ul style=\"margin:0;padding:0.8em;\">${orphanAllowedNumbers.concat(archivedAllowedNumbers).map(it => `<li>${it}</li>`).join('')}</ul>`;\n" +
 "            }\n" +
 "        }\n" +
+"    }\n" +
+"    async hasToSendToDMS() {\n" +
+"        const invoice = await this.getInvoice();\n" +
+"        const groupedDocuments = await this.getGroupedDocuments();\n" +
+"        const transactions = groupedDocuments.filter(doc => doc.type === 'Transaction');\n" +
 "        // Justificatif ne donnant pas lieu à une écriture\n" +
 "        if (transactions.length && ([\n" +
 "            106438171, // AIDES OCTROYÉES             : talon de chèque ou reçu signé\n" +
@@ -10569,25 +11283,17 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            if (transactions.find(transaction => transaction.date.startsWith('2023'))) {\n" +
 "                const dmsItem = await this.moveToDms(57983091 /*2023 - Compta - Fournisseurs*/);\n" +
 "                this.log({ dmsItem });\n" +
-"                if (isCurrent)\n" +
+"                if (this.isCurrent())\n" +
 "                    this.log('moved to DMS', { invoice: this });\n" +
 "                return (await Invoice.load(this.id)).loadValidMessage();\n" +
 "            }\n" +
 "            if (transactions.find(transaction => transaction.date.startsWith('2024'))) {\n" +
 "                const dmsItem = await this.moveToDms(21994050 /*2024 - Compta - Fournisseurs*/);\n" +
 "                this.log({ dmsItem });\n" +
-"                if (isCurrent)\n" +
+"                if (this.isCurrent())\n" +
 "                    this.log('moved to DMS', { invoice: this });\n" +
 "                return (await Invoice.load(this.id)).loadValidMessage();\n" +
 "            }\n" +
-"            /**\n" +
-"            if (transactions.find(transaction => transaction.date.startsWith('2025'))) {\n" +
-"              const dmsItem = await this.moveToDms(21994065 /*2025 - Compta - Fournisseurs*);\n" +
-"              this.log({dmsItem});\n" +
-"              if (isCurrent) this.log('moved to DMS', { invoice: this });\n" +
-"              return (await Invoice.load(this.id)).loadValidMessage();\n" +
-"            }\n" +
-"            /**/\n" +
 "            if (!transactions.find(transaction => transaction.date.startsWith('2025'))) {\n" +
 "                this.log('Envoyer en GED', transactions);\n" +
 "                return `<a\n" +
@@ -10596,22 +11302,20 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        >Envoyer en GED ⓘ</a>`;\n" +
 "            }\n" +
 "        }\n" +
+"    }\n" +
+"    async isMissingDate() {\n" +
+"        const invoice = await this.getInvoice();\n" +
+"        const ledgerEvents = await this.getLedgerEvents();\n" +
+"        const groupedDocuments = await this.getGroupedDocuments();\n" +
+"        const transactions = groupedDocuments.filter(doc => doc.type === 'Transaction');\n" +
 "        // Date manquante\n" +
 "        if (!invoice.date) {\n" +
-"            const archiveLabel = archivedAllowed.find(label => invoice.invoice_number.startsWith(label));\n" +
-"            if (archiveLabel) {\n" +
-"                return `<a\n" +
-"          title=\"Archiver la facture : ⁝ > Archiver la facture.\\n" +
-"Cliquer ici pour plus d'informations\"\n" +
-"          href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Facture%20archiv%C3%A9e\"\n" +
-"        >Archiver ${archiveLabel} ⓘ</a><ul style=\"margin:0;padding:0.8em;\">`;\n" +
-"            }\n" +
 "            if (invoice.has_closed_ledger_events || ledgerEvents.some(levent => levent.closed)) {\n" +
 "                this.log('exercice clos, on ne peut plus remplir la date');\n" +
 "                if (transactions.find(transaction => transaction.date.startsWith('2023'))) {\n" +
 "                    const dmsItem = await this.moveToDms(57983091 /*2023 - Compta - Fournisseurs*/);\n" +
 "                    this.log({ dmsItem });\n" +
-"                    if (isCurrent)\n" +
+"                    if (this.isCurrent())\n" +
 "                        this.log('moved to DMS', { invoice: this });\n" +
 "                    return (await Invoice.load(this.id)).loadValidMessage();\n" +
 "                }\n" +
@@ -10624,9 +11328,6 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        >Date de facture vide ⓘ</a>`;\n" +
 "            }\n" +
 "        }\n" +
-"        if (isCurrent)\n" +
-"            this.log('loadValidMessage', 'fin des contrôles');\n" +
-"        return 'OK';\n" +
 "    }\n" +
 "}\n" +
 "class CustomerInvoice extends Invoice {\n" +
@@ -10635,12 +11336,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        this.direction = 'customer';\n" +
 "    }\n" +
 "    async loadValidMessage() {\n" +
-"        const current = Number(getParam(location.href, 'id'));\n" +
-"        const isCurrent = current === this.id;\n" +
 "        const invoice = await this.getInvoice();\n" +
 "        // Fait partie d'un exercis clôt\n" +
 "        invoice.has_closed_ledger_events;\n" +
-"        if (isCurrent)\n" +
+"        if (this.isCurrent())\n" +
 "            this.log('loadValidMessage', this);\n" +
 "        // Archived\n" +
 "        const archivedAllowed = ['§ #', '¤ TRANSACTION INTROUVABLE'];\n" +
@@ -10698,14 +11397,14 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (transactions.find(transaction => transaction.date.startsWith('2024'))) {\n" +
 "            const dmsItem = await this.moveToDms(21994051 /*2024 - Compta - Clients */);\n" +
 "            this.log({ dmsItem });\n" +
-"            if (isCurrent)\n" +
+"            if (this.isCurrent())\n" +
 "                this.log('moved to DMS', { invoice: this });\n" +
 "            return (await Invoice.load(this.id)).loadValidMessage();\n" +
 "        }\n" +
 "        if (transactions.find(transaction => transaction.date.startsWith('2023'))) {\n" +
 "            const dmsItem = await this.moveToDms(57983092 /*2023 - Compta - Clients */);\n" +
 "            this.log({ dmsItem });\n" +
-"            if (isCurrent)\n" +
+"            if (this.isCurrent())\n" +
 "                this.log('moved to DMS', { invoice: this });\n" +
 "            return (await Invoice.load(this.id)).loadValidMessage();\n" +
 "        }\n" +
@@ -11599,8 +12298,14 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        this.panContainer.addEventListener('wheel', (event) => {\n" +
 "            event.stopPropagation();\n" +
 "            event.preventDefault();\n" +
-"            this.state.matrix.zoom = Math.max(this.state.zoomMin, this.state.matrix.zoom + (event.deltaY / 50));\n" +
+"            const absDelta = Math.abs(event.deltaY);\n" +
+"            const isTrackpad = absDelta !== Math.floor(absDelta) || absDelta < 80;\n" +
+"            const offset = event.deltaY / (isTrackpad ? 50 : -4e3);\n" +
+"            this.state.matrix.zoom = Math.max(this.state.zoomMin, this.state.matrix.zoom + offset);\n" +
 "            this.setMatrix();\n" +
+"        });\n" +
+"        this.panContainer.addEventListener('mouseup', () => {\n" +
+"            $('input[name=\"name\"]').focus();\n" +
 "        });\n" +
 "    }\n" +
 "    async reset() {\n" +
@@ -11688,6 +12393,11 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const isOk = message === 'OK';\n" +
 "        this.container.classList.toggle('bg-warning-100', !isOk);\n" +
 "        this.container.classList.toggle('bg-primary-100', isOk);\n" +
+"        if (!isOk) {\n" +
+"            const input = $('input[name=\"name\"]');\n" +
+"            input?.focus();\n" +
+"            input?.select();\n" +
+"        }\n" +
 "        await waitFunc(() => getReactProps(rightList, 7).item !== ref);\n" +
 "        this.emit('reload');\n" +
 "        this.log('reload');\n" +
@@ -11702,10 +12412,11 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        this.watch();\n" +
 "    }\n" +
 "    createButton() {\n" +
-"        this.container = parseHTML(`<button\n" +
+"        this.container = parseHTML(`<a\n" +
 "      class=\"${getButtonClassName()} auto-find-transaction-button\"\n" +
 "      style=\"margin-left: 1em; padding: .2em;\"\n" +
-"    >${openInNewTabIcon()}</button>`).firstElementChild;\n" +
+"      target=\"_blank\"\n" +
+"    >${openInNewTabIcon()}</a>`).firstElementChild;\n" +
 "        const tooltip = Tooltip.make({\n" +
 "            target: this.container,\n" +
 "            text: 'Ouvrir la reference dans un nouvel onglet'\n" +
@@ -11724,7 +12435,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            const urlRoot = location.href.split('/').slice(0, 5).join('/');\n" +
 "            const url = `${urlRoot}/documents/${refId}.html`;\n" +
-"            openInTab(url);\n" +
+"            if (this.container.href !== url) {\n" +
+"                event.preventDefault();\n" +
+"                event.stopPropagation();\n" +
+"                this.container.href = url;\n" +
+"                openInTab(url);\n" +
+"            }\n" +
 "        }, true);\n" +
 "    }\n" +
 "    async watch() {\n" +
@@ -11837,7 +12553,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "}\n" +
 "*/\n" +
 "const augmentation = {\n" +
-"    GM_Pennylane_Version: /** version **/ '0.1.28',\n" +
+"    GM_Pennylane_Version: /** version **/ '0.1.29',\n" +
 "    GM: {\n" +
 "        API: {\n" +
 "            getDocument,\n" +
