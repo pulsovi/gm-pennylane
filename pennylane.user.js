@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name     Pennylane
-// @version  0.1.29
+// @version  0.1.30
 // @grant    unsafeWindow
 // @grant    GM.openInTab
 // @grant    GM.xmlHttpRequest
@@ -12674,7 +12674,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "}\n" +
 "*/\n" +
 "const augmentation = {\n" +
-"    GM_Pennylane_Version: /** version **/ '0.1.29',\n" +
+"    GM_Pennylane_Version: /** version **/ '0.1.30',\n" +
 "    GM: {\n" +
 "        API: {\n" +
 "            getDocument,\n" +
