@@ -10,13 +10,7 @@ import { APIDMSLink } from '../api/DMS/Link.js';
 import DMSItem from './DMSItem.js';
 import { createDMSLink } from '../api/dms.js';
 import { jsonClone } from '../_/json.js';
-
-interface Balance {
-  transaction: number;
-  autre?: number;
-  CHQ?: number;
-  Reçu?: number;
-}
+import Balance from './Balance.js';
 
 const user = localStorage.getItem('user') ?? 'assistant';
 
@@ -149,7 +143,7 @@ export default class Transaction extends ValidableDocument {
     const dmsLinks = await this.getDMSLinks();
 
     // balance déséquilibrée - version exigeante
-    const balance: Balance = { transaction: 0 };
+    const balance: Balance = new Balance();
 
     groupedDocuments
     .sort((a, b) => Number(b.type === 'Transaction') - Number(a.type === 'Transaction'))
@@ -157,29 +151,29 @@ export default class Transaction extends ValidableDocument {
       if (this.isCurrent()) this.debug('balance counting', jsonClone({gdoc, balance}));
       const coeff = (gdoc.type === 'Invoice' && gdoc.journal.code === 'HA') ? -1 : 1;
       const value = parseFloat(gdoc.amount) * coeff;
-      if (gdoc.type === 'Transaction') balance.transaction += value;
-      else if (/ CERFA | AIDES - /u.test(gdoc.label)) balance.Reçu = (balance.Reçu ?? 0) + (value * Math.sign(balance.transaction));
-      else if (/ CHQ(?:\d|\s)/u.test(gdoc.label)) balance.CHQ = (balance.CHQ ?? 0) + (value * Math.sign(balance.transaction));
-      else balance.autre = (balance.autre ?? 0) + value;
+      if (gdoc.type === 'Transaction') balance.addTransaction(value);
+      else if (/ CERFA | AIDES - /u.test(gdoc.label)) balance.addReçu(value);
+      else if (/ CHQ(?:\d|\s)/u.test(gdoc.label)) balance.addCHQ(value);
+      else balance.addAutre(value);
     });
 
     dmsLinks.forEach(dmsLink => {
       if (this.isCurrent()) this.debug('balance counting', jsonClone({dmsLink, balance}));
       if (dmsLink.name.startsWith('CHQ')) {
         const amount = dmsLink.name.match(/- (?<amount>[\d \.]*) ?€$/u)?.groups.amount;
-        balance.CHQ = (balance.CHQ ?? 0) + (parseFloat(amount ?? '0') * Math.sign(balance.transaction));
+        balance.addCHQ(parseFloat(amount ?? '0') * Math.sign(balance.transaction));
       }
       if (/^(?:CERFA|AIDES) /u.test(dmsLink.name)) {
         if (this.isCurrent()) this.log('aide trouvée', { dmsLink });
         const amount = dmsLink.name.match(/- (?<amount>[\d \.]*) ?€$/u)?.groups.amount;
-        balance.Reçu = (balance.Reçu ?? 0) + (parseFloat(amount ?? '0') * Math.sign(balance.transaction));
+        balance.addReçu(parseFloat(amount ?? '0') * Math.sign(balance.transaction));
       }
     });
 
     ledgerEvents.forEach(event => {
       // pertes/gains de change
       if (['47600001', '656', '75800002'].includes(event.planItem.number)) {
-        balance.autre = (balance.autre ?? 0) + parseFloat(event.amount);
+        balance.addAutre(parseFloat(event.amount));
       }
     });
 
@@ -187,18 +181,19 @@ export default class Transaction extends ValidableDocument {
 
     let message = (
       await this.isCheckRemittance(balance)
+      ?? await this.hasUnbalancedCHQ(balance)
       ?? await this.hasUnbalancedReceipt(balance)
       ?? await this.isOtherUnbalanced(balance)
     );
-    if (this.isCurrent()) this.log('balance:', balance);
+    if (this.isCurrent()) this.log('balance:', { balance, message, balanceJSON: balance.toJSON() });
 
     if (message) {
       return `<a
         title="Cliquer ici pour plus d'informations."
         href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Transaction%20-%20Balance%20v2#${escape(message)}"
-      >Balance déséquilibrée: ${message} ⓘ</a><ul>${Object.entries(balance)
+      >Balance déséquilibrée: ${message} ⓘ</a><ul>${Object.entries(balance.toJSON())
           .sort(([keya], [keyb]) => {
-            const keys = ['transaction', 'CHQ', 'Reçu', 'autre'];
+            const keys = ['transaction', 'CHQ', 'reçu', 'autre'];
             return keys.indexOf(keya) - keys.indexOf(keyb);
           })
           .map(([key, value]) => `<li><strong>${key} :</strong>${value}${(key !== 'transaction' && balance.transaction && value !== balance.transaction) ? ` (diff : ${balance.transaction - value})` : ''}</li>`)
@@ -219,23 +214,34 @@ export default class Transaction extends ValidableDocument {
     ) {
       // Pour les remises de chèques, on a deux pièces justificatives necessaires : le chèque et le cerfa
       // On a parfois des calculs qui ne tombent pas très juste en JS
-      if ((Math.abs(balance.transaction ?? 0) - Math.abs(balance.Reçu ?? 0)) > 0.001) {
-        balance.Reçu = balance.Reçu ?? 0;
+      if (Math.abs(balance.transaction - balance.reçu) > 0.001) {
+        balance.addReçu(null);
         if (this.isCurrent()) this.log('isCheckRemittance(): somme des reçus incorrecte');
         return 'La somme des reçus doit valoir le montant de la transaction';
       }
       // On a parfois des calculs qui ne tombent pas très juste en JS
-      if ((Math.abs(balance.transaction ?? 0) - Math.abs(balance.CHQ ?? 0)) > 0.001) {
-        balance.CHQ = balance.CHQ ?? 0;
+      if (Math.abs(balance.transaction - balance.CHQ) > 0.001) {
+        balance.addCHQ(null);
         if (this.isCurrent()) this.log('isCheckRemittance(): somme des chèques incorrecte');
         return 'La somme des chèques doit valoir le montant de la transaction';
       }
     }
   }
 
+  private async hasUnbalancedCHQ(balance: Balance) {
+    if (balance.hasCHQ()) {
+      if (Math.abs(balance.CHQ - balance.transaction) > 0.001) {
+        if (this.isCurrent()) this.log('hasUnbalancedCHQ(): somme des chèques incorrecte');
+        return 'La somme des chèques doit valoir le montant de la transaction';
+      }
+      this.log('balance avec chèques équilibrée', balance);
+      return '';
+    }
+  }
+
   private async hasUnbalancedReceipt(balance: Balance) {
-    if (balance.Reçu) {
-      if ((Math.abs(balance.Reçu ?? 0) - Math.abs(balance.transaction ?? 0)) > 0.001) {
+    if (balance.hasReçu()) {
+      if (Math.abs(balance.reçu - balance.transaction) > 0.001) {
         if (this.isCurrent()) this.log('hasUnbalancedReceipt(): somme des reçus incorrecte');
         return 'La somme des reçus doit valoir le montant de la transaction';
       }
@@ -245,6 +251,7 @@ export default class Transaction extends ValidableDocument {
   }
 
   private async isOtherUnbalanced(balance: Balance) {
+    const doc = await this.getDocument();
     const ledgerEvents = await this.getLedgerEvents();
 
     const optionalProof = [
@@ -258,11 +265,18 @@ export default class Transaction extends ValidableDocument {
     if (ledgerEvents.some(line => optionalProof.some(number => line.planItem.number === number)))
       return;
 
-    // perte de reçu acceptable pour les petits montants
-    if (Math.abs(balance.transaction) < 100 && (balance.autre ?? 0) === 0) return;
+    // perte de reçu acceptable pour les petits montants, mais pas récurrents
+    const requiredProof = [
+      'DE: GOCARDLESS',
+    ];
+    if (
+      Math.abs(balance.transaction) < 100
+      && !balance.hasAutre()
+      && !requiredProof.some(label => doc.label.includes(label))
+    ) return;
 
-    if (Math.abs((balance.transaction ?? 0) - (balance.autre ?? 0)) > 0.001) {
-      balance.autre = balance.autre ?? 0;
+    if ((balance.transaction - balance.autre) > 0.001) {
+      balance.addAutre(null);
       return 'La somme des autres justificatifs doit valoir le montant de la transaction';
     }
   }
@@ -356,9 +370,11 @@ export default class Transaction extends ValidableDocument {
 
     }
     const attachmentOptional =
-      (!this.isCurrent() && Math.abs(parseFloat(doc.currency_amount)) < 100) // Justificatif pas exigé pour les petits montants
+      // Justificatif pas exigé pour les petits montants
+      (!this.isCurrent() && Math.abs(parseFloat(doc.currency_amount)) < 100)
       || [
         ' DE: STRIPE MOTIF: ALLODONS REF: ',
+        'Payout: STRIPE PAYOUT ',
       ].some(label => doc.label.includes(label))
       || [
         'REMISE CHEQUE ',

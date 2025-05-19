@@ -86,7 +86,7 @@ class SupplierInvoice extends Invoice {
       ?? await this.isAid()
       ?? await this.hasWrongChangeOffset()
       ?? await this.isMissingLettering()
-      ?? await this.hasToSendToDMS()
+      //?? await this.hasToSendToDMS()
       ?? await this.isMissingDate()
       ?? ((this.isCurrent() && this.log('loadValidMessage', 'fin des contrôles')), 'OK')
     );
@@ -428,12 +428,13 @@ class CustomerInvoice extends Invoice {
     // Une fois la transaction trouvée, envoyer en GED
     const transactions = groupedDocuments.filter(gdoc => gdoc.type === 'Transaction');
 
-    if (transactions.find(transaction => transaction.date.startsWith('2024'))) {
-      const dmsItem = await this.moveToDms(21994051 /*2024 - Compta - Clients */);
-      this.log({ dmsItem });
-      if (this.isCurrent()) this.log('moved to DMS', { invoice: this });
-      return (await Invoice.load(this.id)).loadValidMessage();
-    }
+
+    // if (transactions.find(transaction => transaction.date.startsWith('2024'))) {
+    //   const dmsItem = await this.moveToDms(21994051 /*2024 - Compta - Clients */);
+    //   this.log({ dmsItem });
+    //   if (this.isCurrent()) this.log('moved to DMS', { invoice: this });
+    //   return (await Invoice.load(this.id)).loadValidMessage();
+    // }
 
     if (transactions.find(transaction => transaction.date.startsWith('2023'))) {
       const dmsItem = await this.moveToDms(57983092 /*2023 - Compta - Clients */);

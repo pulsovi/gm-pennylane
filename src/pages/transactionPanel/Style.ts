@@ -7,6 +7,8 @@ export default class TransactionPannelStyle extends Service {
   async init() {
     this.hideOldDateBanner();
     this.fixAccountNumbersOweflow();
+    this.fixMatchSuggestionTextOverlap();
+    this.expandDMSNameInputField();
   }
 
   private async hideOldDateBanner() {
@@ -27,6 +29,33 @@ export default class TransactionPannelStyle extends Service {
     injectCSS(`
       html body .ui-transition-collapse.ui-transition-collapse {
         overflow: unset;
+      }
+    `);
+  }
+
+  /**
+   * Corrige l'affichage des factures suggérées dans le détail d'une transaction
+   */
+  private fixMatchSuggestionTextOverlap() {
+    injectCSS(`
+      .ui-card.border-automation-500 .flex-column .text-right {
+        margin-top: 1.2em;
+      }
+    `);
+  }
+
+  /**
+   * Augmente la taille du champ "nom" des fichiers de la GED
+   */
+  private expandDMSNameInputField() {
+    injectCSS(`
+      form[name="DocumentNameForm"] > div.d-flex {
+        flex-direction: column;
+        gap: 0.5em;
+      }
+
+      form[name="DocumentNameForm"] > div.d-flex > div {
+        margin-left: 0 !important;
       }
     `);
   }
