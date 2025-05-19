@@ -32,7 +32,6 @@ export class APIDMSItemListParams {
         try {
           checkString(d.filter, field + ".filter", "FilterEntity[] | string");
         } catch (e) {
-          prompt(proxyName+':', JSON.stringify(obj));
         }
       }
     }
@@ -110,6 +109,5 @@ function errorHelper(field: string, d: any, type: string): void {
       console.log(error);
     }
     console.log('Expected ' + type + " at " + field + " but found:\n" + JSON.stringify(d), jsonClone);
-    prompt(proxyName+':', JSON.stringify(obj));
   }
 }

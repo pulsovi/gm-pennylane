@@ -52,6 +52,5 @@ function errorHelper(field: string, d: any, type: string): void {
       console.log(error);
     }
     console.log('Expected ' + type + " at " + field + " but found:\n" + JSON.stringify(d), jsonClone);
-    prompt(proxyName+':', JSON.stringify(obj));
   }
 }

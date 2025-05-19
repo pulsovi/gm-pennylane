@@ -58,7 +58,6 @@ export class APIDMSItem {
       try {
         checkNull(d.parent_id, field + ".parent_id", "number | null");
       } catch (e) {
-        prompt(proxyName+':', JSON.stringify(obj));
       }
     }
     checkString(d.pusher_channel, field + ".pusher_channel");
@@ -170,6 +169,5 @@ function errorHelper(field: string, d: any, type: string): void {
       console.log(error);
     }
     console.log('Expected ' + type + " at " + field + " but found:\n" + JSON.stringify(d), jsonClone);
-    prompt(proxyName+':', JSON.stringify(obj));
   }
 }

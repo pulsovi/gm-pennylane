@@ -38,7 +38,6 @@ export class APIDocumentMatching {
       try {
         checkNull(d.date, field + ".date", "string | null");
       } catch (e) {
-        prompt(proxyName+':', JSON.stringify(obj));
       }
     }
     checkString(d.gross_amount, field + ".gross_amount");
@@ -97,6 +96,5 @@ function errorHelper(field: string, d: any, type: string): void {
       console.log(error);
     }
     console.log('Expected ' + type + " at " + field + " but found:\n" + JSON.stringify(d), jsonClone);
-    prompt(proxyName+':', JSON.stringify(obj));
   }
 }

@@ -392,7 +392,6 @@ export class Supplier {
       try {
         checkString(d.establishment_no, field + ".establishment_no", "null | string");
       } catch (e) {
-        prompt(proxyName+':', JSON.stringify(obj));
       }
     }
     checkBoolean(d.force_pending_vat, field + ".force_pending_vat");
@@ -404,7 +403,6 @@ export class Supplier {
       try {
         d.iban_last_update = IbanLastUpdate.Create(d.iban_last_update, field + ".iban_last_update", "null | IbanLastUpdate");
       } catch (e) {
-        prompt(proxyName+':', JSON.stringify(obj));
       }
     }
     if ("iban_proof" in d) {
@@ -724,7 +722,6 @@ export class ThirdpartyInvoiceLineRulesEntity1 {
       try {
         checkNull(d.pnl_plan_item, field + ".pnl_plan_item", "PnlPlanItem1 | null");
       } catch (e) {
-        prompt(proxyName+':', JSON.stringify(obj));
       }
     }
     // This will be refactored in the next release.
@@ -734,7 +731,6 @@ export class ThirdpartyInvoiceLineRulesEntity1 {
       try {
         checkNull(d.vat_rate, field + ".vat_rate", "string | null");
       } catch (e) {
-        prompt(proxyName+':', JSON.stringify(obj));
       }
     }
     const knownProperties = ["pnl_plan_item","vat_rate"];
@@ -854,6 +850,5 @@ function errorHelper(field: string, d: any, type: string): void {
       console.log(error);
     }
     console.log('Expected ' + type + " at " + field + " but found:\n" + JSON.stringify(d), jsonClone);
-    prompt(proxyName+':', JSON.stringify(obj));
   }
 }

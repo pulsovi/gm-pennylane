@@ -40,7 +40,6 @@ export class APIGroupedDocument {
       try {
         checkString(d.date, field + ".date", "null | string");
       } catch (e) {
-        prompt(proxyName+':', JSON.stringify(obj));
       }
     }
     checkString(d.fec_pieceref, field + ".fec_pieceref");
@@ -148,6 +147,5 @@ function errorHelper(field: string, d: any, type: string): void {
       console.log(error);
     }
     console.log('Expected ' + type + " at " + field + " but found:\n" + JSON.stringify(d), jsonClone);
-    prompt(proxyName+':', JSON.stringify(obj));
   }
 }

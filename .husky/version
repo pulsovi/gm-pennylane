@@ -1,5 +1,6 @@
 #! /usr/bin/env bash
 node .husky/version.js
+yarn setProxies -prod
 yarn build
 node .husky/pre-commit.js
 
@@ -7,5 +8,5 @@ git add pennylane.user.js
 git add pennylane.meta.js
 git add src/eval.ts
 git add template.js
-git commit -m 'chore: up version'
+git commit -m 'chore: up version' --no-verify
 git push

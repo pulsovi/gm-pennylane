@@ -105,7 +105,6 @@ export class InvoicesEntity {
       try {
         checkNull(d.date, field + ".date", "string | null");
       } catch (e) {
-        prompt(proxyName+':', JSON.stringify(obj));
       }
     }
     // This will be refactored in the next release.
@@ -115,7 +114,6 @@ export class InvoicesEntity {
       try {
         checkNull(d.deadline, field + ".deadline", "string | null");
       } catch (e) {
-        prompt(proxyName+':', JSON.stringify(obj));
       }
     }
     checkString(d.direction, field + ".direction");
@@ -128,7 +126,6 @@ export class InvoicesEntity {
       try {
         checkString(d.gdrive_path, field + ".gdrive_path", "null | string");
       } catch (e) {
-        prompt(proxyName+':', JSON.stringify(obj));
       }
     }
     checkNumber(d.id, field + ".id");
@@ -156,7 +153,6 @@ export class InvoicesEntity {
       try {
         checkNull(d.thirdparty, field + ".thirdparty", "Thirdparty | null");
       } catch (e) {
-        prompt(proxyName+':', JSON.stringify(obj));
       }
     }
     checkString(d.type, field + ".type");
@@ -385,6 +381,5 @@ function errorHelper(field: string, d: any, type: string): void {
       console.log(error);
     }
     console.log('Expected ' + type + " at " + field + " but found:\n" + JSON.stringify(d), jsonClone);
-    prompt(proxyName+':', JSON.stringify(obj));
   }
 }

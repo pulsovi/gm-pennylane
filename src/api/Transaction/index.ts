@@ -56,7 +56,6 @@ export class APITransaction {
       try {
         checkString(d.archived_at, field + ".archived_at", "null | string");
       } catch (e) {
-        prompt(proxyName+':', JSON.stringify(obj));
       }
     }
     checkBoolean(d.attachment_lost, field + ".attachment_lost");
@@ -71,7 +70,6 @@ export class APITransaction {
       try {
         checkNull(d.currency_fee, field + ".currency_fee", "string | null");
       } catch (e) {
-        prompt(proxyName+':', JSON.stringify(obj));
       }
     }
     checkString(d.date, field + ".date");
@@ -82,7 +80,6 @@ export class APITransaction {
       try {
         d.dump = Dump.Create(d.dump, field + ".dump", "null | Dump");
       } catch (e) {
-        prompt(proxyName+':', JSON.stringify(obj));
       }
     }
     // This will be refactored in the next release.
@@ -92,7 +89,6 @@ export class APITransaction {
       try {
         checkNumber(d.dump_id, field + ".dump_id", "null | number");
       } catch (e) {
-        prompt(proxyName+':', JSON.stringify(obj));
       }
     }
     // This will be refactored in the next release.
@@ -102,7 +98,6 @@ export class APITransaction {
       try {
         checkNull(d.fee, field + ".fee", "string | null");
       } catch (e) {
-        prompt(proxyName+':', JSON.stringify(obj));
       }
     }
     checkNumber(d.files_count, field + ".files_count");
@@ -184,7 +179,6 @@ export class AccountSynchronization {
       try {
         checkNull(d.created_at, field + ".created_at", "string | null");
       } catch (e) {
-        prompt(proxyName+':', JSON.stringify(obj));
       }
     }
     checkNull(d.error_message, field + ".error_message");
@@ -195,7 +189,6 @@ export class AccountSynchronization {
       try {
         checkNull(d.triggered_manually, field + ".triggered_manually", "boolean | null");
       } catch (e) {
-        prompt(proxyName+':', JSON.stringify(obj));
       }
     }
     const knownProperties = ["created_at","error_message","triggered_manually"];
@@ -276,6 +269,5 @@ function errorHelper(field: string, d: any, type: string): void {
       console.log(error);
     }
     console.log('Expected ' + type + " at " + field + " but found:\n" + JSON.stringify(d), jsonClone);
-    prompt(proxyName+':', JSON.stringify(obj));
   }
 }
