@@ -72,7 +72,7 @@ async function mergeInvoices () {
 */
 
 const augmentation = {
-  GM_Pennylane_Version: /** version **/'0.1.30',
+  GM_Pennylane_Version: /** version **/'0.1.31',
   GM: {
     API: {
       getDocument,
