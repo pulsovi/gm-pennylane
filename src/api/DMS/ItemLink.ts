@@ -29,7 +29,7 @@ export class APIDMSItemLink {
     checkString(d.record_url, field + ".record_url");
     const knownProperties = ["id","record_id","record_name","record_type","record_url"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new APIDMSItemLink(d);
   }
   private constructor(d: any) {

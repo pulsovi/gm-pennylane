@@ -47,7 +47,7 @@ export class APITransaction {
       throwIsArray(field, d);
     }
     checkNumber(d.account_id, field + ".account_id");
-    d.account_synchronization = AccountSynchronization.Create(d.account_synchronization, field + ".account_synchronization", undefined);
+    d.account_synchronization = AccountSynchronization.Create(d.account_synchronization, field + ".account_synchronization");
     checkString(d.amount, field + ".amount");
     // This will be refactored in the next release.
     try {
@@ -122,7 +122,7 @@ export class APITransaction {
     checkBoolean(d.validation_needed, field + ".validation_needed");
     const knownProperties = ["account_id","account_synchronization","amount","archived_at","attachment_lost","attachment_required","company_id","currency","currency_amount","currency_fee","date","dump","dump_id","fee","files_count","gross_amount","group_uuid","id","is_potential_duplicate","is_waiting_details","label","pending","reconciliation_id","source","source_logo","status","type","updated_at","validation_needed"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new APITransaction(d);
   }
   private constructor(d: any) {
@@ -200,7 +200,7 @@ export class AccountSynchronization {
     }
     const knownProperties = ["created_at","error_message","triggered_manually"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new AccountSynchronization(d);
   }
   private constructor(d: any) {
@@ -234,7 +234,7 @@ export class Dump {
     checkString(d.type, field + ".type");
     const knownProperties = ["created_at","creator","type"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new Dump(d);
   }
   private constructor(d: any) {

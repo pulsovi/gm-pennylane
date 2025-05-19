@@ -25,7 +25,7 @@ export class APIDMSItemListParams {
         checkArray(d.filter, field + ".filter", "FilterEntity[] | string");
         if (d.filter) {
           for (let i = 0; i < d.filter.length; i++) {
-            d.filter[i] = FilterEntity.Create(d.filter[i], field + ".filter" + "[" + i + "]", undefined);
+            d.filter[i] = FilterEntity.Create(d.filter[i], field + ".filter" + "[" + i + "]");
           }
         }
       } catch (e) {
@@ -41,7 +41,7 @@ export class APIDMSItemListParams {
     }
     const knownProperties = ["filter","page_name"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new APIDMSItemListParams(d);
   }
   private constructor(d: any) {
@@ -74,7 +74,7 @@ export class FilterEntity {
     checkString(d.value, field + ".value");
     const knownProperties = ["field","operator","value"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new FilterEntity(d);
   }
   private constructor(d: any) {

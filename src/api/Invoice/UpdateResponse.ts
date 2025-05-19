@@ -32,7 +32,7 @@ export class APIInvoiceUpdateResponse {
     }
     const knownProperties = ["embeddable_in_browser","has_file","preview_status","preview_urls"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new APIInvoiceUpdateResponse(d);
   }
   private constructor(d: any) {

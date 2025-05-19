@@ -21,7 +21,7 @@ export class APIInvoiceToDMS {
     checkNull(d.response, field + ".response");
     const knownProperties = ["response"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new APIInvoiceToDMS(d);
   }
   private constructor(d: any) {

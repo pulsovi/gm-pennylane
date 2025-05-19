@@ -46,7 +46,7 @@ export class APIGroupedDocument {
     checkString(d.fec_pieceref, field + ".fec_pieceref");
     checkNumber(d.id, field + ".id");
     checkBoolean(d.is_waiting_details, field + ".is_waiting_details");
-    d.journal = Journal.Create(d.journal, field + ".journal", undefined);
+    d.journal = Journal.Create(d.journal, field + ".journal");
     checkNumber(d.journal_id, field + ".journal_id");
     checkString(d.label, field + ".label");
     checkNumber(d.ledgerEventsCount, field + ".ledgerEventsCount");
@@ -60,7 +60,7 @@ export class APIGroupedDocument {
     checkString(d.type, field + ".type");
     const knownProperties = ["amount","date","fec_pieceref","id","is_waiting_details","journal","journal_id","label","ledgerEventsCount","readonly","source","taggingCount","totalCredit","totalDebit","type"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new APIGroupedDocument(d);
   }
   private constructor(d: any) {
@@ -106,7 +106,7 @@ export class Journal {
     checkString(d.label, field + ".label");
     const knownProperties = ["code","id","label"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new Journal(d);
   }
   private constructor(d: any) {

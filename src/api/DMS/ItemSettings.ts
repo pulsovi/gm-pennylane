@@ -31,14 +31,14 @@ export class APIDMSItemSettings {
         checkNever(d.firm_admins[i], field + ".firm_admins" + "[" + i + "]");
       }
     }
-    d.folder = Folder.Create(d.folder, field + ".folder", undefined);
+    d.folder = Folder.Create(d.folder, field + ".folder");
     checkBoolean(d.is_dms_activated_on_firm, field + ".is_dms_activated_on_firm");
     checkBoolean(d.is_firm_admin, field + ".is_firm_admin");
-    d.item = Item.Create(d.item, field + ".item", undefined);
+    d.item = Item.Create(d.item, field + ".item");
     checkString(d.sort, field + ".sort");
     const knownProperties = ["filters","firm_admins","folder","is_dms_activated_on_firm","is_firm_admin","item","sort"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new APIDMSItemSettings(d);
   }
   private constructor(d: any) {
@@ -84,7 +84,7 @@ export class Folder {
     }
     checkNull(d.archived_at, field + ".archived_at");
     checkString(d.created_at, field + ".created_at");
-    d.creator = Creator.Create(d.creator, field + ".creator", undefined);
+    d.creator = Creator.Create(d.creator, field + ".creator");
     checkBoolean(d.fixed, field + ".fixed");
     checkNumber(d.id, field + ".id");
     checkBoolean(d.imports_allowed, field + ".imports_allowed");
@@ -98,7 +98,7 @@ export class Folder {
     checkBoolean(d.visible, field + ".visible");
     const knownProperties = ["archived_at","created_at","creator","fixed","id","imports_allowed","itemable_id","method","name","parent_id","shared","type","updated_at","visible"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new Folder(d);
   }
   private constructor(d: any) {
@@ -147,7 +147,7 @@ export class Creator {
     checkString(d.role, field + ".role");
     const knownProperties = ["email","first_name","full_name","last_name","role"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new Creator(d);
   }
   private constructor(d: any) {
@@ -199,7 +199,7 @@ export class Item {
     checkNull(d.archived_at, field + ".archived_at");
     checkNumber(d.comments_count, field + ".comments_count");
     checkString(d.created_at, field + ".created_at");
-    d.creator = Creator.Create(d.creator, field + ".creator", undefined);
+    d.creator = Creator.Create(d.creator, field + ".creator");
     checkBoolean(d.favorite, field + ".favorite");
     checkString(d.file_extension, field + ".file_extension");
     checkNumber(d.file_size, field + ".file_size");
@@ -219,7 +219,7 @@ export class Item {
     checkString(d.updated_at, field + ".updated_at");
     const knownProperties = ["archived_at","comments_count","created_at","creator","favorite","file_extension","file_size","file_url","id","imports_allowed","itemable_id","method","name","parent_id","pusher_channel","readonly","reference_link","shared","signed_id","type","updated_at"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new Item(d);
   }
   private constructor(d: any) {

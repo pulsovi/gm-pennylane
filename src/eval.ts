@@ -97,6 +97,8 @@ const augmentation = {
     getDMSLinks,
     getDMSItemLinks,
     getDMSItemList,
+    getInvoicesList,
+    getInvoice,
     waitPage,
     models: {
       Invoice,

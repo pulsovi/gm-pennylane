@@ -39,7 +39,7 @@ export class APIDMSUpdateItem {
     }
     checkNull(d.archived_at, field + ".archived_at");
     checkString(d.created_at, field + ".created_at");
-    d.creator = Creator.Create(d.creator, field + ".creator", undefined);
+    d.creator = Creator.Create(d.creator, field + ".creator");
     checkBoolean(d.favorite, field + ".favorite");
     checkString(d.file_extension, field + ".file_extension");
     checkNumber(d.file_size, field + ".file_size");
@@ -59,7 +59,7 @@ export class APIDMSUpdateItem {
     checkString(d.updated_at, field + ".updated_at");
     const knownProperties = ["archived_at","created_at","creator","favorite","file_extension","file_size","file_url","id","imports_allowed","itemable_id","method","name","parent_id","pusher_channel","readonly","reference_link","shared","signed_id","type","updated_at"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new APIDMSUpdateItem(d);
   }
   private constructor(d: any) {
@@ -114,7 +114,7 @@ export class Creator {
     checkString(d.role, field + ".role");
     const knownProperties = ["email","first_name","full_name","last_name","role"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new Creator(d);
   }
   private constructor(d: any) {

@@ -25,14 +25,14 @@ export class APIDMSItemList {
     checkArray(d.items, field + ".items");
     if (d.items) {
       for (let i = 0; i < d.items.length; i++) {
-        d.items[i] = ItemsEntity.Create(d.items[i], field + ".items" + "[" + i + "]", undefined);
+        d.items[i] = ItemsEntity.Create(d.items[i], field + ".items" + "[" + i + "]");
       }
     }
-    d.pagination = Pagination.Create(d.pagination, field + ".pagination", undefined);
+    d.pagination = Pagination.Create(d.pagination, field + ".pagination");
     checkString(d.sort, field + ".sort");
     const knownProperties = ["filters","items","pagination","sort"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new APIDMSItemList(d);
   }
   private constructor(d: any) {
@@ -83,7 +83,7 @@ export class ItemsEntity {
     checkNull(d.archived_at, field + ".archived_at");
     checkNumber(d.comments_count, field + ".comments_count");
     checkString(d.created_at, field + ".created_at");
-    d.creator = Creator.Create(d.creator, field + ".creator", undefined);
+    d.creator = Creator.Create(d.creator, field + ".creator");
     checkBoolean(d.favorite, field + ".favorite");
     checkString(d.file_extension, field + ".file_extension");
     checkNumber(d.file_size, field + ".file_size");
@@ -103,7 +103,7 @@ export class ItemsEntity {
     checkString(d.updated_at, field + ".updated_at");
     const knownProperties = ["archived_at","comments_count","created_at","creator","favorite","file_extension","file_size","file_url","id","imports_allowed","itemable_id","method","name","parent_id","pusher_channel","readonly","reference_link","shared","signed_id","type","updated_at"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new ItemsEntity(d);
   }
   private constructor(d: any) {
@@ -159,7 +159,7 @@ export class Creator {
     checkString(d.role, field + ".role");
     const knownProperties = ["email","first_name","full_name","last_name","role"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new Creator(d);
   }
   private constructor(d: any) {
@@ -203,7 +203,7 @@ export class Pagination {
     checkString(d.totalEntriesStr, field + ".totalEntriesStr");
     const knownProperties = ["hasNextPage","page","pages","pageSize","totalEntries","totalEntriesPrecision","totalEntriesStr"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new Pagination(d);
   }
   private constructor(d: any) {

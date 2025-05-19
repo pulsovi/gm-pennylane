@@ -35,7 +35,7 @@ export class APIInvoiceListParams {
     }
     const knownProperties = ["direction","filter","page","sort"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new APIInvoiceListParams(d);
   }
   private constructor(d: any) {

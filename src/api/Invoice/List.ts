@@ -23,14 +23,14 @@ export class APIInvoiceList {
     checkArray(d.invoices, field + ".invoices");
     if (d.invoices) {
       for (let i = 0; i < d.invoices.length; i++) {
-        d.invoices[i] = InvoicesEntity.Create(d.invoices[i], field + ".invoices" + "[" + i + "]", undefined);
+        d.invoices[i] = InvoicesEntity.Create(d.invoices[i], field + ".invoices" + "[" + i + "]");
       }
     }
     checkNumber(d.pageSize, field + ".pageSize");
-    d.pagination = Pagination.Create(d.pagination, field + ".pagination", undefined);
+    d.pagination = Pagination.Create(d.pagination, field + ".pagination");
     const knownProperties = ["invoices","pageSize","pagination"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new APIInvoiceList(d);
   }
   private constructor(d: any) {
@@ -136,7 +136,7 @@ export class InvoicesEntity {
     checkArray(d.invoice_lines, field + ".invoice_lines");
     if (d.invoice_lines) {
       for (let i = 0; i < d.invoice_lines.length; i++) {
-        d.invoice_lines[i] = InvoiceLinesEntity.Create(d.invoice_lines[i], field + ".invoice_lines" + "[" + i + "]", undefined);
+        d.invoice_lines[i] = InvoiceLinesEntity.Create(d.invoice_lines[i], field + ".invoice_lines" + "[" + i + "]");
       }
     }
     checkString(d.invoice_number, field + ".invoice_number");
@@ -163,7 +163,7 @@ export class InvoicesEntity {
     checkBoolean(d.validation_needed, field + ".validation_needed");
     const knownProperties = ["amount","amount_without_tax","approval_status","archived","checksum","company_id","created_at","currency","currency_amount","currency_tax","date","deadline","direction","email_from","filename","gdrive_path","id","incomplete","invoice_lines","invoice_number","is_factur_x","is_waiting_for_ocr","label","not_duplicate","paid","payment_status","pusher_channel","source","status","thirdparty","type","validation_needed"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new InvoicesEntity(d);
   }
   private constructor(d: any) {
@@ -222,11 +222,11 @@ export class InvoiceLinesEntity {
       throwIsArray(field, d);
     }
     checkNumber(d.id, field + ".id");
-    d.pnl_plan_item = PnlPlanItem.Create(d.pnl_plan_item, field + ".pnl_plan_item", undefined);
+    d.pnl_plan_item = PnlPlanItem.Create(d.pnl_plan_item, field + ".pnl_plan_item");
     checkString(d.vat_rate, field + ".vat_rate");
     const knownProperties = ["id","pnl_plan_item","vat_rate"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new InvoiceLinesEntity(d);
   }
   private constructor(d: any) {
@@ -262,7 +262,7 @@ export class PnlPlanItem {
     checkString(d.number, field + ".number");
     const knownProperties = ["enabled","id","label","number"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new PnlPlanItem(d);
   }
   private constructor(d: any) {
@@ -295,7 +295,7 @@ export class Thirdparty {
     checkString(d.name, field + ".name");
     const knownProperties = ["id","name"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new Thirdparty(d);
   }
   private constructor(d: any) {
@@ -336,7 +336,7 @@ export class Pagination {
     checkString(d.totalEntriesStr, field + ".totalEntriesStr");
     const knownProperties = ["hasNextPage","page","pages","pageSize","totalEntries","totalEntriesPrecision","totalEntriesStr"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new Pagination(d);
   }
   private constructor(d: any) {

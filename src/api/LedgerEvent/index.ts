@@ -69,7 +69,7 @@ export class APILedgerEvent {
       }
     }
     checkNumber(d.plan_item_id, field + ".plan_item_id");
-    d.planItem = PlanItem.Create(d.planItem, field + ".planItem", undefined);
+    d.planItem = PlanItem.Create(d.planItem, field + ".planItem");
     checkBoolean(d.readonly, field + ".readonly");
     checkBoolean(d.readonlyAmounts, field + ".readonlyAmounts");
     // This will be refactored in the next release.
@@ -85,7 +85,7 @@ export class APILedgerEvent {
     checkString(d.source, field + ".source");
     const knownProperties = ["amount","balance","closed","credit","debit","id","label","lettering","lettering_id","plan_item_id","planItem","readonly","readonlyAmounts","reconciliation_id","source"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new APILedgerEvent(d);
   }
   private constructor(d: any) {
@@ -135,7 +135,7 @@ export class Lettering {
     checkString(d.plan_item_number, field + ".plan_item_number");
     const knownProperties = ["balance","id","max_date","min_date","plan_item_number"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new Lettering(d);
   }
   private constructor(d: any) {
@@ -177,7 +177,7 @@ export class PlanItem {
     checkString(d.vat_rate, field + ".vat_rate");
     const knownProperties = ["country_alpha2","enabled","id","label","number","vat_rate"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new PlanItem(d);
   }
   private constructor(d: any) {

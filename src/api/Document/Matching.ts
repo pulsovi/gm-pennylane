@@ -5,7 +5,7 @@ export class APIDocumentMatching {
   public readonly amount: string;
   public readonly company_id: number;
   public readonly currency: string;
-  public readonly date: string;
+  public readonly date: string | null;
   public readonly gross_amount: string;
   public readonly group_uuid: string;
   public readonly id: number;
@@ -31,7 +31,16 @@ export class APIDocumentMatching {
     checkString(d.amount, field + ".amount");
     checkNumber(d.company_id, field + ".company_id");
     checkString(d.currency, field + ".currency");
-    checkString(d.date, field + ".date");
+    // This will be refactored in the next release.
+    try {
+      checkString(d.date, field + ".date", "string | null");
+    } catch (e) {
+      try {
+        checkNull(d.date, field + ".date", "string | null");
+      } catch (e) {
+        prompt(proxyName+':', JSON.stringify(obj));
+      }
+    }
     checkString(d.gross_amount, field + ".gross_amount");
     checkString(d.group_uuid, field + ".group_uuid");
     checkNumber(d.id, field + ".id");
@@ -41,7 +50,7 @@ export class APIDocumentMatching {
     checkString(d.updated_at, field + ".updated_at");
     const knownProperties = ["amount","company_id","currency","date","gross_amount","group_uuid","id","outstanding_balance","proof_count","type","updated_at"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new APIDocumentMatching(d);
   }
   private constructor(d: any) {

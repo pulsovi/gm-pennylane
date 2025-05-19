@@ -292,7 +292,7 @@ export class APIDocument {
     checkArray(d.grouped_documents, field + ".grouped_documents");
     if (d.grouped_documents) {
       for (let i = 0; i < d.grouped_documents.length; i++) {
-        d.grouped_documents[i] = GroupedDocumentsEntity.Create(d.grouped_documents[i], field + ".grouped_documents" + "[" + i + "]", undefined);
+        d.grouped_documents[i] = GroupedDocumentsEntity.Create(d.grouped_documents[i], field + ".grouped_documents" + "[" + i + "]");
       }
     }
     if ("iban" in d) {
@@ -487,7 +487,7 @@ export class APIDocument {
     }
     const knownProperties = ["account_id","accounting_type","amount","archived","archived_at","attachment_lost","attachment_required","billing_subscription_id","can_be_stamped_as_paid_in_pdf","company","company_id","complete","completeness","created_at","credit_notes_amount","currency","currency_amount","currency_amount_before_tax","currency_price_before_tax","currency_tax","custom_payment_reference","date","deadline","direction","discount","discount_type","draft","email_from","estimate_status","external_id","factor_status","fec_pieceref","finalized_at","from_estimate_id","future_in_days","gdrive_path","gross_amount","group_uuid","grouped_at","grouped_documents","iban","id","invoice_kind","invoice_number","invoicing_detailed_source","is_credit_note","is_destroyable","is_estimate","is_waiting_details","is_waiting_for_ocr","journal_id","label","language","manual_partial_invoices","method","multiplier","not_duplicate","ocr_thirdparty_id","outstanding_balance","paid","payment_id","payment_method","payment_reference","payment_reminder_enabled","payment_status","pdf_generation_status","pdf_invoice_display_products_list","pdf_invoice_free_text","pdf_invoice_free_text_enabled","pdf_invoice_subject","pdf_invoice_subject_enabled","pdf_invoice_title","pdf_paid_stamp","preview_status","price_before_tax","pusher_channel","quote_group_uuid","quote_uid","quotes","readonly","recipients","reversal_origin_id","score","scored_invoices","scored_transactions","source","special_mention","status","tax","thirdparty_id","type","updated_at","url","validation_needed"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new APIDocument(d);
   }
   private constructor(d: any) {
@@ -608,7 +608,7 @@ export class Company {
     checkString(d.name, field + ".name");
     const knownProperties = ["name"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new Company(d);
   }
   private constructor(d: any) {
@@ -634,6 +634,7 @@ export class GroupedDocumentsEntity {
   public readonly company_id: number;
   public readonly complete: boolean;
   public readonly completeness: number;
+  public readonly converted_invoice_urls?: never[];
   public readonly created_at: string;
   public readonly credit_notes_amount?: string | null;
   public readonly currency: string;
@@ -831,7 +832,7 @@ export class GroupedDocumentsEntity {
     checkArray(d.client_comments, field + ".client_comments");
     if (d.client_comments) {
       for (let i = 0; i < d.client_comments.length; i++) {
-        d.client_comments[i] = ClientCommentsEntityOrEstablishmentComment.Create(d.client_comments[i], field + ".client_comments" + "[" + i + "]", undefined);
+        d.client_comments[i] = ClientCommentsEntityOrEstablishmentComment.Create(d.client_comments[i], field + ".client_comments" + "[" + i + "]");
       }
     }
     if ("company" in d) {
@@ -849,6 +850,14 @@ export class GroupedDocumentsEntity {
     checkNumber(d.company_id, field + ".company_id");
     checkBoolean(d.complete, field + ".complete");
     checkNumber(d.completeness, field + ".completeness");
+    if ("converted_invoice_urls" in d) {
+      checkArray(d.converted_invoice_urls, field + ".converted_invoice_urls");
+      if (d.converted_invoice_urls) {
+        for (let i = 0; i < d.converted_invoice_urls.length; i++) {
+          checkNever(d.converted_invoice_urls[i], field + ".converted_invoice_urls" + "[" + i + "]");
+        }
+      }
+    }
     checkString(d.created_at, field + ".created_at");
     if ("credit_notes_amount" in d) {
       // This will be refactored in the next release.
@@ -1155,7 +1164,7 @@ export class GroupedDocumentsEntity {
         checkArray(d.invoice_lines, field + ".invoice_lines", "InvoiceLinesEntity[] | null");
         if (d.invoice_lines) {
           for (let i = 0; i < d.invoice_lines.length; i++) {
-            d.invoice_lines[i] = InvoiceLinesEntity.Create(d.invoice_lines[i], field + ".invoice_lines" + "[" + i + "]", undefined);
+            d.invoice_lines[i] = InvoiceLinesEntity.Create(d.invoice_lines[i], field + ".invoice_lines" + "[" + i + "]");
           }
         }
       } catch (e) {
@@ -1245,7 +1254,7 @@ export class GroupedDocumentsEntity {
         }
       }
     }
-    d.journal = Journal.Create(d.journal, field + ".journal", undefined);
+    d.journal = Journal.Create(d.journal, field + ".journal");
     checkNumber(d.journal_id, field + ".journal_id");
     checkString(d.label, field + ".label");
     if ("language" in d) {
@@ -1263,7 +1272,7 @@ export class GroupedDocumentsEntity {
     checkArray(d.ledgerEvents, field + ".ledgerEvents");
     if (d.ledgerEvents) {
       for (let i = 0; i < d.ledgerEvents.length; i++) {
-        d.ledgerEvents[i] = LedgerEventsEntity.Create(d.ledgerEvents[i], field + ".ledgerEvents" + "[" + i + "]", undefined);
+        d.ledgerEvents[i] = LedgerEventsEntity.Create(d.ledgerEvents[i], field + ".ledgerEvents" + "[" + i + "]");
       }
     }
     checkNumber(d.ledgerEventsCount, field + ".ledgerEventsCount");
@@ -1665,9 +1674,9 @@ export class GroupedDocumentsEntity {
         }
       }
     }
-    const knownProperties = ["account","account_id","accounting_status","accounting_type","amount","archived","archived_at","attachment_label","attachment_lost","attachment_required","billing_subscription_id","can_be_stamped_as_paid_in_pdf","client_comments","company","company_id","complete","completeness","created_at","credit_notes_amount","currency","currency_amount","currency_amount_before_tax","currency_price_before_tax","currency_tax","current_account_plan_item","custom_payment_reference","date","deadline","direction","discount","discount_type","draft","email_from","embeddable_in_browser","establishment_comment","estimate_status","external_id","factor_status","fec_pieceref","file_signed_id","filename","finalized_at","from_estimate_id","future_in_days","gdrive_path","gross_amount","group_uuid","grouped_at","has_file","has_linked_quotes","hasTooManyLedgerEvents","iban","id","incomplete","invoice_kind","invoice_lines","invoice_number","invoicing_detailed_source","is_accounting_needed","is_credit_note","is_destroyable","is_estimate","is_sendable","is_waiting_details","is_waiting_for_ocr","journal","journal_id","label","language","ledgerEvents","ledgerEventsCount","manual_partial_invoices","method","multiplier","not_duplicate","ocr_thirdparty_id","outstanding_balance","pages_count","paid","payment_id","payment_method","payment_reference","payment_reminder_enabled","payment_status","pdf_generation_status","pdf_invoice_display_products_list","pdf_invoice_free_text","pdf_invoice_free_text_enabled","pdf_invoice_subject","pdf_invoice_subject_enabled","pdf_invoice_title","pdf_paid_stamp","pending","preview_status","preview_urls","price_before_tax","pusher_channel","quote_group_uuid","quote_uid","quotes","readonly","recipients","reconciled","reversal_origin_id","score","scored_invoices","scored_transactions","size","source","special_mention","status","subcomplete","tagged_at_ledger_events_level","tax","thirdparty","thirdparty_id","type","updated_at","url","validation_needed"];
+    const knownProperties = ["account","account_id","accounting_status","accounting_type","amount","archived","archived_at","attachment_label","attachment_lost","attachment_required","billing_subscription_id","can_be_stamped_as_paid_in_pdf","client_comments","company","company_id","complete","completeness","converted_invoice_urls","created_at","credit_notes_amount","currency","currency_amount","currency_amount_before_tax","currency_price_before_tax","currency_tax","current_account_plan_item","custom_payment_reference","date","deadline","direction","discount","discount_type","draft","email_from","embeddable_in_browser","establishment_comment","estimate_status","external_id","factor_status","fec_pieceref","file_signed_id","filename","finalized_at","from_estimate_id","future_in_days","gdrive_path","gross_amount","group_uuid","grouped_at","has_file","has_linked_quotes","hasTooManyLedgerEvents","iban","id","incomplete","invoice_kind","invoice_lines","invoice_number","invoicing_detailed_source","is_accounting_needed","is_credit_note","is_destroyable","is_estimate","is_sendable","is_waiting_details","is_waiting_for_ocr","journal","journal_id","label","language","ledgerEvents","ledgerEventsCount","manual_partial_invoices","method","multiplier","not_duplicate","ocr_thirdparty_id","outstanding_balance","pages_count","paid","payment_id","payment_method","payment_reference","payment_reminder_enabled","payment_status","pdf_generation_status","pdf_invoice_display_products_list","pdf_invoice_free_text","pdf_invoice_free_text_enabled","pdf_invoice_subject","pdf_invoice_subject_enabled","pdf_invoice_title","pdf_paid_stamp","pending","preview_status","preview_urls","price_before_tax","pusher_channel","quote_group_uuid","quote_uid","quotes","readonly","recipients","reconciled","reversal_origin_id","score","scored_invoices","scored_transactions","size","source","special_mention","status","subcomplete","tagged_at_ledger_events_level","tax","thirdparty","thirdparty_id","type","updated_at","url","validation_needed"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new GroupedDocumentsEntity(d);
   }
   private constructor(d: any) {
@@ -1688,6 +1697,7 @@ export class GroupedDocumentsEntity {
     this.company_id = d.company_id;
     this.complete = d.complete;
     this.completeness = d.completeness;
+    if ("converted_invoice_urls" in d) this.converted_invoice_urls = d.converted_invoice_urls;
     this.created_at = d.created_at;
     if ("credit_notes_amount" in d) this.credit_notes_amount = d.credit_notes_amount;
     this.currency = d.currency;
@@ -1858,7 +1868,7 @@ export class Account {
     }
     checkString(d.currency, field + ".currency");
     checkString(d.currency_balance, field + ".currency_balance");
-    d.establishment = Establishment.Create(d.establishment, field + ".establishment", undefined);
+    d.establishment = Establishment.Create(d.establishment, field + ".establishment");
     checkNumber(d.establishment_id, field + ".establishment_id");
     // This will be refactored in the next release.
     try {
@@ -1914,7 +1924,7 @@ export class Account {
     checkBoolean(d.visible, field + ".visible");
     const knownProperties = ["balance","bic","company_id","connection","currency","currency_balance","establishment","establishment_id","iban","id","label","last_successful_sync_at","last_sync_at","last_sync_error","last_sync_http_code","ledger_events_count","ledger_events_max_date","ledger_events_min_date","merge_url","method","name","pusher_channel","swan","swan_number","sync_attachments","sync_customers","sync_since","synchronized","transactions_count","updated_at","url","use_as_default_for_vat_return","visible"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new Account(d);
   }
   private constructor(d: any) {
@@ -1993,7 +2003,7 @@ export class Establishment {
     checkString(d.name, field + ".name");
     const knownProperties = ["accounts_count","bridge_ids","budgetinsight_id","crm_url","id","logo_url","method","name"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new Establishment(d);
   }
   private constructor(d: any) {
@@ -2044,11 +2054,11 @@ export class ClientCommentsEntityOrEstablishmentComment {
     checkNull(d.rich_content, field + ".rich_content");
     checkBoolean(d.seen, field + ".seen");
     checkString(d.updated_at, field + ".updated_at");
-    d.user = User.Create(d.user, field + ".user", undefined);
+    d.user = User.Create(d.user, field + ".user");
     checkNumber(d.user_id, field + ".user_id");
     const knownProperties = ["content","created_at","id","name","record_id","record_type","rich_content","seen","updated_at","user","user_id"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new ClientCommentsEntityOrEstablishmentComment(d);
   }
   private constructor(d: any) {
@@ -2094,7 +2104,7 @@ export class User {
     checkNull(d.profile_picture_url, field + ".profile_picture_url");
     const knownProperties = ["first_name","full_name","id","last_name","profile_picture_url"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new User(d);
   }
   private constructor(d: any) {
@@ -2126,7 +2136,7 @@ export class Company1 {
     checkString(d.name, field + ".name");
     const knownProperties = ["name"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new Company1(d);
   }
   private constructor(d: any) {
@@ -2170,7 +2180,7 @@ export class PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem {
     checkString(d.vat_rate, field + ".vat_rate");
     const knownProperties = ["company_id","country_alpha2","enabled","id","internal_identifier","label","label_is_editable","number","vat_rate"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem(d);
   }
   private constructor(d: any) {
@@ -2248,7 +2258,7 @@ export class EstablishmentCommentOrClientCommentsEntity {
     }
     const knownProperties = ["author","content","created_at","id","name","record_id","record_type","rich_content","seen","updated_at","user","user_id"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new EstablishmentCommentOrClientCommentsEntity(d);
   }
   private constructor(d: any) {
@@ -2362,7 +2372,7 @@ export class InvoiceLinesEntity {
         prompt(proxyName+':', JSON.stringify(obj));
       }
     }
-    d.pnl_plan_item = PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem1.Create(d.pnl_plan_item, field + ".pnl_plan_item", undefined);
+    d.pnl_plan_item = PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem1.Create(d.pnl_plan_item, field + ".pnl_plan_item");
     checkNumber(d.pnl_plan_item_id, field + ".pnl_plan_item_id");
     checkBoolean(d.prepaid_pnl, field + ".prepaid_pnl");
     checkString(d.price_before_tax, field + ".price_before_tax");
@@ -2394,7 +2404,7 @@ export class InvoiceLinesEntity {
     checkString(d.vat_rate, field + ".vat_rate");
     const knownProperties = ["advance_id","amount","asset_id","company_id","created_at","currency_amount","currency_price_before_tax","currency_tax","currency_unit_price_before_tax","deferral_id","description","discount","discount_type","document_id","global_vat","id","invoice_line_section_id","label","manual_vat_mode","ocr_vat_rate","pnl_plan_item","pnl_plan_item_id","prepaid_pnl","price_before_tax","product_id","quantity","rank","raw_currency_unit_price","tax","undiscounted_currency_price_before_tax","unit","vat_rate"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new InvoiceLinesEntity(d);
   }
   private constructor(d: any) {
@@ -2478,7 +2488,7 @@ export class PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem1 {
     checkString(d.vat_rate, field + ".vat_rate");
     const knownProperties = ["company_id","country_alpha2","enabled","id","internal_identifier","label","label_is_editable","number","vat_rate"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem1(d);
   }
   private constructor(d: any) {
@@ -2518,7 +2528,7 @@ export class Journal {
     checkString(d.label, field + ".label");
     const knownProperties = ["code","id","label"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new Journal(d);
   }
   private constructor(d: any) {
@@ -2609,7 +2619,7 @@ export class LedgerEventsEntity {
       }
     }
     checkNumber(d.plan_item_id, field + ".plan_item_id");
-    d.planItem = PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem2.Create(d.planItem, field + ".planItem", undefined);
+    d.planItem = PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem2.Create(d.planItem, field + ".planItem");
     if ("processed_label" in d) {
       checkString(d.processed_label, field + ".processed_label");
     }
@@ -2650,7 +2660,7 @@ export class LedgerEventsEntity {
     checkString(d.source, field + ".source");
     const knownProperties = ["balance","company_id","created_at","credit","date","debit","document_id","document_label","id","label","lettering","lettering_id","plan_item_id","planItem","processed_label","readonly","readonlyAmounts","reallocation","reallocation_id","reconciliation_id","source"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new LedgerEventsEntity(d);
   }
   private constructor(d: any) {
@@ -2702,7 +2712,7 @@ export class Lettering {
     checkString(d.plan_item_number, field + ".plan_item_number");
     const knownProperties = ["balance","id","plan_item_number"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new Lettering(d);
   }
   private constructor(d: any) {
@@ -2757,7 +2767,7 @@ export class PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem2 {
     checkString(d.vat_rate, field + ".vat_rate");
     const knownProperties = ["company_id","country_alpha2","enabled","id","internal_identifier","label","label_is_editable","number","vat_rate"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem2(d);
   }
   private constructor(d: any) {
@@ -2793,11 +2803,11 @@ export class Reallocation {
       throwIsArray(field, d);
     }
     checkString(d.created_at, field + ".created_at");
-    d.fromPlanItem = PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem3.Create(d.fromPlanItem, field + ".fromPlanItem", undefined);
+    d.fromPlanItem = PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem3.Create(d.fromPlanItem, field + ".fromPlanItem");
     checkNumber(d.id, field + ".id");
     const knownProperties = ["created_at","fromPlanItem","id"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new Reallocation(d);
   }
   private constructor(d: any) {
@@ -2852,7 +2862,7 @@ export class PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem3 {
     checkString(d.vat_rate, field + ".vat_rate");
     const knownProperties = ["company_id","country_alpha2","enabled","id","internal_identifier","label","label_is_editable","number","vat_rate"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem3(d);
   }
   private constructor(d: any) {
@@ -2886,7 +2896,7 @@ export class ScoredInvoices1 {
     }
     const knownProperties = [];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new ScoredInvoices1(d);
   }
   private constructor(d: any) {
@@ -3132,7 +3142,7 @@ export class Thirdparty {
     }
     const knownProperties = ["activity_code","activity_nomenclature","address","address_additional_info","admin_city_code","balance","billing_bank","billing_bic","billing_footer_invoice_id","billing_footer_invoice_label","billing_iban","billing_language","city","company_id","complete","country","country_alpha2","credits","current_mandate","customer_type","debits","delivery_address","delivery_address_additional_info","delivery_city","delivery_country","delivery_country_alpha2","delivery_postal_code","disable_pending_vat","display_name","emails","establishment_no","estimate_count","first_name","force_pending_vat","gender","gocardless_id","iban","id","invoice_count","invoice_dump_id","invoices_auto_generated","invoices_auto_validated","known_supplier_id","last_name","ledger_events_count","legal_form_code","method","name","notes","notes_comment","payment_conditions","phone","plan_item","plan_item_attributes","plan_item_id","pnl_plan_item","pnl_plan_item_id","postal_code","purchase_request_count","received_a_mandate_request","recipient","recurrent","reference","reg_no","role","rule_enabled","search_terms","source_id","stripe_id","supplier_payment_method","supplier_payment_method_last_updated_at","tags","turnover","url","vat_number","vat_rate"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new Thirdparty(d);
   }
   private constructor(d: any) {
@@ -3233,7 +3243,7 @@ export class ScoredInvoices {
     }
     const knownProperties = [];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new ScoredInvoices(d);
   }
   private constructor(d: any) {

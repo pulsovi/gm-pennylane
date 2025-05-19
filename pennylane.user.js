@@ -17,8 +17,9 @@ function openTabService() {
         const url = unescape(elem.dataset.url ?? '');
         if (!url)
             return;
+        const options = JSON.parse(unescape(elem.dataset.options ?? '{}'));
         console.log('GM_openInTab', { elem, url });
-        GM.openInTab(url, { active: false, insert: true });
+        GM.openInTab(url, { active: false, insert: true, ...options });
         elem.remove();
     }, 200);
 }
@@ -926,7 +927,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkArray$a(d.grouped_documents, field + \".grouped_documents\");\n" +
 "        if (d.grouped_documents) {\n" +
 "            for (let i = 0; i < d.grouped_documents.length; i++) {\n" +
-"                d.grouped_documents[i] = GroupedDocumentsEntity.Create(d.grouped_documents[i], field + \".grouped_documents\" + \"[\" + i + \"]\", undefined);\n" +
+"                d.grouped_documents[i] = GroupedDocumentsEntity.Create(d.grouped_documents[i], field + \".grouped_documents\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"iban\" in d) {\n" +
@@ -1134,7 +1135,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"account_id\", \"accounting_type\", \"amount\", \"archived\", \"archived_at\", \"attachment_lost\", \"attachment_required\", \"billing_subscription_id\", \"can_be_stamped_as_paid_in_pdf\", \"company\", \"company_id\", \"complete\", \"completeness\", \"created_at\", \"credit_notes_amount\", \"currency\", \"currency_amount\", \"currency_amount_before_tax\", \"currency_price_before_tax\", \"currency_tax\", \"custom_payment_reference\", \"date\", \"deadline\", \"direction\", \"discount\", \"discount_type\", \"draft\", \"email_from\", \"estimate_status\", \"external_id\", \"factor_status\", \"fec_pieceref\", \"finalized_at\", \"from_estimate_id\", \"future_in_days\", \"gdrive_path\", \"gross_amount\", \"group_uuid\", \"grouped_at\", \"grouped_documents\", \"iban\", \"id\", \"invoice_kind\", \"invoice_number\", \"invoicing_detailed_source\", \"is_credit_note\", \"is_destroyable\", \"is_estimate\", \"is_waiting_details\", \"is_waiting_for_ocr\", \"journal_id\", \"label\", \"language\", \"manual_partial_invoices\", \"method\", \"multiplier\", \"not_duplicate\", \"ocr_thirdparty_id\", \"outstanding_balance\", \"paid\", \"payment_id\", \"payment_method\", \"payment_reference\", \"payment_reminder_enabled\", \"payment_status\", \"pdf_generation_status\", \"pdf_invoice_display_products_list\", \"pdf_invoice_free_text\", \"pdf_invoice_free_text_enabled\", \"pdf_invoice_subject\", \"pdf_invoice_subject_enabled\", \"pdf_invoice_title\", \"pdf_paid_stamp\", \"preview_status\", \"price_before_tax\", \"pusher_channel\", \"quote_group_uuid\", \"quote_uid\", \"quotes\", \"readonly\", \"recipients\", \"reversal_origin_id\", \"score\", \"scored_invoices\", \"scored_transactions\", \"source\", \"special_mention\", \"status\", \"tax\", \"thirdparty_id\", \"type\", \"updated_at\", \"url\", \"validation_needed\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$l(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$l(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new APIDocument(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -1312,7 +1313,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"name\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$l(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$l(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new Company(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -1428,7 +1429,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkArray$a(d.client_comments, field + \".client_comments\");\n" +
 "        if (d.client_comments) {\n" +
 "            for (let i = 0; i < d.client_comments.length; i++) {\n" +
-"                d.client_comments[i] = ClientCommentsEntityOrEstablishmentComment.Create(d.client_comments[i], field + \".client_comments\" + \"[\" + i + \"]\", undefined);\n" +
+"                d.client_comments[i] = ClientCommentsEntityOrEstablishmentComment.Create(d.client_comments[i], field + \".client_comments\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"company\" in d) {\n" +
@@ -1448,6 +1449,14 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkNumber$h(d.company_id, field + \".company_id\");\n" +
 "        checkBoolean$c(d.complete, field + \".complete\");\n" +
 "        checkNumber$h(d.completeness, field + \".completeness\");\n" +
+"        if (\"converted_invoice_urls\" in d) {\n" +
+"            checkArray$a(d.converted_invoice_urls, field + \".converted_invoice_urls\");\n" +
+"            if (d.converted_invoice_urls) {\n" +
+"                for (let i = 0; i < d.converted_invoice_urls.length; i++) {\n" +
+"                    checkNever$3(d.converted_invoice_urls[i], field + \".converted_invoice_urls\" + \"[\" + i + \"]\");\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
 "        checkString$j(d.created_at, field + \".created_at\");\n" +
 "        if (\"credit_notes_amount\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
@@ -1802,7 +1811,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkArray$a(d.invoice_lines, field + \".invoice_lines\", \"InvoiceLinesEntity[] | null\");\n" +
 "                if (d.invoice_lines) {\n" +
 "                    for (let i = 0; i < d.invoice_lines.length; i++) {\n" +
-"                        d.invoice_lines[i] = InvoiceLinesEntity$2.Create(d.invoice_lines[i], field + \".invoice_lines\" + \"[\" + i + \"]\", undefined);\n" +
+"                        d.invoice_lines[i] = InvoiceLinesEntity$2.Create(d.invoice_lines[i], field + \".invoice_lines\" + \"[\" + i + \"]\");\n" +
 "                    }\n" +
 "                }\n" +
 "            }\n" +
@@ -1906,7 +1915,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        d.journal = Journal$1.Create(d.journal, field + \".journal\", undefined);\n" +
+"        d.journal = Journal$1.Create(d.journal, field + \".journal\");\n" +
 "        checkNumber$h(d.journal_id, field + \".journal_id\");\n" +
 "        checkString$j(d.label, field + \".label\");\n" +
 "        if (\"language\" in d) {\n" +
@@ -1926,7 +1935,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkArray$a(d.ledgerEvents, field + \".ledgerEvents\");\n" +
 "        if (d.ledgerEvents) {\n" +
 "            for (let i = 0; i < d.ledgerEvents.length; i++) {\n" +
-"                d.ledgerEvents[i] = LedgerEventsEntity.Create(d.ledgerEvents[i], field + \".ledgerEvents\" + \"[\" + i + \"]\", undefined);\n" +
+"                d.ledgerEvents[i] = LedgerEventsEntity.Create(d.ledgerEvents[i], field + \".ledgerEvents\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
 "        checkNumber$h(d.ledgerEventsCount, field + \".ledgerEventsCount\");\n" +
@@ -2388,10 +2397,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        const knownProperties = [\"account\", \"account_id\", \"accounting_status\", \"accounting_type\", \"amount\", \"archived\", \"archived_at\", \"attachment_label\", \"attachment_lost\", \"attachment_required\", \"billing_subscription_id\", \"can_be_stamped_as_paid_in_pdf\", \"client_comments\", \"company\", \"company_id\", \"complete\", \"completeness\", \"created_at\", \"credit_notes_amount\", \"currency\", \"currency_amount\", \"currency_amount_before_tax\", \"currency_price_before_tax\", \"currency_tax\", \"current_account_plan_item\", \"custom_payment_reference\", \"date\", \"deadline\", \"direction\", \"discount\", \"discount_type\", \"draft\", \"email_from\", \"embeddable_in_browser\", \"establishment_comment\", \"estimate_status\", \"external_id\", \"factor_status\", \"fec_pieceref\", \"file_signed_id\", \"filename\", \"finalized_at\", \"from_estimate_id\", \"future_in_days\", \"gdrive_path\", \"gross_amount\", \"group_uuid\", \"grouped_at\", \"has_file\", \"has_linked_quotes\", \"hasTooManyLedgerEvents\", \"iban\", \"id\", \"incomplete\", \"invoice_kind\", \"invoice_lines\", \"invoice_number\", \"invoicing_detailed_source\", \"is_accounting_needed\", \"is_credit_note\", \"is_destroyable\", \"is_estimate\", \"is_sendable\", \"is_waiting_details\", \"is_waiting_for_ocr\", \"journal\", \"journal_id\", \"label\", \"language\", \"ledgerEvents\", \"ledgerEventsCount\", \"manual_partial_invoices\", \"method\", \"multiplier\", \"not_duplicate\", \"ocr_thirdparty_id\", \"outstanding_balance\", \"pages_count\", \"paid\", \"payment_id\", \"payment_method\", \"payment_reference\", \"payment_reminder_enabled\", \"payment_status\", \"pdf_generation_status\", \"pdf_invoice_display_products_list\", \"pdf_invoice_free_text\", \"pdf_invoice_free_text_enabled\", \"pdf_invoice_subject\", \"pdf_invoice_subject_enabled\", \"pdf_invoice_title\", \"pdf_paid_stamp\", \"pending\", \"preview_status\", \"preview_urls\", \"price_before_tax\", \"pusher_channel\", \"quote_group_uuid\", \"quote_uid\", \"quotes\", \"readonly\", \"recipients\", \"reconciled\", \"reversal_origin_id\", \"score\", \"scored_invoices\", \"scored_transactions\", \"size\", \"source\", \"special_mention\", \"status\", \"subcomplete\", \"tagged_at_ledger_events_level\", \"tax\", \"thirdparty\", \"thirdparty_id\", \"type\", \"updated_at\", \"url\", \"validation_needed\"];\n" +
+"        const knownProperties = [\"account\", \"account_id\", \"accounting_status\", \"accounting_type\", \"amount\", \"archived\", \"archived_at\", \"attachment_label\", \"attachment_lost\", \"attachment_required\", \"billing_subscription_id\", \"can_be_stamped_as_paid_in_pdf\", \"client_comments\", \"company\", \"company_id\", \"complete\", \"completeness\", \"converted_invoice_urls\", \"created_at\", \"credit_notes_amount\", \"currency\", \"currency_amount\", \"currency_amount_before_tax\", \"currency_price_before_tax\", \"currency_tax\", \"current_account_plan_item\", \"custom_payment_reference\", \"date\", \"deadline\", \"direction\", \"discount\", \"discount_type\", \"draft\", \"email_from\", \"embeddable_in_browser\", \"establishment_comment\", \"estimate_status\", \"external_id\", \"factor_status\", \"fec_pieceref\", \"file_signed_id\", \"filename\", \"finalized_at\", \"from_estimate_id\", \"future_in_days\", \"gdrive_path\", \"gross_amount\", \"group_uuid\", \"grouped_at\", \"has_file\", \"has_linked_quotes\", \"hasTooManyLedgerEvents\", \"iban\", \"id\", \"incomplete\", \"invoice_kind\", \"invoice_lines\", \"invoice_number\", \"invoicing_detailed_source\", \"is_accounting_needed\", \"is_credit_note\", \"is_destroyable\", \"is_estimate\", \"is_sendable\", \"is_waiting_details\", \"is_waiting_for_ocr\", \"journal\", \"journal_id\", \"label\", \"language\", \"ledgerEvents\", \"ledgerEventsCount\", \"manual_partial_invoices\", \"method\", \"multiplier\", \"not_duplicate\", \"ocr_thirdparty_id\", \"outstanding_balance\", \"pages_count\", \"paid\", \"payment_id\", \"payment_method\", \"payment_reference\", \"payment_reminder_enabled\", \"payment_status\", \"pdf_generation_status\", \"pdf_invoice_display_products_list\", \"pdf_invoice_free_text\", \"pdf_invoice_free_text_enabled\", \"pdf_invoice_subject\", \"pdf_invoice_subject_enabled\", \"pdf_invoice_title\", \"pdf_paid_stamp\", \"pending\", \"preview_status\", \"preview_urls\", \"price_before_tax\", \"pusher_channel\", \"quote_group_uuid\", \"quote_uid\", \"quotes\", \"readonly\", \"recipients\", \"reconciled\", \"reversal_origin_id\", \"score\", \"scored_invoices\", \"scored_transactions\", \"size\", \"source\", \"special_mention\", \"status\", \"subcomplete\", \"tagged_at_ledger_events_level\", \"tax\", \"thirdparty\", \"thirdparty_id\", \"type\", \"updated_at\", \"url\", \"validation_needed\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$l(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$l(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new GroupedDocumentsEntity(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -2418,6 +2427,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        this.company_id = d.company_id;\n" +
 "        this.complete = d.complete;\n" +
 "        this.completeness = d.completeness;\n" +
+"        if (\"converted_invoice_urls\" in d)\n" +
+"            this.converted_invoice_urls = d.converted_invoice_urls;\n" +
 "        this.created_at = d.created_at;\n" +
 "        if (\"credit_notes_amount\" in d)\n" +
 "            this.credit_notes_amount = d.credit_notes_amount;\n" +
@@ -2623,7 +2634,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        checkString$j(d.currency, field + \".currency\");\n" +
 "        checkString$j(d.currency_balance, field + \".currency_balance\");\n" +
-"        d.establishment = Establishment.Create(d.establishment, field + \".establishment\", undefined);\n" +
+"        d.establishment = Establishment.Create(d.establishment, field + \".establishment\");\n" +
 "        checkNumber$h(d.establishment_id, field + \".establishment_id\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
@@ -2686,7 +2697,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"balance\", \"bic\", \"company_id\", \"connection\", \"currency\", \"currency_balance\", \"establishment\", \"establishment_id\", \"iban\", \"id\", \"label\", \"last_successful_sync_at\", \"last_sync_at\", \"last_sync_error\", \"last_sync_http_code\", \"ledger_events_count\", \"ledger_events_max_date\", \"ledger_events_min_date\", \"merge_url\", \"method\", \"name\", \"pusher_channel\", \"swan\", \"swan_number\", \"sync_attachments\", \"sync_customers\", \"sync_since\", \"synchronized\", \"transactions_count\", \"updated_at\", \"url\", \"use_as_default_for_vat_return\", \"visible\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$l(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$l(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new Account(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -2759,7 +2770,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"accounts_count\", \"bridge_ids\", \"budgetinsight_id\", \"crm_url\", \"id\", \"logo_url\", \"method\", \"name\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$l(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$l(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new Establishment(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -2800,12 +2811,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkNull$f(d.rich_content, field + \".rich_content\");\n" +
 "        checkBoolean$c(d.seen, field + \".seen\");\n" +
 "        checkString$j(d.updated_at, field + \".updated_at\");\n" +
-"        d.user = User.Create(d.user, field + \".user\", undefined);\n" +
+"        d.user = User.Create(d.user, field + \".user\");\n" +
 "        checkNumber$h(d.user_id, field + \".user_id\");\n" +
 "        const knownProperties = [\"content\", \"created_at\", \"id\", \"name\", \"record_id\", \"record_type\", \"rich_content\", \"seen\", \"updated_at\", \"user\", \"user_id\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$l(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$l(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new ClientCommentsEntityOrEstablishmentComment(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -2848,7 +2859,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"first_name\", \"full_name\", \"id\", \"last_name\", \"profile_picture_url\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$l(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$l(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new User(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -2881,7 +2892,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"name\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$l(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$l(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new Company1(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -2918,7 +2929,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"company_id\", \"country_alpha2\", \"enabled\", \"id\", \"internal_identifier\", \"label\", \"label_is_editable\", \"number\", \"vat_rate\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$l(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$l(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -2990,7 +3001,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"author\", \"content\", \"created_at\", \"id\", \"name\", \"record_id\", \"record_type\", \"rich_content\", \"seen\", \"updated_at\", \"user\", \"user_id\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$l(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$l(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new EstablishmentCommentOrClientCommentsEntity(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -3080,7 +3091,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "            }\n" +
 "        }\n" +
-"        d.pnl_plan_item = PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem1.Create(d.pnl_plan_item, field + \".pnl_plan_item\", undefined);\n" +
+"        d.pnl_plan_item = PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem1.Create(d.pnl_plan_item, field + \".pnl_plan_item\");\n" +
 "        checkNumber$h(d.pnl_plan_item_id, field + \".pnl_plan_item_id\");\n" +
 "        checkBoolean$c(d.prepaid_pnl, field + \".prepaid_pnl\");\n" +
 "        checkString$j(d.price_before_tax, field + \".price_before_tax\");\n" +
@@ -3117,7 +3128,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"advance_id\", \"amount\", \"asset_id\", \"company_id\", \"created_at\", \"currency_amount\", \"currency_price_before_tax\", \"currency_tax\", \"currency_unit_price_before_tax\", \"deferral_id\", \"description\", \"discount\", \"discount_type\", \"document_id\", \"global_vat\", \"id\", \"invoice_line_section_id\", \"label\", \"manual_vat_mode\", \"ocr_vat_rate\", \"pnl_plan_item\", \"pnl_plan_item_id\", \"prepaid_pnl\", \"price_before_tax\", \"product_id\", \"quantity\", \"rank\", \"raw_currency_unit_price\", \"tax\", \"undiscounted_currency_price_before_tax\", \"unit\", \"vat_rate\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$l(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$l(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new InvoiceLinesEntity(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -3196,7 +3207,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"company_id\", \"country_alpha2\", \"enabled\", \"id\", \"internal_identifier\", \"label\", \"label_is_editable\", \"number\", \"vat_rate\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$l(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$l(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem1(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -3235,7 +3246,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"code\", \"id\", \"label\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$l(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$l(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new Journal(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -3312,7 +3323,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "        }\n" +
 "        checkNumber$h(d.plan_item_id, field + \".plan_item_id\");\n" +
-"        d.planItem = PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem2.Create(d.planItem, field + \".planItem\", undefined);\n" +
+"        d.planItem = PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem2.Create(d.planItem, field + \".planItem\");\n" +
 "        if (\"processed_label\" in d) {\n" +
 "            checkString$j(d.processed_label, field + \".processed_label\");\n" +
 "        }\n" +
@@ -3360,7 +3371,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"balance\", \"company_id\", \"created_at\", \"credit\", \"date\", \"debit\", \"document_id\", \"document_label\", \"id\", \"label\", \"lettering\", \"lettering_id\", \"plan_item_id\", \"planItem\", \"processed_label\", \"readonly\", \"readonlyAmounts\", \"reallocation\", \"reallocation_id\", \"reconciliation_id\", \"source\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$l(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$l(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new LedgerEventsEntity(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -3415,7 +3426,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"balance\", \"id\", \"plan_item_number\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$l(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$l(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new Lettering(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -3465,7 +3476,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"company_id\", \"country_alpha2\", \"enabled\", \"id\", \"internal_identifier\", \"label\", \"label_is_editable\", \"number\", \"vat_rate\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$l(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$l(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem2(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -3499,12 +3510,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            throwIsArray$l(field, d);\n" +
 "        }\n" +
 "        checkString$j(d.created_at, field + \".created_at\");\n" +
-"        d.fromPlanItem = PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem3.Create(d.fromPlanItem, field + \".fromPlanItem\", undefined);\n" +
+"        d.fromPlanItem = PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem3.Create(d.fromPlanItem, field + \".fromPlanItem\");\n" +
 "        checkNumber$h(d.id, field + \".id\");\n" +
 "        const knownProperties = [\"created_at\", \"fromPlanItem\", \"id\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$l(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$l(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new Reallocation(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -3554,7 +3565,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"company_id\", \"country_alpha2\", \"enabled\", \"id\", \"internal_identifier\", \"label\", \"label_is_editable\", \"number\", \"vat_rate\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$l(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$l(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem3(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -3590,7 +3601,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$l(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$l(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new ScoredInvoices1(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -3774,7 +3785,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"activity_code\", \"activity_nomenclature\", \"address\", \"address_additional_info\", \"admin_city_code\", \"balance\", \"billing_bank\", \"billing_bic\", \"billing_footer_invoice_id\", \"billing_footer_invoice_label\", \"billing_iban\", \"billing_language\", \"city\", \"company_id\", \"complete\", \"country\", \"country_alpha2\", \"credits\", \"current_mandate\", \"customer_type\", \"debits\", \"delivery_address\", \"delivery_address_additional_info\", \"delivery_city\", \"delivery_country\", \"delivery_country_alpha2\", \"delivery_postal_code\", \"disable_pending_vat\", \"display_name\", \"emails\", \"establishment_no\", \"estimate_count\", \"first_name\", \"force_pending_vat\", \"gender\", \"gocardless_id\", \"iban\", \"id\", \"invoice_count\", \"invoice_dump_id\", \"invoices_auto_generated\", \"invoices_auto_validated\", \"known_supplier_id\", \"last_name\", \"ledger_events_count\", \"legal_form_code\", \"method\", \"name\", \"notes\", \"notes_comment\", \"payment_conditions\", \"phone\", \"plan_item\", \"plan_item_attributes\", \"plan_item_id\", \"pnl_plan_item\", \"pnl_plan_item_id\", \"postal_code\", \"purchase_request_count\", \"received_a_mandate_request\", \"recipient\", \"recurrent\", \"reference\", \"reg_no\", \"role\", \"rule_enabled\", \"search_terms\", \"source_id\", \"stripe_id\", \"supplier_payment_method\", \"supplier_payment_method_last_updated_at\", \"tags\", \"turnover\", \"url\", \"vat_number\", \"vat_rate\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$l(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$l(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new Thirdparty(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -3877,7 +3888,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$l(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$l(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new ScoredInvoices(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -3961,7 +3972,18 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkString$i(d.amount, field + \".amount\");\n" +
 "        checkNumber$g(d.company_id, field + \".company_id\");\n" +
 "        checkString$i(d.currency, field + \".currency\");\n" +
-"        checkString$i(d.date, field + \".date\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkString$i(d.date, field + \".date\", \"string | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$e(d.date, field + \".date\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
+"            }\n" +
+"        }\n" +
 "        checkString$i(d.gross_amount, field + \".gross_amount\");\n" +
 "        checkString$i(d.group_uuid, field + \".group_uuid\");\n" +
 "        checkNumber$g(d.id, field + \".id\");\n" +
@@ -3972,7 +3994,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"amount\", \"company_id\", \"currency\", \"date\", \"gross_amount\", \"group_uuid\", \"id\", \"outstanding_balance\", \"proof_count\", \"type\", \"updated_at\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$k(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$k(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new APIDocumentMatching(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -4004,11 +4026,11 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "}\n" +
 "function checkString$i(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'string')\n" +
-"        errorHelper$k(field, value, \"string\");\n" +
+"        errorHelper$k(field, value, multiple ?? \"string\");\n" +
 "}\n" +
 "function checkNull$e(value, field, multiple) {\n" +
 "    if (value !== null)\n" +
-"        errorHelper$k(field, value, \"null\");\n" +
+"        errorHelper$k(field, value, multiple ?? \"null\");\n" +
 "}\n" +
 "function errorHelper$k(field, d, type) {\n" +
 "    if (type.includes(' | ')) {\n" +
@@ -4091,7 +4113,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$j(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$j(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new APIDMSCreateLink(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -4152,7 +4174,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkNull$d(d.archived_at, field + \".archived_at\");\n" +
 "        checkNumber$f(d.comments_count, field + \".comments_count\");\n" +
 "        checkString$h(d.created_at, field + \".created_at\");\n" +
-"        d.creator = Creator$5.Create(d.creator, field + \".creator\", undefined);\n" +
+"        d.creator = Creator$5.Create(d.creator, field + \".creator\");\n" +
 "        checkBoolean$b(d.favorite, field + \".favorite\");\n" +
 "        checkString$h(d.file_extension, field + \".file_extension\");\n" +
 "        checkNumber$f(d.file_size, field + \".file_size\");\n" +
@@ -4184,7 +4206,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"archived_at\", \"comments_count\", \"created_at\", \"creator\", \"favorite\", \"file_extension\", \"file_size\", \"file_url\", \"id\", \"imports_allowed\", \"itemable_id\", \"method\", \"name\", \"parent_id\", \"pusher_channel\", \"readonly\", \"reference_link\", \"shared\", \"signed_id\", \"type\", \"updated_at\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$i(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$i(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new APIDMSItem(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -4237,7 +4259,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"email\", \"first_name\", \"full_name\", \"last_name\", \"role\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$i(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$i(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new Creator(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -4324,7 +4346,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"id\", \"record_id\", \"record_name\", \"record_type\", \"record_url\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$h(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$h(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new APIDMSItemLink(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -4399,15 +4421,15 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkArray$9(d.items, field + \".items\");\n" +
 "        if (d.items) {\n" +
 "            for (let i = 0; i < d.items.length; i++) {\n" +
-"                d.items[i] = ItemsEntity.Create(d.items[i], field + \".items\" + \"[\" + i + \"]\", undefined);\n" +
+"                d.items[i] = ItemsEntity.Create(d.items[i], field + \".items\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
-"        d.pagination = Pagination$2.Create(d.pagination, field + \".pagination\", undefined);\n" +
+"        d.pagination = Pagination$2.Create(d.pagination, field + \".pagination\");\n" +
 "        checkString$f(d.sort, field + \".sort\");\n" +
 "        const knownProperties = [\"filters\", \"items\", \"pagination\", \"sort\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$g(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$g(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new APIDMSItemList(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -4438,7 +4460,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkNull$c(d.archived_at, field + \".archived_at\");\n" +
 "        checkNumber$d(d.comments_count, field + \".comments_count\");\n" +
 "        checkString$f(d.created_at, field + \".created_at\");\n" +
-"        d.creator = Creator$4.Create(d.creator, field + \".creator\", undefined);\n" +
+"        d.creator = Creator$4.Create(d.creator, field + \".creator\");\n" +
 "        checkBoolean$a(d.favorite, field + \".favorite\");\n" +
 "        checkString$f(d.file_extension, field + \".file_extension\");\n" +
 "        checkNumber$d(d.file_size, field + \".file_size\");\n" +
@@ -4459,7 +4481,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"archived_at\", \"comments_count\", \"created_at\", \"creator\", \"favorite\", \"file_extension\", \"file_size\", \"file_url\", \"id\", \"imports_allowed\", \"itemable_id\", \"method\", \"name\", \"parent_id\", \"pusher_channel\", \"readonly\", \"reference_link\", \"shared\", \"signed_id\", \"type\", \"updated_at\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$g(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$g(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new ItemsEntity(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -4512,7 +4534,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"email\", \"first_name\", \"full_name\", \"last_name\", \"role\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$g(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$g(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new Creator(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -4551,7 +4573,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"hasNextPage\", \"page\", \"pages\", \"pageSize\", \"totalEntries\", \"totalEntriesPrecision\", \"totalEntriesStr\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$g(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$g(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new Pagination(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -4642,7 +4664,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkArray$8(d.filter, field + \".filter\", \"FilterEntity[] | string\");\n" +
 "                if (d.filter) {\n" +
 "                    for (let i = 0; i < d.filter.length; i++) {\n" +
-"                        d.filter[i] = FilterEntity.Create(d.filter[i], field + \".filter\" + \"[\" + i + \"]\", undefined);\n" +
+"                        d.filter[i] = FilterEntity.Create(d.filter[i], field + \".filter\" + \"[\" + i + \"]\");\n" +
 "                    }\n" +
 "                }\n" +
 "            }\n" +
@@ -4661,7 +4683,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"filter\", \"page_name\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$f(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$f(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new APIDMSItemListParams(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -4695,7 +4717,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"field\", \"operator\", \"value\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$f(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$f(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new FilterEntity(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -4771,15 +4793,15 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNever$2(d.firm_admins[i], field + \".firm_admins\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
-"        d.folder = Folder.Create(d.folder, field + \".folder\", undefined);\n" +
+"        d.folder = Folder.Create(d.folder, field + \".folder\");\n" +
 "        checkBoolean$9(d.is_dms_activated_on_firm, field + \".is_dms_activated_on_firm\");\n" +
 "        checkBoolean$9(d.is_firm_admin, field + \".is_firm_admin\");\n" +
-"        d.item = Item.Create(d.item, field + \".item\", undefined);\n" +
+"        d.item = Item.Create(d.item, field + \".item\");\n" +
 "        checkString$d(d.sort, field + \".sort\");\n" +
 "        const knownProperties = [\"filters\", \"firm_admins\", \"folder\", \"is_dms_activated_on_firm\", \"is_firm_admin\", \"item\", \"sort\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$e(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$e(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new APIDMSItemSettings(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -4812,7 +4834,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        checkNull$b(d.archived_at, field + \".archived_at\");\n" +
 "        checkString$d(d.created_at, field + \".created_at\");\n" +
-"        d.creator = Creator$3.Create(d.creator, field + \".creator\", undefined);\n" +
+"        d.creator = Creator$3.Create(d.creator, field + \".creator\");\n" +
 "        checkBoolean$9(d.fixed, field + \".fixed\");\n" +
 "        checkNumber$c(d.id, field + \".id\");\n" +
 "        checkBoolean$9(d.imports_allowed, field + \".imports_allowed\");\n" +
@@ -4827,7 +4849,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"archived_at\", \"created_at\", \"creator\", \"fixed\", \"id\", \"imports_allowed\", \"itemable_id\", \"method\", \"name\", \"parent_id\", \"shared\", \"type\", \"updated_at\", \"visible\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$e(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$e(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new Folder(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -4873,7 +4895,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"email\", \"first_name\", \"full_name\", \"last_name\", \"role\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$e(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$e(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new Creator(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -4905,7 +4927,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkNull$b(d.archived_at, field + \".archived_at\");\n" +
 "        checkNumber$c(d.comments_count, field + \".comments_count\");\n" +
 "        checkString$d(d.created_at, field + \".created_at\");\n" +
-"        d.creator = Creator$3.Create(d.creator, field + \".creator\", undefined);\n" +
+"        d.creator = Creator$3.Create(d.creator, field + \".creator\");\n" +
 "        checkBoolean$9(d.favorite, field + \".favorite\");\n" +
 "        checkString$d(d.file_extension, field + \".file_extension\");\n" +
 "        checkNumber$c(d.file_size, field + \".file_size\");\n" +
@@ -4926,7 +4948,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"archived_at\", \"comments_count\", \"created_at\", \"creator\", \"favorite\", \"file_extension\", \"file_size\", \"file_url\", \"id\", \"imports_allowed\", \"itemable_id\", \"method\", \"name\", \"parent_id\", \"pusher_channel\", \"readonly\", \"reference_link\", \"shared\", \"signed_id\", \"type\", \"updated_at\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$e(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$e(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new Item(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -5031,7 +5053,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkString$c(d.created_at, field + \".created_at\");\n" +
 "        checkNumber$b(d.id, field + \".id\");\n" +
 "        checkNumber$b(d.item_id, field + \".item_id\");\n" +
-"        d.linkable = Linkable$1.Create(d.linkable, field + \".linkable\", undefined);\n" +
+"        d.linkable = Linkable$1.Create(d.linkable, field + \".linkable\");\n" +
 "        checkNumber$b(d.linkable_id, field + \".linkable_id\");\n" +
 "        checkString$c(d.linkable_type, field + \".linkable_type\");\n" +
 "        checkString$c(d.name, field + \".name\");\n" +
@@ -5041,7 +5063,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"created_at\", \"id\", \"item_id\", \"linkable\", \"linkable_id\", \"linkable_type\", \"name\", \"record_id\", \"record_type\", \"reference\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$d(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$d(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new APIDMSLink(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -5078,10 +5100,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkArray$6(d.comments, field + \".comments\");\n" +
 "        if (d.comments) {\n" +
 "            for (let i = 0; i < d.comments.length; i++) {\n" +
-"                d.comments[i] = CommentsEntity$1.Create(d.comments[i], field + \".comments\" + \"[\" + i + \"]\", undefined);\n" +
+"                d.comments[i] = CommentsEntity$1.Create(d.comments[i], field + \".comments\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
-"        d.creator = Creator$2.Create(d.creator, field + \".creator\", undefined);\n" +
+"        d.creator = Creator$2.Create(d.creator, field + \".creator\");\n" +
 "        checkString$c(d.file_extension, field + \".file_extension\");\n" +
 "        checkNumber$b(d.file_size, field + \".file_size\");\n" +
 "        checkString$c(d.file_url, field + \".file_url\");\n" +
@@ -5090,7 +5112,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"comments\", \"creator\", \"file_extension\", \"file_size\", \"file_url\", \"itemable_id\", \"url\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$d(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$d(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new Linkable(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -5126,7 +5148,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"content\", \"created_at\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$d(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$d(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new CommentsEntity(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -5160,7 +5182,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"email\", \"first_name\", \"full_name\", \"last_name\", \"role\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$d(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$d(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new Creator(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -5242,13 +5264,13 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkArray$5(d.dms_links, field + \".dms_links\");\n" +
 "        if (d.dms_links) {\n" +
 "            for (let i = 0; i < d.dms_links.length; i++) {\n" +
-"                d.dms_links[i] = DmsLinksEntity.Create(d.dms_links[i], field + \".dms_links\" + \"[\" + i + \"]\", undefined);\n" +
+"                d.dms_links[i] = DmsLinksEntity.Create(d.dms_links[i], field + \".dms_links\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
 "        const knownProperties = [\"dms_links\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$c(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$c(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new APIDMSLinkList(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -5276,7 +5298,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkString$b(d.created_at, field + \".created_at\");\n" +
 "        checkNumber$a(d.id, field + \".id\");\n" +
 "        checkNumber$a(d.item_id, field + \".item_id\");\n" +
-"        d.linkable = Linkable.Create(d.linkable, field + \".linkable\", undefined);\n" +
+"        d.linkable = Linkable.Create(d.linkable, field + \".linkable\");\n" +
 "        checkNumber$a(d.linkable_id, field + \".linkable_id\");\n" +
 "        checkString$b(d.linkable_type, field + \".linkable_type\");\n" +
 "        checkString$b(d.name, field + \".name\");\n" +
@@ -5286,7 +5308,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"created_at\", \"id\", \"item_id\", \"linkable\", \"linkable_id\", \"linkable_type\", \"name\", \"record_id\", \"record_type\", \"reference\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$c(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$c(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new DmsLinksEntity(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -5323,10 +5345,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkArray$5(d.comments, field + \".comments\");\n" +
 "        if (d.comments) {\n" +
 "            for (let i = 0; i < d.comments.length; i++) {\n" +
-"                d.comments[i] = CommentsEntity.Create(d.comments[i], field + \".comments\" + \"[\" + i + \"]\", undefined);\n" +
+"                d.comments[i] = CommentsEntity.Create(d.comments[i], field + \".comments\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
-"        d.creator = Creator$1.Create(d.creator, field + \".creator\", undefined);\n" +
+"        d.creator = Creator$1.Create(d.creator, field + \".creator\");\n" +
 "        checkString$b(d.file_extension, field + \".file_extension\");\n" +
 "        checkNumber$a(d.file_size, field + \".file_size\");\n" +
 "        checkString$b(d.file_url, field + \".file_url\");\n" +
@@ -5335,7 +5357,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"comments\", \"creator\", \"file_extension\", \"file_size\", \"file_url\", \"itemable_id\", \"url\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$c(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$c(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new Linkable(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -5371,7 +5393,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"content\", \"created_at\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$c(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$c(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new CommentsEntity(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -5405,7 +5427,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"email\", \"first_name\", \"full_name\", \"last_name\", \"role\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$c(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$c(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new Creator(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -5486,7 +5508,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        checkNull$8(d.archived_at, field + \".archived_at\");\n" +
 "        checkString$a(d.created_at, field + \".created_at\");\n" +
-"        d.creator = Creator.Create(d.creator, field + \".creator\", undefined);\n" +
+"        d.creator = Creator.Create(d.creator, field + \".creator\");\n" +
 "        checkBoolean$8(d.favorite, field + \".favorite\");\n" +
 "        checkString$a(d.file_extension, field + \".file_extension\");\n" +
 "        checkNumber$9(d.file_size, field + \".file_size\");\n" +
@@ -5507,7 +5529,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"archived_at\", \"created_at\", \"creator\", \"favorite\", \"file_extension\", \"file_size\", \"file_url\", \"id\", \"imports_allowed\", \"itemable_id\", \"method\", \"name\", \"parent_id\", \"pusher_channel\", \"readonly\", \"reference_link\", \"shared\", \"signed_id\", \"type\", \"updated_at\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$b(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$b(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new APIDMSUpdateItem(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -5559,7 +5581,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"email\", \"first_name\", \"full_name\", \"last_name\", \"role\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$b(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$b(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new Creator(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -5732,7 +5754,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkString$9(d.fec_pieceref, field + \".fec_pieceref\");\n" +
 "        checkNumber$8(d.id, field + \".id\");\n" +
 "        checkBoolean$7(d.is_waiting_details, field + \".is_waiting_details\");\n" +
-"        d.journal = Journal.Create(d.journal, field + \".journal\", undefined);\n" +
+"        d.journal = Journal.Create(d.journal, field + \".journal\");\n" +
 "        checkNumber$8(d.journal_id, field + \".journal_id\");\n" +
 "        checkString$9(d.label, field + \".label\");\n" +
 "        checkNumber$8(d.ledgerEventsCount, field + \".ledgerEventsCount\");\n" +
@@ -5747,7 +5769,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"amount\", \"date\", \"fec_pieceref\", \"id\", \"is_waiting_details\", \"journal\", \"journal_id\", \"label\", \"ledgerEventsCount\", \"readonly\", \"source\", \"taggingCount\", \"totalCredit\", \"totalDebit\", \"type\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$a(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$a(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new APIGroupedDocument(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -5793,7 +5815,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"code\", \"id\", \"label\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$a(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$a(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new Journal(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -5885,7 +5907,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"direction\", \"filter\", \"page\", \"sort\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$9(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$9(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new APIInvoiceListParams(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -5962,15 +5984,15 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkArray$4(d.invoices, field + \".invoices\");\n" +
 "        if (d.invoices) {\n" +
 "            for (let i = 0; i < d.invoices.length; i++) {\n" +
-"                d.invoices[i] = InvoicesEntity.Create(d.invoices[i], field + \".invoices\" + \"[\" + i + \"]\", undefined);\n" +
+"                d.invoices[i] = InvoicesEntity.Create(d.invoices[i], field + \".invoices\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
 "        checkNumber$6(d.pageSize, field + \".pageSize\");\n" +
-"        d.pagination = Pagination$1.Create(d.pagination, field + \".pagination\", undefined);\n" +
+"        d.pagination = Pagination$1.Create(d.pagination, field + \".pagination\");\n" +
 "        const knownProperties = [\"invoices\", \"pageSize\", \"pagination\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$8(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$8(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new APIInvoiceList(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -6051,7 +6073,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkArray$4(d.invoice_lines, field + \".invoice_lines\");\n" +
 "        if (d.invoice_lines) {\n" +
 "            for (let i = 0; i < d.invoice_lines.length; i++) {\n" +
-"                d.invoice_lines[i] = InvoiceLinesEntity$1.Create(d.invoice_lines[i], field + \".invoice_lines\" + \"[\" + i + \"]\", undefined);\n" +
+"                d.invoice_lines[i] = InvoiceLinesEntity$1.Create(d.invoice_lines[i], field + \".invoice_lines\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$7(d.invoice_number, field + \".invoice_number\");\n" +
@@ -6081,7 +6103,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"amount\", \"amount_without_tax\", \"approval_status\", \"archived\", \"checksum\", \"company_id\", \"created_at\", \"currency\", \"currency_amount\", \"currency_tax\", \"date\", \"deadline\", \"direction\", \"email_from\", \"filename\", \"gdrive_path\", \"id\", \"incomplete\", \"invoice_lines\", \"invoice_number\", \"is_factur_x\", \"is_waiting_for_ocr\", \"label\", \"not_duplicate\", \"paid\", \"payment_status\", \"pusher_channel\", \"source\", \"status\", \"thirdparty\", \"type\", \"validation_needed\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$8(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$8(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new InvoicesEntity(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -6138,12 +6160,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            throwIsArray$8(field, d);\n" +
 "        }\n" +
 "        checkNumber$6(d.id, field + \".id\");\n" +
-"        d.pnl_plan_item = PnlPlanItem$1.Create(d.pnl_plan_item, field + \".pnl_plan_item\", undefined);\n" +
+"        d.pnl_plan_item = PnlPlanItem$1.Create(d.pnl_plan_item, field + \".pnl_plan_item\");\n" +
 "        checkString$7(d.vat_rate, field + \".vat_rate\");\n" +
 "        const knownProperties = [\"id\", \"pnl_plan_item\", \"vat_rate\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$8(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$8(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new InvoiceLinesEntity(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -6177,7 +6199,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"enabled\", \"id\", \"label\", \"number\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$8(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$8(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new PnlPlanItem(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -6210,7 +6232,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"id\", \"name\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$8(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$8(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new Thirdparty(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -6246,7 +6268,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"hasNextPage\", \"page\", \"pages\", \"pageSize\", \"totalEntries\", \"totalEntriesPrecision\", \"totalEntriesStr\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$8(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$8(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new Pagination(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -6343,7 +6365,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"embeddable_in_browser\", \"has_file\", \"preview_status\", \"preview_urls\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$7(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$7(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new APIInvoiceUpdateResponse(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -6504,7 +6526,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkArray$2(d.document_tags, field + \".document_tags\");\n" +
 "        if (d.document_tags) {\n" +
 "            for (let i = 0; i < d.document_tags.length; i++) {\n" +
-"                d.document_tags[i] = DocumentTagsEntity.Create(d.document_tags[i], field + \".document_tags\" + \"[\" + i + \"]\", undefined);\n" +
+"                d.document_tags[i] = DocumentTagsEntity.Create(d.document_tags[i], field + \".document_tags\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
 "        checkNumber$5(d.duplicates_count, field + \".duplicates_count\");\n" +
@@ -6544,7 +6566,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkArray$2(d.invoice_lines, field + \".invoice_lines\");\n" +
 "        if (d.invoice_lines) {\n" +
 "            for (let i = 0; i < d.invoice_lines.length; i++) {\n" +
-"                d.invoice_lines[i] = InvoiceLinesEntity.Create(d.invoice_lines[i], field + \".invoice_lines\" + \"[\" + i + \"]\", undefined);\n" +
+"                d.invoice_lines[i] = InvoiceLinesEntity.Create(d.invoice_lines[i], field + \".invoice_lines\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
 "        checkNumber$5(d.invoice_lines_count, field + \".invoice_lines_count\");\n" +
@@ -6625,7 +6647,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"amount\", \"approval_status\", \"archived\", \"attachment_required\", \"blob_id\", \"checksum\", \"client_comments_count\", \"company_id\", \"created_at\", \"currency\", \"currency_amount\", \"currency_price_before_tax\", \"currency_tax\", \"current_account_plan_item\", \"current_account_plan_item_id\", \"date\", \"deadline\", \"direction\", \"document_tags\", \"duplicates_count\", \"email_from\", \"embeddable_in_browser\", \"file_signed_id\", \"filename\", \"gdrive_path\", \"group_uuid\", \"has_closed_ledger_events\", \"has_duplicates\", \"has_file\", \"id\", \"incomplete\", \"invoice_lines\", \"invoice_lines_count\", \"invoice_number\", \"is_employee_expense\", \"is_estimate\", \"is_factur_x\", \"is_waiting_for_ocr\", \"journal_id\", \"label\", \"method\", \"mileage_allowance\", \"outstanding_balance\", \"pages_count\", \"paid\", \"payment_status\", \"preview_status\", \"preview_urls\", \"pusher_channel\", \"source\", \"status\", \"subcomplete\", \"tagged_at_ledger_events_level\", \"thirdparty\", \"thirdparty_id\", \"type\", \"url\", \"validation_needed\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$6(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$6(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new APIInvoice(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -6714,7 +6736,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"enabled\", \"id\", \"label\", \"number\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$6(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$6(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new PnlPlanItemOrCurrentAccountPlanItem(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -6747,7 +6769,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"id\" in d) {\n" +
 "            checkNumber$5(d.id, field + \".id\");\n" +
 "        }\n" +
-"        d.tag = Tag.Create(d.tag, field + \".tag\", undefined);\n" +
+"        d.tag = Tag.Create(d.tag, field + \".tag\");\n" +
 "        checkNumber$5(d.tag_id, field + \".tag_id\");\n" +
 "        if (\"weight\" in d) {\n" +
 "            checkString$5(d.weight, field + \".weight\");\n" +
@@ -6755,7 +6777,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"document_id\", \"group_id\", \"id\", \"tag\", \"tag_id\", \"weight\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$6(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$6(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new DocumentTagsEntity(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -6788,7 +6810,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            throwIsArray$6(field, d);\n" +
 "        }\n" +
 "        checkNull$5(d.analytical_code, field + \".analytical_code\");\n" +
-"        d.group = Group$1.Create(d.group, field + \".group\", undefined);\n" +
+"        d.group = Group$1.Create(d.group, field + \".group\");\n" +
 "        checkNumber$5(d.group_id, field + \".group_id\");\n" +
 "        checkNull$5(d.icon, field + \".icon\");\n" +
 "        checkNumber$5(d.id, field + \".id\");\n" +
@@ -6797,7 +6819,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"analytical_code\", \"group\", \"group_id\", \"icon\", \"id\", \"label\", \"variant\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$6(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$6(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new Tag(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -6834,7 +6856,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"icon\", \"label\", \"self_service_accounting\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$6(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$6(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new Group(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -6910,7 +6932,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                prompt(proxyName$6 + ':', JSON.stringify(obj$6));\n" +
 "            }\n" +
 "        }\n" +
-"        d.pnl_plan_item = PnlPlanItemOrCurrentAccountPlanItem1.Create(d.pnl_plan_item, field + \".pnl_plan_item\", undefined);\n" +
+"        d.pnl_plan_item = PnlPlanItemOrCurrentAccountPlanItem1.Create(d.pnl_plan_item, field + \".pnl_plan_item\");\n" +
 "        checkNumber$5(d.pnl_plan_item_id, field + \".pnl_plan_item_id\");\n" +
 "        checkBoolean$4(d.prepaid_pnl, field + \".prepaid_pnl\");\n" +
 "        checkString$5(d.tax, field + \".tax\");\n" +
@@ -6918,7 +6940,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"advance\", \"advance_id\", \"advance_pnl\", \"amount\", \"asset\", \"asset_id\", \"currency_amount\", \"currency_price_before_tax\", \"currency_tax\", \"deferral\", \"deferral_id\", \"global_vat\", \"id\", \"label\", \"ledger_event_label\", \"ocr_vat_rate\", \"pnl_plan_item\", \"pnl_plan_item_id\", \"prepaid_pnl\", \"tax\", \"vat_rate\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$6(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$6(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new InvoiceLinesEntity(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -6997,7 +7019,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"amortization_months\", \"amortization_type\", \"entry_date\", \"id\", \"invoice_line_editable\", \"name\", \"plan_item_id\", \"quantity\", \"start_date\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$6(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$6(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new Asset(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -7037,7 +7059,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"enabled\", \"id\", \"label\", \"number\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$6(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$6(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new PnlPlanItemOrCurrentAccountPlanItem1(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -7155,7 +7177,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkNull$5(d.notes_comment, field + \".notes_comment\");\n" +
 "        checkString$5(d.payment_conditions, field + \".payment_conditions\");\n" +
 "        checkString$5(d.phone, field + \".phone\");\n" +
-"        d.plan_item = PlanItemOrPnlPlanItem.Create(d.plan_item, field + \".plan_item\", undefined);\n" +
+"        d.plan_item = PlanItemOrPnlPlanItem.Create(d.plan_item, field + \".plan_item\");\n" +
 "        checkNull$5(d.plan_item_attributes, field + \".plan_item_attributes\");\n" +
 "        checkNumber$5(d.plan_item_id, field + \".plan_item_id\");\n" +
 "        // This will be refactored in the next release.\n" +
@@ -7236,7 +7258,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"activity_code\", \"activity_nomenclature\", \"address\", \"address_additional_info\", \"admin_city_code\", \"balance\", \"billing_bank\", \"billing_bic\", \"billing_footer_invoice_id\", \"billing_footer_invoice_label\", \"billing_iban\", \"billing_language\", \"city\", \"company_id\", \"complete\", \"country\", \"country_alpha2\", \"credits\", \"current_mandate\", \"customer_type\", \"debits\", \"delivery_address\", \"delivery_address_additional_info\", \"delivery_city\", \"delivery_country\", \"delivery_country_alpha2\", \"delivery_postal_code\", \"disable_pending_vat\", \"display_name\", \"emails\", \"establishment_no\", \"estimate_count\", \"first_name\", \"force_pending_vat\", \"gender\", \"gocardless_id\", \"iban\", \"id\", \"invoice_count\", \"invoice_dump_id\", \"invoices_auto_generated\", \"invoices_auto_validated\", \"known_supplier_id\", \"last_name\", \"ledger_events_count\", \"legal_form_code\", \"method\", \"name\", \"notes\", \"notes_comment\", \"payment_conditions\", \"phone\", \"plan_item\", \"plan_item_attributes\", \"plan_item_id\", \"pnl_plan_item\", \"pnl_plan_item_id\", \"postal_code\", \"purchase_request_count\", \"received_a_mandate_request\", \"recipient\", \"recurrent\", \"reference\", \"reg_no\", \"role\", \"rule_enabled\", \"search_terms\", \"source_id\", \"stripe_id\", \"supplier_payment_method\", \"supplier_payment_method_last_updated_at\", \"tags\", \"turnover\", \"url\", \"vat_number\", \"vat_rate\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$6(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$6(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new Thirdparty(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -7348,7 +7370,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"company_id\", \"country_alpha2\", \"enabled\", \"id\", \"internal_identifier\", \"label\", \"label_is_editable\", \"number\", \"vat_rate\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$6(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$6(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new PlanItemOrPnlPlanItem(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -7404,7 +7426,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"company_id\", \"country_alpha2\", \"enabled\", \"id\", \"internal_identifier\", \"label\", \"label_is_editable\", \"number\", \"vat_rate\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$6(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$6(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new PlanItemOrPnlPlanItem1(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -7537,7 +7559,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "        }\n" +
 "        checkNumber$4(d.plan_item_id, field + \".plan_item_id\");\n" +
-"        d.planItem = PlanItem$1.Create(d.planItem, field + \".planItem\", undefined);\n" +
+"        d.planItem = PlanItem$1.Create(d.planItem, field + \".planItem\");\n" +
 "        checkBoolean$3(d.readonly, field + \".readonly\");\n" +
 "        checkBoolean$3(d.readonlyAmounts, field + \".readonlyAmounts\");\n" +
 "        // This will be refactored in the next release.\n" +
@@ -7556,7 +7578,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"amount\", \"balance\", \"closed\", \"credit\", \"debit\", \"id\", \"label\", \"lettering\", \"lettering_id\", \"plan_item_id\", \"planItem\", \"readonly\", \"readonlyAmounts\", \"reconciliation_id\", \"source\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$5(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$5(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new APILedgerEvent(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -7603,7 +7625,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"balance\", \"id\", \"max_date\", \"min_date\", \"plan_item_number\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$5(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$5(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new Lettering(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -7641,7 +7663,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"country_alpha2\", \"enabled\", \"id\", \"label\", \"number\", \"vat_rate\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$5(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$5(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new PlanItem(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -7722,15 +7744,15 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            throwIsArray$4(field, d);\n" +
 "        }\n" +
 "        if (\"customer\" in d) {\n" +
-"            d.customer = Customer.Create(d.customer, field + \".customer\", undefined);\n" +
+"            d.customer = Customer.Create(d.customer, field + \".customer\");\n" +
 "        }\n" +
 "        if (\"supplier\" in d) {\n" +
-"            d.supplier = Supplier.Create(d.supplier, field + \".supplier\", undefined);\n" +
+"            d.supplier = Supplier.Create(d.supplier, field + \".supplier\");\n" +
 "        }\n" +
 "        const knownProperties = [\"customer\", \"supplier\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$4(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$4(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new APIThirdparty(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -7794,7 +7816,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkNull$3(d.notes_comment, field + \".notes_comment\");\n" +
 "        checkString$3(d.payment_conditions, field + \".payment_conditions\");\n" +
 "        checkString$3(d.phone, field + \".phone\");\n" +
-"        d.plan_item = PlanItem.Create(d.plan_item, field + \".plan_item\", undefined);\n" +
+"        d.plan_item = PlanItem.Create(d.plan_item, field + \".plan_item\");\n" +
 "        checkString$3(d.postal_code, field + \".postal_code\");\n" +
 "        checkBoolean$2(d.received_a_mandate_request, field + \".received_a_mandate_request\");\n" +
 "        checkString$3(d.recipient, field + \".recipient\");\n" +
@@ -7829,14 +7851,14 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkArray$1(d.thirdparty_invoice_line_rules, field + \".thirdparty_invoice_line_rules\");\n" +
 "        if (d.thirdparty_invoice_line_rules) {\n" +
 "            for (let i = 0; i < d.thirdparty_invoice_line_rules.length; i++) {\n" +
-"                d.thirdparty_invoice_line_rules[i] = ThirdpartyInvoiceLineRulesEntity.Create(d.thirdparty_invoice_line_rules[i], field + \".thirdparty_invoice_line_rules\" + \"[\" + i + \"]\", undefined);\n" +
+"                d.thirdparty_invoice_line_rules[i] = ThirdpartyInvoiceLineRulesEntity.Create(d.thirdparty_invoice_line_rules[i], field + \".thirdparty_invoice_line_rules\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$3(d.vat_number, field + \".vat_number\");\n" +
 "        const knownProperties = [\"address\", \"address_additional_info\", \"billing_bank\", \"billing_bic\", \"billing_footer_invoice\", \"billing_footer_invoice_id\", \"billing_iban\", \"billing_language\", \"city\", \"company_id\", \"country_alpha2\", \"current_mandate\", \"customer_type\", \"delivery_address\", \"delivery_address_additional_info\", \"delivery_city\", \"delivery_country_alpha2\", \"delivery_postal_code\", \"disable_pending_vat\", \"emails\", \"first_name\", \"force_pending_vat\", \"id\", \"invoices_auto_generated\", \"invoices_auto_validated\", \"last_name\", \"name\", \"notes\", \"notes_comment\", \"payment_conditions\", \"phone\", \"plan_item\", \"postal_code\", \"received_a_mandate_request\", \"recipient\", \"reference\", \"reg_no\", \"search_terms\", \"sepa_mandate\", \"source_id\", \"tags\", \"thirdparties_tags\", \"thirdparty_contacts\", \"thirdparty_invoice_line_rules\", \"vat_number\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$4(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$4(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new Customer(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -7910,7 +7932,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"id\", \"number\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$4(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$4(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new PlanItem(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -7936,12 +7958,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$4(field, d);\n" +
 "        }\n" +
-"        d.pnl_plan_item = PnlPlanItem.Create(d.pnl_plan_item, field + \".pnl_plan_item\", undefined);\n" +
+"        d.pnl_plan_item = PnlPlanItem.Create(d.pnl_plan_item, field + \".pnl_plan_item\");\n" +
 "        checkString$3(d.vat_rate, field + \".vat_rate\");\n" +
 "        const knownProperties = [\"pnl_plan_item\", \"vat_rate\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$4(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$4(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new ThirdpartyInvoiceLineRulesEntity(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -7974,7 +7996,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"enabled\", \"id\", \"label\", \"number\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$4(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$4(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new PnlPlanItem(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -8050,7 +8072,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkString$3(d.name, field + \".name\");\n" +
 "        checkString$3(d.notes, field + \".notes\");\n" +
 "        checkNull$3(d.notes_comment, field + \".notes_comment\");\n" +
-"        d.plan_item = PlanItem1.Create(d.plan_item, field + \".plan_item\", undefined);\n" +
+"        d.plan_item = PlanItem1.Create(d.plan_item, field + \".plan_item\");\n" +
 "        checkString$3(d.postal_code, field + \".postal_code\");\n" +
 "        checkArray$1(d.search_terms, field + \".search_terms\");\n" +
 "        if (d.search_terms) {\n" +
@@ -8064,25 +8086,25 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkArray$1(d.tags, field + \".tags\");\n" +
 "        if (d.tags) {\n" +
 "            for (let i = 0; i < d.tags.length; i++) {\n" +
-"                d.tags[i] = TagsEntityOrTag.Create(d.tags[i], field + \".tags\" + \"[\" + i + \"]\", undefined);\n" +
+"                d.tags[i] = TagsEntityOrTag.Create(d.tags[i], field + \".tags\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
 "        checkArray$1(d.thirdparties_tags, field + \".thirdparties_tags\");\n" +
 "        if (d.thirdparties_tags) {\n" +
 "            for (let i = 0; i < d.thirdparties_tags.length; i++) {\n" +
-"                d.thirdparties_tags[i] = ThirdpartiesTagsEntity.Create(d.thirdparties_tags[i], field + \".thirdparties_tags\" + \"[\" + i + \"]\", undefined);\n" +
+"                d.thirdparties_tags[i] = ThirdpartiesTagsEntity.Create(d.thirdparties_tags[i], field + \".thirdparties_tags\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
 "        checkArray$1(d.thirdparty_invoice_line_rules, field + \".thirdparty_invoice_line_rules\");\n" +
 "        if (d.thirdparty_invoice_line_rules) {\n" +
 "            for (let i = 0; i < d.thirdparty_invoice_line_rules.length; i++) {\n" +
-"                d.thirdparty_invoice_line_rules[i] = ThirdpartyInvoiceLineRulesEntity1.Create(d.thirdparty_invoice_line_rules[i], field + \".thirdparty_invoice_line_rules\" + \"[\" + i + \"]\", undefined);\n" +
+"                d.thirdparty_invoice_line_rules[i] = ThirdpartyInvoiceLineRulesEntity1.Create(d.thirdparty_invoice_line_rules[i], field + \".thirdparty_invoice_line_rules\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
 "        checkArray$1(d.thirdparty_visibility_rules, field + \".thirdparty_visibility_rules\");\n" +
 "        if (d.thirdparty_visibility_rules) {\n" +
 "            for (let i = 0; i < d.thirdparty_visibility_rules.length; i++) {\n" +
-"                d.thirdparty_visibility_rules[i] = ThirdpartyVisibilityRulesEntity.Create(d.thirdparty_visibility_rules[i], field + \".thirdparty_visibility_rules\" + \"[\" + i + \"]\", undefined);\n" +
+"                d.thirdparty_visibility_rules[i] = ThirdpartyVisibilityRulesEntity.Create(d.thirdparty_visibility_rules[i], field + \".thirdparty_visibility_rules\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"validation_status\" in d) {\n" +
@@ -8092,7 +8114,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"activity_nomenclature\", \"address\", \"admin_city_code\", \"city\", \"company_id\", \"country_alpha2\", \"disable_pending_vat\", \"emails\", \"establishment_no\", \"force_pending_vat\", \"iban\", \"iban_last_update\", \"iban_proof\", \"id\", \"invoices_auto_generated\", \"invoices_auto_validated\", \"name\", \"notes\", \"notes_comment\", \"plan_item\", \"postal_code\", \"search_terms\", \"supplier_due_date_delay\", \"supplier_due_date_rule\", \"supplier_payment_method\", \"tags\", \"thirdparties_tags\", \"thirdparty_invoice_line_rules\", \"thirdparty_visibility_rules\", \"validation_status\", \"vat_number\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$4(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$4(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new Supplier(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -8155,7 +8177,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"at\", \"from_pennylane\", \"name\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$4(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$4(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new IbanLastUpdate(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -8187,7 +8209,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"id\", \"number\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$4(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$4(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new PlanItem1(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -8213,14 +8235,14 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$4(field, d);\n" +
 "        }\n" +
-"        d.group = Group.Create(d.group, field + \".group\", undefined);\n" +
+"        d.group = Group.Create(d.group, field + \".group\");\n" +
 "        checkNumber$3(d.group_id, field + \".group_id\");\n" +
 "        checkNumber$3(d.id, field + \".id\");\n" +
 "        checkString$3(d.label, field + \".label\");\n" +
 "        const knownProperties = [\"group\", \"group_id\", \"id\", \"label\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$4(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$4(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new TagsEntityOrTag(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -8253,7 +8275,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"label\", \"self_service_accounting\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$4(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$4(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new Group(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -8280,12 +8302,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            throwIsArray$4(field, d);\n" +
 "        }\n" +
 "        checkNumber$3(d.id, field + \".id\");\n" +
-"        d.tag = TagsEntityOrTag1.Create(d.tag, field + \".tag\", undefined);\n" +
+"        d.tag = TagsEntityOrTag1.Create(d.tag, field + \".tag\");\n" +
 "        checkString$3(d.weight, field + \".weight\");\n" +
 "        const knownProperties = [\"id\", \"tag\", \"weight\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$4(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$4(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new ThirdpartiesTagsEntity(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -8312,14 +8334,14 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$4(field, d);\n" +
 "        }\n" +
-"        d.group = Group.Create(d.group, field + \".group\", undefined);\n" +
+"        d.group = Group.Create(d.group, field + \".group\");\n" +
 "        checkNumber$3(d.group_id, field + \".group_id\");\n" +
 "        checkNumber$3(d.id, field + \".id\");\n" +
 "        checkString$3(d.label, field + \".label\");\n" +
 "        const knownProperties = [\"group\", \"group_id\", \"id\", \"label\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$4(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$4(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new TagsEntityOrTag1(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -8374,7 +8396,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"pnl_plan_item\", \"vat_rate\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$4(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$4(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new ThirdpartyInvoiceLineRulesEntity1(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -8407,7 +8429,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"enabled\", \"id\", \"label\", \"number\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$4(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$4(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new PnlPlanItem1(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -8440,7 +8462,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"id\", \"visible_on\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$4(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$4(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new ThirdpartyVisibilityRulesEntity(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -8535,7 +8557,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"filter\", \"page\", \"sort\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$3(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$3(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new APITransactionListParams(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -8607,17 +8629,17 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$2(field, d);\n" +
 "        }\n" +
-"        d.pagination = Pagination.Create(d.pagination, field + \".pagination\", undefined);\n" +
+"        d.pagination = Pagination.Create(d.pagination, field + \".pagination\");\n" +
 "        checkArray(d.transactions, field + \".transactions\");\n" +
 "        if (d.transactions) {\n" +
 "            for (let i = 0; i < d.transactions.length; i++) {\n" +
-"                d.transactions[i] = TransactionsEntity.Create(d.transactions[i], field + \".transactions\" + \"[\" + i + \"]\", undefined);\n" +
+"                d.transactions[i] = TransactionsEntity.Create(d.transactions[i], field + \".transactions\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
 "        const knownProperties = [\"pagination\", \"transactions\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$2(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$2(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new APITransactionList(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -8653,7 +8675,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"hasNextPage\", \"page\", \"pages\", \"pageSize\", \"totalEntries\", \"totalEntriesPrecision\", \"totalEntriesStr\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$2(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$2(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new Pagination(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -8685,7 +8707,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            throwIsArray$2(field, d);\n" +
 "        }\n" +
 "        checkNumber$1(d.account_id, field + \".account_id\");\n" +
-"        d.account_synchronization = AccountSynchronization$1.Create(d.account_synchronization, field + \".account_synchronization\", undefined);\n" +
+"        d.account_synchronization = AccountSynchronization$1.Create(d.account_synchronization, field + \".account_synchronization\");\n" +
 "        checkString$1(d.amount, field + \".amount\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
@@ -8771,7 +8793,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"account_id\", \"account_synchronization\", \"amount\", \"archived_at\", \"attachment_lost\", \"attachment_required\", \"company_id\", \"currency\", \"currency_amount\", \"currency_fee\", \"date\", \"dump\", \"dump_id\", \"fee\", \"files_count\", \"gross_amount\", \"group_uuid\", \"id\", \"is_potential_duplicate\", \"is_waiting_details\", \"label\", \"pending\", \"reconciliation_id\", \"source\", \"source_logo\", \"status\", \"type\", \"updated_at\", \"validation_needed\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$2(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$2(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new TransactionsEntity(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -8852,7 +8874,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"created_at\", \"error_message\", \"triggered_manually\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$2(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$2(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new AccountSynchronization(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -8885,7 +8907,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"created_at\", \"creator\", \"type\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$2(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$2(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new Dump(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -8967,7 +8989,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            throwIsArray$1(field, d);\n" +
 "        }\n" +
 "        checkNumber(d.account_id, field + \".account_id\");\n" +
-"        d.account_synchronization = AccountSynchronization.Create(d.account_synchronization, field + \".account_synchronization\", undefined);\n" +
+"        d.account_synchronization = AccountSynchronization.Create(d.account_synchronization, field + \".account_synchronization\");\n" +
 "        checkString(d.amount, field + \".amount\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
@@ -9053,7 +9075,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"account_id\", \"account_synchronization\", \"amount\", \"archived_at\", \"attachment_lost\", \"attachment_required\", \"company_id\", \"currency\", \"currency_amount\", \"currency_fee\", \"date\", \"dump\", \"dump_id\", \"fee\", \"files_count\", \"gross_amount\", \"group_uuid\", \"id\", \"is_potential_duplicate\", \"is_waiting_details\", \"label\", \"pending\", \"reconciliation_id\", \"source\", \"source_logo\", \"status\", \"type\", \"updated_at\", \"validation_needed\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$1(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$1(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new APITransaction(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -9134,7 +9156,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"created_at\", \"error_message\", \"triggered_manually\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$1(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$1(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new AccountSynchronization(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -9167,7 +9189,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"created_at\", \"creator\", \"type\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$1(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper$1(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new Dump(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -9511,6 +9533,53 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "}\n" +
 "\n" +
+"class Balance {\n" +
+"    constructor() {\n" +
+"        this._CHQ = [];\n" +
+"        this._reçu = [];\n" +
+"        this._transaction = [];\n" +
+"        this._autre = [];\n" +
+"        this.initialized = [];\n" +
+"    }\n" +
+"    toJSON() {\n" +
+"        return this.initialized.reduce((json, key) => ({ ...json, [key]: this.get(key) }), {});\n" +
+"    }\n" +
+"    addCHQ(value) { this.add('CHQ', value); }\n" +
+"    addAutre(value) { this.add('autre', value); }\n" +
+"    addReçu(value) { this.add('reçu', value); }\n" +
+"    addTransaction(value) { this.add('transaction', value); }\n" +
+"    add(key, value) {\n" +
+"        this.validKey(key);\n" +
+"        if (!this.initialized.includes(key))\n" +
+"            this.initialized.push(key);\n" +
+"        if (value === null)\n" +
+"            return;\n" +
+"        if (typeof value !== 'number')\n" +
+"            throw TypeError(`value must be number, \"${typeof value}\" received`);\n" +
+"        this[`_${key}`].push(value);\n" +
+"    }\n" +
+"    get CHQ() { return this.get('CHQ'); }\n" +
+"    get autre() { return this.get('autre'); }\n" +
+"    get reçu() { return this.get('reçu'); }\n" +
+"    get transaction() { return this.get('transaction'); }\n" +
+"    get(key) {\n" +
+"        this.validKey(key);\n" +
+"        return this[`_${key}`].reduce((a, b) => a + b, 0);\n" +
+"    }\n" +
+"    hasCHQ() { return this.has('CHQ'); }\n" +
+"    hasAutre() { return this.has('autre'); }\n" +
+"    hasReçu() { return this.has('reçu'); }\n" +
+"    hasTransaction() { return this.has('transaction'); }\n" +
+"    has(key) {\n" +
+"        this.validKey(key);\n" +
+"        return this[`_${key}`].length > 0;\n" +
+"    }\n" +
+"    validKey(key) {\n" +
+"        if (!['transaction', 'CHQ', 'autre', 'reçu'].includes(key))\n" +
+"            throw new ReferenceError(`La balance ne possède pas de cumul pour \"${key}\"`);\n" +
+"    }\n" +
+"}\n" +
+"\n" +
 "const user = localStorage.getItem('user') ?? 'assistant';\n" +
 "/// DMS 2025 - Clients Ventes : 21994066\n" +
 "class Transaction extends ValidableDocument {\n" +
@@ -9618,7 +9687,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const groupedDocuments = await this.getGroupedDocuments();\n" +
 "        const dmsLinks = await this.getDMSLinks();\n" +
 "        // balance déséquilibrée - version exigeante\n" +
-"        const balance = { transaction: 0 };\n" +
+"        const balance = new Balance();\n" +
 "        groupedDocuments\n" +
 "            .sort((a, b) => Number(b.type === 'Transaction') - Number(a.type === 'Transaction'))\n" +
 "            .forEach(gdoc => {\n" +
@@ -9627,48 +9696,49 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            const coeff = (gdoc.type === 'Invoice' && gdoc.journal.code === 'HA') ? -1 : 1;\n" +
 "            const value = parseFloat(gdoc.amount) * coeff;\n" +
 "            if (gdoc.type === 'Transaction')\n" +
-"                balance.transaction += value;\n" +
+"                balance.addTransaction(value);\n" +
 "            else if (/ CERFA | AIDES - /u.test(gdoc.label))\n" +
-"                balance.Reçu = (balance.Reçu ?? 0) + (value * Math.sign(balance.transaction));\n" +
+"                balance.addReçu(value);\n" +
 "            else if (/ CHQ(?:\\d|\\s)/u.test(gdoc.label))\n" +
-"                balance.CHQ = (balance.CHQ ?? 0) + (value * Math.sign(balance.transaction));\n" +
+"                balance.addCHQ(value);\n" +
 "            else\n" +
-"                balance.autre = (balance.autre ?? 0) + value;\n" +
+"                balance.addAutre(value);\n" +
 "        });\n" +
 "        dmsLinks.forEach(dmsLink => {\n" +
 "            if (this.isCurrent())\n" +
 "                this.debug('balance counting', jsonClone({ dmsLink, balance }));\n" +
 "            if (dmsLink.name.startsWith('CHQ')) {\n" +
 "                const amount = dmsLink.name.match(/- (?<amount>[\\d \\.]*) ?€$/u)?.groups.amount;\n" +
-"                balance.CHQ = (balance.CHQ ?? 0) + (parseFloat(amount ?? '0') * Math.sign(balance.transaction));\n" +
+"                balance.addCHQ(parseFloat(amount ?? '0') * Math.sign(balance.transaction));\n" +
 "            }\n" +
 "            if (/^(?:CERFA|AIDES) /u.test(dmsLink.name)) {\n" +
 "                if (this.isCurrent())\n" +
 "                    this.log('aide trouvée', { dmsLink });\n" +
 "                const amount = dmsLink.name.match(/- (?<amount>[\\d \\.]*) ?€$/u)?.groups.amount;\n" +
-"                balance.Reçu = (balance.Reçu ?? 0) + (parseFloat(amount ?? '0') * Math.sign(balance.transaction));\n" +
+"                balance.addReçu(parseFloat(amount ?? '0') * Math.sign(balance.transaction));\n" +
 "            }\n" +
 "        });\n" +
 "        ledgerEvents.forEach(event => {\n" +
 "            // pertes/gains de change\n" +
 "            if (['47600001', '656', '75800002'].includes(event.planItem.number)) {\n" +
-"                balance.autre = (balance.autre ?? 0) + parseFloat(event.amount);\n" +
+"                balance.addAutre(parseFloat(event.amount));\n" +
 "            }\n" +
 "        });\n" +
 "        if (this.isCurrent())\n" +
 "            this.log({ balance });\n" +
 "        let message = (await this.isCheckRemittance(balance)\n" +
+"            ?? await this.hasUnbalancedCHQ(balance)\n" +
 "            ?? await this.hasUnbalancedReceipt(balance)\n" +
 "            ?? await this.isOtherUnbalanced(balance));\n" +
 "        if (this.isCurrent())\n" +
-"            this.log('balance:', balance);\n" +
+"            this.log('balance:', { balance, message, balanceJSON: balance.toJSON() });\n" +
 "        if (message) {\n" +
 "            return `<a\n" +
 "        title=\"Cliquer ici pour plus d'informations.\"\n" +
 "        href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Transaction%20-%20Balance%20v2#${escape(message)}\"\n" +
-"      >Balance déséquilibrée: ${message} ⓘ</a><ul>${Object.entries(balance)\n" +
+"      >Balance déséquilibrée: ${message} ⓘ</a><ul>${Object.entries(balance.toJSON())\n" +
 "                .sort(([keya], [keyb]) => {\n" +
-"                const keys = ['transaction', 'CHQ', 'Reçu', 'autre'];\n" +
+"                const keys = ['transaction', 'CHQ', 'reçu', 'autre'];\n" +
 "                return keys.indexOf(keya) - keys.indexOf(keyb);\n" +
 "            })\n" +
 "                .map(([key, value]) => `<li><strong>${key} :</strong>${value}${(key !== 'transaction' && balance.transaction && value !== balance.transaction) ? ` (diff : ${balance.transaction - value})` : ''}</li>`)\n" +
@@ -9686,24 +9756,35 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            || aidLedgerEvent && doc.label.startsWith('CHEQUE ')) {\n" +
 "            // Pour les remises de chèques, on a deux pièces justificatives necessaires : le chèque et le cerfa\n" +
 "            // On a parfois des calculs qui ne tombent pas très juste en JS\n" +
-"            if ((Math.abs(balance.transaction ?? 0) - Math.abs(balance.Reçu ?? 0)) > 0.001) {\n" +
-"                balance.Reçu = balance.Reçu ?? 0;\n" +
+"            if (Math.abs(balance.transaction - balance.reçu) > 0.001) {\n" +
+"                balance.addReçu(null);\n" +
 "                if (this.isCurrent())\n" +
 "                    this.log('isCheckRemittance(): somme des reçus incorrecte');\n" +
 "                return 'La somme des reçus doit valoir le montant de la transaction';\n" +
 "            }\n" +
 "            // On a parfois des calculs qui ne tombent pas très juste en JS\n" +
-"            if ((Math.abs(balance.transaction ?? 0) - Math.abs(balance.CHQ ?? 0)) > 0.001) {\n" +
-"                balance.CHQ = balance.CHQ ?? 0;\n" +
+"            if (Math.abs(balance.transaction - balance.CHQ) > 0.001) {\n" +
+"                balance.addCHQ(null);\n" +
 "                if (this.isCurrent())\n" +
 "                    this.log('isCheckRemittance(): somme des chèques incorrecte');\n" +
 "                return 'La somme des chèques doit valoir le montant de la transaction';\n" +
 "            }\n" +
 "        }\n" +
 "    }\n" +
+"    async hasUnbalancedCHQ(balance) {\n" +
+"        if (balance.hasCHQ()) {\n" +
+"            if (Math.abs(balance.CHQ - balance.transaction) > 0.001) {\n" +
+"                if (this.isCurrent())\n" +
+"                    this.log('hasUnbalancedCHQ(): somme des chèques incorrecte');\n" +
+"                return 'La somme des chèques doit valoir le montant de la transaction';\n" +
+"            }\n" +
+"            this.log('balance avec chèques équilibrée', balance);\n" +
+"            return '';\n" +
+"        }\n" +
+"    }\n" +
 "    async hasUnbalancedReceipt(balance) {\n" +
-"        if (balance.Reçu) {\n" +
-"            if ((Math.abs(balance.Reçu ?? 0) - Math.abs(balance.transaction ?? 0)) > 0.001) {\n" +
+"        if (balance.hasReçu()) {\n" +
+"            if (Math.abs(balance.reçu - balance.transaction) > 0.001) {\n" +
 "                if (this.isCurrent())\n" +
 "                    this.log('hasUnbalancedReceipt(): somme des reçus incorrecte');\n" +
 "                return 'La somme des reçus doit valoir le montant de la transaction';\n" +
@@ -9713,6 +9794,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "    }\n" +
 "    async isOtherUnbalanced(balance) {\n" +
+"        const doc = await this.getDocument();\n" +
 "        const ledgerEvents = await this.getLedgerEvents();\n" +
 "        const optionalProof = [\n" +
 "            '58000004', // Virements internes société générale\n" +
@@ -9724,11 +9806,16 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        ];\n" +
 "        if (ledgerEvents.some(line => optionalProof.some(number => line.planItem.number === number)))\n" +
 "            return;\n" +
-"        // perte de reçu acceptable pour les petits montants\n" +
-"        if (Math.abs(balance.transaction) < 100 && (balance.autre ?? 0) === 0)\n" +
+"        // perte de reçu acceptable pour les petits montants, mais pas récurrents\n" +
+"        const requiredProof = [\n" +
+"            'DE: GOCARDLESS',\n" +
+"        ];\n" +
+"        if (Math.abs(balance.transaction) < 100\n" +
+"            && !balance.hasAutre()\n" +
+"            && !requiredProof.some(label => doc.label.includes(label)))\n" +
 "            return;\n" +
-"        if (Math.abs((balance.transaction ?? 0) - (balance.autre ?? 0)) > 0.001) {\n" +
-"            balance.autre = balance.autre ?? 0;\n" +
+"        if ((balance.transaction - balance.autre) > 0.001) {\n" +
+"            balance.addAutre(null);\n" +
 "            return 'La somme des autres justificatifs doit valoir le montant de la transaction';\n" +
 "        }\n" +
 "    }\n" +
@@ -9799,9 +9886,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        // Justificatif manquant\n" +
 "        if (!ledgerEvents.some(levent => levent.closed) // Exercice clos\n" +
 "            && Math.abs(parseFloat(doc.currency_amount)) >= 100) ;\n" +
-"        const attachmentOptional = (!this.isCurrent() && Math.abs(parseFloat(doc.currency_amount)) < 100) // Justificatif pas exigé pour les petits montants\n" +
+"        const attachmentOptional = \n" +
+"        // Justificatif pas exigé pour les petits montants\n" +
+"        (!this.isCurrent() && Math.abs(parseFloat(doc.currency_amount)) < 100)\n" +
 "            || [\n" +
 "                ' DE: STRIPE MOTIF: ALLODONS REF: ',\n" +
+"                'Payout: STRIPE PAYOUT ',\n" +
 "            ].some(label => doc.label.includes(label))\n" +
 "            || [\n" +
 "                'REMISE CHEQUE ',\n" +
@@ -10206,7 +10296,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"response\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper(unknownProperty, d, \"never (unknown property)\");\n" +
+"            errorHelper(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new APIInvoiceToDMS(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -10482,13 +10572,18 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "}\n" +
 "\n" +
-"function openInTab(url) {\n" +
-"    document.body.appendChild(parseHTML(`<div class=\"open_tab\" data-url=\"${escape(url)}\" style=\"display: none;\"></div>`));\n" +
+"function openInTab(url, options = {}) {\n" +
+"    document.body.appendChild(parseHTML(`<div\n" +
+"      class=\"open_tab\"\n" +
+"      data-url=\"${escape(url)}\"\n" +
+"      data-options=\"${escape(JSON.stringify(options))}\"\n" +
+"      style=\"display: none;\"\n" +
+"    ></div>`));\n" +
 "}\n" +
 "\n" +
 "function openDocument(documentId) {\n" +
 "    const url = new URL(location.href.replace(/accountants.*$/, `documents/${documentId}.html`));\n" +
-"    openInTab(url.toString());\n" +
+"    openInTab(url.toString(), { insert: false });\n" +
 "}\n" +
 "\n" +
 "function uniquid(length = 20) {\n" +
@@ -11099,7 +11194,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            ?? await this.isAid()\n" +
 "            ?? await this.hasWrongChangeOffset()\n" +
 "            ?? await this.isMissingLettering()\n" +
-"            ?? await this.hasToSendToDMS()\n" +
+"            //?? await this.hasToSendToDMS()\n" +
 "            ?? await this.isMissingDate()\n" +
 "            ?? ((this.isCurrent() && this.log('loadValidMessage', 'fin des contrôles')), 'OK'));\n" +
 "    }\n" +
@@ -11394,13 +11489,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        >Pas de transaction attachée ⓘ</a><ul style=\"margin:0;padding:0.8em;\">${groupedOptional.map(it => `<li>${it}</li>`).join('')}</ul>`;\n" +
 "        // Une fois la transaction trouvée, envoyer en GED\n" +
 "        const transactions = groupedDocuments.filter(gdoc => gdoc.type === 'Transaction');\n" +
-"        if (transactions.find(transaction => transaction.date.startsWith('2024'))) {\n" +
-"            const dmsItem = await this.moveToDms(21994051 /*2024 - Compta - Clients */);\n" +
-"            this.log({ dmsItem });\n" +
-"            if (this.isCurrent())\n" +
-"                this.log('moved to DMS', { invoice: this });\n" +
-"            return (await Invoice.load(this.id)).loadValidMessage();\n" +
-"        }\n" +
+"        // if (transactions.find(transaction => transaction.date.startsWith('2024'))) {\n" +
+"        //   const dmsItem = await this.moveToDms(21994051 /*2024 - Compta - Clients */);\n" +
+"        //   this.log({ dmsItem });\n" +
+"        //   if (this.isCurrent()) this.log('moved to DMS', { invoice: this });\n" +
+"        //   return (await Invoice.load(this.id)).loadValidMessage();\n" +
+"        // }\n" +
 "        if (transactions.find(transaction => transaction.date.startsWith('2023'))) {\n" +
 "            const dmsItem = await this.moveToDms(57983092 /*2023 - Compta - Clients */);\n" +
 "            this.log({ dmsItem });\n" +
@@ -12122,6 +12216,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    async init() {\n" +
 "        this.hideOldDateBanner();\n" +
 "        this.fixAccountNumbersOweflow();\n" +
+"        this.fixMatchSuggestionTextOverlap();\n" +
+"        this.expandDMSNameInputField();\n" +
 "    }\n" +
 "    async hideOldDateBanner() {\n" +
 "        const ref = await waitElem('span', 'Vous êtes en train de visualiser un exercice antérieur à l’exercice courant.');\n" +
@@ -12141,6 +12237,31 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        injectCSS(`\n" +
 "      html body .ui-transition-collapse.ui-transition-collapse {\n" +
 "        overflow: unset;\n" +
+"      }\n" +
+"    `);\n" +
+"    }\n" +
+"    /**\n" +
+"     * Corrige l'affichage des factures suggérées dans le détail d'une transaction\n" +
+"     */\n" +
+"    fixMatchSuggestionTextOverlap() {\n" +
+"        injectCSS(`\n" +
+"      .ui-card.border-automation-500 .flex-column .text-right {\n" +
+"        margin-top: 1.2em;\n" +
+"      }\n" +
+"    `);\n" +
+"    }\n" +
+"    /**\n" +
+"     * Augmente la taille du champ \"nom\" des fichiers de la GED\n" +
+"     */\n" +
+"    expandDMSNameInputField() {\n" +
+"        injectCSS(`\n" +
+"      form[name=\"DocumentNameForm\"] > div.d-flex {\n" +
+"        flex-direction: column;\n" +
+"        gap: 0.5em;\n" +
+"      }\n" +
+"\n" +
+"      form[name=\"DocumentNameForm\"] > div.d-flex > div {\n" +
+"        margin-left: 0 !important;\n" +
 "      }\n" +
 "    `);\n" +
 "    }\n" +
@@ -12578,6 +12699,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        getDMSLinks,\n" +
 "        getDMSItemLinks,\n" +
 "        getDMSItemList,\n" +
+"        getInvoicesList,\n" +
+"        getInvoice,\n" +
 "        waitPage,\n" +
 "        models: {\n" +
 "            Invoice,\n" +

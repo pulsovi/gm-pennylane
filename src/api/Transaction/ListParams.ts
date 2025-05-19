@@ -31,7 +31,7 @@ export class APITransactionListParams {
     }
     const knownProperties = ["filter","page","sort"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new APITransactionListParams(d);
   }
   private constructor(d: any) {

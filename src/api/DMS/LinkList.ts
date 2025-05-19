@@ -21,12 +21,12 @@ export class APIDMSLinkList {
     checkArray(d.dms_links, field + ".dms_links");
     if (d.dms_links) {
       for (let i = 0; i < d.dms_links.length; i++) {
-        d.dms_links[i] = DmsLinksEntity.Create(d.dms_links[i], field + ".dms_links" + "[" + i + "]", undefined);
+        d.dms_links[i] = DmsLinksEntity.Create(d.dms_links[i], field + ".dms_links" + "[" + i + "]");
       }
     }
     const knownProperties = ["dms_links"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new APIDMSLinkList(d);
   }
   private constructor(d: any) {
@@ -63,7 +63,7 @@ export class DmsLinksEntity {
     checkString(d.created_at, field + ".created_at");
     checkNumber(d.id, field + ".id");
     checkNumber(d.item_id, field + ".item_id");
-    d.linkable = Linkable.Create(d.linkable, field + ".linkable", undefined);
+    d.linkable = Linkable.Create(d.linkable, field + ".linkable");
     checkNumber(d.linkable_id, field + ".linkable_id");
     checkString(d.linkable_type, field + ".linkable_type");
     checkString(d.name, field + ".name");
@@ -72,7 +72,7 @@ export class DmsLinksEntity {
     checkNull(d.reference, field + ".reference");
     const knownProperties = ["created_at","id","item_id","linkable","linkable_id","linkable_type","name","record_id","record_type","reference"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new DmsLinksEntity(d);
   }
   private constructor(d: any) {
@@ -115,10 +115,10 @@ export class Linkable {
     checkArray(d.comments, field + ".comments");
     if (d.comments) {
       for (let i = 0; i < d.comments.length; i++) {
-        d.comments[i] = CommentsEntity.Create(d.comments[i], field + ".comments" + "[" + i + "]", undefined);
+        d.comments[i] = CommentsEntity.Create(d.comments[i], field + ".comments" + "[" + i + "]");
       }
     }
-    d.creator = Creator.Create(d.creator, field + ".creator", undefined);
+    d.creator = Creator.Create(d.creator, field + ".creator");
     checkString(d.file_extension, field + ".file_extension");
     checkNumber(d.file_size, field + ".file_size");
     checkString(d.file_url, field + ".file_url");
@@ -126,7 +126,7 @@ export class Linkable {
     checkNull(d.url, field + ".url");
     const knownProperties = ["comments","creator","file_extension","file_size","file_url","itemable_id","url"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new Linkable(d);
   }
   private constructor(d: any) {
@@ -162,7 +162,7 @@ export class CommentsEntity {
     checkString(d.created_at, field + ".created_at");
     const knownProperties = ["content","created_at"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new CommentsEntity(d);
   }
   private constructor(d: any) {
@@ -199,7 +199,7 @@ export class Creator {
     checkString(d.role, field + ".role");
     const knownProperties = ["email","first_name","full_name","last_name","role"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new Creator(d);
   }
   private constructor(d: any) {

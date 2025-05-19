@@ -150,7 +150,7 @@ export class APIInvoice {
     checkArray(d.document_tags, field + ".document_tags");
     if (d.document_tags) {
       for (let i = 0; i < d.document_tags.length; i++) {
-        d.document_tags[i] = DocumentTagsEntity.Create(d.document_tags[i], field + ".document_tags" + "[" + i + "]", undefined);
+        d.document_tags[i] = DocumentTagsEntity.Create(d.document_tags[i], field + ".document_tags" + "[" + i + "]");
       }
     }
     checkNumber(d.duplicates_count, field + ".duplicates_count");
@@ -186,7 +186,7 @@ export class APIInvoice {
     checkArray(d.invoice_lines, field + ".invoice_lines");
     if (d.invoice_lines) {
       for (let i = 0; i < d.invoice_lines.length; i++) {
-        d.invoice_lines[i] = InvoiceLinesEntity.Create(d.invoice_lines[i], field + ".invoice_lines" + "[" + i + "]", undefined);
+        d.invoice_lines[i] = InvoiceLinesEntity.Create(d.invoice_lines[i], field + ".invoice_lines" + "[" + i + "]");
       }
     }
     checkNumber(d.invoice_lines_count, field + ".invoice_lines_count");
@@ -258,7 +258,7 @@ export class APIInvoice {
     checkBoolean(d.validation_needed, field + ".validation_needed");
     const knownProperties = ["amount","approval_status","archived","attachment_required","blob_id","checksum","client_comments_count","company_id","created_at","currency","currency_amount","currency_price_before_tax","currency_tax","current_account_plan_item","current_account_plan_item_id","date","deadline","direction","document_tags","duplicates_count","email_from","embeddable_in_browser","file_signed_id","filename","gdrive_path","group_uuid","has_closed_ledger_events","has_duplicates","has_file","id","incomplete","invoice_lines","invoice_lines_count","invoice_number","is_employee_expense","is_estimate","is_factur_x","is_waiting_for_ocr","journal_id","label","method","mileage_allowance","outstanding_balance","pages_count","paid","payment_status","preview_status","preview_urls","pusher_channel","source","status","subcomplete","tagged_at_ledger_events_level","thirdparty","thirdparty_id","type","url","validation_needed"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new APIInvoice(d);
   }
   private constructor(d: any) {
@@ -349,7 +349,7 @@ export class PnlPlanItemOrCurrentAccountPlanItem {
     checkString(d.number, field + ".number");
     const knownProperties = ["enabled","id","label","number"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new PnlPlanItemOrCurrentAccountPlanItem(d);
   }
   private constructor(d: any) {
@@ -387,14 +387,14 @@ export class DocumentTagsEntity {
     if ("id" in d) {
       checkNumber(d.id, field + ".id");
     }
-    d.tag = Tag.Create(d.tag, field + ".tag", undefined);
+    d.tag = Tag.Create(d.tag, field + ".tag");
     checkNumber(d.tag_id, field + ".tag_id");
     if ("weight" in d) {
       checkString(d.weight, field + ".weight");
     }
     const knownProperties = ["document_id","group_id","id","tag","tag_id","weight"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new DocumentTagsEntity(d);
   }
   private constructor(d: any) {
@@ -431,7 +431,7 @@ export class Tag {
       throwIsArray(field, d);
     }
     checkNull(d.analytical_code, field + ".analytical_code");
-    d.group = Group.Create(d.group, field + ".group", undefined);
+    d.group = Group.Create(d.group, field + ".group");
     checkNumber(d.group_id, field + ".group_id");
     checkNull(d.icon, field + ".icon");
     checkNumber(d.id, field + ".id");
@@ -439,7 +439,7 @@ export class Tag {
     checkNull(d.variant, field + ".variant");
     const knownProperties = ["analytical_code","group","group_id","icon","id","label","variant"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new Tag(d);
   }
   private constructor(d: any) {
@@ -477,7 +477,7 @@ export class Group {
     checkBoolean(d.self_service_accounting, field + ".self_service_accounting");
     const knownProperties = ["icon","label","self_service_accounting"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new Group(d);
   }
   private constructor(d: any) {
@@ -567,14 +567,14 @@ export class InvoiceLinesEntity {
         prompt(proxyName+':', JSON.stringify(obj));
       }
     }
-    d.pnl_plan_item = PnlPlanItemOrCurrentAccountPlanItem1.Create(d.pnl_plan_item, field + ".pnl_plan_item", undefined);
+    d.pnl_plan_item = PnlPlanItemOrCurrentAccountPlanItem1.Create(d.pnl_plan_item, field + ".pnl_plan_item");
     checkNumber(d.pnl_plan_item_id, field + ".pnl_plan_item_id");
     checkBoolean(d.prepaid_pnl, field + ".prepaid_pnl");
     checkString(d.tax, field + ".tax");
     checkString(d.vat_rate, field + ".vat_rate");
     const knownProperties = ["advance","advance_id","advance_pnl","amount","asset","asset_id","currency_amount","currency_price_before_tax","currency_tax","deferral","deferral_id","global_vat","id","label","ledger_event_label","ocr_vat_rate","pnl_plan_item","pnl_plan_item_id","prepaid_pnl","tax","vat_rate"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new InvoiceLinesEntity(d);
   }
   private constructor(d: any) {
@@ -656,7 +656,7 @@ export class Asset {
     }
     const knownProperties = ["amortization_months","amortization_type","entry_date","id","invoice_line_editable","name","plan_item_id","quantity","start_date"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new Asset(d);
   }
   private constructor(d: any) {
@@ -698,7 +698,7 @@ export class PnlPlanItemOrCurrentAccountPlanItem1 {
     checkString(d.number, field + ".number");
     const knownProperties = ["enabled","id","label","number"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new PnlPlanItemOrCurrentAccountPlanItem1(d);
   }
   private constructor(d: any) {
@@ -885,7 +885,7 @@ export class Thirdparty {
     checkNull(d.notes_comment, field + ".notes_comment");
     checkString(d.payment_conditions, field + ".payment_conditions");
     checkString(d.phone, field + ".phone");
-    d.plan_item = PlanItemOrPnlPlanItem.Create(d.plan_item, field + ".plan_item", undefined);
+    d.plan_item = PlanItemOrPnlPlanItem.Create(d.plan_item, field + ".plan_item");
     checkNull(d.plan_item_attributes, field + ".plan_item_attributes");
     checkNumber(d.plan_item_id, field + ".plan_item_id");
     // This will be refactored in the next release.
@@ -957,7 +957,7 @@ export class Thirdparty {
     }
     const knownProperties = ["activity_code","activity_nomenclature","address","address_additional_info","admin_city_code","balance","billing_bank","billing_bic","billing_footer_invoice_id","billing_footer_invoice_label","billing_iban","billing_language","city","company_id","complete","country","country_alpha2","credits","current_mandate","customer_type","debits","delivery_address","delivery_address_additional_info","delivery_city","delivery_country","delivery_country_alpha2","delivery_postal_code","disable_pending_vat","display_name","emails","establishment_no","estimate_count","first_name","force_pending_vat","gender","gocardless_id","iban","id","invoice_count","invoice_dump_id","invoices_auto_generated","invoices_auto_validated","known_supplier_id","last_name","ledger_events_count","legal_form_code","method","name","notes","notes_comment","payment_conditions","phone","plan_item","plan_item_attributes","plan_item_id","pnl_plan_item","pnl_plan_item_id","postal_code","purchase_request_count","received_a_mandate_request","recipient","recurrent","reference","reg_no","role","rule_enabled","search_terms","source_id","stripe_id","supplier_payment_method","supplier_payment_method_last_updated_at","tags","turnover","url","vat_number","vat_rate"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new Thirdparty(d);
   }
   private constructor(d: any) {
@@ -1076,7 +1076,7 @@ export class PlanItemOrPnlPlanItem {
     checkString(d.vat_rate, field + ".vat_rate");
     const knownProperties = ["company_id","country_alpha2","enabled","id","internal_identifier","label","label_is_editable","number","vat_rate"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new PlanItemOrPnlPlanItem(d);
   }
   private constructor(d: any) {
@@ -1137,7 +1137,7 @@ export class PlanItemOrPnlPlanItem1 {
     checkString(d.vat_rate, field + ".vat_rate");
     const knownProperties = ["company_id","country_alpha2","enabled","id","internal_identifier","label","label_is_editable","number","vat_rate"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new PlanItemOrPnlPlanItem1(d);
   }
   private constructor(d: any) {

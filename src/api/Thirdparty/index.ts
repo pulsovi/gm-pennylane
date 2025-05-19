@@ -20,14 +20,14 @@ export class APIThirdparty {
       throwIsArray(field, d);
     }
     if ("customer" in d) {
-      d.customer = Customer.Create(d.customer, field + ".customer", undefined);
+      d.customer = Customer.Create(d.customer, field + ".customer");
     }
     if ("supplier" in d) {
-      d.supplier = Supplier.Create(d.supplier, field + ".supplier", undefined);
+      d.supplier = Supplier.Create(d.supplier, field + ".supplier");
     }
     const knownProperties = ["customer","supplier"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new APIThirdparty(d);
   }
   private constructor(d: any) {
@@ -133,7 +133,7 @@ export class Customer {
     checkNull(d.notes_comment, field + ".notes_comment");
     checkString(d.payment_conditions, field + ".payment_conditions");
     checkString(d.phone, field + ".phone");
-    d.plan_item = PlanItem.Create(d.plan_item, field + ".plan_item", undefined);
+    d.plan_item = PlanItem.Create(d.plan_item, field + ".plan_item");
     checkString(d.postal_code, field + ".postal_code");
     checkBoolean(d.received_a_mandate_request, field + ".received_a_mandate_request");
     checkString(d.recipient, field + ".recipient");
@@ -168,13 +168,13 @@ export class Customer {
     checkArray(d.thirdparty_invoice_line_rules, field + ".thirdparty_invoice_line_rules");
     if (d.thirdparty_invoice_line_rules) {
       for (let i = 0; i < d.thirdparty_invoice_line_rules.length; i++) {
-        d.thirdparty_invoice_line_rules[i] = ThirdpartyInvoiceLineRulesEntity.Create(d.thirdparty_invoice_line_rules[i], field + ".thirdparty_invoice_line_rules" + "[" + i + "]", undefined);
+        d.thirdparty_invoice_line_rules[i] = ThirdpartyInvoiceLineRulesEntity.Create(d.thirdparty_invoice_line_rules[i], field + ".thirdparty_invoice_line_rules" + "[" + i + "]");
       }
     }
     checkString(d.vat_number, field + ".vat_number");
     const knownProperties = ["address","address_additional_info","billing_bank","billing_bic","billing_footer_invoice","billing_footer_invoice_id","billing_iban","billing_language","city","company_id","country_alpha2","current_mandate","customer_type","delivery_address","delivery_address_additional_info","delivery_city","delivery_country_alpha2","delivery_postal_code","disable_pending_vat","emails","first_name","force_pending_vat","id","invoices_auto_generated","invoices_auto_validated","last_name","name","notes","notes_comment","payment_conditions","phone","plan_item","postal_code","received_a_mandate_request","recipient","reference","reg_no","search_terms","sepa_mandate","source_id","tags","thirdparties_tags","thirdparty_contacts","thirdparty_invoice_line_rules","vat_number"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new Customer(d);
   }
   private constructor(d: any) {
@@ -248,7 +248,7 @@ export class PlanItem {
     checkString(d.number, field + ".number");
     const knownProperties = ["id","number"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new PlanItem(d);
   }
   private constructor(d: any) {
@@ -275,11 +275,11 @@ export class ThirdpartyInvoiceLineRulesEntity {
     } else if (Array.isArray(d)) {
       throwIsArray(field, d);
     }
-    d.pnl_plan_item = PnlPlanItem.Create(d.pnl_plan_item, field + ".pnl_plan_item", undefined);
+    d.pnl_plan_item = PnlPlanItem.Create(d.pnl_plan_item, field + ".pnl_plan_item");
     checkString(d.vat_rate, field + ".vat_rate");
     const knownProperties = ["pnl_plan_item","vat_rate"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new ThirdpartyInvoiceLineRulesEntity(d);
   }
   private constructor(d: any) {
@@ -314,7 +314,7 @@ export class PnlPlanItem {
     checkString(d.number, field + ".number");
     const knownProperties = ["enabled","id","label","number"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new PnlPlanItem(d);
   }
   private constructor(d: any) {
@@ -416,7 +416,7 @@ export class Supplier {
     checkString(d.name, field + ".name");
     checkString(d.notes, field + ".notes");
     checkNull(d.notes_comment, field + ".notes_comment");
-    d.plan_item = PlanItem1.Create(d.plan_item, field + ".plan_item", undefined);
+    d.plan_item = PlanItem1.Create(d.plan_item, field + ".plan_item");
     checkString(d.postal_code, field + ".postal_code");
     checkArray(d.search_terms, field + ".search_terms");
     if (d.search_terms) {
@@ -430,25 +430,25 @@ export class Supplier {
     checkArray(d.tags, field + ".tags");
     if (d.tags) {
       for (let i = 0; i < d.tags.length; i++) {
-        d.tags[i] = TagsEntityOrTag.Create(d.tags[i], field + ".tags" + "[" + i + "]", undefined);
+        d.tags[i] = TagsEntityOrTag.Create(d.tags[i], field + ".tags" + "[" + i + "]");
       }
     }
     checkArray(d.thirdparties_tags, field + ".thirdparties_tags");
     if (d.thirdparties_tags) {
       for (let i = 0; i < d.thirdparties_tags.length; i++) {
-        d.thirdparties_tags[i] = ThirdpartiesTagsEntity.Create(d.thirdparties_tags[i], field + ".thirdparties_tags" + "[" + i + "]", undefined);
+        d.thirdparties_tags[i] = ThirdpartiesTagsEntity.Create(d.thirdparties_tags[i], field + ".thirdparties_tags" + "[" + i + "]");
       }
     }
     checkArray(d.thirdparty_invoice_line_rules, field + ".thirdparty_invoice_line_rules");
     if (d.thirdparty_invoice_line_rules) {
       for (let i = 0; i < d.thirdparty_invoice_line_rules.length; i++) {
-        d.thirdparty_invoice_line_rules[i] = ThirdpartyInvoiceLineRulesEntity1.Create(d.thirdparty_invoice_line_rules[i], field + ".thirdparty_invoice_line_rules" + "[" + i + "]", undefined);
+        d.thirdparty_invoice_line_rules[i] = ThirdpartyInvoiceLineRulesEntity1.Create(d.thirdparty_invoice_line_rules[i], field + ".thirdparty_invoice_line_rules" + "[" + i + "]");
       }
     }
     checkArray(d.thirdparty_visibility_rules, field + ".thirdparty_visibility_rules");
     if (d.thirdparty_visibility_rules) {
       for (let i = 0; i < d.thirdparty_visibility_rules.length; i++) {
-        d.thirdparty_visibility_rules[i] = ThirdpartyVisibilityRulesEntity.Create(d.thirdparty_visibility_rules[i], field + ".thirdparty_visibility_rules" + "[" + i + "]", undefined);
+        d.thirdparty_visibility_rules[i] = ThirdpartyVisibilityRulesEntity.Create(d.thirdparty_visibility_rules[i], field + ".thirdparty_visibility_rules" + "[" + i + "]");
       }
     }
     if ("validation_status" in d) {
@@ -457,7 +457,7 @@ export class Supplier {
     checkString(d.vat_number, field + ".vat_number");
     const knownProperties = ["activity_nomenclature","address","admin_city_code","city","company_id","country_alpha2","disable_pending_vat","emails","establishment_no","force_pending_vat","iban","iban_last_update","iban_proof","id","invoices_auto_generated","invoices_auto_validated","name","notes","notes_comment","plan_item","postal_code","search_terms","supplier_due_date_delay","supplier_due_date_rule","supplier_payment_method","tags","thirdparties_tags","thirdparty_invoice_line_rules","thirdparty_visibility_rules","validation_status","vat_number"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new Supplier(d);
   }
   private constructor(d: any) {
@@ -519,7 +519,7 @@ export class IbanLastUpdate {
     checkString(d.name, field + ".name");
     const knownProperties = ["at","from_pennylane","name"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new IbanLastUpdate(d);
   }
   private constructor(d: any) {
@@ -551,7 +551,7 @@ export class PlanItem1 {
     checkString(d.number, field + ".number");
     const knownProperties = ["id","number"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new PlanItem1(d);
   }
   private constructor(d: any) {
@@ -580,13 +580,13 @@ export class TagsEntityOrTag {
     } else if (Array.isArray(d)) {
       throwIsArray(field, d);
     }
-    d.group = Group.Create(d.group, field + ".group", undefined);
+    d.group = Group.Create(d.group, field + ".group");
     checkNumber(d.group_id, field + ".group_id");
     checkNumber(d.id, field + ".id");
     checkString(d.label, field + ".label");
     const knownProperties = ["group","group_id","id","label"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new TagsEntityOrTag(d);
   }
   private constructor(d: any) {
@@ -619,7 +619,7 @@ export class Group {
     checkBoolean(d.self_service_accounting, field + ".self_service_accounting");
     const knownProperties = ["label","self_service_accounting"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new Group(d);
   }
   private constructor(d: any) {
@@ -648,11 +648,11 @@ export class ThirdpartiesTagsEntity {
       throwIsArray(field, d);
     }
     checkNumber(d.id, field + ".id");
-    d.tag = TagsEntityOrTag1.Create(d.tag, field + ".tag", undefined);
+    d.tag = TagsEntityOrTag1.Create(d.tag, field + ".tag");
     checkString(d.weight, field + ".weight");
     const knownProperties = ["id","tag","weight"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new ThirdpartiesTagsEntity(d);
   }
   private constructor(d: any) {
@@ -682,13 +682,13 @@ export class TagsEntityOrTag1 {
     } else if (Array.isArray(d)) {
       throwIsArray(field, d);
     }
-    d.group = Group.Create(d.group, field + ".group", undefined);
+    d.group = Group.Create(d.group, field + ".group");
     checkNumber(d.group_id, field + ".group_id");
     checkNumber(d.id, field + ".id");
     checkString(d.label, field + ".label");
     const knownProperties = ["group","group_id","id","label"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new TagsEntityOrTag1(d);
   }
   private constructor(d: any) {
@@ -739,7 +739,7 @@ export class ThirdpartyInvoiceLineRulesEntity1 {
     }
     const knownProperties = ["pnl_plan_item","vat_rate"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new ThirdpartyInvoiceLineRulesEntity1(d);
   }
   private constructor(d: any) {
@@ -774,7 +774,7 @@ export class PnlPlanItem1 {
     checkString(d.number, field + ".number");
     const knownProperties = ["enabled","id","label","number"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new PnlPlanItem1(d);
   }
   private constructor(d: any) {
@@ -807,7 +807,7 @@ export class ThirdpartyVisibilityRulesEntity {
     checkString(d.visible_on, field + ".visible_on");
     const knownProperties = ["id","visible_on"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
-    if (unknownProperty) errorHelper(unknownProperty, d, "never (unknown property)");
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new ThirdpartyVisibilityRulesEntity(d);
   }
   private constructor(d: any) {
