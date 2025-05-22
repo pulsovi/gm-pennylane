@@ -41,7 +41,7 @@ export class APIInvoice {
   public readonly is_factur_x: boolean;
   public readonly is_waiting_for_ocr: boolean;
   public readonly journal_id: number;
-  public readonly label: string;
+  public readonly label: string | null;
   public readonly method: string;
   public readonly mileage_allowance: null;
   public readonly outstanding_balance: string;
@@ -188,7 +188,15 @@ export class APIInvoice {
     checkBoolean(d.is_factur_x, field + ".is_factur_x");
     checkBoolean(d.is_waiting_for_ocr, field + ".is_waiting_for_ocr");
     checkNumber(d.journal_id, field + ".journal_id");
-    checkString(d.label, field + ".label");
+    // This will be refactored in the next release.
+    try {
+      checkString(d.label, field + ".label", "string | null");
+    } catch (e) {
+      try {
+        checkNull(d.label, field + ".label", "string | null");
+      } catch (e) {
+      }
+    }
     checkString(d.method, field + ".method");
     checkNull(d.mileage_allowance, field + ".mileage_allowance");
     checkString(d.outstanding_balance, field + ".outstanding_balance");

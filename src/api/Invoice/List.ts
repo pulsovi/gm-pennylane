@@ -63,7 +63,7 @@ export class InvoicesEntity {
   public readonly invoice_number: string;
   public readonly is_factur_x: boolean;
   public readonly is_waiting_for_ocr: boolean;
-  public readonly label: string;
+  public readonly label: string | null;
   public readonly not_duplicate: boolean;
   public readonly paid: boolean;
   public readonly payment_status: string;
@@ -139,7 +139,15 @@ export class InvoicesEntity {
     checkString(d.invoice_number, field + ".invoice_number");
     checkBoolean(d.is_factur_x, field + ".is_factur_x");
     checkBoolean(d.is_waiting_for_ocr, field + ".is_waiting_for_ocr");
-    checkString(d.label, field + ".label");
+    // This will be refactored in the next release.
+    try {
+      checkString(d.label, field + ".label", "string | null");
+    } catch (e) {
+      try {
+        checkNull(d.label, field + ".label", "string | null");
+      } catch (e) {
+      }
+    }
     checkBoolean(d.not_duplicate, field + ".not_duplicate");
     checkBoolean(d.paid, field + ".paid");
     checkString(d.payment_status, field + ".payment_status");

@@ -15,6 +15,7 @@ export class APIDocument {
   public readonly company_id: number;
   public readonly complete?: boolean | null;
   public readonly completeness?: number | null;
+  public readonly converted_invoice_urls?: never[];
   public readonly created_at: string;
   public readonly credit_notes_amount?: string;
   public readonly currency: string;
@@ -53,7 +54,7 @@ export class APIDocument {
   public readonly is_waiting_details: boolean;
   public readonly is_waiting_for_ocr?: boolean;
   public readonly journal_id: number;
-  public readonly label: string;
+  public readonly label: string | null;
   public readonly language?: string;
   public readonly manual_partial_invoices?: boolean;
   public readonly method: string;
@@ -171,6 +172,14 @@ export class APIDocument {
         try {
           checkNull(d.completeness, field + ".completeness", "number | null");
         } catch (e) {
+        }
+      }
+    }
+    if ("converted_invoice_urls" in d) {
+      checkArray(d.converted_invoice_urls, field + ".converted_invoice_urls");
+      if (d.converted_invoice_urls) {
+        for (let i = 0; i < d.converted_invoice_urls.length; i++) {
+          checkNever(d.converted_invoice_urls[i], field + ".converted_invoice_urls" + "[" + i + "]");
         }
       }
     }
@@ -319,7 +328,15 @@ export class APIDocument {
       checkBoolean(d.is_waiting_for_ocr, field + ".is_waiting_for_ocr");
     }
     checkNumber(d.journal_id, field + ".journal_id");
-    checkString(d.label, field + ".label");
+    // This will be refactored in the next release.
+    try {
+      checkString(d.label, field + ".label", "string | null");
+    } catch (e) {
+      try {
+        checkNull(d.label, field + ".label", "string | null");
+      } catch (e) {
+      }
+    }
     if ("language" in d) {
       checkString(d.language, field + ".language");
     }
@@ -468,7 +485,7 @@ export class APIDocument {
     if ("validation_needed" in d) {
       checkBoolean(d.validation_needed, field + ".validation_needed");
     }
-    const knownProperties = ["account_id","accounting_type","amount","archived","archived_at","attachment_lost","attachment_required","billing_subscription_id","can_be_stamped_as_paid_in_pdf","company","company_id","complete","completeness","created_at","credit_notes_amount","currency","currency_amount","currency_amount_before_tax","currency_price_before_tax","currency_tax","custom_payment_reference","date","deadline","direction","discount","discount_type","draft","email_from","estimate_status","external_id","factor_status","fec_pieceref","finalized_at","from_estimate_id","future_in_days","gdrive_path","gross_amount","group_uuid","grouped_at","grouped_documents","iban","id","invoice_kind","invoice_number","invoicing_detailed_source","is_credit_note","is_destroyable","is_estimate","is_waiting_details","is_waiting_for_ocr","journal_id","label","language","manual_partial_invoices","method","multiplier","not_duplicate","ocr_thirdparty_id","outstanding_balance","paid","payment_id","payment_method","payment_reference","payment_reminder_enabled","payment_status","pdf_generation_status","pdf_invoice_display_products_list","pdf_invoice_free_text","pdf_invoice_free_text_enabled","pdf_invoice_subject","pdf_invoice_subject_enabled","pdf_invoice_title","pdf_paid_stamp","preview_status","price_before_tax","pusher_channel","quote_group_uuid","quote_uid","quotes","readonly","recipients","reversal_origin_id","score","scored_invoices","scored_transactions","source","special_mention","status","tax","thirdparty_id","type","updated_at","url","validation_needed"];
+    const knownProperties = ["account_id","accounting_type","amount","archived","archived_at","attachment_lost","attachment_required","billing_subscription_id","can_be_stamped_as_paid_in_pdf","company","company_id","complete","completeness","converted_invoice_urls","created_at","credit_notes_amount","currency","currency_amount","currency_amount_before_tax","currency_price_before_tax","currency_tax","custom_payment_reference","date","deadline","direction","discount","discount_type","draft","email_from","estimate_status","external_id","factor_status","fec_pieceref","finalized_at","from_estimate_id","future_in_days","gdrive_path","gross_amount","group_uuid","grouped_at","grouped_documents","iban","id","invoice_kind","invoice_number","invoicing_detailed_source","is_credit_note","is_destroyable","is_estimate","is_waiting_details","is_waiting_for_ocr","journal_id","label","language","manual_partial_invoices","method","multiplier","not_duplicate","ocr_thirdparty_id","outstanding_balance","paid","payment_id","payment_method","payment_reference","payment_reminder_enabled","payment_status","pdf_generation_status","pdf_invoice_display_products_list","pdf_invoice_free_text","pdf_invoice_free_text_enabled","pdf_invoice_subject","pdf_invoice_subject_enabled","pdf_invoice_title","pdf_paid_stamp","preview_status","price_before_tax","pusher_channel","quote_group_uuid","quote_uid","quotes","readonly","recipients","reversal_origin_id","score","scored_invoices","scored_transactions","source","special_mention","status","tax","thirdparty_id","type","updated_at","url","validation_needed"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
     if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new APIDocument(d);
@@ -487,6 +504,7 @@ export class APIDocument {
     this.company_id = d.company_id;
     if ("complete" in d) this.complete = d.complete;
     if ("completeness" in d) this.completeness = d.completeness;
+    if ("converted_invoice_urls" in d) this.converted_invoice_urls = d.converted_invoice_urls;
     this.created_at = d.created_at;
     if ("credit_notes_amount" in d) this.credit_notes_amount = d.credit_notes_amount;
     this.currency = d.currency;
@@ -668,7 +686,7 @@ export class GroupedDocumentsEntity {
   public readonly is_waiting_for_ocr?: boolean | null;
   public readonly journal: Journal;
   public readonly journal_id: number;
-  public readonly label: string;
+  public readonly label: string | null;
   public readonly language?: string | null;
   public readonly ledgerEvents: LedgerEventsEntity[];
   public readonly ledgerEventsCount: number;
@@ -1201,7 +1219,15 @@ export class GroupedDocumentsEntity {
     }
     d.journal = Journal.Create(d.journal, field + ".journal");
     checkNumber(d.journal_id, field + ".journal_id");
-    checkString(d.label, field + ".label");
+    // This will be refactored in the next release.
+    try {
+      checkString(d.label, field + ".label", "string | null");
+    } catch (e) {
+      try {
+        checkNull(d.label, field + ".label", "string | null");
+      } catch (e) {
+      }
+    }
     if ("language" in d) {
       // This will be refactored in the next release.
       try {

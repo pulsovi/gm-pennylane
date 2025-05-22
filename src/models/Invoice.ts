@@ -80,6 +80,7 @@ class SupplierInvoice extends Invoice {
       ?? await this.isClosed()
       ?? await this.isArchived()
       ?? await this.is2025()
+      ?? await this.isZero()
       ?? await this.isMissingThirdparty()
       ?? await this.isMissingCounterpart()
       ?? await this.isTrashCounterpart()
@@ -157,9 +158,19 @@ class SupplierInvoice extends Invoice {
     if (doc.date?.startsWith('2025') || groupedDocuments.some(gdoc => gdoc.date?.startsWith('2025'))) {
       return (
         await this.isMissingLettering()
+        ?? await this.isZero()
         ?? ((this.isCurrent()) && this.log('2025'), 'OK')
       );
     }
+  }
+
+  private async isZero () {
+    const invoice = await this.getInvoice();
+    // Montant
+    if (invoice.amount === '0.0' && !invoice.invoice_number.includes('|ZERO|')) return `<a
+      title="Cliquer ici pour plus d'informations."
+      href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Facture%20client"
+    >Ajouter le montant ⓘ</a><ul style="margin:0;padding:0.8em;"><li>|ZERO|</li></ul>`;
   }
 
   private async isMissingThirdparty() {
@@ -416,6 +427,7 @@ class CustomerInvoice extends Invoice {
     const groupedOptional = ['¤ TRANSACTION INTROUVABLE'];
     const groupedDocuments = invoiceDocument.grouped_documents;
 
+
     if (
       !groupedDocuments?.some(doc => doc.type === 'Transaction')
       && !groupedOptional.some(label => invoice.invoice_number.startsWith(label))
@@ -425,9 +437,18 @@ class CustomerInvoice extends Invoice {
           href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Pas%20de%20transaction%20attach%C3%A9e"
         >Pas de transaction attachée ⓘ</a><ul style="margin:0;padding:0.8em;">${groupedOptional.map(it => `<li>${it}</li>`).join('')}</ul>`;
 
-    // Une fois la transaction trouvée, envoyer en GED
-    const transactions = groupedDocuments.filter(gdoc => gdoc.type === 'Transaction');
+    return (
+      //this.hasToSendToDMS() ??
+      'OK'
+    );
+  }
 
+  private async hasToSendToDMS() {
+    const groupedDocuments = await this.getGroupedDocuments();
+    const transactions = groupedDocuments.filter(gdoc => gdoc.type === 'Transaction');
+    const invoice = await this.getInvoice();
+
+    const archivedAllowed = ['§ #', '¤ TRANSACTION INTROUVABLE'];
 
     // if (transactions.find(transaction => transaction.date.startsWith('2024'))) {
     //   const dmsItem = await this.moveToDms(21994051 /*2024 - Compta - Clients */);
@@ -436,12 +457,12 @@ class CustomerInvoice extends Invoice {
     //   return (await Invoice.load(this.id)).loadValidMessage();
     // }
 
-    if (transactions.find(transaction => transaction.date.startsWith('2023'))) {
-      const dmsItem = await this.moveToDms(57983092 /*2023 - Compta - Clients */);
-      this.log({ dmsItem });
-      if (this.isCurrent()) this.log('moved to DMS', { invoice: this });
-      return (await Invoice.load(this.id)).loadValidMessage();
-    }
+    // if (transactions.find(transaction => transaction.date.startsWith('2023'))) {
+    //   const dmsItem = await this.moveToDms(57983092 /*2023 - Compta - Clients */);
+    //   this.log({ dmsItem });
+    //   if (this.isCurrent()) this.log('moved to DMS', { invoice: this });
+    //   return (await Invoice.load(this.id)).loadValidMessage();
+    // }
 
     // Date manquante
     if (!invoice.date) {
@@ -471,7 +492,5 @@ class CustomerInvoice extends Invoice {
         href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Envoi%20en%20GED"
       >Envoyer en GED ⓘ</a>`;
     }
-
-    return 'OK';
   }
 }
