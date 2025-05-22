@@ -173,7 +173,7 @@ export default class Transaction extends ValidableDocument {
     ledgerEvents.forEach(event => {
       // pertes/gains de change
       if (['47600001', '656', '75800002'].includes(event.planItem.number)) {
-        balance.addAutre(parseFloat(event.amount));
+        balance.addAutre(parseFloat(event.amount) * -1);
       }
     });
 
@@ -234,7 +234,7 @@ export default class Transaction extends ValidableDocument {
         if (this.isCurrent()) this.log('hasUnbalancedCHQ(): somme des chèques incorrecte');
         return 'La somme des chèques doit valoir le montant de la transaction';
       }
-      this.log('balance avec chèques équilibrée', balance);
+      if (this.isCurrent()) this.log('balance avec chèques équilibrée', balance);
       return '';
     }
   }
@@ -245,7 +245,7 @@ export default class Transaction extends ValidableDocument {
         if (this.isCurrent()) this.log('hasUnbalancedReceipt(): somme des reçus incorrecte');
         return 'La somme des reçus doit valoir le montant de la transaction';
       }
-      this.log('balance avec reçus équilibrée', balance);
+      if (this.isCurrent()) this.log('balance avec reçus équilibrée', balance);
       return '';
     }
   }
@@ -327,13 +327,17 @@ export default class Transaction extends ValidableDocument {
     const isDonation = groupedDocuments.some(gdoc => / CERFA | AIDES - /u.test(gdoc.label))
       || dmsLinks.some(dmsLink => /^(?:CERFA|AIDES) /u.test(dmsLink.name));
     const donationCounterparts = [
-      '75411', // Dons manuels
-      '6571',  // Aides financières accordées à un particulier
+      '75411',   // Dons manuels
+      '6571',    // Aides financières accordées à un particulier
+      '6571002', // Don versé à une autre association
     ]
     if (isDonation && !ledgerEvents.some(
       line => donationCounterparts.includes(line.planItem.number)
     )) {
-      return 'La contrepartie devrait commencer par "6571" ou "7541" (onglet "Écritures)';
+      if (this.isCurrent()) this.log('La contrepartie devrait faire partie de cette liste', {ledgerEvents, donationCounterparts});
+      return `La contrepartie devrait faire partie de cette liste (onglet "Écritures")<ul><li>${
+        donationCounterparts.join('</li><li>')
+      }</li></ul>`;
     }
   }
 
@@ -470,7 +474,7 @@ export default class Transaction extends ValidableDocument {
     if (['VIR ', 'Payout: '].some(label => doc.label.startsWith(label))) {
       return (
         await this.isStripeInternalTransfer()
-        ?? await this.isAssociationDonation()
+        // ?? await this.isAssociationDonation()
         // ?? await this.isOptionalReceiptDonation() // Les CERFAs ne sont pas optionel, seul leur envoi au donateur peut l'être
         // ?? await this.isNormalDonation()          // inclus dans la balance
       );
