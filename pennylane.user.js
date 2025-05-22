@@ -796,6 +796,14 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
+"        if (\"converted_invoice_urls\" in d) {\n" +
+"            checkArray$a(d.converted_invoice_urls, field + \".converted_invoice_urls\");\n" +
+"            if (d.converted_invoice_urls) {\n" +
+"                for (let i = 0; i < d.converted_invoice_urls.length; i++) {\n" +
+"                    checkNever$3(d.converted_invoice_urls[i], field + \".converted_invoice_urls\" + \"[\" + i + \"]\");\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
 "        checkString$j(d.created_at, field + \".created_at\");\n" +
 "        if (\"credit_notes_amount\" in d) {\n" +
 "            checkString$j(d.credit_notes_amount, field + \".credit_notes_amount\");\n" +
@@ -955,7 +963,17 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            checkBoolean$c(d.is_waiting_for_ocr, field + \".is_waiting_for_ocr\");\n" +
 "        }\n" +
 "        checkNumber$h(d.journal_id, field + \".journal_id\");\n" +
-"        checkString$j(d.label, field + \".label\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkString$j(d.label, field + \".label\", \"string | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$f(d.label, field + \".label\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"            }\n" +
+"        }\n" +
 "        if (\"language\" in d) {\n" +
 "            checkString$j(d.language, field + \".language\");\n" +
 "        }\n" +
@@ -1114,7 +1132,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"validation_needed\" in d) {\n" +
 "            checkBoolean$c(d.validation_needed, field + \".validation_needed\");\n" +
 "        }\n" +
-"        const knownProperties = [\"account_id\", \"accounting_type\", \"amount\", \"archived\", \"archived_at\", \"attachment_lost\", \"attachment_required\", \"billing_subscription_id\", \"can_be_stamped_as_paid_in_pdf\", \"company\", \"company_id\", \"complete\", \"completeness\", \"created_at\", \"credit_notes_amount\", \"currency\", \"currency_amount\", \"currency_amount_before_tax\", \"currency_price_before_tax\", \"currency_tax\", \"custom_payment_reference\", \"date\", \"deadline\", \"direction\", \"discount\", \"discount_type\", \"draft\", \"email_from\", \"estimate_status\", \"external_id\", \"factor_status\", \"fec_pieceref\", \"finalized_at\", \"from_estimate_id\", \"future_in_days\", \"gdrive_path\", \"gross_amount\", \"group_uuid\", \"grouped_at\", \"grouped_documents\", \"iban\", \"id\", \"invoice_kind\", \"invoice_number\", \"invoicing_detailed_source\", \"is_credit_note\", \"is_destroyable\", \"is_estimate\", \"is_waiting_details\", \"is_waiting_for_ocr\", \"journal_id\", \"label\", \"language\", \"manual_partial_invoices\", \"method\", \"multiplier\", \"not_duplicate\", \"ocr_thirdparty_id\", \"outstanding_balance\", \"paid\", \"payment_id\", \"payment_method\", \"payment_reference\", \"payment_reminder_enabled\", \"payment_status\", \"pdf_generation_status\", \"pdf_invoice_display_products_list\", \"pdf_invoice_free_text\", \"pdf_invoice_free_text_enabled\", \"pdf_invoice_subject\", \"pdf_invoice_subject_enabled\", \"pdf_invoice_title\", \"pdf_paid_stamp\", \"preview_status\", \"price_before_tax\", \"pusher_channel\", \"quote_group_uuid\", \"quote_uid\", \"quotes\", \"readonly\", \"recipients\", \"reversal_origin_id\", \"score\", \"scored_invoices\", \"scored_transactions\", \"source\", \"special_mention\", \"status\", \"tax\", \"thirdparty_id\", \"type\", \"updated_at\", \"url\", \"validation_needed\"];\n" +
+"        const knownProperties = [\"account_id\", \"accounting_type\", \"amount\", \"archived\", \"archived_at\", \"attachment_lost\", \"attachment_required\", \"billing_subscription_id\", \"can_be_stamped_as_paid_in_pdf\", \"company\", \"company_id\", \"complete\", \"completeness\", \"converted_invoice_urls\", \"created_at\", \"credit_notes_amount\", \"currency\", \"currency_amount\", \"currency_amount_before_tax\", \"currency_price_before_tax\", \"currency_tax\", \"custom_payment_reference\", \"date\", \"deadline\", \"direction\", \"discount\", \"discount_type\", \"draft\", \"email_from\", \"estimate_status\", \"external_id\", \"factor_status\", \"fec_pieceref\", \"finalized_at\", \"from_estimate_id\", \"future_in_days\", \"gdrive_path\", \"gross_amount\", \"group_uuid\", \"grouped_at\", \"grouped_documents\", \"iban\", \"id\", \"invoice_kind\", \"invoice_number\", \"invoicing_detailed_source\", \"is_credit_note\", \"is_destroyable\", \"is_estimate\", \"is_waiting_details\", \"is_waiting_for_ocr\", \"journal_id\", \"label\", \"language\", \"manual_partial_invoices\", \"method\", \"multiplier\", \"not_duplicate\", \"ocr_thirdparty_id\", \"outstanding_balance\", \"paid\", \"payment_id\", \"payment_method\", \"payment_reference\", \"payment_reminder_enabled\", \"payment_status\", \"pdf_generation_status\", \"pdf_invoice_display_products_list\", \"pdf_invoice_free_text\", \"pdf_invoice_free_text_enabled\", \"pdf_invoice_subject\", \"pdf_invoice_subject_enabled\", \"pdf_invoice_title\", \"pdf_paid_stamp\", \"preview_status\", \"price_before_tax\", \"pusher_channel\", \"quote_group_uuid\", \"quote_uid\", \"quotes\", \"readonly\", \"recipients\", \"reversal_origin_id\", \"score\", \"scored_invoices\", \"scored_transactions\", \"source\", \"special_mention\", \"status\", \"tax\", \"thirdparty_id\", \"type\", \"updated_at\", \"url\", \"validation_needed\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
 "            errorHelper$l(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
@@ -1139,6 +1157,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            this.complete = d.complete;\n" +
 "        if (\"completeness\" in d)\n" +
 "            this.completeness = d.completeness;\n" +
+"        if (\"converted_invoice_urls\" in d)\n" +
+"            this.converted_invoice_urls = d.converted_invoice_urls;\n" +
 "        this.created_at = d.created_at;\n" +
 "        if (\"credit_notes_amount\" in d)\n" +
 "            this.credit_notes_amount = d.credit_notes_amount;\n" +
@@ -1861,7 +1881,17 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        d.journal = Journal$1.Create(d.journal, field + \".journal\");\n" +
 "        checkNumber$h(d.journal_id, field + \".journal_id\");\n" +
-"        checkString$j(d.label, field + \".label\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkString$j(d.label, field + \".label\", \"string | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$f(d.label, field + \".label\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"            }\n" +
+"        }\n" +
 "        if (\"language\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
@@ -5933,7 +5963,17 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkString$7(d.invoice_number, field + \".invoice_number\");\n" +
 "        checkBoolean$6(d.is_factur_x, field + \".is_factur_x\");\n" +
 "        checkBoolean$6(d.is_waiting_for_ocr, field + \".is_waiting_for_ocr\");\n" +
-"        checkString$7(d.label, field + \".label\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkString$7(d.label, field + \".label\", \"string | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$6(d.label, field + \".label\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"            }\n" +
+"        }\n" +
 "        checkBoolean$6(d.not_duplicate, field + \".not_duplicate\");\n" +
 "        checkBoolean$6(d.paid, field + \".paid\");\n" +
 "        checkString$7(d.payment_status, field + \".payment_status\");\n" +
@@ -6417,7 +6457,17 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkBoolean$4(d.is_factur_x, field + \".is_factur_x\");\n" +
 "        checkBoolean$4(d.is_waiting_for_ocr, field + \".is_waiting_for_ocr\");\n" +
 "        checkNumber$5(d.journal_id, field + \".journal_id\");\n" +
-"        checkString$5(d.label, field + \".label\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkString$5(d.label, field + \".label\", \"string | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$5(d.label, field + \".label\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"            }\n" +
+"        }\n" +
 "        checkString$5(d.method, field + \".method\");\n" +
 "        checkNull$5(d.mileage_allowance, field + \".mileage_allowance\");\n" +
 "        checkString$5(d.outstanding_balance, field + \".outstanding_balance\");\n" +
@@ -9512,7 +9562,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        ledgerEvents.forEach(event => {\n" +
 "            // pertes/gains de change\n" +
 "            if (['47600001', '656', '75800002'].includes(event.planItem.number)) {\n" +
-"                balance.addAutre(parseFloat(event.amount));\n" +
+"                balance.addAutre(parseFloat(event.amount) * -1);\n" +
 "            }\n" +
 "        });\n" +
 "        if (this.isCurrent())\n" +
@@ -9569,7 +9619,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    this.log('hasUnbalancedCHQ(): somme des chèques incorrecte');\n" +
 "                return 'La somme des chèques doit valoir le montant de la transaction';\n" +
 "            }\n" +
-"            this.log('balance avec chèques équilibrée', balance);\n" +
+"            if (this.isCurrent())\n" +
+"                this.log('balance avec chèques équilibrée', balance);\n" +
 "            return '';\n" +
 "        }\n" +
 "    }\n" +
@@ -9580,7 +9631,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    this.log('hasUnbalancedReceipt(): somme des reçus incorrecte');\n" +
 "                return 'La somme des reçus doit valoir le montant de la transaction';\n" +
 "            }\n" +
-"            this.log('balance avec reçus équilibrée', balance);\n" +
+"            if (this.isCurrent())\n" +
+"                this.log('balance avec reçus équilibrée', balance);\n" +
 "            return '';\n" +
 "        }\n" +
 "    }\n" +
@@ -9648,9 +9700,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const donationCounterparts = [\n" +
 "            '75411', // Dons manuels\n" +
 "            '6571', // Aides financières accordées à un particulier\n" +
+"            '6571002', // Don versé à une autre association\n" +
 "        ];\n" +
 "        if (isDonation && !ledgerEvents.some(line => donationCounterparts.includes(line.planItem.number))) {\n" +
-"            return 'La contrepartie devrait commencer par \"6571\" ou \"7541\" (onglet \"Écritures)';\n" +
+"            if (this.isCurrent())\n" +
+"                this.log('La contrepartie devrait faire partie de cette liste', { ledgerEvents, donationCounterparts });\n" +
+"            return `La contrepartie devrait faire partie de cette liste (onglet \"Écritures\")<ul><li>${donationCounterparts.join('</li><li>')}</li></ul>`;\n" +
 "        }\n" +
 "    }\n" +
 "    async isOldUnbalanced() {\n" +
@@ -9767,7 +9822,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const doc = await this.getDocument();\n" +
 "        if (['VIR ', 'Payout: '].some(label => doc.label.startsWith(label))) {\n" +
 "            return (await this.isStripeInternalTransfer()\n" +
-"                ?? await this.isAssociationDonation()\n" +
+"            // ?? await this.isAssociationDonation()\n" +
 "            // ?? await this.isOptionalReceiptDonation() // Les CERFAs ne sont pas optionel, seul leur envoi au donateur peut l'être\n" +
 "            // ?? await this.isNormalDonation()          // inclus dans la balance\n" +
 "            );\n" +
@@ -10804,12 +10859,15 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        if (interactionAllowed &&\n" +
 "            confirm(this.constructor.name + ': tous les éléments sont valides selon les paramétres actuels. Revérifier tout depuis le début ?')) {\n" +
-"            this.cache.clear();\n" +
-"            localStorage.removeItem(`${this.storageKey}-state`);\n" +
-"            this.invalidGenerator = this.loadInvalid();\n" +
+"            this.reloadAll();\n" +
 "            return this.openNext(interactionAllowed);\n" +
 "        }\n" +
 "        this.running = false;\n" +
+"    }\n" +
+"    async reloadAll() {\n" +
+"        this.cache.clear();\n" +
+"        localStorage.removeItem(`${this.storageKey}-state`);\n" +
+"        this.invalidGenerator = this.loadInvalid();\n" +
 "    }\n" +
 "    async firstLoading() {\n" +
 "        const storageKey = `${this.storageKey}-state`;\n" +
@@ -10977,6 +11035,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            ?? await this.isClosed()\n" +
 "            ?? await this.isArchived()\n" +
 "            ?? await this.is2025()\n" +
+"            ?? await this.isZero()\n" +
 "            ?? await this.isMissingThirdparty()\n" +
 "            ?? await this.isMissingCounterpart()\n" +
 "            ?? await this.isTrashCounterpart()\n" +
@@ -11044,8 +11103,18 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const groupedDocuments = await this.getGroupedDocuments();\n" +
 "        if (doc.date?.startsWith('2025') || groupedDocuments.some(gdoc => gdoc.date?.startsWith('2025'))) {\n" +
 "            return (await this.isMissingLettering()\n" +
+"                ?? await this.isZero()\n" +
 "                ?? ((this.isCurrent()) && this.log('2025'), 'OK'));\n" +
 "        }\n" +
+"    }\n" +
+"    async isZero() {\n" +
+"        const invoice = await this.getInvoice();\n" +
+"        // Montant\n" +
+"        if (invoice.amount === '0.0' && !invoice.invoice_number.includes('|ZERO|'))\n" +
+"            return `<a\n" +
+"      title=\"Cliquer ici pour plus d'informations.\"\n" +
+"      href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Facture%20client\"\n" +
+"    >Ajouter le montant ⓘ</a><ul style=\"margin:0;padding:0.8em;\"><li>|ZERO|</li></ul>`;\n" +
 "    }\n" +
 "    async isMissingThirdparty() {\n" +
 "        const invoice = await this.getInvoice();\n" +
@@ -11276,21 +11345,27 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "          title=\"Si la transaction est introuvable, mettre un des textes proposés au début du numéro de facture. Cliquer ici pour plus d'informations.\"\n" +
 "          href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Pas%20de%20transaction%20attach%C3%A9e\"\n" +
 "        >Pas de transaction attachée ⓘ</a><ul style=\"margin:0;padding:0.8em;\">${groupedOptional.map(it => `<li>${it}</li>`).join('')}</ul>`;\n" +
-"        // Une fois la transaction trouvée, envoyer en GED\n" +
+"        return (\n" +
+"        //this.hasToSendToDMS() ??\n" +
+"        'OK');\n" +
+"    }\n" +
+"    async hasToSendToDMS() {\n" +
+"        const groupedDocuments = await this.getGroupedDocuments();\n" +
 "        const transactions = groupedDocuments.filter(gdoc => gdoc.type === 'Transaction');\n" +
+"        const invoice = await this.getInvoice();\n" +
+"        const archivedAllowed = ['§ #', '¤ TRANSACTION INTROUVABLE'];\n" +
 "        // if (transactions.find(transaction => transaction.date.startsWith('2024'))) {\n" +
 "        //   const dmsItem = await this.moveToDms(21994051 /*2024 - Compta - Clients */);\n" +
 "        //   this.log({ dmsItem });\n" +
 "        //   if (this.isCurrent()) this.log('moved to DMS', { invoice: this });\n" +
 "        //   return (await Invoice.load(this.id)).loadValidMessage();\n" +
 "        // }\n" +
-"        if (transactions.find(transaction => transaction.date.startsWith('2023'))) {\n" +
-"            const dmsItem = await this.moveToDms(57983092 /*2023 - Compta - Clients */);\n" +
-"            this.log({ dmsItem });\n" +
-"            if (this.isCurrent())\n" +
-"                this.log('moved to DMS', { invoice: this });\n" +
-"            return (await Invoice.load(this.id)).loadValidMessage();\n" +
-"        }\n" +
+"        // if (transactions.find(transaction => transaction.date.startsWith('2023'))) {\n" +
+"        //   const dmsItem = await this.moveToDms(57983092 /*2023 - Compta - Clients */);\n" +
+"        //   this.log({ dmsItem });\n" +
+"        //   if (this.isCurrent()) this.log('moved to DMS', { invoice: this });\n" +
+"        //   return (await Invoice.load(this.id)).loadValidMessage();\n" +
+"        // }\n" +
 "        // Date manquante\n" +
 "        if (!invoice.date) {\n" +
 "            const archiveLabel = archivedAllowed.find(label => invoice.invoice_number.startsWith(label));\n" +
@@ -11319,7 +11394,6 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Envoi%20en%20GED\"\n" +
 "      >Envoyer en GED ⓘ</a>`;\n" +
 "        }\n" +
-"        return 'OK';\n" +
 "    }\n" +
 "}\n" +
 "\n" +
@@ -11767,10 +11841,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            event.preventDefault();\n" +
 "            event.stopImmediatePropagation();\n" +
-"            const rawInvoice = getReactProps(invoiceNumberField, 25).initialValues ?? // for customer pieces\n" +
-"                getReactProps(invoiceNumberField, 27).initialValues ?? // for supplier pieces\n" +
-"                getReactProps(invoiceNumberField, 44).initialValues ?? // for customer pieces\n" +
-"                getReactProps(invoiceNumberField, 23).initialValues; // for customer pieces\n" +
+"            const deep = findReactProp(invoiceNumberField, 'initialValues');\n" +
+"            const rawInvoice = deep ? getReactProps(invoiceNumberField, deep).initialValues : null;\n" +
+"            if (!rawInvoice) {\n" +
+"                this.error('Unable to load invoice', { invoiceNumberField, deep, rawInvoice });\n" +
+"                return;\n" +
+"            }\n" +
 "            if (!rawInvoice.archived) {\n" +
 "                this.debug('Invoice is not archived');\n" +
 "                return;\n" +

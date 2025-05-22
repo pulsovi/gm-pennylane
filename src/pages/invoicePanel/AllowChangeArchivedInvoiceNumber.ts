@@ -1,4 +1,4 @@
-import { $, getReactProps } from '../../_/index.js';
+import { $, findReactProp, getReactProps } from '../../_/index.js';
 import Service from '../../framework/Service.js';
 import Invoice from '../../models/Invoice.js';
 import { waitPage } from '../../navigation/waitPage.js';
@@ -24,11 +24,13 @@ export default class AllowChangeArchivedInvoiceNumber extends Service {
 
       event.preventDefault();
       event.stopImmediatePropagation();
-      const rawInvoice =
-        getReactProps(invoiceNumberField, 25).initialValues ?? // for customer pieces
-        getReactProps(invoiceNumberField, 27).initialValues ?? // for supplier pieces
-        getReactProps(invoiceNumberField, 44).initialValues ?? // for customer pieces
-        getReactProps(invoiceNumberField, 23).initialValues; // for customer pieces
+      const deep = findReactProp(invoiceNumberField, 'initialValues');
+      const rawInvoice = deep ? getReactProps(invoiceNumberField, deep).initialValues : null;
+
+      if (!rawInvoice) {
+        this.error('Unable to load invoice', {invoiceNumberField, deep, rawInvoice});
+        return;
+      }
 
       if (!rawInvoice.archived) {
         this.debug('Invoice is not archived');
