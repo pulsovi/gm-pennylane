@@ -1,6 +1,7 @@
 import { getParam } from '../_/url.js';
-import { getDMSItemList, updateDMSItem } from '../api/dms.js';
+import { getDMSDestId, getDMSItemList, updateDMSItem } from '../api/dms.js';
 import { APIDMSItem } from '../api/DMS/Item.js';
+import { getDocument } from '../api/document.js';
 import { getInvoice, moveToDms, updateInvoice } from '../api/invoice.js';
 import { APIInvoice } from '../api/Invoice/index.js';
 import Logger from '../framework/Logger.js';
@@ -42,18 +43,43 @@ export default abstract class Invoice extends ValidableDocument {
     return this.invoice;
   }
 
-  async moveToDms(destId: number) {
+  async moveToDms(destId?: number) {
+    this.debug('moveToDms before auto destId', { destId });
+    destId = destId ?? await this.getDMSDestId();
+    if (!destId) {
+      this.error('Unable to choose DMS folder', this);
+      return;
+    }
+    this.debug('moveToDms', { destId });
     const invoice = await this.getInvoice();
     const filename = invoice.filename;
     const fileId = invoice.file_signed_id;
     const invoiceName = `${invoice.invoice_number} - ${invoice.amount}€`;
-    await moveToDms(this.id, destId);
+    const response = await moveToDms(this.id, destId);
+    this.debug('moveToDms response');
     const files = await getDMSItemList({
       filter: [{ field: 'name', operator: 'search_all', value: filename }]
     });
     const item: APIDMSItem = files.items.find(fileItem => fileItem.signed_id === fileId);
     await updateDMSItem({ id: item.id, name: invoiceName });
     return new DMSItem({ id: item.id });
+  }
+
+  public async getDMSDestId() {
+    const groupedDocuments = await this.getGroupedDocuments();
+    const transaction = groupedDocuments.find(
+      (gdoc): gdoc is typeof gdoc & {type: 'Transaction'} => gdoc.type === 'Transaction'
+    );
+    if (transaction) return await getDMSDestId(transaction);
+
+    const ref = await this.getRef();
+    if (ref) return await getDMSDestId(ref);
+  }
+
+  private async getRef () {
+    const invoice = await this.getInvoice();
+    const refId = invoice.invoice_number.match(/^§ #(?<id>\d+)[^\d]/u)?.groups?.id;
+    return refId && await getDocument(Number(refId));
   }
 
   isCurrent() {
