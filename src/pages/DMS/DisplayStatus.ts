@@ -32,7 +32,7 @@ export default class DMSDisplayStatus extends Service {
     const item = new DMSItem(ref);
     const dmsItem = await item.getItem();
     const message = await item.getValidMessage();
-    this.container.innerHTML = `#${dmsItem.itemable_id}<br/>${message}`;
+    this.container.innerHTML = `#${dmsItem.itemable_id} (${dmsItem.id})<br/>${message}`;
     const isOk = message === 'OK';
     this.container.classList.toggle('bg-warning-100', !isOk);
     this.container.classList.toggle('bg-primary-100', isOk);
@@ -43,7 +43,7 @@ export default class DMSDisplayStatus extends Service {
       input?.select();
     }
 
-    await waitFunc(() => getReactProps(rightList, 7).item !== ref);
+    await waitFunc(() => getReactProps(rightList, 7)?.item !== ref);
     this.emit('reload');
     this.log('reload');
     this.watch();
