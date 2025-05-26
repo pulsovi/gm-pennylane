@@ -1,5 +1,3 @@
-import type { APITransaction } from '../api/types.d.ts';
-
 import { documentMatching } from '../api/document.js';
 import ValidableDocument from './ValidableDocument.js';
 import Document from './Document.js';

@@ -498,7 +498,7 @@ export class InvoiceLinesEntity {
   public readonly global_vat: boolean;
   public readonly id: number;
   public readonly label: string;
-  public readonly ledger_event_label: null;
+  public readonly ledger_event_label: null | string;
   public readonly ocr_vat_rate: null | string;
   public readonly pnl_plan_item: PnlPlanItemOrCurrentAccountPlanItem1;
   public readonly pnl_plan_item_id: number;
@@ -550,7 +550,15 @@ export class InvoiceLinesEntity {
     checkBoolean(d.global_vat, field + ".global_vat");
     checkNumber(d.id, field + ".id");
     checkString(d.label, field + ".label");
-    checkNull(d.ledger_event_label, field + ".ledger_event_label");
+    // This will be refactored in the next release.
+    try {
+      checkNull(d.ledger_event_label, field + ".ledger_event_label", "null | string");
+    } catch (e) {
+      try {
+        checkString(d.ledger_event_label, field + ".ledger_event_label", "null | string");
+      } catch (e) {
+      }
+    }
     // This will be refactored in the next release.
     try {
       checkNull(d.ocr_vat_rate, field + ".ocr_vat_rate", "null | string");

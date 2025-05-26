@@ -2,7 +2,7 @@
 const proxyName = 'APIDMSItem';
 let obj: any = null;
 export class APIDMSItem {
-  public readonly archived_at: null;
+  public readonly archived_at: null | string;
   public readonly comments_count: number;
   public readonly created_at: string;
   public readonly creator: Creator;
@@ -38,7 +38,15 @@ export class APIDMSItem {
     } else if (Array.isArray(d)) {
       throwIsArray(field, d);
     }
-    checkNull(d.archived_at, field + ".archived_at");
+    // This will be refactored in the next release.
+    try {
+      checkNull(d.archived_at, field + ".archived_at", "null | string");
+    } catch (e) {
+      try {
+        checkString(d.archived_at, field + ".archived_at", "null | string");
+      } catch (e) {
+      }
+    }
     checkNumber(d.comments_count, field + ".comments_count");
     checkString(d.created_at, field + ".created_at");
     d.creator = Creator.Create(d.creator, field + ".creator");

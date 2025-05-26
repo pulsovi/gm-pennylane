@@ -1,5 +1,5 @@
 import Logger from '../framework/Logger.js';
-import { apiRequest  } from './core.js';
+import { apiRequest } from './core.js';
 import { APIDMSCreateLink } from './DMS/CreateLink.js';
 import { APIDMSItem } from './DMS/Item.js';
 import { APIDMSItemLink } from './DMS/ItemLink.js';
@@ -8,12 +8,16 @@ import { APIDMSItemListParams } from './DMS/ItemListParams.js';
 import { APIDMSItemSettings } from './DMS/ItemSettings.js';
 import { APIDMSLink } from './DMS/Link.js';
 import { APIDMSLinkList } from './DMS/LinkList.js';
+import { APIDMSToInvoice } from './DMS/ToInvoice.js';
 import { APIDMSUpdateItem } from './DMS/UpdateItem.js';
 import { getDocument } from './document.js';
+import { APIDocument } from './Document/index.js';
+import { APIInvoice } from './Invoice/index.js';
+import { GroupedDocument } from './types.js';
 
 const logger = new Logger('API_DMS');
 
-export async function getDMSLinks (recordId: number, recordType?: string): Promise<APIDMSLink[]> {
+export async function getDMSLinks(recordId: number, recordType?: string): Promise<APIDMSLink[]> {
   if (!recordType) recordType = (await getDocument(recordId)).type;
   const response = await apiRequest(`dms/links/data?record_ids[]=${recordId}&record_type=${recordType}`, null, 'GET');
   const data = await response?.json();
@@ -22,19 +26,22 @@ export async function getDMSLinks (recordId: number, recordType?: string): Promi
   return list.dms_links.map(link => APIDMSLink.Create(link));
 }
 
-export async function getDMSItem (id: number): Promise<APIDMSItem> {
+export async function getDMSItem(id: number): Promise<APIDMSItem> {
   const response = await apiRequest(`dms/items/${id}`, null, 'GET');
   const data = await response?.json();
   if (!data) return (await getDMSItemSettings(id)).item;
   return APIDMSItem.Create(data);
 }
 
-export async function getDMSItemLinks(dmsFileId: number): Promise<APIDMSItemLink[] | null> {
-  const response = await dmsRequest({url: `dms/files/${dmsFileId}/links`});
+export async function getDMSItemLinks(
+  /** the DMSItem.itemable_id */
+  dmsFileId: number
+): Promise<APIDMSItemLink[] | null> {
+  const response = await dmsRequest({ url: `dms/files/${dmsFileId}/links` });
   const data = await response?.json();
   if (!data) return data;
   if (!Array.isArray(data)) {
-    logger.error('réponse inattendue pour getDMSItemLinks', {response, data});
+    logger.error('réponse inattendue pour getDMSItemLinks', { response, data });
     return null;
   }
   const links = data.map(item => APIDMSItemLink.Create(item));
@@ -52,11 +59,11 @@ export async function getDMSItemSettings(id: number): Promise<APIDMSItemSettings
 /**
  * Load list of DMS from API. paginated.
  */
-export async function getDMSItemList (
+export async function getDMSItemList(
   params: APIDMSItemListParams = {}
 ): Promise<APIDMSItemList> {
   if ('filter' in params && typeof params.filter !== 'string')
-    params = {...params, filter: JSON.stringify(params.filter) };
+    params = { ...params, filter: JSON.stringify(params.filter) };
   params = { ...params, page_name: 'all' };
   const searchParams = new URLSearchParams(APIDMSItemListParams.Create(params) as Record<string, string>);
   const url = `dms/items/data.json?${searchParams.toString()}`;
@@ -67,9 +74,9 @@ export async function getDMSItemList (
 /**
  * Update DMS item
  */
-export async function updateDMSItem (entry: Partial<APIDMSItem> & {id: number}) {
+export async function updateDMSItem(entry: Partial<APIDMSItem> & { id: number }) {
   const { id, ...value } = entry;
-  const response = await apiRequest(`dms/items/${id}`, {dms_item: value}, 'PUT');
+  const response = await apiRequest(`dms/items/${id}`, { dms_item: value }, 'PUT');
   return APIDMSUpdateItem.Create(await response.json());
 }
 
@@ -83,7 +90,7 @@ export async function createDMSLink(dmsFileId: number, recordId: number, recordT
   if (!recordType) recordType = (await getDocument(recordId)).type;
   const response = await apiRequest(
     'dms/links/batch_create',
-    {dms_links:{record_ids:[recordId], record_type: recordType, dms_file_ids: [dmsFileId]}},
+    { dms_links: { record_ids: [recordId], record_type: recordType, dms_file_ids: [dmsFileId] } },
     'POST'
   );
   return APIDMSCreateLink.Create(await response.json());

@@ -1,5 +1,6 @@
 import { apiRequest  } from './core.js';
-import { APIThirdparty, Direction } from './types.js';
+import { APIThirdparty } from './Thirdparty/index.js';
+import { Direction } from './types.js';
 
 export interface Thirdparty {
   direction: Direction;

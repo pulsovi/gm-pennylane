@@ -1,6 +1,6 @@
 import { $, findElem, jsonClone, waitElem, waitFunc } from '../../_/index.js';
 import { getInvoiceGenerator, getInvoicesList } from '../../api/invoice.js';
-import { APIInvoiceListParams } from '../../api/types.js';
+import { APIInvoiceListParams } from '../../api/Invoice/ListParams.js';
 import CacheListRecord from '../../framework/CacheListRecord.js';
 import type { Status } from '../../framework/CacheStatus.js';
 import OpenNextInvalid from '../../framework/OpenNextInvalid.js';

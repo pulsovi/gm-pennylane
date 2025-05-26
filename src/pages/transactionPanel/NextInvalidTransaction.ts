@@ -1,6 +1,6 @@
 import { findElem, waitFunc } from '../../_/index.js';
 import { getTransactionGenerator } from '../../api/transaction.js';
-import { APITransactionListParams } from '../../api/types.js';
+import { APITransactionListParams } from '../../api/Transaction/ListParams.js';
 import CacheStatus from '../../framework/CacheStatus.js';
 import OpenNextInvalid, { RawStatus as Status } from '../../framework/OpenNextInvalid.js';
 import Transaction from '../../models/Transaction.js';

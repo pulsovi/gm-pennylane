@@ -1,6 +1,7 @@
 import { openInNewTabIcon } from '../../_/icons.js';
 import { $, $$, findElem, getReactProps, parseHTML, waitElem, waitFunc } from '../../_/index.js';
-import { APILedgerEvent, APIInvoice } from '../../api/types.js';
+import { APIInvoice } from '../../api/Invoice/index.js';
+import { APILedgerEvent } from '../../api/LedgerEvent/index.js';
 import CacheStatus, { Status } from '../../framework/CacheStatus.js';
 import Service from '../../framework/Service.js';
 import Tooltip from '../../framework/Tooltip.js';

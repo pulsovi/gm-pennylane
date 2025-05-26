@@ -1,10 +1,12 @@
 import { jsonClone } from '../_/json.js';
 
 import { apiRequest } from './core.js';
+import { APIInvoice } from './Invoice/index.js';
+import { APIInvoiceList } from './Invoice/List.js';
+import { APIInvoiceListParams } from './Invoice/ListParams.js';
 import { APIInvoiceToDMS } from './Invoice/ToDMS.js';
-import {
-  APIInvoice, APIInvoiceListParams, APIInvoiceUpdateResponse, APIInvoiceList, APIInvoiceItem
-} from './types.js';
+import { APIInvoiceUpdateResponse } from './Invoice/UpdateResponse.js';
+import { APIInvoiceItem } from './types.js';
 
 export async function getInvoice(id: number): Promise<APIInvoice | null> {
   if (!id) throw new Error(`Error: getInvoice() invalid id: ${id}`);

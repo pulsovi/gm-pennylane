@@ -1,15 +1,17 @@
 import { jsonClone } from '../_/json.js';
 
 import { apiRequest } from './core.js';
-import { TransactionsEntity } from './Transaction/List.js';
-import { APITransaction, APITransactionList, APITransactionListParams } from './types.js';
+import { APITransaction } from './Transaction/index.js';
+import { APITransactionList, TransactionsEntity } from './Transaction/List.js';
+import { APITransactionListParams } from './Transaction/ListParams.js';
+import { APITransactionLite } from './Transaction/Lite.js';
 /**
  * @return {Promise<RawTransactionMin>}    Type vérifié
  */
-export async function getTransaction (id: number): Promise<APITransaction> {
+export async function getTransaction (id: number): Promise<APITransactionLite> {
   const response = await apiRequest(`accountants/wip/transactions/${id}`, null, 'GET');
   const data = await response?.json();
-  return APITransaction.Create(data);
+  return APITransactionLite.Create(data);
 }
 
 /**

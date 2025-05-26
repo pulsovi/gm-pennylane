@@ -1,19 +1,18 @@
 import { getDMSLinks } from '../api/dms.js';
 import { APIDMSLink } from '../api/DMS/Link.js';
 import { archiveDocument, getDocument, reloadLedgerEvents } from '../api/document.js';
-import { GroupedDocumentsEntity } from '../api/Document/index.js';
+import { APIDocument } from '../api/Document/index.js';
+import { APILedgerEvent } from '../api/LedgerEvent/index.js';
 import { getGroupedDocuments, getLedgerEvents } from '../api/operation.js';
 import { getThirdparty, type Thirdparty } from '../api/thirdparties.js';
-import { APIDocument, APIGroupedDocument, APILedgerEvent } from '../api/types.js';
+import { GroupedDocument } from '../api/types.js';
 import { Logger } from '../framework/Logger.js';
-
-type GroupedDocumentEntity = APIGroupedDocument | GroupedDocumentsEntity;
 
 export default class Document extends Logger {
   public readonly type: 'transaction' | 'invoice';
   public readonly id: number;
   protected document: APIDocument | Promise<APIDocument>;
-  protected groupedDocuments: SyncOrPromise<GroupedDocumentEntity[]>;
+  protected groupedDocuments: SyncOrPromise<GroupedDocument[]>;
   protected ledgerEvents?: APILedgerEvent[] | Promise<APILedgerEvent[]>;
   protected thirdparty?: Promise<Thirdparty>;
 
@@ -71,7 +70,7 @@ export default class Document extends Logger {
     return await this.groupedDocuments;
   }
 
-  async _loadGroupedDocuments (): Promise<GroupedDocumentEntity[]> {
+  async _loadGroupedDocuments (): Promise<GroupedDocument[]> {
     const otherDocuments = await getGroupedDocuments(this.id);
     const mainDocument = await this.getDocument();
     this.groupedDocuments = [

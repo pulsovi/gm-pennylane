@@ -2,7 +2,7 @@ import { getParam } from '../_/url.js';
 import { getDMSItemList, updateDMSItem } from '../api/dms.js';
 import { APIDMSItem } from '../api/DMS/Item.js';
 import { getInvoice, moveToDms, updateInvoice } from '../api/invoice.js';
-import { APIInvoice } from '../api/types.js';
+import { APIInvoice } from '../api/Invoice/index.js';
 import Logger from '../framework/Logger.js';
 import DMSItem from './DMSItem.js';
 
