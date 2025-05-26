@@ -105,6 +105,7 @@ class SupplierInvoice extends Invoice {
       await this.isUnreachable()
       ?? await this.isClosed()
       ?? await this.isArchived()
+      //?? await this.validTemplate()
       ?? await this.is2025()
       ?? await this.isZero()
       ?? await this.isMissingThirdparty()
@@ -174,6 +175,26 @@ class SupplierInvoice extends Invoice {
         href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Fournisseur%20inconnu"
       >Archiver la facture ⓘ</a><br/>Les factures dont le numéro de facture commence par ${archivedAllowed.find(allowedItem => invoice.invoice_number.startsWith(allowedItem))
         } doivent être archivées.`;
+    }
+  }
+
+  private async validTemplate () {
+    const invoice = await this.getInvoice();
+
+    const templates = [
+      {
+        title: 'Talon de chèque',
+        regex: /^CHQ ?(?:n°)?\d+ - .+ - [\d \.]*(?:,\d\d)? ?€$/,
+        text: 'CHQ&lt;numéro du chèque&gt; - &lt;nom du bénéficiaire ou raison sociale&gt; - &lt;montant&gt;€',
+      }
+    ];
+
+    const match = templates.some(template => template.regex.test(invoice.invoice_number));
+    if (!match) {
+      return `<a
+        title="Le champ \"Numéro de facture\" doit correspondre à un de ces modèles. Cliquer ici pour plus d'informations."
+        href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Nom%20fichier%20GED"
+      >Le champ \"Numéro de facture\" doit correspondre à un de ces modèles ⓘ</a><ul style="margin:0;padding:0.8em;">${templates.map(it => `<li><b>${it.title} :</b><code>${it.text}</code></li>`).join('')}</ul>`;
     }
   }
 
@@ -328,34 +349,29 @@ class SupplierInvoice extends Invoice {
 
     // Justificatif ne donnant pas lieu à une écriture
     if (
-      transactions.length && (
+      transactions.length && (/*
         [
           106438171, // AIDES OCTROYÉES             : talon de chèque ou reçu signé
           114270419, // DON VERSÉ A UNE ASSOCIATION : talon de chèque ou reçu cerfa
           106519227, // PIECE ID
         ].includes(invoice.thirdparty?.id ?? 0)
-        || invoice.invoice_number.startsWith('CHQ') // TALON DE CHEQUE
+        ||*/ invoice.invoice_number.startsWith('CHQ') // TALON DE CHEQUE
       )
     ) {
+      /*
       if (transactions.find(transaction => transaction.date.startsWith('2023'))) {
-        const dmsItem = await this.moveToDms(57983091 /*2023 - Compta - Fournisseurs*/);
+        const dmsItem = await this.moveToDms(57983091 //2023 - Compta - Fournisseurs
+      );
         this.log({ dmsItem });
         if (this.isCurrent()) this.log('moved to DMS', { invoice: this });
         return (await Invoice.load(this.id)).loadValidMessage();
       }
-      if (transactions.find(transaction => transaction.date.startsWith('2024'))) {
-        const dmsItem = await this.moveToDms(21994050 /*2024 - Compta - Fournisseurs*/);
-        this.log({ dmsItem });
-        if (this.isCurrent()) this.log('moved to DMS', { invoice: this });
-        return (await Invoice.load(this.id)).loadValidMessage();
-      }
-      if (!transactions.find(transaction => transaction.date.startsWith('2025'))) {
-        this.log('Envoyer en GED', transactions);
+      */
+        if (this.isCurrent()) this.log('Envoyer en GED', transactions);
         return `<a
           title="Cliquer ici pour plus d'informations"
           href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Envoi%20en%20GED"
-        >Envoyer en GED ⓘ</a>`;
-      }
+        >Envoyer en GED ? ⓘ</a>`;
     }
   }
 

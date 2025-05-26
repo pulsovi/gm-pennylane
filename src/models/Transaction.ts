@@ -9,27 +9,27 @@ import DMSItem from './DMSItem.js';
 import { createDMSLink } from '../api/dms.js';
 import { jsonClone } from '../_/json.js';
 import Balance from './Balance.js';
+import { APITransactionLite } from '../api/Transaction/Lite.js';
 
 const user = localStorage.getItem('user') ?? 'assistant';
 
-/// DMS 2025 - Clients Ventes : 21994066
-
 export default class Transaction extends ValidableDocument {
-  protected _raw;
-  protected _transaction: Promise<APITransaction>;
-  protected transaction: APITransaction;
+  protected _raw: { id: number; };
+  protected _transaction: Promise<APITransactionLite> | APITransactionLite;
+  protected _balance: SyncOrPromise<Balance>;
 
   constructor(raw: { id: number }) {
     super(raw);
     this._raw = raw
   }
 
-  public async getTransaction(): Promise<APITransaction> {
+  public async getTransaction(): Promise<APITransactionLite> {
     if (!this._transaction) {
       this._transaction = getTransaction(this.id);
-      this.transaction = await this._transaction;
+      this._transaction = await this._transaction;
     }
-    return await this._transaction;
+    if (this._transaction instanceof Promise) return await this._transaction;
+    return this._transaction;
   }
 
   public async getDMSLinks(): Promise<APIDMSLink[]> {
@@ -38,6 +38,56 @@ export default class Transaction extends ValidableDocument {
 
   private isCurrent() {
     return String(this.id) === getParam(location.href, 'transaction_id');
+  }
+
+  public async getBalance(): Promise<Balance> {
+    if (!this._balance) {
+      this._balance = new Promise(async rs => {
+        const ledgerEvents = await this.getLedgerEvents();
+        const groupedDocuments = await this.getGroupedDocuments();
+        const dmsLinks = await this.getDMSLinks();
+
+        // balance déséquilibrée - version exigeante
+        const balance: Balance = new Balance();
+
+        groupedDocuments
+          .sort((a, b) => Number(b.type === 'Transaction') - Number(a.type === 'Transaction'))
+          .forEach(gdoc => {
+            if (this.isCurrent()) this.debug('balance counting', jsonClone({ gdoc, balance }));
+            const coeff = (gdoc.type === 'Invoice' && gdoc.journal.code === 'HA') ? -1 : 1;
+            const value = parseFloat(gdoc.amount) * coeff;
+            if (gdoc.type === 'Transaction') balance.addTransaction(value);
+            else if (/ CERFA | AIDES - /u.test(gdoc.label)) balance.addReçu(value);
+            else if (/ CHQ(?:\d|\s)/u.test(gdoc.label)) balance.addCHQ(value);
+            else balance.addAutre(value);
+          });
+
+        dmsLinks.forEach(dmsLink => {
+          if (this.isCurrent()) this.debug('balance counting', jsonClone({ dmsLink, balance }));
+          if (dmsLink.name.startsWith('CHQ')) {
+            const amount = dmsLink.name.match(/- (?<amount>[\d \.]*) ?€$/u)?.groups.amount;
+            balance.addCHQ(parseFloat(amount ?? '0') * Math.sign(balance.transaction));
+          }
+          if (/^(?:CERFA|AIDES) /u.test(dmsLink.name)) {
+            if (this.isCurrent()) this.log('aide trouvée', { dmsLink });
+            const amount = dmsLink.name.match(/- (?<amount>[\d \.]*) ?€$/u)?.groups.amount;
+            balance.addReçu(parseFloat(amount ?? '0') * Math.sign(balance.transaction));
+          }
+        });
+
+        ledgerEvents.forEach(event => {
+          // pertes/gains de change
+          if (['47600001', '656', '75800002'].includes(event.planItem.number)) {
+            balance.addAutre(parseFloat(event.amount) * -1);
+          }
+        });
+
+        rs(balance);
+      });
+      this._balance = await this._balance;
+    }
+    if (this._balance instanceof Promise) return await this._balance;
+    return this._balance;
   }
 
   protected async loadValidMessage(): Promise<string> {
@@ -54,6 +104,7 @@ export default class Transaction extends ValidableDocument {
       ?? await this.isMissingCounterpart()
       ?? await this.isWrongDonationCounterpart()
       ?? await this.isTrashCounterpart()
+      ?? await this.hasUnbalancedThirdparty()
 
       //?? await this.isMissingAttachment() // déjà inclus dans isUnbalanced()
       ?? await this.isOldUnbalanced()
@@ -62,8 +113,12 @@ export default class Transaction extends ValidableDocument {
       ?? await this.isDonationRenewal()
       ?? await this.isTransfer()
       ?? await this.isAid()
+      ?? await this.hasToSendToDMS()
+      ?? await this.hasToSendToInvoice()
       ?? 'OK'
     ) as string;
+
+    if (user !== 'assistant') return status;
 
     const assistant = [
       'orange',
@@ -76,12 +131,14 @@ export default class Transaction extends ValidableDocument {
   }
 
   private async is2025() {
+    if (this.isCurrent()) this.log('is2025');
     const doc = await this.getDocument();
 
     if (doc.date.startsWith('2025')) {
       return (
         await this.isUnbalanced()
         ?? await this.isMissingAttachment()
+        ?? await this.hasToSendToDMS()
         ?? 'OK'
       );
     }
@@ -135,46 +192,26 @@ export default class Transaction extends ValidableDocument {
     });
   }
 
-  private async isUnbalanced() {
+  private async hasUnbalancedThirdparty (){
     const ledgerEvents = await this.getLedgerEvents();
-    const groupedDocuments = await this.getGroupedDocuments();
-    const dmsLinks = await this.getDMSLinks();
 
-    // balance déséquilibrée - version exigeante
-    const balance: Balance = new Balance();
-
-    groupedDocuments
-    .sort((a, b) => Number(b.type === 'Transaction') - Number(a.type === 'Transaction'))
-    .forEach(gdoc => {
-      if (this.isCurrent()) this.debug('balance counting', jsonClone({gdoc, balance}));
-      const coeff = (gdoc.type === 'Invoice' && gdoc.journal.code === 'HA') ? -1 : 1;
-      const value = parseFloat(gdoc.amount) * coeff;
-      if (gdoc.type === 'Transaction') balance.addTransaction(value);
-      else if (/ CERFA | AIDES - /u.test(gdoc.label)) balance.addReçu(value);
-      else if (/ CHQ(?:\d|\s)/u.test(gdoc.label)) balance.addCHQ(value);
-      else balance.addAutre(value);
-    });
-
-    dmsLinks.forEach(dmsLink => {
-      if (this.isCurrent()) this.debug('balance counting', jsonClone({dmsLink, balance}));
-      if (dmsLink.name.startsWith('CHQ')) {
-        const amount = dmsLink.name.match(/- (?<amount>[\d \.]*) ?€$/u)?.groups.amount;
-        balance.addCHQ(parseFloat(amount ?? '0') * Math.sign(balance.transaction));
+    const thirdparties: Record<string, number> = ledgerEvents.reduce((tp, event) => {
+      const nb = event.planItem.number;
+      if (nb.startsWith('4')) {
+        tp[nb] = (tp[nb] ?? 0) + parseFloat(event.amount);
       }
-      if (/^(?:CERFA|AIDES) /u.test(dmsLink.name)) {
-        if (this.isCurrent()) this.log('aide trouvée', { dmsLink });
-        const amount = dmsLink.name.match(/- (?<amount>[\d \.]*) ?€$/u)?.groups.amount;
-        balance.addReçu(parseFloat(amount ?? '0') * Math.sign(balance.transaction));
-      }
-    });
+      return tp;
+    }, {});
+    const [unbalanced] = Object.entries(thirdparties).find(([key, val]) => val !== 0) ?? [];
+    if (unbalanced) {
+      this.log('hasUnbalancedThirdparty', { ledgerEvents, thirdparties, unbalanced });
+      return `Le compte tiers "${unbalanced}" n'est pas équilibré.`;
+    }
+  }
 
-    ledgerEvents.forEach(event => {
-      // pertes/gains de change
-      if (['47600001', '656', '75800002'].includes(event.planItem.number)) {
-        balance.addAutre(parseFloat(event.amount) * -1);
-      }
-    });
-
+  private async isUnbalanced() {
+    if (this.isCurrent()) this.log('isUnbalanced');
+    const balance = await this.getBalance();
     if (this.isCurrent()) this.log({ balance });
 
     let message = (
@@ -260,8 +297,10 @@ export default class Transaction extends ValidableDocument {
       '6270005',   // Frais Bancaires Société Générale
       '6270001',   // Frais Stripe
     ]
-    if (ledgerEvents.some(line => optionalProof.some(number => line.planItem.number === number)))
+    if (ledgerEvents.some(line => optionalProof.some(number => line.planItem.number === number))) {
+      if (this.isCurrent()) this.debug('isOtherUnbalanced: justificatif facultatif');
       return;
+    }
 
     // perte de reçu acceptable pour les petits montants, mais pas récurrents
     const requiredProof = [
@@ -271,12 +310,16 @@ export default class Transaction extends ValidableDocument {
       Math.abs(balance.transaction) < 100
       && !balance.hasAutre()
       && !requiredProof.some(label => doc.label.includes(label))
-    ) return;
+    ) {
+      if (this.isCurrent()) this.debug('isOtherUnbalanced: petit montant non récurrent');
+      return;
+    }
 
-    if ((balance.transaction - balance.autre) > 0.001) {
+    if (Math.abs(balance.transaction - balance.autre) > 0.001) {
       balance.addAutre(null);
       return 'La somme des autres justificatifs doit valoir le montant de la transaction';
     }
+    if (this.isCurrent()) this.debug('isOtherUnbalanced: balance équilibrée');
   }
 
   private async hasVAT() {
@@ -317,7 +360,7 @@ export default class Transaction extends ValidableDocument {
     }
   }
 
-  private async isWrongDonationCounterpart () {
+  private async isWrongDonationCounterpart() {
     const ledgerEvents = await this.getLedgerEvents();
     const groupedDocuments = await this.getGroupedDocuments();
     const dmsLinks = await this.getDMSLinks();
@@ -332,10 +375,9 @@ export default class Transaction extends ValidableDocument {
     if (isDonation && !ledgerEvents.some(
       line => donationCounterparts.includes(line.planItem.number)
     )) {
-      if (this.isCurrent()) this.log('La contrepartie devrait faire partie de cette liste', {ledgerEvents, donationCounterparts});
-      return `La contrepartie devrait faire partie de cette liste (onglet "Écritures")<ul><li>${
-        donationCounterparts.join('</li><li>')
-      }</li></ul>`;
+      if (this.isCurrent()) this.log('La contrepartie devrait faire partie de cette liste', { ledgerEvents, donationCounterparts });
+      return `La contrepartie devrait faire partie de cette liste (onglet "Écritures")<ul><li>${donationCounterparts.join('</li><li>')
+        }</li></ul>`;
     }
   }
 
@@ -649,6 +691,45 @@ export default class Transaction extends ValidableDocument {
         }
       }
     }
+  }
+
+  private async hasToSendToDMS() {
+    const balance = await this.getBalance();
+    if (
+      balance.CHQ && balance.CHQ === balance.transaction
+      && (
+        balance.autre === balance.transaction
+        || balance.reçu === balance.transaction
+      )
+    ) {
+      const groupedDocuments = await this.getGroupedDocuments();
+      const chqs = groupedDocuments.filter(gdoc => gdoc.label.includes(' - CHQ'));
+      this.log('hasToSendToDMS', {groupedDocuments, chqs, balance});
+      if (!chqs.length) {
+        if (this.isCurrent()) this.log('hasToSendToDMS', 'tous les chq sont en GED', {groupedDocuments, balance});
+        return;
+      }
+      return 'envoyer les CHQs en GED';
+    }
+  }
+
+  private async hasToSendToInvoice () {
+    const balance = await this.getBalance();
+    if (balance.reçu) {
+      const dmsLinks = await this.getDMSLinks();
+      const receipts = dmsLinks.filter(link => ['CERFA', 'AIDES'].some(
+        key => link.name.startsWith(key)
+        ));
+      this.log('hasToSendToInvoice', {dmsLinks, receipts, balance});
+      if (!receipts.length) {
+        if (this.isCurrent()) this.log('hasToSendToInvoice', 'tous les reçus sont en facturation', {
+          groupedDocuments: dmsLinks, balance
+        });
+        return;
+      }
+      return 'envoyer les reçus en facturation';
+    }
+
   }
 
   /** Add item to this transaction's group */
