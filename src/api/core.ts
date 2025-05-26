@@ -56,7 +56,7 @@ export async function apiRequest (
       }
     }
 
-    if (!endpoint.headers?.['X-DOCUMENT-REFERRER']) {
+    if (!endpoint.headers?.['X-CSRF-TOKEN']) {
       return apiRequest({
         ...endpoint,
         headers: {
