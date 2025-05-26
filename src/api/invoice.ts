@@ -27,14 +27,17 @@ export async function updateInvoice(
 /**
  * Get invoice list paginated
  */
-export async function getInvoicesList(params: APIInvoiceListParams = {}): Promise<APIInvoiceList> {
+export async function getInvoicesList(params: APIInvoiceListParams = {direction: 'supplier'}): Promise<APIInvoiceList> {
   params = APIInvoiceListParams.Create(params);
-  if (!params.direction) throw new Error('params.direction is mandatory');
   if ('page' in params && !Number.isSafeInteger(params.page)) {
     console.log('getInvoicesList', { params });
     throw new Error('params.page, if provided, MUST be a safe integer');
   }
-  const searchParams = new URLSearchParams(params as Record<string, string>);
+
+  if ('filter' in params && typeof params.filter !== 'string')
+    Object.assign(params, { filter: JSON.stringify(params.filter) });
+
+  const searchParams = new URLSearchParams(params as unknown as Record<string, string>);
   if (!searchParams.has('filter')) searchParams.set('filter', '[]');
   const url = `accountants/invoices/list?${searchParams.toString()}`;
   const response = await apiRequest(url, null, 'GET');
@@ -46,7 +49,7 @@ export async function getInvoicesList(params: APIInvoiceListParams = {}): Promis
  * Generate all result one by one as generator
  */
 export async function* getInvoiceGenerator(
-  params: APIInvoiceListParams = {}
+  params: APIInvoiceListParams = {direction: 'supplier'}
 ): AsyncGenerator<APIInvoiceItem> {
   let page = Number(params.page ?? 1);
   if (!Number.isSafeInteger(page)) {
@@ -87,8 +90,8 @@ export async function findInvoice<P extends APIInvoiceListParams>(
 /**
  * Move invoice to DMS
  */
-export async function moveToDms (id: number, destId: number): Promise<APIInvoiceToDMS> {
+export async function moveToDms(id: number, destId: number): Promise<APIInvoiceToDMS> {
   const url = `accountants/invoices/${id}/move_to_dms?parent_id=${destId}`;
   const response = await apiRequest(url, null, 'PUT');
-  return APIInvoiceToDMS.Create({response});
+  return APIInvoiceToDMS.Create({ response });
 }
