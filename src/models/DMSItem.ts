@@ -1,9 +1,15 @@
-import { getDMSItem, getDMSItemLinks } from "../api/dms.js";
+import { jsonClone } from "../_/json.js";
+import { dmsToInvoice, getDMSItem, getDMSItemLinks } from "../api/dms.js";
 import { APIDMSItem } from "../api/DMS/Item.js";
+import { getDocument } from "../api/document.js";
+import { findInvoice, getInvoicesList, updateInvoice } from "../api/invoice.js";
+import { APIInvoice } from "../api/Invoice/index.js";
+import { getLedgerEvents } from "../api/operation.js";
+import { getThirdparty } from "../api/thirdparties.js";
 import Logger from "../framework/Logger.js";
+import { openDocument } from "../navigation/openDocument.js";
 
-export default class
-  DMSItem extends Logger {
+export default class DMSItem extends Logger {
   public readonly id: number;
   private item: Promise<APIDMSItem> | APIDMSItem;
 
@@ -26,8 +32,62 @@ export default class
     return await this.item;
   }
 
+  public async toInvoice() {
+    const start = new Date().toISOString();
+    const dmsItem = await this.getItem();
+    const regex = /^(?<number>.*?)(?: - (?<date>[0123]\d\/[01]\d\/\d{4}))?(?: - (?<amount>[\d .]*(?:,\d\d)?) ?€)$/u;
+    const match = dmsItem.name.match(regex)?.groups;
+    const date = match.date && new Date(match.date.split('/').reverse().join('-'));
+    const groupedDocs = await this.getLinks();
+    const transactionRecord = groupedDocs.find(gdoc => gdoc.record_type === 'BankTransaction');
+    const transactionDocument = transactionRecord && await getDocument(transactionRecord.record_id);
+    const direction = Number(transactionDocument?.amount) > 0 ? 'customer' : 'supplier';
+
+    this.debug(jsonClone({start, dmsItem, match: { ...match }, groupedDocs, direction, transactionRecord, transactionDocument, date: date.toLocaleDateString() }));
+    if (!match) {
+      this.log('toInvoice: Unable to parse invoice infos');
+    }
+
+    if (!transactionDocument) {
+      this.log('toInvoice : Unable to determine direction');
+      return;
+    }
+
+    const dmsToInvoiceResponse = await dmsToInvoice(dmsItem.signed_id, direction);
+
+    const invoice = await findInvoice(
+      () => true,
+      { direction, filter: [{ field: 'created_at', operator: 'gteq', value: start }] }
+    );
+    const line = {};
+    const data: Partial<APIInvoice> = {
+      invoice_number: match.number,
+      validation_needed: false,
+      incomplete: false,
+      is_waiting_for_ocr: false,
+    };
+    if (match.date) Object.assign(data, { date: match.date, deadline: match.date });
+    if (match.amount) Object.assign(line, {
+      currency_amount: parseFloat(match.amount),
+      currency_price_before_tax: parseFloat(match.amount),
+      currency_tax: 0,
+      vat_rate: "exempt"
+    });
+    if (transactionDocument?.thirdparty_id) {
+      const thirdparty = (await getThirdparty(transactionDocument.thirdparty_id)).thirdparty;
+      Object.assign(data, { thirdparty_id: transactionDocument.thirdparty_id });
+      Object.assign(line, { pnl_plan_item_id: thirdparty.thirdparty_invoice_line_rules[0]?.pnl_plan_item });
+    }
+    Object.assign(data, { invoice_lines_attributes: [line] });
+    const updateInvoiceResponse = await updateInvoice(invoice.id, data);
+    this.log({ dmsToInvoiceResponse, updateInvoiceResponse, invoice, data });
+    return invoice;
+  }
+
   public async getValidMessage(): Promise<string> {
     const item = await this.getItem();
+    if (item.name.startsWith('RECU')) return 'OK';
+
     const links = await this.getLinks();
 
     const transactions = links.filter(link => link.record_type === 'BankTransaction');
@@ -39,7 +99,7 @@ export default class
         {
           title: 'Photo du chèque',
           text: 'CHQ&lt;n° du chèque&gt; - &lt;nom donateur&gt; - jj/mm/aaa - &lt;montant&gt;€',
-          regex: /^CHQ ?\d* - .* - [0123]\d\/[01]\d\/\d{4} - [\d .]*(?:,\d\d)? ?€$/u,
+          regex: /^CHQ ?\d* - .* - [0123]\d\/[01]\d\/\d{4} - [\d \.]*(?:,\d\d)? ?€$/u,
         },
         {
           title: 'Reçu de don',
@@ -110,7 +170,8 @@ export default class
     }
 
     const isEmittedTransfer = transactions.some(transaction => [
-      'VIR EUROPEEN EMIS'
+      'VIR EUROPEEN EMIS',
+      'VIR INSTANTANE EMIS',
     ].some(label => transaction.record_name.includes(label)));
 
     if (isEmittedTransfer) {

@@ -100,10 +100,53 @@ export async function createDMSLink(dmsFileId: number, recordId: number, recordT
 /**
  * Api request without X-... headers
  */
-async function dmsRequest (options: RequestInit & { url: string }) {
+async function dmsRequest(options: RequestInit & { url: string }) {
   return await apiRequest({
     headers: { Accept: 'application/json' },
     method: 'GET',
     ...options,
   });
+}
+
+export async function dmsToInvoice(dmsId: string | string[], direction: 'customer' | 'supplier') {
+  const signed_ids = Array.isArray(dmsId) ? dmsId : [dmsId];
+  const response = await apiRequest(
+    'dms/files/convert_to_invoice',
+    { upload: { signed_ids, direction } },
+    'POST'
+  );
+  const data = await response?.json();
+  if (!data) return data;
+  return APIDMSToInvoice.Create(data);
+}
+
+
+export async function getDMSDestId(ref: APIInvoice | GroupedDocument | APIDocument) {
+  let direction: string;
+  let year = ref.date.slice(0, 4);
+  if (ref.type === 'Transaction') {
+    direction = parseFloat(ref.amount) > 0 ? 'customer' : 'supplier';
+  }
+
+  if (ref.type === 'Invoice' && 'direction' in ref) {
+    direction = ref.direction;
+
+  }
+
+  logger.log('getDMSDestId', { ref, direction, year });
+  switch (direction) {
+    case 'customer': switch (year) {
+      case '2023': return 57983092; // 2023 - Compta - Clients
+      case '2024': return 21994051; // 2024 - Compta - Clients
+      case '2025': return 21994066; // 2025 - Compta - Clients Ventes
+    }
+      break;
+    case 'supplier': switch (year) {
+      case '2024': return 21994050; // 2024 - Compta - Fournisseurs
+      case '2025': return 21994065; // 2025 - Compta - Achats
+    }
+      break;
+  }
+  logger.log('getDMSDestId', { ref })
+  return 0;
 }

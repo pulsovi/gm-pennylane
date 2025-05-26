@@ -30,7 +30,7 @@ export default class HighlightWrongDMSFilenames extends Service {
         for (const file of files) {
           const dmsItem = new DMSItem({id:file.item_id});
           const status = await dmsItem.getValidMessage();
-          const card = $(`a[href$="${file.item_id}"]`).closest('.ui-card');
+          const card = $(`a[href$="${file.item_id}"]`)?.closest('.ui-card');
           const nameDiv = $('div.d-block', card);
           if (!card || !nameDiv) {
             this.log('nameDiv is null', {
