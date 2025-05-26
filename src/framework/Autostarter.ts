@@ -27,7 +27,7 @@ export default class Autostarter extends Logger {
   private stopped = false;
 
   public constructor (parent: AutostarterParent) {
-    super(`${parent}_Autostart`);
+    super(`${parent.constructor.name}_Autostart`);
     this.parent = parent;
     this.config = new CacheRecord<AutostarterConfig>(`${this.parent.id}-autostart`, { enabled: true });
     this.start = this.start.bind(this);
