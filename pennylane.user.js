@@ -730,7 +730,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.account_id, field + \".account_id\", \"number | null\");\n" +
+"                    checkNull$h(d.account_id, field + \".account_id\", \"number | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -741,7 +741,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkBoolean$d(d.archived, field + \".archived\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$g(d.archived_at, field + \".archived_at\", \"null | string\");\n" +
+"            checkNull$h(d.archived_at, field + \".archived_at\", \"null | string\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -752,7 +752,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        checkBoolean$d(d.attachment_lost, field + \".attachment_lost\");\n" +
 "        checkBoolean$d(d.attachment_required, field + \".attachment_required\");\n" +
-"        checkNull$g(d.billing_subscription_id, field + \".billing_subscription_id\");\n" +
+"        checkNull$h(d.billing_subscription_id, field + \".billing_subscription_id\");\n" +
 "        if (\"can_be_stamped_as_paid_in_pdf\" in d) {\n" +
 "            checkBoolean$d(d.can_be_stamped_as_paid_in_pdf, field + \".can_be_stamped_as_paid_in_pdf\");\n" +
 "        }\n" +
@@ -763,7 +763,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.company, field + \".company\", \"Company | null\");\n" +
+"                    checkNull$h(d.company, field + \".company\", \"Company | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -777,7 +777,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.complete, field + \".complete\", \"boolean | null\");\n" +
+"                    checkNull$h(d.complete, field + \".complete\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -790,7 +790,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.completeness, field + \".completeness\", \"number | null\");\n" +
+"                    checkNull$h(d.completeness, field + \".completeness\", \"number | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -828,7 +828,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$g(d.date, field + \".date\", \"string | null\");\n" +
+"                checkNull$h(d.date, field + \".date\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -840,7 +840,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.deadline, field + \".deadline\", \"string | null\");\n" +
+"                    checkNull$h(d.deadline, field + \".deadline\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -856,9 +856,9 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            checkString$l(d.discount_type, field + \".discount_type\");\n" +
 "        }\n" +
 "        checkBoolean$d(d.draft, field + \".draft\");\n" +
-"        checkNull$g(d.email_from, field + \".email_from\");\n" +
+"        checkNull$h(d.email_from, field + \".email_from\");\n" +
 "        if (\"estimate_status\" in d) {\n" +
-"            checkNull$g(d.estimate_status, field + \".estimate_status\");\n" +
+"            checkNull$h(d.estimate_status, field + \".estimate_status\");\n" +
 "        }\n" +
 "        checkString$l(d.external_id, field + \".external_id\");\n" +
 "        if (\"factor_status\" in d) {\n" +
@@ -866,10 +866,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        checkString$l(d.fec_pieceref, field + \".fec_pieceref\");\n" +
 "        if (\"finalized_at\" in d) {\n" +
-"            checkNull$g(d.finalized_at, field + \".finalized_at\");\n" +
+"            checkNull$h(d.finalized_at, field + \".finalized_at\");\n" +
 "        }\n" +
 "        if (\"from_estimate_id\" in d) {\n" +
-"            checkNull$g(d.from_estimate_id, field + \".from_estimate_id\");\n" +
+"            checkNull$h(d.from_estimate_id, field + \".from_estimate_id\");\n" +
 "        }\n" +
 "        if (\"future_in_days\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
@@ -878,7 +878,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.future_in_days, field + \".future_in_days\", \"number | null\");\n" +
+"                    checkNull$h(d.future_in_days, field + \".future_in_days\", \"number | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -886,7 +886,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$g(d.gdrive_path, field + \".gdrive_path\", \"null | string\");\n" +
+"            checkNull$h(d.gdrive_path, field + \".gdrive_path\", \"null | string\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -902,7 +902,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.gross_amount, field + \".gross_amount\", \"string | null\");\n" +
+"                    checkNull$h(d.gross_amount, field + \".gross_amount\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -911,7 +911,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkString$l(d.group_uuid, field + \".group_uuid\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$g(d.grouped_at, field + \".grouped_at\", \"null | string\");\n" +
+"            checkNull$h(d.grouped_at, field + \".grouped_at\", \"null | string\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -933,7 +933,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"invoice_kind\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkNull$g(d.invoice_kind, field + \".invoice_kind\", \"null | string\");\n" +
+"                checkNull$h(d.invoice_kind, field + \".invoice_kind\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
@@ -947,7 +947,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            checkString$l(d.invoice_number, field + \".invoice_number\");\n" +
 "        }\n" +
 "        if (\"invoicing_detailed_source\" in d) {\n" +
-"            checkNull$g(d.invoicing_detailed_source, field + \".invoicing_detailed_source\");\n" +
+"            checkNull$h(d.invoicing_detailed_source, field + \".invoicing_detailed_source\");\n" +
 "        }\n" +
 "        if (\"is_credit_note\" in d) {\n" +
 "            checkBoolean$d(d.is_credit_note, field + \".is_credit_note\");\n" +
@@ -969,7 +969,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$g(d.label, field + \".label\", \"string | null\");\n" +
+"                checkNull$h(d.label, field + \".label\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -990,7 +990,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"ocr_thirdparty_id\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkNull$g(d.ocr_thirdparty_id, field + \".ocr_thirdparty_id\", \"null | number\");\n" +
+"                checkNull$h(d.ocr_thirdparty_id, field + \".ocr_thirdparty_id\", \"null | number\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
@@ -1005,10 +1005,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            checkBoolean$d(d.paid, field + \".paid\");\n" +
 "        }\n" +
 "        if (\"payment_id\" in d) {\n" +
-"            checkNull$g(d.payment_id, field + \".payment_id\");\n" +
+"            checkNull$h(d.payment_id, field + \".payment_id\");\n" +
 "        }\n" +
 "        if (\"payment_method\" in d) {\n" +
-"            checkNull$g(d.payment_method, field + \".payment_method\");\n" +
+"            checkNull$h(d.payment_method, field + \".payment_method\");\n" +
 "        }\n" +
 "        if (\"payment_reference\" in d) {\n" +
 "            checkString$l(d.payment_reference, field + \".payment_reference\");\n" +
@@ -1043,7 +1043,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$g(d.preview_status, field + \".preview_status\", \"null | string\");\n" +
+"            checkNull$h(d.preview_status, field + \".preview_status\", \"null | string\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -1060,7 +1060,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            checkString$l(d.quote_group_uuid, field + \".quote_group_uuid\");\n" +
 "        }\n" +
 "        if (\"quote_uid\" in d) {\n" +
-"            checkNull$g(d.quote_uid, field + \".quote_uid\");\n" +
+"            checkNull$h(d.quote_uid, field + \".quote_uid\");\n" +
 "        }\n" +
 "        checkBoolean$d(d.quotes, field + \".quotes\");\n" +
 "        checkBoolean$d(d.readonly, field + \".readonly\");\n" +
@@ -1072,8 +1072,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkNull$g(d.reversal_origin_id, field + \".reversal_origin_id\");\n" +
-"        checkNull$g(d.score, field + \".score\");\n" +
+"        checkNull$h(d.reversal_origin_id, field + \".reversal_origin_id\");\n" +
+"        checkNull$h(d.score, field + \".score\");\n" +
 "        if (\"scored_invoices\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
@@ -1081,7 +1081,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.scored_invoices, field + \".scored_invoices\", \"ScoredInvoices | null\");\n" +
+"                    checkNull$h(d.scored_invoices, field + \".scored_invoices\", \"ScoredInvoices | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -1097,7 +1097,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        checkString$l(d.source, field + \".source\");\n" +
 "        if (\"special_mention\" in d) {\n" +
-"            checkNull$g(d.special_mention, field + \".special_mention\");\n" +
+"            checkNull$h(d.special_mention, field + \".special_mention\");\n" +
 "        }\n" +
 "        if (\"status\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
@@ -1106,7 +1106,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.status, field + \".status\", \"string | null\");\n" +
+"                    checkNull$h(d.status, field + \".status\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -1117,7 +1117,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$g(d.thirdparty_id, field + \".thirdparty_id\", \"null | number\");\n" +
+"            checkNull$h(d.thirdparty_id, field + \".thirdparty_id\", \"null | number\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -1343,7 +1343,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"account\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkNull$g(d.account, field + \".account\", \"null | Account\");\n" +
+"                checkNull$h(d.account, field + \".account\", \"null | Account\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
@@ -1356,7 +1356,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"account_id\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkNull$g(d.account_id, field + \".account_id\", \"null | number\");\n" +
+"                checkNull$h(d.account_id, field + \".account_id\", \"null | number\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
@@ -1369,7 +1369,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"accounting_status\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkNull$g(d.accounting_status, field + \".accounting_status\", \"null | string\");\n" +
+"                checkNull$h(d.accounting_status, field + \".accounting_status\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
@@ -1384,7 +1384,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkBoolean$d(d.archived, field + \".archived\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$g(d.archived_at, field + \".archived_at\", \"null | string\");\n" +
+"            checkNull$h(d.archived_at, field + \".archived_at\", \"null | string\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -1400,7 +1400,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.attachment_label, field + \".attachment_label\", \"string | null\");\n" +
+"                    checkNull$h(d.attachment_label, field + \".attachment_label\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -1408,7 +1408,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        checkBoolean$d(d.attachment_lost, field + \".attachment_lost\");\n" +
 "        checkBoolean$d(d.attachment_required, field + \".attachment_required\");\n" +
-"        checkNull$g(d.billing_subscription_id, field + \".billing_subscription_id\");\n" +
+"        checkNull$h(d.billing_subscription_id, field + \".billing_subscription_id\");\n" +
 "        if (\"can_be_stamped_as_paid_in_pdf\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
@@ -1416,7 +1416,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.can_be_stamped_as_paid_in_pdf, field + \".can_be_stamped_as_paid_in_pdf\", \"boolean | null\");\n" +
+"                    checkNull$h(d.can_be_stamped_as_paid_in_pdf, field + \".can_be_stamped_as_paid_in_pdf\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -1431,7 +1431,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"company\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkNull$g(d.company, field + \".company\", \"null | Company1\");\n" +
+"                checkNull$h(d.company, field + \".company\", \"null | Company1\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
@@ -1460,7 +1460,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.credit_notes_amount, field + \".credit_notes_amount\", \"string | null\");\n" +
+"                    checkNull$h(d.credit_notes_amount, field + \".credit_notes_amount\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -1475,7 +1475,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.currency_amount_before_tax, field + \".currency_amount_before_tax\", \"string | null\");\n" +
+"                    checkNull$h(d.currency_amount_before_tax, field + \".currency_amount_before_tax\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -1488,7 +1488,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.currency_price_before_tax, field + \".currency_price_before_tax\", \"string | null\");\n" +
+"                    checkNull$h(d.currency_price_before_tax, field + \".currency_price_before_tax\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -1501,7 +1501,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.currency_tax, field + \".currency_tax\", \"string | null\");\n" +
+"                    checkNull$h(d.currency_tax, field + \".currency_tax\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -1510,7 +1510,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"current_account_plan_item\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkNull$g(d.current_account_plan_item, field + \".current_account_plan_item\", \"null | PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem\");\n" +
+"                checkNull$h(d.current_account_plan_item, field + \".current_account_plan_item\", \"null | PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
@@ -1527,7 +1527,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.custom_payment_reference, field + \".custom_payment_reference\", \"string | null\");\n" +
+"                    checkNull$h(d.custom_payment_reference, field + \".custom_payment_reference\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -1535,7 +1535,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$g(d.date, field + \".date\", \"null | string\");\n" +
+"            checkNull$h(d.date, field + \".date\", \"null | string\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -1547,7 +1547,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"deadline\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkNull$g(d.deadline, field + \".deadline\", \"null | string\");\n" +
+"                checkNull$h(d.deadline, field + \".deadline\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
@@ -1564,7 +1564,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.direction, field + \".direction\", \"string | null\");\n" +
+"                    checkNull$h(d.direction, field + \".direction\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -1577,7 +1577,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.discount, field + \".discount\", \"string | null\");\n" +
+"                    checkNull$h(d.discount, field + \".discount\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -1590,14 +1590,14 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.discount_type, field + \".discount_type\", \"string | null\");\n" +
+"                    checkNull$h(d.discount_type, field + \".discount_type\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        checkBoolean$d(d.draft, field + \".draft\");\n" +
-"        checkNull$g(d.email_from, field + \".email_from\");\n" +
+"        checkNull$h(d.email_from, field + \".email_from\");\n" +
 "        if (\"embeddable_in_browser\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
@@ -1605,7 +1605,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.embeddable_in_browser, field + \".embeddable_in_browser\", \"boolean | null\");\n" +
+"                    checkNull$h(d.embeddable_in_browser, field + \".embeddable_in_browser\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -1614,7 +1614,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"establishment_comment\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkNull$g(d.establishment_comment, field + \".establishment_comment\", \"null | EstablishmentCommentOrClientCommentsEntity\");\n" +
+"                checkNull$h(d.establishment_comment, field + \".establishment_comment\", \"null | EstablishmentCommentOrClientCommentsEntity\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
@@ -1625,7 +1625,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"estimate_status\" in d) {\n" +
-"            checkNull$g(d.estimate_status, field + \".estimate_status\");\n" +
+"            checkNull$h(d.estimate_status, field + \".estimate_status\");\n" +
 "        }\n" +
 "        checkString$l(d.external_id, field + \".external_id\");\n" +
 "        if (\"factor_status\" in d) {\n" +
@@ -1635,7 +1635,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.factor_status, field + \".factor_status\", \"string | null\");\n" +
+"                    checkNull$h(d.factor_status, field + \".factor_status\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -1649,7 +1649,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.file_signed_id, field + \".file_signed_id\", \"string | null\");\n" +
+"                    checkNull$h(d.file_signed_id, field + \".file_signed_id\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -1657,7 +1657,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$g(d.filename, field + \".filename\", \"null | string\");\n" +
+"            checkNull$h(d.filename, field + \".filename\", \"null | string\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -1667,10 +1667,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"finalized_at\" in d) {\n" +
-"            checkNull$g(d.finalized_at, field + \".finalized_at\");\n" +
+"            checkNull$h(d.finalized_at, field + \".finalized_at\");\n" +
 "        }\n" +
 "        if (\"from_estimate_id\" in d) {\n" +
-"            checkNull$g(d.from_estimate_id, field + \".from_estimate_id\");\n" +
+"            checkNull$h(d.from_estimate_id, field + \".from_estimate_id\");\n" +
 "        }\n" +
 "        if (\"future_in_days\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
@@ -1679,7 +1679,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.future_in_days, field + \".future_in_days\", \"number | null\");\n" +
+"                    checkNull$h(d.future_in_days, field + \".future_in_days\", \"number | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -1691,7 +1691,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$g(d.gdrive_path, field + \".gdrive_path\", \"string | null\");\n" +
+"                checkNull$h(d.gdrive_path, field + \".gdrive_path\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -1699,7 +1699,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"gross_amount\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkNull$g(d.gross_amount, field + \".gross_amount\", \"null | string\");\n" +
+"                checkNull$h(d.gross_amount, field + \".gross_amount\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
@@ -1712,7 +1712,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkString$l(d.group_uuid, field + \".group_uuid\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$g(d.grouped_at, field + \".grouped_at\", \"null | string\");\n" +
+"            checkNull$h(d.grouped_at, field + \".grouped_at\", \"null | string\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -1729,7 +1729,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.has_linked_quotes, field + \".has_linked_quotes\", \"boolean | null\");\n" +
+"                    checkNull$h(d.has_linked_quotes, field + \".has_linked_quotes\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -1743,7 +1743,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.iban, field + \".iban\", \"string | null\");\n" +
+"                    checkNull$h(d.iban, field + \".iban\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -1757,7 +1757,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.incomplete, field + \".incomplete\", \"boolean | null\");\n" +
+"                    checkNull$h(d.incomplete, field + \".incomplete\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -1770,7 +1770,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.invoice_kind, field + \".invoice_kind\", \"string | null\");\n" +
+"                    checkNull$h(d.invoice_kind, field + \".invoice_kind\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -1788,7 +1788,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.invoice_lines, field + \".invoice_lines\", \"InvoiceLinesEntity[] | null\");\n" +
+"                    checkNull$h(d.invoice_lines, field + \".invoice_lines\", \"InvoiceLinesEntity[] | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -1801,17 +1801,17 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.invoice_number, field + \".invoice_number\", \"string | null\");\n" +
+"                    checkNull$h(d.invoice_number, field + \".invoice_number\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"invoicing_detailed_source\" in d) {\n" +
-"            checkNull$g(d.invoicing_detailed_source, field + \".invoicing_detailed_source\");\n" +
+"            checkNull$h(d.invoicing_detailed_source, field + \".invoicing_detailed_source\");\n" +
 "        }\n" +
 "        if (\"is_accounting_needed\" in d) {\n" +
-"            checkNull$g(d.is_accounting_needed, field + \".is_accounting_needed\");\n" +
+"            checkNull$h(d.is_accounting_needed, field + \".is_accounting_needed\");\n" +
 "        }\n" +
 "        if (\"is_credit_note\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
@@ -1820,7 +1820,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.is_credit_note, field + \".is_credit_note\", \"boolean | null\");\n" +
+"                    checkNull$h(d.is_credit_note, field + \".is_credit_note\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -1833,7 +1833,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.is_destroyable, field + \".is_destroyable\", \"boolean | null\");\n" +
+"                    checkNull$h(d.is_destroyable, field + \".is_destroyable\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -1846,7 +1846,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.is_estimate, field + \".is_estimate\", \"boolean | null\");\n" +
+"                    checkNull$h(d.is_estimate, field + \".is_estimate\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -1859,7 +1859,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.is_sendable, field + \".is_sendable\", \"boolean | null\");\n" +
+"                    checkNull$h(d.is_sendable, field + \".is_sendable\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -1873,7 +1873,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.is_waiting_for_ocr, field + \".is_waiting_for_ocr\", \"boolean | null\");\n" +
+"                    checkNull$h(d.is_waiting_for_ocr, field + \".is_waiting_for_ocr\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -1887,7 +1887,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$g(d.label, field + \".label\", \"string | null\");\n" +
+"                checkNull$h(d.label, field + \".label\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -1899,7 +1899,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.language, field + \".language\", \"string | null\");\n" +
+"                    checkNull$h(d.language, field + \".language\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -1919,7 +1919,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.manual_partial_invoices, field + \".manual_partial_invoices\", \"boolean | null\");\n" +
+"                    checkNull$h(d.manual_partial_invoices, field + \".manual_partial_invoices\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -1933,7 +1933,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.multiplier, field + \".multiplier\", \"number | null\");\n" +
+"                    checkNull$h(d.multiplier, field + \".multiplier\", \"number | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -1946,7 +1946,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.not_duplicate, field + \".not_duplicate\", \"boolean | null\");\n" +
+"                    checkNull$h(d.not_duplicate, field + \".not_duplicate\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -1955,7 +1955,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"ocr_thirdparty_id\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkNull$g(d.ocr_thirdparty_id, field + \".ocr_thirdparty_id\", \"null | number\");\n" +
+"                checkNull$h(d.ocr_thirdparty_id, field + \".ocr_thirdparty_id\", \"null | number\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
@@ -1973,7 +1973,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.pages_count, field + \".pages_count\", \"number | null\");\n" +
+"                    checkNull$h(d.pages_count, field + \".pages_count\", \"number | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -1986,17 +1986,17 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.paid, field + \".paid\", \"boolean | null\");\n" +
+"                    checkNull$h(d.paid, field + \".paid\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"payment_id\" in d) {\n" +
-"            checkNull$g(d.payment_id, field + \".payment_id\");\n" +
+"            checkNull$h(d.payment_id, field + \".payment_id\");\n" +
 "        }\n" +
 "        if (\"payment_method\" in d) {\n" +
-"            checkNull$g(d.payment_method, field + \".payment_method\");\n" +
+"            checkNull$h(d.payment_method, field + \".payment_method\");\n" +
 "        }\n" +
 "        if (\"payment_reference\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
@@ -2005,7 +2005,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.payment_reference, field + \".payment_reference\", \"string | null\");\n" +
+"                    checkNull$h(d.payment_reference, field + \".payment_reference\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -2018,7 +2018,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.payment_reminder_enabled, field + \".payment_reminder_enabled\", \"boolean | null\");\n" +
+"                    checkNull$h(d.payment_reminder_enabled, field + \".payment_reminder_enabled\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -2031,7 +2031,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.payment_status, field + \".payment_status\", \"string | null\");\n" +
+"                    checkNull$h(d.payment_status, field + \".payment_status\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -2045,7 +2045,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.pdf_invoice_display_products_list, field + \".pdf_invoice_display_products_list\", \"boolean | null\");\n" +
+"                    checkNull$h(d.pdf_invoice_display_products_list, field + \".pdf_invoice_display_products_list\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -2058,7 +2058,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.pdf_invoice_free_text, field + \".pdf_invoice_free_text\", \"string | null\");\n" +
+"                    checkNull$h(d.pdf_invoice_free_text, field + \".pdf_invoice_free_text\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -2071,7 +2071,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.pdf_invoice_free_text_enabled, field + \".pdf_invoice_free_text_enabled\", \"boolean | null\");\n" +
+"                    checkNull$h(d.pdf_invoice_free_text_enabled, field + \".pdf_invoice_free_text_enabled\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -2084,7 +2084,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.pdf_invoice_subject, field + \".pdf_invoice_subject\", \"string | null\");\n" +
+"                    checkNull$h(d.pdf_invoice_subject, field + \".pdf_invoice_subject\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -2097,7 +2097,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.pdf_invoice_subject_enabled, field + \".pdf_invoice_subject_enabled\", \"boolean | null\");\n" +
+"                    checkNull$h(d.pdf_invoice_subject_enabled, field + \".pdf_invoice_subject_enabled\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -2110,7 +2110,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.pdf_invoice_title, field + \".pdf_invoice_title\", \"string | null\");\n" +
+"                    checkNull$h(d.pdf_invoice_title, field + \".pdf_invoice_title\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -2123,7 +2123,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.pdf_paid_stamp, field + \".pdf_paid_stamp\", \"boolean | null\");\n" +
+"                    checkNull$h(d.pdf_paid_stamp, field + \".pdf_paid_stamp\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -2132,7 +2132,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkBoolean$d(d.pending, field + \".pending\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$g(d.preview_status, field + \".preview_status\", \"null | string\");\n" +
+"            checkNull$h(d.preview_status, field + \".preview_status\", \"null | string\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -2154,7 +2154,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.price_before_tax, field + \".price_before_tax\", \"string | null\");\n" +
+"                    checkNull$h(d.price_before_tax, field + \".price_before_tax\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -2168,14 +2168,14 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.quote_group_uuid, field + \".quote_group_uuid\", \"string | null\");\n" +
+"                    checkNull$h(d.quote_group_uuid, field + \".quote_group_uuid\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"quote_uid\" in d) {\n" +
-"            checkNull$g(d.quote_uid, field + \".quote_uid\");\n" +
+"            checkNull$h(d.quote_uid, field + \".quote_uid\");\n" +
 "        }\n" +
 "        checkBoolean$d(d.quotes, field + \".quotes\");\n" +
 "        checkBoolean$d(d.readonly, field + \".readonly\");\n" +
@@ -2191,19 +2191,19 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.recipients, field + \".recipients\", \"never[] | null\");\n" +
+"                    checkNull$h(d.recipients, field + \".recipients\", \"never[] | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
 "        checkBoolean$d(d.reconciled, field + \".reconciled\");\n" +
-"        checkNull$g(d.reversal_origin_id, field + \".reversal_origin_id\");\n" +
-"        checkNull$g(d.score, field + \".score\");\n" +
+"        checkNull$h(d.reversal_origin_id, field + \".reversal_origin_id\");\n" +
+"        checkNull$h(d.score, field + \".score\");\n" +
 "        if (\"scored_invoices\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkNull$g(d.scored_invoices, field + \".scored_invoices\", \"null | ScoredInvoices1\");\n" +
+"                checkNull$h(d.scored_invoices, field + \".scored_invoices\", \"null | ScoredInvoices1\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
@@ -2225,7 +2225,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.scored_transactions, field + \".scored_transactions\", \"never[] | null\");\n" +
+"                    checkNull$h(d.scored_transactions, field + \".scored_transactions\", \"never[] | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -2238,7 +2238,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.size, field + \".size\", \"string | null\");\n" +
+"                    checkNull$h(d.size, field + \".size\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -2246,12 +2246,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        checkString$l(d.source, field + \".source\");\n" +
 "        if (\"special_mention\" in d) {\n" +
-"            checkNull$g(d.special_mention, field + \".special_mention\");\n" +
+"            checkNull$h(d.special_mention, field + \".special_mention\");\n" +
 "        }\n" +
 "        if (\"status\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkNull$g(d.status, field + \".status\", \"null | string\");\n" +
+"                checkNull$h(d.status, field + \".status\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
@@ -2268,7 +2268,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.subcomplete, field + \".subcomplete\", \"boolean | null\");\n" +
+"                    checkNull$h(d.subcomplete, field + \".subcomplete\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -2281,7 +2281,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.tagged_at_ledger_events_level, field + \".tagged_at_ledger_events_level\", \"boolean | null\");\n" +
+"                    checkNull$h(d.tagged_at_ledger_events_level, field + \".tagged_at_ledger_events_level\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -2294,7 +2294,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.tax, field + \".tax\", \"string | null\");\n" +
+"                    checkNull$h(d.tax, field + \".tax\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -2307,7 +2307,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.thirdparty, field + \".thirdparty\", \"Thirdparty | null\");\n" +
+"                    checkNull$h(d.thirdparty, field + \".thirdparty\", \"Thirdparty | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -2315,7 +2315,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$g(d.thirdparty_id, field + \".thirdparty_id\", \"null | number\");\n" +
+"            checkNull$h(d.thirdparty_id, field + \".thirdparty_id\", \"null | number\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -2334,7 +2334,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.validation_needed, field + \".validation_needed\", \"boolean | null\");\n" +
+"                    checkNull$h(d.validation_needed, field + \".validation_needed\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -2569,7 +2569,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$g(d.connection, field + \".connection\", \"string | null\");\n" +
+"                checkNull$h(d.connection, field + \".connection\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -2584,7 +2584,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$g(d.iban, field + \".iban\", \"string | null\");\n" +
+"                checkNull$h(d.iban, field + \".iban\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -2597,7 +2597,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$g(d.last_successful_sync_at, field + \".last_successful_sync_at\", \"string | null\");\n" +
+"                checkNull$h(d.last_successful_sync_at, field + \".last_successful_sync_at\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -2608,27 +2608,27 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$g(d.last_sync_at, field + \".last_sync_at\", \"string | null\");\n" +
+"                checkNull$h(d.last_sync_at, field + \".last_sync_at\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
 "        }\n" +
-"        checkNull$g(d.last_sync_error, field + \".last_sync_error\");\n" +
+"        checkNull$h(d.last_sync_error, field + \".last_sync_error\");\n" +
 "        checkNumber$i(d.last_sync_http_code, field + \".last_sync_http_code\");\n" +
-"        checkNull$g(d.ledger_events_count, field + \".ledger_events_count\");\n" +
-"        checkNull$g(d.ledger_events_max_date, field + \".ledger_events_max_date\");\n" +
-"        checkNull$g(d.ledger_events_min_date, field + \".ledger_events_min_date\");\n" +
+"        checkNull$h(d.ledger_events_count, field + \".ledger_events_count\");\n" +
+"        checkNull$h(d.ledger_events_max_date, field + \".ledger_events_max_date\");\n" +
+"        checkNull$h(d.ledger_events_min_date, field + \".ledger_events_min_date\");\n" +
 "        checkString$l(d.merge_url, field + \".merge_url\");\n" +
 "        checkString$l(d.method, field + \".method\");\n" +
 "        checkString$l(d.name, field + \".name\");\n" +
 "        checkString$l(d.pusher_channel, field + \".pusher_channel\");\n" +
 "        checkBoolean$d(d.swan, field + \".swan\");\n" +
-"        checkNull$g(d.swan_number, field + \".swan_number\");\n" +
+"        checkNull$h(d.swan_number, field + \".swan_number\");\n" +
 "        checkBoolean$d(d.sync_attachments, field + \".sync_attachments\");\n" +
 "        checkBoolean$d(d.sync_customers, field + \".sync_customers\");\n" +
-"        checkNull$g(d.sync_since, field + \".sync_since\");\n" +
+"        checkNull$h(d.sync_since, field + \".sync_since\");\n" +
 "        checkBoolean$d(d.synchronized, field + \".synchronized\");\n" +
-"        checkNull$g(d.transactions_count, field + \".transactions_count\");\n" +
+"        checkNull$h(d.transactions_count, field + \".transactions_count\");\n" +
 "        checkString$l(d.updated_at, field + \".updated_at\");\n" +
 "        checkString$l(d.url, field + \".url\");\n" +
 "        checkBoolean$d(d.use_as_default_for_vat_return, field + \".use_as_default_for_vat_return\");\n" +
@@ -2700,7 +2700,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNumber$i(d.bridge_ids[i], field + \".bridge_ids\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
-"        checkNull$g(d.budgetinsight_id, field + \".budgetinsight_id\");\n" +
+"        checkNull$h(d.budgetinsight_id, field + \".budgetinsight_id\");\n" +
 "        checkString$l(d.crm_url, field + \".crm_url\");\n" +
 "        checkNumber$i(d.id, field + \".id\");\n" +
 "        checkString$l(d.logo_url, field + \".logo_url\");\n" +
@@ -2747,7 +2747,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkString$l(d.name, field + \".name\");\n" +
 "        checkNumber$i(d.record_id, field + \".record_id\");\n" +
 "        checkString$l(d.record_type, field + \".record_type\");\n" +
-"        checkNull$g(d.rich_content, field + \".rich_content\");\n" +
+"        checkNull$h(d.rich_content, field + \".rich_content\");\n" +
 "        checkBoolean$d(d.seen, field + \".seen\");\n" +
 "        checkString$l(d.updated_at, field + \".updated_at\");\n" +
 "        d.user = User.Create(d.user, field + \".user\");\n" +
@@ -2794,7 +2794,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkString$l(d.full_name, field + \".full_name\");\n" +
 "        checkNumber$i(d.id, field + \".id\");\n" +
 "        checkString$l(d.last_name, field + \".last_name\");\n" +
-"        checkNull$g(d.profile_picture_url, field + \".profile_picture_url\");\n" +
+"        checkNull$h(d.profile_picture_url, field + \".profile_picture_url\");\n" +
 "        const knownProperties = [\"first_name\", \"full_name\", \"id\", \"last_name\", \"profile_picture_url\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -2860,7 +2860,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkString$l(d[\"country_alpha2\"], field + \".country_alpha2\");\n" +
 "        checkBoolean$d(d.enabled, field + \".enabled\");\n" +
 "        checkNumber$i(d.id, field + \".id\");\n" +
-"        checkNull$g(d.internal_identifier, field + \".internal_identifier\");\n" +
+"        checkNull$h(d.internal_identifier, field + \".internal_identifier\");\n" +
 "        checkString$l(d.label, field + \".label\");\n" +
 "        checkBoolean$d(d.label_is_editable, field + \".label_is_editable\");\n" +
 "        checkString$l(d.number, field + \".number\");\n" +
@@ -2902,7 +2902,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            throwIsArray$n(field, d);\n" +
 "        }\n" +
 "        if (\"author\" in d) {\n" +
-"            checkNull$g(d.author, field + \".author\");\n" +
+"            checkNull$h(d.author, field + \".author\");\n" +
 "        }\n" +
 "        checkString$l(d.content, field + \".content\");\n" +
 "        checkString$l(d.created_at, field + \".created_at\");\n" +
@@ -2910,12 +2910,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkString$l(d.name, field + \".name\");\n" +
 "        checkNumber$i(d.record_id, field + \".record_id\");\n" +
 "        checkString$l(d.record_type, field + \".record_type\");\n" +
-"        checkNull$g(d.rich_content, field + \".rich_content\");\n" +
+"        checkNull$h(d.rich_content, field + \".rich_content\");\n" +
 "        checkBoolean$d(d.seen, field + \".seen\");\n" +
 "        checkString$l(d.updated_at, field + \".updated_at\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$g(d.user, field + \".user\", \"null | User\");\n" +
+"            checkNull$h(d.user, field + \".user\", \"null | User\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -2926,7 +2926,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$g(d.user_id, field + \".user_id\", \"null | number\");\n" +
+"            checkNull$h(d.user_id, field + \".user_id\", \"null | number\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -2975,7 +2975,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$n(field, d);\n" +
 "        }\n" +
-"        checkNull$g(d.advance_id, field + \".advance_id\");\n" +
+"        checkNull$h(d.advance_id, field + \".advance_id\");\n" +
 "        checkString$l(d.amount, field + \".amount\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
@@ -2983,7 +2983,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$g(d.asset_id, field + \".asset_id\", \"number | null\");\n" +
+"                checkNull$h(d.asset_id, field + \".asset_id\", \"number | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -2994,7 +2994,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkString$l(d.currency_price_before_tax, field + \".currency_price_before_tax\");\n" +
 "        checkString$l(d.currency_tax, field + \".currency_tax\");\n" +
 "        checkString$l(d.currency_unit_price_before_tax, field + \".currency_unit_price_before_tax\");\n" +
-"        checkNull$g(d.deferral_id, field + \".deferral_id\");\n" +
+"        checkNull$h(d.deferral_id, field + \".deferral_id\");\n" +
 "        checkString$l(d.description, field + \".description\");\n" +
 "        checkString$l(d.discount, field + \".discount\");\n" +
 "        checkString$l(d.discount_type, field + \".discount_type\");\n" +
@@ -3007,7 +3007,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$g(d.invoice_line_section_id, field + \".invoice_line_section_id\", \"number | null\");\n" +
+"                checkNull$h(d.invoice_line_section_id, field + \".invoice_line_section_id\", \"number | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -3016,7 +3016,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkBoolean$d(d.manual_vat_mode, field + \".manual_vat_mode\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$g(d.ocr_vat_rate, field + \".ocr_vat_rate\", \"null | string\");\n" +
+"            checkNull$h(d.ocr_vat_rate, field + \".ocr_vat_rate\", \"null | string\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -3029,7 +3029,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkNumber$i(d.pnl_plan_item_id, field + \".pnl_plan_item_id\");\n" +
 "        checkBoolean$d(d.prepaid_pnl, field + \".prepaid_pnl\");\n" +
 "        checkString$l(d.price_before_tax, field + \".price_before_tax\");\n" +
-"        checkNull$g(d.product_id, field + \".product_id\");\n" +
+"        checkNull$h(d.product_id, field + \".product_id\");\n" +
 "        checkString$l(d.quantity, field + \".quantity\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
@@ -3037,7 +3037,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$g(d.rank, field + \".rank\", \"number | null\");\n" +
+"                checkNull$h(d.rank, field + \".rank\", \"number | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -3051,7 +3051,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$g(d.unit, field + \".unit\", \"string | null\");\n" +
+"                checkNull$h(d.unit, field + \".unit\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -3122,7 +3122,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkNumber$i(d.id, field + \".id\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$g(d.internal_identifier, field + \".internal_identifier\", \"null | string\");\n" +
+"            checkNull$h(d.internal_identifier, field + \".internal_identifier\", \"null | string\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -3221,7 +3221,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$g(d.label, field + \".label\", \"string | null\");\n" +
+"                checkNull$h(d.label, field + \".label\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -3233,7 +3233,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.lettering, field + \".lettering\", \"Lettering | null\");\n" +
+"                    checkNull$h(d.lettering, field + \".lettering\", \"Lettering | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -3245,7 +3245,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$g(d.lettering_id, field + \".lettering_id\", \"number | null\");\n" +
+"                checkNull$h(d.lettering_id, field + \".lettering_id\", \"number | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -3264,7 +3264,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNull$g(d.reallocation, field + \".reallocation\", \"Reallocation | null\");\n" +
+"                    checkNull$h(d.reallocation, field + \".reallocation\", \"Reallocation | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -3272,7 +3272,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$g(d.reallocation_id, field + \".reallocation_id\", \"null | number\");\n" +
+"            checkNull$h(d.reallocation_id, field + \".reallocation_id\", \"null | number\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -3287,7 +3287,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$g(d.reconciliation_id, field + \".reconciliation_id\", \"number | null\");\n" +
+"                checkNull$h(d.reconciliation_id, field + \".reconciliation_id\", \"number | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -3384,7 +3384,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkNumber$i(d.id, field + \".id\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$g(d.internal_identifier, field + \".internal_identifier\", \"null | string\");\n" +
+"            checkNull$h(d.internal_identifier, field + \".internal_identifier\", \"null | string\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -3476,7 +3476,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$g(d.internal_identifier, field + \".internal_identifier\", \"string | null\");\n" +
+"                checkNull$h(d.internal_identifier, field + \".internal_identifier\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -3552,20 +3552,20 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkString$l(d.activity_nomenclature, field + \".activity_nomenclature\");\n" +
 "        checkString$l(d.address, field + \".address\");\n" +
 "        checkString$l(d.address_additional_info, field + \".address_additional_info\");\n" +
-"        checkNull$g(d.admin_city_code, field + \".admin_city_code\");\n" +
-"        checkNull$g(d.balance, field + \".balance\");\n" +
-"        checkNull$g(d.billing_bank, field + \".billing_bank\");\n" +
-"        checkNull$g(d.billing_bic, field + \".billing_bic\");\n" +
-"        checkNull$g(d.billing_footer_invoice_id, field + \".billing_footer_invoice_id\");\n" +
-"        checkNull$g(d.billing_footer_invoice_label, field + \".billing_footer_invoice_label\");\n" +
-"        checkNull$g(d.billing_iban, field + \".billing_iban\");\n" +
+"        checkNull$h(d.admin_city_code, field + \".admin_city_code\");\n" +
+"        checkNull$h(d.balance, field + \".balance\");\n" +
+"        checkNull$h(d.billing_bank, field + \".billing_bank\");\n" +
+"        checkNull$h(d.billing_bic, field + \".billing_bic\");\n" +
+"        checkNull$h(d.billing_footer_invoice_id, field + \".billing_footer_invoice_id\");\n" +
+"        checkNull$h(d.billing_footer_invoice_label, field + \".billing_footer_invoice_label\");\n" +
+"        checkNull$h(d.billing_iban, field + \".billing_iban\");\n" +
 "        checkString$l(d.billing_language, field + \".billing_language\");\n" +
 "        checkString$l(d.city, field + \".city\");\n" +
 "        checkNumber$i(d.company_id, field + \".company_id\");\n" +
 "        checkBoolean$d(d.complete, field + \".complete\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$g(d.country, field + \".country\", \"null | string\");\n" +
+"            checkNull$h(d.country, field + \".country\", \"null | string\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -3575,18 +3575,18 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$l(d[\"country_alpha2\"], field + \".country_alpha2\");\n" +
-"        checkNull$g(d.credits, field + \".credits\");\n" +
-"        checkNull$g(d.current_mandate, field + \".current_mandate\");\n" +
+"        checkNull$h(d.credits, field + \".credits\");\n" +
+"        checkNull$h(d.current_mandate, field + \".current_mandate\");\n" +
 "        checkString$l(d.customer_type, field + \".customer_type\");\n" +
-"        checkNull$g(d.debits, field + \".debits\");\n" +
+"        checkNull$h(d.debits, field + \".debits\");\n" +
 "        checkString$l(d.delivery_address, field + \".delivery_address\");\n" +
 "        checkString$l(d.delivery_address_additional_info, field + \".delivery_address_additional_info\");\n" +
 "        checkString$l(d.delivery_city, field + \".delivery_city\");\n" +
-"        checkNull$g(d.delivery_country, field + \".delivery_country\");\n" +
+"        checkNull$h(d.delivery_country, field + \".delivery_country\");\n" +
 "        checkString$l(d[\"delivery_country_alpha2\"], field + \".delivery_country_alpha2\");\n" +
 "        checkString$l(d.delivery_postal_code, field + \".delivery_postal_code\");\n" +
 "        checkBoolean$d(d.disable_pending_vat, field + \".disable_pending_vat\");\n" +
-"        checkNull$g(d.display_name, field + \".display_name\");\n" +
+"        checkNull$h(d.display_name, field + \".display_name\");\n" +
 "        checkArray$c(d.emails, field + \".emails\");\n" +
 "        if (d.emails) {\n" +
 "            for (let i = 0; i < d.emails.length; i++) {\n" +
@@ -3595,7 +3595,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$g(d.establishment_no, field + \".establishment_no\", \"null | string\");\n" +
+"            checkNull$h(d.establishment_no, field + \".establishment_no\", \"null | string\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -3604,20 +3604,20 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            catch (e) {\n" +
 "            }\n" +
 "        }\n" +
-"        checkNull$g(d.estimate_count, field + \".estimate_count\");\n" +
+"        checkNull$h(d.estimate_count, field + \".estimate_count\");\n" +
 "        checkString$l(d.first_name, field + \".first_name\");\n" +
 "        checkBoolean$d(d.force_pending_vat, field + \".force_pending_vat\");\n" +
-"        checkNull$g(d.gender, field + \".gender\");\n" +
-"        checkNull$g(d.gocardless_id, field + \".gocardless_id\");\n" +
+"        checkNull$h(d.gender, field + \".gender\");\n" +
+"        checkNull$h(d.gocardless_id, field + \".gocardless_id\");\n" +
 "        checkString$l(d.iban, field + \".iban\");\n" +
 "        checkNumber$i(d.id, field + \".id\");\n" +
-"        checkNull$g(d.invoice_count, field + \".invoice_count\");\n" +
-"        checkNull$g(d.invoice_dump_id, field + \".invoice_dump_id\");\n" +
+"        checkNull$h(d.invoice_count, field + \".invoice_count\");\n" +
+"        checkNull$h(d.invoice_dump_id, field + \".invoice_dump_id\");\n" +
 "        checkBoolean$d(d.invoices_auto_generated, field + \".invoices_auto_generated\");\n" +
 "        checkBoolean$d(d.invoices_auto_validated, field + \".invoices_auto_validated\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$g(d.known_supplier_id, field + \".known_supplier_id\", \"null | number\");\n" +
+"            checkNull$h(d.known_supplier_id, field + \".known_supplier_id\", \"null | number\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -3627,31 +3627,31 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$l(d.last_name, field + \".last_name\");\n" +
-"        checkNull$g(d.ledger_events_count, field + \".ledger_events_count\");\n" +
+"        checkNull$h(d.ledger_events_count, field + \".ledger_events_count\");\n" +
 "        checkString$l(d.legal_form_code, field + \".legal_form_code\");\n" +
 "        checkString$l(d.method, field + \".method\");\n" +
 "        checkString$l(d.name, field + \".name\");\n" +
 "        checkString$l(d.notes, field + \".notes\");\n" +
-"        checkNull$g(d.notes_comment, field + \".notes_comment\");\n" +
+"        checkNull$h(d.notes_comment, field + \".notes_comment\");\n" +
 "        checkString$l(d.payment_conditions, field + \".payment_conditions\");\n" +
 "        checkString$l(d.phone, field + \".phone\");\n" +
-"        checkNull$g(d.plan_item, field + \".plan_item\");\n" +
-"        checkNull$g(d.plan_item_attributes, field + \".plan_item_attributes\");\n" +
+"        checkNull$h(d.plan_item, field + \".plan_item\");\n" +
+"        checkNull$h(d.plan_item_attributes, field + \".plan_item_attributes\");\n" +
 "        checkNumber$i(d.plan_item_id, field + \".plan_item_id\");\n" +
-"        checkNull$g(d.pnl_plan_item, field + \".pnl_plan_item\");\n" +
+"        checkNull$h(d.pnl_plan_item, field + \".pnl_plan_item\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
 "            checkNumber$i(d.pnl_plan_item_id, field + \".pnl_plan_item_id\", \"number | null\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$g(d.pnl_plan_item_id, field + \".pnl_plan_item_id\", \"number | null\");\n" +
+"                checkNull$h(d.pnl_plan_item_id, field + \".pnl_plan_item_id\", \"number | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$l(d.postal_code, field + \".postal_code\");\n" +
-"        checkNull$g(d.purchase_request_count, field + \".purchase_request_count\");\n" +
+"        checkNull$h(d.purchase_request_count, field + \".purchase_request_count\");\n" +
 "        checkBoolean$d(d.received_a_mandate_request, field + \".received_a_mandate_request\");\n" +
 "        checkString$l(d.recipient, field + \".recipient\");\n" +
 "        checkBoolean$d(d.recurrent, field + \".recurrent\");\n" +
@@ -3666,15 +3666,15 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$l(d.source_id, field + \".source_id\");\n" +
-"        checkNull$g(d.stripe_id, field + \".stripe_id\");\n" +
-"        checkNull$g(d.supplier_payment_method, field + \".supplier_payment_method\");\n" +
+"        checkNull$h(d.stripe_id, field + \".stripe_id\");\n" +
+"        checkNull$h(d.supplier_payment_method, field + \".supplier_payment_method\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
 "            checkString$l(d.supplier_payment_method_last_updated_at, field + \".supplier_payment_method_last_updated_at\", \"string | null\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$g(d.supplier_payment_method_last_updated_at, field + \".supplier_payment_method_last_updated_at\", \"string | null\");\n" +
+"                checkNull$h(d.supplier_payment_method_last_updated_at, field + \".supplier_payment_method_last_updated_at\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -3685,7 +3685,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNever$4(d.tags[i], field + \".tags\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
-"        checkNull$g(d.turnover, field + \".turnover\");\n" +
+"        checkNull$h(d.turnover, field + \".turnover\");\n" +
 "        checkString$l(d.url, field + \".url\");\n" +
 "        checkString$l(d.vat_number, field + \".vat_number\");\n" +
 "        // This will be refactored in the next release.\n" +
@@ -3694,7 +3694,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$g(d.vat_rate, field + \".vat_rate\", \"string | null\");\n" +
+"                checkNull$h(d.vat_rate, field + \".vat_rate\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -3836,7 +3836,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    if (typeof (value) !== 'string')\n" +
 "        errorHelper$n(field, value, multiple ?? \"string\");\n" +
 "}\n" +
-"function checkNull$g(value, field, multiple) {\n" +
+"function checkNull$h(value, field, multiple) {\n" +
 "    if (value !== null)\n" +
 "        errorHelper$n(field, value, multiple ?? \"null\");\n" +
 "}\n" +
@@ -3893,7 +3893,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$f(d.date, field + \".date\", \"string | null\");\n" +
+"                checkNull$g(d.date, field + \".date\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -3902,7 +3902,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkString$k(d.group_uuid, field + \".group_uuid\");\n" +
 "        checkNumber$h(d.id, field + \".id\");\n" +
 "        checkString$k(d.outstanding_balance, field + \".outstanding_balance\");\n" +
-"        checkNull$f(d.proof_count, field + \".proof_count\");\n" +
+"        checkNull$g(d.proof_count, field + \".proof_count\");\n" +
 "        checkString$k(d.type, field + \".type\");\n" +
 "        checkString$k(d.updated_at, field + \".updated_at\");\n" +
 "        const knownProperties = [\"amount\", \"company_id\", \"currency\", \"date\", \"gross_amount\", \"group_uuid\", \"id\", \"outstanding_balance\", \"proof_count\", \"type\", \"updated_at\"];\n" +
@@ -3942,7 +3942,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    if (typeof (value) !== 'string')\n" +
 "        errorHelper$m(field, value, multiple ?? \"string\");\n" +
 "}\n" +
-"function checkNull$f(value, field, multiple) {\n" +
+"function checkNull$g(value, field, multiple) {\n" +
 "    if (value !== null)\n" +
 "        errorHelper$m(field, value, multiple ?? \"null\");\n" +
 "}\n" +
@@ -4083,7 +4083,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$e(d.archived_at, field + \".archived_at\", \"null | string\");\n" +
+"            checkNull$f(d.archived_at, field + \".archived_at\", \"null | string\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -4110,14 +4110,14 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$e(d.parent_id, field + \".parent_id\", \"number | null\");\n" +
+"                checkNull$f(d.parent_id, field + \".parent_id\", \"number | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$j(d.pusher_channel, field + \".pusher_channel\");\n" +
 "        checkBoolean$c(d.readonly, field + \".readonly\");\n" +
-"        checkNull$e(d.reference_link, field + \".reference_link\");\n" +
+"        checkNull$f(d.reference_link, field + \".reference_link\");\n" +
 "        checkBoolean$c(d.shared, field + \".shared\");\n" +
 "        checkString$j(d.signed_id, field + \".signed_id\");\n" +
 "        checkString$j(d.type, field + \".type\");\n" +
@@ -4210,7 +4210,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    if (typeof (value) !== 'string')\n" +
 "        errorHelper$k(field, value, multiple ?? \"string\");\n" +
 "}\n" +
-"function checkNull$e(value, field, multiple) {\n" +
+"function checkNull$f(value, field, multiple) {\n" +
 "    if (value !== null)\n" +
 "        errorHelper$k(field, value, multiple ?? \"null\");\n" +
 "}\n" +
@@ -4372,7 +4372,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$i(field, d);\n" +
 "        }\n" +
-"        checkNull$d(d.archived_at, field + \".archived_at\");\n" +
+"        checkNull$e(d.archived_at, field + \".archived_at\");\n" +
 "        checkNumber$e(d.comments_count, field + \".comments_count\");\n" +
 "        checkString$h(d.created_at, field + \".created_at\");\n" +
 "        d.creator = Creator$4.Create(d.creator, field + \".creator\");\n" +
@@ -4388,7 +4388,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkNumber$e(d.parent_id, field + \".parent_id\");\n" +
 "        checkString$h(d.pusher_channel, field + \".pusher_channel\");\n" +
 "        checkBoolean$b(d.readonly, field + \".readonly\");\n" +
-"        checkNull$d(d.reference_link, field + \".reference_link\");\n" +
+"        checkNull$e(d.reference_link, field + \".reference_link\");\n" +
 "        checkBoolean$b(d.shared, field + \".shared\");\n" +
 "        checkString$h(d.signed_id, field + \".signed_id\");\n" +
 "        checkString$h(d.type, field + \".type\");\n" +
@@ -4526,7 +4526,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    if (typeof (value) !== 'string')\n" +
 "        errorHelper$i(field, value, \"string\");\n" +
 "}\n" +
-"function checkNull$d(value, field, multiple) {\n" +
+"function checkNull$e(value, field, multiple) {\n" +
 "    if (value !== null)\n" +
 "        errorHelper$i(field, value, \"null\");\n" +
 "}\n" +
@@ -4742,7 +4742,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$g(field, d);\n" +
 "        }\n" +
-"        checkNull$c(d.archived_at, field + \".archived_at\");\n" +
+"        checkNull$d(d.archived_at, field + \".archived_at\");\n" +
 "        checkString$f(d.created_at, field + \".created_at\");\n" +
 "        d.creator = Creator$3.Create(d.creator, field + \".creator\");\n" +
 "        checkBoolean$a(d.fixed, field + \".fixed\");\n" +
@@ -4834,7 +4834,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$g(field, d);\n" +
 "        }\n" +
-"        checkNull$c(d.archived_at, field + \".archived_at\");\n" +
+"        checkNull$d(d.archived_at, field + \".archived_at\");\n" +
 "        checkNumber$d(d.comments_count, field + \".comments_count\");\n" +
 "        checkString$f(d.created_at, field + \".created_at\");\n" +
 "        d.creator = Creator$3.Create(d.creator, field + \".creator\");\n" +
@@ -4850,7 +4850,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkNumber$d(d.parent_id, field + \".parent_id\");\n" +
 "        checkString$f(d.pusher_channel, field + \".pusher_channel\");\n" +
 "        checkBoolean$a(d.readonly, field + \".readonly\");\n" +
-"        checkNull$c(d.reference_link, field + \".reference_link\");\n" +
+"        checkNull$d(d.reference_link, field + \".reference_link\");\n" +
 "        checkBoolean$a(d.shared, field + \".shared\");\n" +
 "        checkString$f(d.signed_id, field + \".signed_id\");\n" +
 "        checkString$f(d.type, field + \".type\");\n" +
@@ -4910,7 +4910,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    if (typeof (value) !== 'string')\n" +
 "        errorHelper$g(field, value, \"string\");\n" +
 "}\n" +
-"function checkNull$c(value, field, multiple) {\n" +
+"function checkNull$d(value, field, multiple) {\n" +
 "    if (value !== null)\n" +
 "        errorHelper$g(field, value, \"null\");\n" +
 "}\n" +
@@ -4967,7 +4967,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkString$e(d.name, field + \".name\");\n" +
 "        checkNumber$c(d.record_id, field + \".record_id\");\n" +
 "        checkString$e(d.record_type, field + \".record_type\");\n" +
-"        checkNull$b(d.reference, field + \".reference\");\n" +
+"        checkNull$c(d.reference, field + \".reference\");\n" +
 "        const knownProperties = [\"created_at\", \"id\", \"item_id\", \"linkable\", \"linkable_id\", \"linkable_type\", \"name\", \"record_id\", \"record_type\", \"reference\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -5016,7 +5016,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkNumber$c(d.file_size, field + \".file_size\");\n" +
 "        checkString$e(d.file_url, field + \".file_url\");\n" +
 "        checkNumber$c(d.itemable_id, field + \".itemable_id\");\n" +
-"        checkNull$b(d.url, field + \".url\");\n" +
+"        checkNull$c(d.url, field + \".url\");\n" +
 "        const knownProperties = [\"comments\", \"creator\", \"file_extension\", \"file_size\", \"file_url\", \"itemable_id\", \"url\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -5122,7 +5122,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    if (typeof (value) !== 'string')\n" +
 "        errorHelper$f(field, value, \"string\");\n" +
 "}\n" +
-"function checkNull$b(value, field, multiple) {\n" +
+"function checkNull$c(value, field, multiple) {\n" +
 "    if (value !== null)\n" +
 "        errorHelper$f(field, value, \"null\");\n" +
 "}\n" +
@@ -5210,7 +5210,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkString$d(d.name, field + \".name\");\n" +
 "        checkNumber$b(d.record_id, field + \".record_id\");\n" +
 "        checkString$d(d.record_type, field + \".record_type\");\n" +
-"        checkNull$a(d.reference, field + \".reference\");\n" +
+"        checkNull$b(d.reference, field + \".reference\");\n" +
 "        const knownProperties = [\"created_at\", \"id\", \"item_id\", \"linkable\", \"linkable_id\", \"linkable_type\", \"name\", \"record_id\", \"record_type\", \"reference\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -5259,7 +5259,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkNumber$b(d.file_size, field + \".file_size\");\n" +
 "        checkString$d(d.file_url, field + \".file_url\");\n" +
 "        checkNumber$b(d.itemable_id, field + \".itemable_id\");\n" +
-"        checkNull$a(d.url, field + \".url\");\n" +
+"        checkNull$b(d.url, field + \".url\");\n" +
 "        const knownProperties = [\"comments\", \"creator\", \"file_extension\", \"file_size\", \"file_url\", \"itemable_id\", \"url\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -5365,7 +5365,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    if (typeof (value) !== 'string')\n" +
 "        errorHelper$e(field, value, \"string\");\n" +
 "}\n" +
-"function checkNull$a(value, field, multiple) {\n" +
+"function checkNull$b(value, field, multiple) {\n" +
 "    if (value !== null)\n" +
 "        errorHelper$e(field, value, \"null\");\n" +
 "}\n" +
@@ -5475,7 +5475,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$c(field, d);\n" +
 "        }\n" +
-"        checkNull$9(d.archived_at, field + \".archived_at\");\n" +
+"        checkNull$a(d.archived_at, field + \".archived_at\");\n" +
 "        checkString$b(d.created_at, field + \".created_at\");\n" +
 "        d.creator = Creator.Create(d.creator, field + \".creator\");\n" +
 "        checkBoolean$9(d.favorite, field + \".favorite\");\n" +
@@ -5490,7 +5490,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkNumber$a(d.parent_id, field + \".parent_id\");\n" +
 "        checkString$b(d.pusher_channel, field + \".pusher_channel\");\n" +
 "        checkBoolean$9(d.readonly, field + \".readonly\");\n" +
-"        checkNull$9(d.reference_link, field + \".reference_link\");\n" +
+"        checkNull$a(d.reference_link, field + \".reference_link\");\n" +
 "        checkBoolean$9(d.shared, field + \".shared\");\n" +
 "        checkString$b(d.signed_id, field + \".signed_id\");\n" +
 "        checkString$b(d.type, field + \".type\");\n" +
@@ -5582,7 +5582,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    if (typeof (value) !== 'string')\n" +
 "        errorHelper$c(field, value, \"string\");\n" +
 "}\n" +
-"function checkNull$9(value, field, multiple) {\n" +
+"function checkNull$a(value, field, multiple) {\n" +
 "    if (value !== null)\n" +
 "        errorHelper$c(field, value, \"null\");\n" +
 "}\n" +
@@ -5746,7 +5746,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkString$a(d.amount, field + \".amount\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$8(d.date, field + \".date\", \"null | string\");\n" +
+"            checkNull$9(d.date, field + \".date\", \"null | string\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -5849,7 +5849,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    if (typeof (value) !== 'string')\n" +
 "        errorHelper$b(field, value, multiple ?? \"string\");\n" +
 "}\n" +
-"function checkNull$8(value, field, multiple) {\n" +
+"function checkNull$9(value, field, multiple) {\n" +
 "    if (value !== null)\n" +
 "        errorHelper$b(field, value, multiple);\n" +
 "}\n" +
@@ -5902,7 +5902,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkNumber$8(d.id, field + \".id\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$7(d.label, field + \".label\", \"null | string\");\n" +
+"            checkNull$8(d.label, field + \".label\", \"null | string\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -5913,7 +5913,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$7(d.lettering, field + \".lettering\", \"null | Lettering\");\n" +
+"            checkNull$8(d.lettering, field + \".lettering\", \"null | Lettering\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -5924,7 +5924,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$7(d.lettering_id, field + \".lettering_id\", \"null | number\");\n" +
+"            checkNull$8(d.lettering_id, field + \".lettering_id\", \"null | number\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -5939,7 +5939,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkBoolean$7(d.readonlyAmounts, field + \".readonlyAmounts\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$7(d.reconciliation_id, field + \".reconciliation_id\", \"null | number\");\n" +
+"            checkNull$8(d.reconciliation_id, field + \".reconciliation_id\", \"null | number\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -6070,7 +6070,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    if (typeof (value) !== 'string')\n" +
 "        errorHelper$a(field, value, multiple ?? \"string\");\n" +
 "}\n" +
-"function checkNull$7(value, field, multiple) {\n" +
+"function checkNull$8(value, field, multiple) {\n" +
 "    if (value !== null)\n" +
 "        errorHelper$a(field, value, multiple ?? \"null\");\n" +
 "}\n" +
@@ -6100,14 +6100,17 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    const data = await response.json();\n" +
 "    return data.map(item => APILedgerEvent.Create(item));\n" +
 "}\n" +
-"async function getGroupedDocuments(id) {\n" +
+"async function getGroupedDocuments(id, page = 1) {\n" +
 "    if (!Number.isSafeInteger(id) || !id) {\n" +
 "        console.log('getGroupedDocuments', { id });\n" +
 "        throw new Error('`id` MUST be an integer');\n" +
 "    }\n" +
-"    const response = await apiRequest(`accountants/operations/${id}/grouped_documents?per_page=-1`, null, 'GET');\n" +
+"    const response = await apiRequest(`accountants/operations/${id}/grouped_documents?per_page=20&page=${page}`, null, 'GET');\n" +
 "    const result = await response.json();\n" +
-"    return result.map(item => APIGroupedDocument.Create(item));\n" +
+"    const list = result.map(item => APIGroupedDocument.Create(item));\n" +
+"    if (list.length === 20)\n" +
+"        return list.concat(await getGroupedDocuments(id, page + 1));\n" +
+"    return list;\n" +
 "}\n" +
 "\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
@@ -6169,16 +6172,16 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        checkString$8(d.address, field + \".address\");\n" +
 "        checkString$8(d.address_additional_info, field + \".address_additional_info\");\n" +
-"        checkNull$6(d.billing_bank, field + \".billing_bank\");\n" +
-"        checkNull$6(d.billing_bic, field + \".billing_bic\");\n" +
-"        checkNull$6(d.billing_footer_invoice, field + \".billing_footer_invoice\");\n" +
-"        checkNull$6(d.billing_footer_invoice_id, field + \".billing_footer_invoice_id\");\n" +
-"        checkNull$6(d.billing_iban, field + \".billing_iban\");\n" +
+"        checkNull$7(d.billing_bank, field + \".billing_bank\");\n" +
+"        checkNull$7(d.billing_bic, field + \".billing_bic\");\n" +
+"        checkNull$7(d.billing_footer_invoice, field + \".billing_footer_invoice\");\n" +
+"        checkNull$7(d.billing_footer_invoice_id, field + \".billing_footer_invoice_id\");\n" +
+"        checkNull$7(d.billing_iban, field + \".billing_iban\");\n" +
 "        checkString$8(d.billing_language, field + \".billing_language\");\n" +
 "        checkString$8(d.city, field + \".city\");\n" +
 "        checkNumber$7(d.company_id, field + \".company_id\");\n" +
 "        checkString$8(d[\"country_alpha2\"], field + \".country_alpha2\");\n" +
-"        checkNull$6(d.current_mandate, field + \".current_mandate\");\n" +
+"        checkNull$7(d.current_mandate, field + \".current_mandate\");\n" +
 "        checkString$8(d.customer_type, field + \".customer_type\");\n" +
 "        checkString$8(d.delivery_address, field + \".delivery_address\");\n" +
 "        checkString$8(d.delivery_address_additional_info, field + \".delivery_address_additional_info\");\n" +
@@ -6200,7 +6203,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkString$8(d.last_name, field + \".last_name\");\n" +
 "        checkString$8(d.name, field + \".name\");\n" +
 "        checkString$8(d.notes, field + \".notes\");\n" +
-"        checkNull$6(d.notes_comment, field + \".notes_comment\");\n" +
+"        checkNull$7(d.notes_comment, field + \".notes_comment\");\n" +
 "        checkString$8(d.payment_conditions, field + \".payment_conditions\");\n" +
 "        checkString$8(d.phone, field + \".phone\");\n" +
 "        d.plan_item = PlanItem.Create(d.plan_item, field + \".plan_item\");\n" +
@@ -6215,7 +6218,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkString$8(d.search_terms[i], field + \".search_terms\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
-"        checkNull$6(d.sepa_mandate, field + \".sepa_mandate\");\n" +
+"        checkNull$7(d.sepa_mandate, field + \".sepa_mandate\");\n" +
 "        checkString$8(d.source_id, field + \".source_id\");\n" +
 "        checkArray$6(d.tags, field + \".tags\");\n" +
 "        if (d.tags) {\n" +
@@ -6413,7 +6416,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        checkString$8(d.activity_nomenclature, field + \".activity_nomenclature\");\n" +
 "        checkString$8(d.address, field + \".address\");\n" +
-"        checkNull$6(d.admin_city_code, field + \".admin_city_code\");\n" +
+"        checkNull$7(d.admin_city_code, field + \".admin_city_code\");\n" +
 "        checkString$8(d.city, field + \".city\");\n" +
 "        checkNumber$7(d.company_id, field + \".company_id\");\n" +
 "        checkString$8(d[\"country_alpha2\"], field + \".country_alpha2\");\n" +
@@ -6426,7 +6429,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$6(d.establishment_no, field + \".establishment_no\", \"null | string\");\n" +
+"            checkNull$7(d.establishment_no, field + \".establishment_no\", \"null | string\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -6439,7 +6442,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkString$8(d.iban, field + \".iban\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$6(d.iban_last_update, field + \".iban_last_update\", \"null | IbanLastUpdate\");\n" +
+"            checkNull$7(d.iban_last_update, field + \".iban_last_update\", \"null | IbanLastUpdate\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -6449,14 +6452,14 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"iban_proof\" in d) {\n" +
-"            checkNull$6(d.iban_proof, field + \".iban_proof\");\n" +
+"            checkNull$7(d.iban_proof, field + \".iban_proof\");\n" +
 "        }\n" +
 "        checkNumber$7(d.id, field + \".id\");\n" +
 "        checkBoolean$6(d.invoices_auto_generated, field + \".invoices_auto_generated\");\n" +
 "        checkBoolean$6(d.invoices_auto_validated, field + \".invoices_auto_validated\");\n" +
 "        checkString$8(d.name, field + \".name\");\n" +
 "        checkString$8(d.notes, field + \".notes\");\n" +
-"        checkNull$6(d.notes_comment, field + \".notes_comment\");\n" +
+"        checkNull$7(d.notes_comment, field + \".notes_comment\");\n" +
 "        d.plan_item = PlanItem1.Create(d.plan_item, field + \".plan_item\");\n" +
 "        checkString$8(d.postal_code, field + \".postal_code\");\n" +
 "        checkArray$6(d.search_terms, field + \".search_terms\");\n" +
@@ -6465,9 +6468,9 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkString$8(d.search_terms[i], field + \".search_terms\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
-"        checkNull$6(d.supplier_due_date_delay, field + \".supplier_due_date_delay\");\n" +
+"        checkNull$7(d.supplier_due_date_delay, field + \".supplier_due_date_delay\");\n" +
 "        checkString$8(d.supplier_due_date_rule, field + \".supplier_due_date_rule\");\n" +
-"        checkNull$6(d.supplier_payment_method, field + \".supplier_payment_method\");\n" +
+"        checkNull$7(d.supplier_payment_method, field + \".supplier_payment_method\");\n" +
 "        checkArray$6(d.tags, field + \".tags\");\n" +
 "        if (d.tags) {\n" +
 "            for (let i = 0; i < d.tags.length; i++) {\n" +
@@ -6760,7 +6763,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$6(d.pnl_plan_item, field + \".pnl_plan_item\", \"PnlPlanItem1 | null\");\n" +
+"                checkNull$7(d.pnl_plan_item, field + \".pnl_plan_item\", \"PnlPlanItem1 | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -6771,7 +6774,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$6(d.vat_rate, field + \".vat_rate\", \"string | null\");\n" +
+"                checkNull$7(d.vat_rate, field + \".vat_rate\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -6878,7 +6881,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    if (typeof (value) !== 'string')\n" +
 "        errorHelper$9(field, value, multiple ?? \"string\");\n" +
 "}\n" +
-"function checkNull$6(value, field, multiple) {\n" +
+"function checkNull$7(value, field, multiple) {\n" +
 "    if (value !== null)\n" +
 "        errorHelper$9(field, value, multiple ?? \"null\");\n" +
 "}\n" +
@@ -7049,7 +7052,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkString$7(d.amount, field + \".amount\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$5(d.archived_at, field + \".archived_at\", \"null | string\");\n" +
+"            checkNull$6(d.archived_at, field + \".archived_at\", \"null | string\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -7069,7 +7072,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$5(d.currency_fee, field + \".currency_fee\", \"string | null\");\n" +
+"                checkNull$6(d.currency_fee, field + \".currency_fee\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -7077,7 +7080,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkString$7(d.date, field + \".date\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$5(d.dump, field + \".dump\", \"null | Dump\");\n" +
+"            checkNull$6(d.dump, field + \".dump\", \"null | Dump\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -7088,7 +7091,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$5(d.dump_id, field + \".dump_id\", \"null | number\");\n" +
+"            checkNull$6(d.dump_id, field + \".dump_id\", \"null | number\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -7103,7 +7106,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$5(d.fee, field + \".fee\", \"string | null\");\n" +
+"                checkNull$6(d.fee, field + \".fee\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -7116,7 +7119,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkBoolean$5(d.is_waiting_details, field + \".is_waiting_details\");\n" +
 "        checkString$7(d.label, field + \".label\");\n" +
 "        checkBoolean$5(d.pending, field + \".pending\");\n" +
-"        checkNull$5(d.reconciliation_id, field + \".reconciliation_id\");\n" +
+"        checkNull$6(d.reconciliation_id, field + \".reconciliation_id\");\n" +
 "        checkString$7(d.source, field + \".source\");\n" +
 "        checkString$7(d.source_logo, field + \".source_logo\");\n" +
 "        checkString$7(d.status, field + \".status\");\n" +
@@ -7185,19 +7188,19 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$5(d.created_at, field + \".created_at\", \"string | null\");\n" +
+"                checkNull$6(d.created_at, field + \".created_at\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
 "        }\n" +
-"        checkNull$5(d.error_message, field + \".error_message\");\n" +
+"        checkNull$6(d.error_message, field + \".error_message\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
 "            checkBoolean$5(d.triggered_manually, field + \".triggered_manually\", \"boolean | null\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$5(d.triggered_manually, field + \".triggered_manually\", \"boolean | null\");\n" +
+"                checkNull$6(d.triggered_manually, field + \".triggered_manually\", \"boolean | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -7268,7 +7271,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    if (typeof (value) !== 'string')\n" +
 "        errorHelper$8(field, value, multiple ?? \"string\");\n" +
 "}\n" +
-"function checkNull$5(value, field, multiple) {\n" +
+"function checkNull$6(value, field, multiple) {\n" +
 "    if (value !== null)\n" +
 "        errorHelper$8(field, value, multiple ?? \"null\");\n" +
 "}\n" +
@@ -7395,7 +7398,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkString$6(d.amount, field + \".amount\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$4(d.archived_at, field + \".archived_at\", \"null | string\");\n" +
+"            checkNull$5(d.archived_at, field + \".archived_at\", \"null | string\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -7415,7 +7418,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$4(d.currency_fee, field + \".currency_fee\", \"string | null\");\n" +
+"                checkNull$5(d.currency_fee, field + \".currency_fee\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -7423,7 +7426,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkString$6(d.date, field + \".date\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$4(d.dump, field + \".dump\", \"null | Dump\");\n" +
+"            checkNull$5(d.dump, field + \".dump\", \"null | Dump\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -7434,7 +7437,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$4(d.dump_id, field + \".dump_id\", \"null | number\");\n" +
+"            checkNull$5(d.dump_id, field + \".dump_id\", \"null | number\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -7449,7 +7452,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$4(d.fee, field + \".fee\", \"string | null\");\n" +
+"                checkNull$5(d.fee, field + \".fee\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -7462,7 +7465,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkBoolean$4(d.is_waiting_details, field + \".is_waiting_details\");\n" +
 "        checkString$6(d.label, field + \".label\");\n" +
 "        checkBoolean$4(d.pending, field + \".pending\");\n" +
-"        checkNull$4(d.reconciliation_id, field + \".reconciliation_id\");\n" +
+"        checkNull$5(d.reconciliation_id, field + \".reconciliation_id\");\n" +
 "        checkString$6(d.source, field + \".source\");\n" +
 "        checkString$6(d.source_logo, field + \".source_logo\");\n" +
 "        checkString$6(d.status, field + \".status\");\n" +
@@ -7531,19 +7534,19 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$4(d.created_at, field + \".created_at\", \"string | null\");\n" +
+"                checkNull$5(d.created_at, field + \".created_at\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
 "        }\n" +
-"        checkNull$4(d.error_message, field + \".error_message\");\n" +
+"        checkNull$5(d.error_message, field + \".error_message\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
 "            checkBoolean$4(d.triggered_manually, field + \".triggered_manually\", \"boolean | null\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$4(d.triggered_manually, field + \".triggered_manually\", \"boolean | null\");\n" +
+"                checkNull$5(d.triggered_manually, field + \".triggered_manually\", \"boolean | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -7618,7 +7621,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    if (typeof (value) !== 'string')\n" +
 "        errorHelper$7(field, value, multiple ?? \"string\");\n" +
 "}\n" +
-"function checkNull$4(value, field, multiple) {\n" +
+"function checkNull$5(value, field, multiple) {\n" +
 "    if (value !== null)\n" +
 "        errorHelper$7(field, value, multiple ?? \"null\");\n" +
 "}\n" +
@@ -7753,7 +7756,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$3(d.automation_rule_plan_item, field + \".automation_rule_plan_item\", \"AutomationRulePlanItem | null\");\n" +
+"                checkNull$4(d.automation_rule_plan_item, field + \".automation_rule_plan_item\", \"AutomationRulePlanItem | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -7928,7 +7931,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    if (typeof (value) !== 'string')\n" +
 "        errorHelper$5(field, value, \"string\");\n" +
 "}\n" +
-"function checkNull$3(value, field, multiple) {\n" +
+"function checkNull$4(value, field, multiple) {\n" +
 "    if (value !== null)\n" +
 "        errorHelper$5(field, value, multiple);\n" +
 "}\n" +
@@ -8010,7 +8013,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            throwIsArray$4(field, d);\n" +
 "        }\n" +
 "        checkString$3(d.amount, field + \".amount\");\n" +
-"        checkNull$2(d.approval_status, field + \".approval_status\");\n" +
+"        checkNull$3(d.approval_status, field + \".approval_status\");\n" +
 "        checkBoolean$2(d.archived, field + \".archived\");\n" +
 "        checkBoolean$2(d.attachment_required, field + \".attachment_required\");\n" +
 "        // This will be refactored in the next release.\n" +
@@ -8019,7 +8022,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$2(d.blob_id, field + \".blob_id\", \"number | null\");\n" +
+"                checkNull$3(d.blob_id, field + \".blob_id\", \"number | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -8030,7 +8033,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$2(d.checksum, field + \".checksum\", \"string | null\");\n" +
+"                checkNull$3(d.checksum, field + \".checksum\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -8044,7 +8047,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkString$3(d.currency_tax, field + \".currency_tax\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$2(d.current_account_plan_item, field + \".current_account_plan_item\", \"null | PnlPlanItemOrCurrentAccountPlanItem\");\n" +
+"            checkNull$3(d.current_account_plan_item, field + \".current_account_plan_item\", \"null | PnlPlanItemOrCurrentAccountPlanItem\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -8055,7 +8058,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$2(d.current_account_plan_item_id, field + \".current_account_plan_item_id\", \"null | number\");\n" +
+"            checkNull$3(d.current_account_plan_item_id, field + \".current_account_plan_item_id\", \"null | number\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -8066,7 +8069,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$2(d.date, field + \".date\", \"null | string\");\n" +
+"            checkNull$3(d.date, field + \".date\", \"null | string\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -8077,7 +8080,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$2(d.deadline, field + \".deadline\", \"null | string\");\n" +
+"            checkNull$3(d.deadline, field + \".deadline\", \"null | string\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -8094,7 +8097,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "        }\n" +
 "        checkNumber$2(d.duplicates_count, field + \".duplicates_count\");\n" +
-"        checkNull$2(d.email_from, field + \".email_from\");\n" +
+"        checkNull$3(d.email_from, field + \".email_from\");\n" +
 "        checkBoolean$2(d.embeddable_in_browser, field + \".embeddable_in_browser\");\n" +
 "        checkString$3(d.file_signed_id, field + \".file_signed_id\");\n" +
 "        // This will be refactored in the next release.\n" +
@@ -8103,7 +8106,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$2(d.filename, field + \".filename\", \"string | null\");\n" +
+"                checkNull$3(d.filename, field + \".filename\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -8114,7 +8117,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$2(d.gdrive_path, field + \".gdrive_path\", \"string | null\");\n" +
+"                checkNull$3(d.gdrive_path, field + \".gdrive_path\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -8144,13 +8147,13 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$2(d.label, field + \".label\", \"string | null\");\n" +
+"                checkNull$3(d.label, field + \".label\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$3(d.method, field + \".method\");\n" +
-"        checkNull$2(d.mileage_allowance, field + \".mileage_allowance\");\n" +
+"        checkNull$3(d.mileage_allowance, field + \".mileage_allowance\");\n" +
 "        checkString$3(d.outstanding_balance, field + \".outstanding_balance\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
@@ -8158,7 +8161,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$2(d.pages_count, field + \".pages_count\", \"number | null\");\n" +
+"                checkNull$3(d.pages_count, field + \".pages_count\", \"number | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -8171,7 +8174,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$2(d.preview_status, field + \".preview_status\", \"string | null\");\n" +
+"                checkNull$3(d.preview_status, field + \".preview_status\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -8193,7 +8196,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$2(d.thirdparty, field + \".thirdparty\", \"Thirdparty | null\");\n" +
+"                checkNull$3(d.thirdparty, field + \".thirdparty\", \"Thirdparty | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -8204,7 +8207,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$2(d.thirdparty_id, field + \".thirdparty_id\", \"number | null\");\n" +
+"                checkNull$3(d.thirdparty_id, field + \".thirdparty_id\", \"number | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -8377,13 +8380,13 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$4(field, d);\n" +
 "        }\n" +
-"        checkNull$2(d.analytical_code, field + \".analytical_code\");\n" +
+"        checkNull$3(d.analytical_code, field + \".analytical_code\");\n" +
 "        d.group = Group.Create(d.group, field + \".group\");\n" +
 "        checkNumber$2(d.group_id, field + \".group_id\");\n" +
-"        checkNull$2(d.icon, field + \".icon\");\n" +
+"        checkNull$3(d.icon, field + \".icon\");\n" +
 "        checkNumber$2(d.id, field + \".id\");\n" +
 "        checkString$3(d.label, field + \".label\");\n" +
-"        checkNull$2(d.variant, field + \".variant\");\n" +
+"        checkNull$3(d.variant, field + \".variant\");\n" +
 "        const knownProperties = [\"analytical_code\", \"group\", \"group_id\", \"icon\", \"id\", \"label\", \"variant\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -8451,13 +8454,13 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$4(field, d);\n" +
 "        }\n" +
-"        checkNull$2(d.advance, field + \".advance\");\n" +
-"        checkNull$2(d.advance_id, field + \".advance_id\");\n" +
+"        checkNull$3(d.advance, field + \".advance\");\n" +
+"        checkNull$3(d.advance_id, field + \".advance_id\");\n" +
 "        checkBoolean$2(d.advance_pnl, field + \".advance_pnl\");\n" +
 "        checkString$3(d.amount, field + \".amount\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$2(d.asset, field + \".asset\", \"null | Asset\");\n" +
+"            checkNull$3(d.asset, field + \".asset\", \"null | Asset\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -8468,7 +8471,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$2(d.asset_id, field + \".asset_id\", \"null | number\");\n" +
+"            checkNull$3(d.asset_id, field + \".asset_id\", \"null | number\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -8480,14 +8483,14 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkString$3(d.currency_amount, field + \".currency_amount\");\n" +
 "        checkString$3(d.currency_price_before_tax, field + \".currency_price_before_tax\");\n" +
 "        checkString$3(d.currency_tax, field + \".currency_tax\");\n" +
-"        checkNull$2(d.deferral, field + \".deferral\");\n" +
-"        checkNull$2(d.deferral_id, field + \".deferral_id\");\n" +
+"        checkNull$3(d.deferral, field + \".deferral\");\n" +
+"        checkNull$3(d.deferral_id, field + \".deferral_id\");\n" +
 "        checkBoolean$2(d.global_vat, field + \".global_vat\");\n" +
 "        checkNumber$2(d.id, field + \".id\");\n" +
 "        checkString$3(d.label, field + \".label\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$2(d.ledger_event_label, field + \".ledger_event_label\", \"null | string\");\n" +
+"            checkNull$3(d.ledger_event_label, field + \".ledger_event_label\", \"null | string\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -8498,7 +8501,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$2(d.ocr_vat_rate, field + \".ocr_vat_rate\", \"null | string\");\n" +
+"            checkNull$3(d.ocr_vat_rate, field + \".ocr_vat_rate\", \"null | string\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -8567,7 +8570,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$2(d.amortization_type, field + \".amortization_type\", \"string | null\");\n" +
+"                checkNull$3(d.amortization_type, field + \".amortization_type\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -8584,7 +8587,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$2(d.start_date, field + \".start_date\", \"string | null\");\n" +
+"                checkNull$3(d.start_date, field + \".start_date\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -8664,13 +8667,13 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkString$3(d.activity_nomenclature, field + \".activity_nomenclature\");\n" +
 "        checkString$3(d.address, field + \".address\");\n" +
 "        checkString$3(d.address_additional_info, field + \".address_additional_info\");\n" +
-"        checkNull$2(d.admin_city_code, field + \".admin_city_code\");\n" +
-"        checkNull$2(d.balance, field + \".balance\");\n" +
-"        checkNull$2(d.billing_bank, field + \".billing_bank\");\n" +
-"        checkNull$2(d.billing_bic, field + \".billing_bic\");\n" +
-"        checkNull$2(d.billing_footer_invoice_id, field + \".billing_footer_invoice_id\");\n" +
-"        checkNull$2(d.billing_footer_invoice_label, field + \".billing_footer_invoice_label\");\n" +
-"        checkNull$2(d.billing_iban, field + \".billing_iban\");\n" +
+"        checkNull$3(d.admin_city_code, field + \".admin_city_code\");\n" +
+"        checkNull$3(d.balance, field + \".balance\");\n" +
+"        checkNull$3(d.billing_bank, field + \".billing_bank\");\n" +
+"        checkNull$3(d.billing_bic, field + \".billing_bic\");\n" +
+"        checkNull$3(d.billing_footer_invoice_id, field + \".billing_footer_invoice_id\");\n" +
+"        checkNull$3(d.billing_footer_invoice_label, field + \".billing_footer_invoice_label\");\n" +
+"        checkNull$3(d.billing_iban, field + \".billing_iban\");\n" +
 "        checkString$3(d.billing_language, field + \".billing_language\");\n" +
 "        checkString$3(d.city, field + \".city\");\n" +
 "        checkNumber$2(d.company_id, field + \".company_id\");\n" +
@@ -8681,24 +8684,24 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$2(d.country, field + \".country\", \"string | null\");\n" +
+"                checkNull$3(d.country, field + \".country\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$3(d[\"country_alpha2\"], field + \".country_alpha2\");\n" +
-"        checkNull$2(d.credits, field + \".credits\");\n" +
-"        checkNull$2(d.current_mandate, field + \".current_mandate\");\n" +
+"        checkNull$3(d.credits, field + \".credits\");\n" +
+"        checkNull$3(d.current_mandate, field + \".current_mandate\");\n" +
 "        checkString$3(d.customer_type, field + \".customer_type\");\n" +
-"        checkNull$2(d.debits, field + \".debits\");\n" +
+"        checkNull$3(d.debits, field + \".debits\");\n" +
 "        checkString$3(d.delivery_address, field + \".delivery_address\");\n" +
 "        checkString$3(d.delivery_address_additional_info, field + \".delivery_address_additional_info\");\n" +
 "        checkString$3(d.delivery_city, field + \".delivery_city\");\n" +
-"        checkNull$2(d.delivery_country, field + \".delivery_country\");\n" +
+"        checkNull$3(d.delivery_country, field + \".delivery_country\");\n" +
 "        checkString$3(d[\"delivery_country_alpha2\"], field + \".delivery_country_alpha2\");\n" +
 "        checkString$3(d.delivery_postal_code, field + \".delivery_postal_code\");\n" +
 "        checkBoolean$2(d.disable_pending_vat, field + \".disable_pending_vat\");\n" +
-"        checkNull$2(d.display_name, field + \".display_name\");\n" +
+"        checkNull$3(d.display_name, field + \".display_name\");\n" +
 "        checkArray$3(d.emails, field + \".emails\");\n" +
 "        if (d.emails) {\n" +
 "            for (let i = 0; i < d.emails.length; i++) {\n" +
@@ -8707,7 +8710,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$2(d.establishment_no, field + \".establishment_no\", \"null | string\");\n" +
+"            checkNull$3(d.establishment_no, field + \".establishment_no\", \"null | string\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -8716,20 +8719,20 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            catch (e) {\n" +
 "            }\n" +
 "        }\n" +
-"        checkNull$2(d.estimate_count, field + \".estimate_count\");\n" +
+"        checkNull$3(d.estimate_count, field + \".estimate_count\");\n" +
 "        checkString$3(d.first_name, field + \".first_name\");\n" +
 "        checkBoolean$2(d.force_pending_vat, field + \".force_pending_vat\");\n" +
-"        checkNull$2(d.gender, field + \".gender\");\n" +
-"        checkNull$2(d.gocardless_id, field + \".gocardless_id\");\n" +
+"        checkNull$3(d.gender, field + \".gender\");\n" +
+"        checkNull$3(d.gocardless_id, field + \".gocardless_id\");\n" +
 "        checkString$3(d.iban, field + \".iban\");\n" +
 "        checkNumber$2(d.id, field + \".id\");\n" +
-"        checkNull$2(d.invoice_count, field + \".invoice_count\");\n" +
-"        checkNull$2(d.invoice_dump_id, field + \".invoice_dump_id\");\n" +
+"        checkNull$3(d.invoice_count, field + \".invoice_count\");\n" +
+"        checkNull$3(d.invoice_dump_id, field + \".invoice_dump_id\");\n" +
 "        checkBoolean$2(d.invoices_auto_generated, field + \".invoices_auto_generated\");\n" +
 "        checkBoolean$2(d.invoices_auto_validated, field + \".invoices_auto_validated\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$2(d.known_supplier_id, field + \".known_supplier_id\", \"null | number\");\n" +
+"            checkNull$3(d.known_supplier_id, field + \".known_supplier_id\", \"null | number\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -8739,16 +8742,16 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$3(d.last_name, field + \".last_name\");\n" +
-"        checkNull$2(d.ledger_events_count, field + \".ledger_events_count\");\n" +
+"        checkNull$3(d.ledger_events_count, field + \".ledger_events_count\");\n" +
 "        checkString$3(d.legal_form_code, field + \".legal_form_code\");\n" +
 "        checkString$3(d.method, field + \".method\");\n" +
 "        checkString$3(d.name, field + \".name\");\n" +
 "        checkString$3(d.notes, field + \".notes\");\n" +
-"        checkNull$2(d.notes_comment, field + \".notes_comment\");\n" +
+"        checkNull$3(d.notes_comment, field + \".notes_comment\");\n" +
 "        checkString$3(d.payment_conditions, field + \".payment_conditions\");\n" +
 "        checkString$3(d.phone, field + \".phone\");\n" +
 "        d.plan_item = PlanItemOrPnlPlanItem.Create(d.plan_item, field + \".plan_item\");\n" +
-"        checkNull$2(d.plan_item_attributes, field + \".plan_item_attributes\");\n" +
+"        checkNull$3(d.plan_item_attributes, field + \".plan_item_attributes\");\n" +
 "        checkNumber$2(d.plan_item_id, field + \".plan_item_id\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
@@ -8756,7 +8759,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$2(d.pnl_plan_item, field + \".pnl_plan_item\", \"PlanItemOrPnlPlanItem1 | null\");\n" +
+"                checkNull$3(d.pnl_plan_item, field + \".pnl_plan_item\", \"PlanItemOrPnlPlanItem1 | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -8767,13 +8770,13 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$2(d.pnl_plan_item_id, field + \".pnl_plan_item_id\", \"number | null\");\n" +
+"                checkNull$3(d.pnl_plan_item_id, field + \".pnl_plan_item_id\", \"number | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$3(d.postal_code, field + \".postal_code\");\n" +
-"        checkNull$2(d.purchase_request_count, field + \".purchase_request_count\");\n" +
+"        checkNull$3(d.purchase_request_count, field + \".purchase_request_count\");\n" +
 "        checkBoolean$2(d.received_a_mandate_request, field + \".received_a_mandate_request\");\n" +
 "        checkString$3(d.recipient, field + \".recipient\");\n" +
 "        checkBoolean$2(d.recurrent, field + \".recurrent\");\n" +
@@ -8788,11 +8791,11 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$3(d.source_id, field + \".source_id\");\n" +
-"        checkNull$2(d.stripe_id, field + \".stripe_id\");\n" +
-"        checkNull$2(d.supplier_payment_method, field + \".supplier_payment_method\");\n" +
+"        checkNull$3(d.stripe_id, field + \".stripe_id\");\n" +
+"        checkNull$3(d.supplier_payment_method, field + \".supplier_payment_method\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$2(d.supplier_payment_method_last_updated_at, field + \".supplier_payment_method_last_updated_at\", \"null | string\");\n" +
+"            checkNull$3(d.supplier_payment_method_last_updated_at, field + \".supplier_payment_method_last_updated_at\", \"null | string\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -8807,7 +8810,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNever(d.tags[i], field + \".tags\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
-"        checkNull$2(d.turnover, field + \".turnover\");\n" +
+"        checkNull$3(d.turnover, field + \".turnover\");\n" +
 "        checkString$3(d.url, field + \".url\");\n" +
 "        checkString$3(d.vat_number, field + \".vat_number\");\n" +
 "        // This will be refactored in the next release.\n" +
@@ -8816,7 +8819,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$2(d.vat_rate, field + \".vat_rate\", \"string | null\");\n" +
+"                checkNull$3(d.vat_rate, field + \".vat_rate\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -8928,7 +8931,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkString$3(d[\"country_alpha2\"], field + \".country_alpha2\");\n" +
 "        checkBoolean$2(d.enabled, field + \".enabled\");\n" +
 "        checkNumber$2(d.id, field + \".id\");\n" +
-"        checkNull$2(d.internal_identifier, field + \".internal_identifier\");\n" +
+"        checkNull$3(d.internal_identifier, field + \".internal_identifier\");\n" +
 "        checkString$3(d.label, field + \".label\");\n" +
 "        checkBoolean$2(d.label_is_editable, field + \".label_is_editable\");\n" +
 "        checkString$3(d.number, field + \".number\");\n" +
@@ -8975,7 +8978,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkNumber$2(d.id, field + \".id\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$2(d.internal_identifier, field + \".internal_identifier\", \"null | string\");\n" +
+"            checkNull$3(d.internal_identifier, field + \".internal_identifier\", \"null | string\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -9031,7 +9034,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    if (typeof (value) !== 'string')\n" +
 "        errorHelper$4(field, value, multiple ?? \"string\");\n" +
 "}\n" +
-"function checkNull$2(value, field, multiple) {\n" +
+"function checkNull$3(value, field, multiple) {\n" +
 "    if (value !== null)\n" +
 "        errorHelper$4(field, value, multiple ?? \"null\");\n" +
 "}\n" +
@@ -9119,7 +9122,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        checkString$2(d.amount, field + \".amount\");\n" +
 "        checkString$2(d.amount_without_tax, field + \".amount_without_tax\");\n" +
-"        checkNull$1(d.approval_status, field + \".approval_status\");\n" +
+"        checkNull$2(d.approval_status, field + \".approval_status\");\n" +
 "        checkBoolean$1(d.archived, field + \".archived\");\n" +
 "        checkString$2(d.checksum, field + \".checksum\");\n" +
 "        checkNumber$1(d.company_id, field + \".company_id\");\n" +
@@ -9133,7 +9136,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$1(d.date, field + \".date\", \"string | null\");\n" +
+"                checkNull$2(d.date, field + \".date\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -9144,17 +9147,17 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$1(d.deadline, field + \".deadline\", \"string | null\");\n" +
+"                checkNull$2(d.deadline, field + \".deadline\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$2(d.direction, field + \".direction\");\n" +
-"        checkNull$1(d.email_from, field + \".email_from\");\n" +
+"        checkNull$2(d.email_from, field + \".email_from\");\n" +
 "        checkString$2(d.filename, field + \".filename\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNull$1(d.gdrive_path, field + \".gdrive_path\", \"null | string\");\n" +
+"            checkNull$2(d.gdrive_path, field + \".gdrive_path\", \"null | string\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -9180,7 +9183,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$1(d.label, field + \".label\", \"string | null\");\n" +
+"                checkNull$2(d.label, field + \".label\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -9197,7 +9200,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$1(d.thirdparty, field + \".thirdparty\", \"Thirdparty | null\");\n" +
+"                checkNull$2(d.thirdparty, field + \".thirdparty\", \"Thirdparty | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -9410,7 +9413,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    if (typeof (value) !== 'string')\n" +
 "        errorHelper$3(field, value, multiple ?? \"string\");\n" +
 "}\n" +
-"function checkNull$1(value, field, multiple) {\n" +
+"function checkNull$2(value, field, multiple) {\n" +
 "    if (value !== null)\n" +
 "        errorHelper$3(field, value, multiple ?? \"null\");\n" +
 "}\n" +
@@ -9591,7 +9594,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$1(field, d);\n" +
 "        }\n" +
-"        checkNull(d.response, field + \".response\");\n" +
+"        checkNull$1(d.response, field + \".response\");\n" +
 "        const knownProperties = [\"response\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -9611,7 +9614,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "function throwIsArray$1(field, value, multiple) {\n" +
 "    return errorHelper$1(field, value, \"object\");\n" +
 "}\n" +
-"function checkNull(value, field, multiple) {\n" +
+"function checkNull$1(value, field, multiple) {\n" +
 "    if (value !== null)\n" +
 "        errorHelper$1(field, value, \"null\");\n" +
 "}\n" +
@@ -9658,7 +9661,17 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        checkBoolean(d.embeddable_in_browser, field + \".embeddable_in_browser\");\n" +
 "        checkBoolean(d.has_file, field + \".has_file\");\n" +
-"        checkString(d.preview_status, field + \".preview_status\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkString(d.preview_status, field + \".preview_status\", \"string | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull(d.preview_status, field + \".preview_status\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"            }\n" +
+"        }\n" +
 "        checkArray(d.preview_urls, field + \".preview_urls\");\n" +
 "        if (d.preview_urls) {\n" +
 "            for (let i = 0; i < d.preview_urls.length; i++) {\n" +
@@ -9697,7 +9710,11 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "}\n" +
 "function checkString(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'string')\n" +
-"        errorHelper(field, value, \"string\");\n" +
+"        errorHelper(field, value, multiple ?? \"string\");\n" +
+"}\n" +
+"function checkNull(value, field, multiple) {\n" +
+"    if (value !== null)\n" +
+"        errorHelper(field, value, multiple);\n" +
 "}\n" +
 "function errorHelper(field, d, type) {\n" +
 "    if (type.includes(' | ')) {\n" +
@@ -9732,6 +9749,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "async function updateInvoice(id, data) {\n" +
 "    const response = await apiRequest(`/accountants/invoices/${id}`, { invoice: data }, 'PUT');\n" +
 "    const responseData = await response?.json();\n" +
+"    if (!responseData)\n" +
+"        return null;\n" +
 "    return APIInvoiceUpdateResponse.Create(responseData);\n" +
 "}\n" +
 "/**\n" +
@@ -10102,6 +10121,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            ?? await this.hasVAT()\n" +
 "            ?? await this.isMissingBanking()\n" +
 "            ?? await this.isUnbalanced()\n" +
+"            ?? await this.hasToSendToInvoice()\n" +
 "            ?? await this.isMissingCounterpart()\n" +
 "            ?? await this.isWrongDonationCounterpart()\n" +
 "            ?? await this.isTrashCounterpart()\n" +
@@ -10114,7 +10134,6 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            ?? await this.isTransfer()\n" +
 "            ?? await this.isAid()\n" +
 "            ?? await this.hasToSendToDMS()\n" +
-"            ?? await this.hasToSendToInvoice()\n" +
 "            ?? 'OK');\n" +
 "        if (user !== 'assistant')\n" +
 "            return status;\n" +
@@ -10745,6 +10764,19 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "getReactProps($('tbody tr'),5).extra.openSidePanel(transactionId);\n" +
 " */\n" +
 "\n" +
+"async function waitPage(pageName) {\n" +
+"    return await waitFunc(() => isPage(pageName));\n" +
+"}\n" +
+"function isPage(pageName) {\n" +
+"    switch (pageName) {\n" +
+"        case 'invoiceDetail': return findElem('h4', 'Réconciliation') ?? false;\n" +
+"        case 'DMS': return ((location.href.split('/')[5] === 'dms' && findElem('h3', 'Détail du document'))\n" +
+"            || false);\n" +
+"        case 'transactionDetail': return findElem('button.tabbarlink', 'Réconciliation') ?? false;\n" +
+"        default: throw new Error(`unknown page required : \"${pageName}\"`);\n" +
+"    }\n" +
+"}\n" +
+"\n" +
 "/** Add 'add by ID' button on transaction reconciliation tab */\n" +
 "class TransactionAddByIdButton extends Service {\n" +
 "    constructor() {\n" +
@@ -10779,6 +10811,17 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    attachEvent() {\n" +
 "        this.log({ button: this.button });\n" +
 "        this.button.addEventListener('click', () => { this.addById(); });\n" +
+"        document.addEventListener('keydown', event => {\n" +
+"            if (isPage('transactionDetail') && event.altKey && ['z', 'Z'].includes(event.key)) {\n" +
+"                this.addById();\n" +
+"            }\n" +
+"            else {\n" +
+"                this.debug({\n" +
+"                    isPageTransactionDetail: isPage('transactionDetail'),\n" +
+"                    event,\n" +
+"                });\n" +
+"            }\n" +
+"        });\n" +
 "    }\n" +
 "    async addById() {\n" +
 "        /**\n" +
@@ -11982,19 +12025,6 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "}\n" +
 "\n" +
-"async function waitPage(pageName) {\n" +
-"    return await waitFunc(() => isPage(pageName));\n" +
-"}\n" +
-"function isPage(pageName) {\n" +
-"    switch (pageName) {\n" +
-"        case 'invoiceDetail': return findElem('h4', 'Réconciliation') ?? false;\n" +
-"        case 'DMS': return ((location.href.split('/')[5] === 'dms' && findElem('h3', 'Détail du document'))\n" +
-"            || false);\n" +
-"        case 'transactionDetail': return findElem('button.tabbarlink', 'Réconciliation') ?? false;\n" +
-"        default: throw new Error(`unknown page required : \"${pageName}\"`);\n" +
-"    }\n" +
-"}\n" +
-"\n" +
 "class NextInvalidInvoice extends OpenNextInvalid {\n" +
 "    constructor() {\n" +
 "        super(...arguments);\n" +
@@ -12226,7 +12256,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "class ArchiveGroupedDocument extends Service {\n" +
 "    async init() {\n" +
 "        await waitElem('h3', 'Transactions');\n" +
-"        while (await waitFunc(() => $$('a[href*=\"invoices/\"]')\n" +
+"        while (await waitFunc(() => $$('a[href*=\"/invoices/\"]')\n" +
 "            .some(link => !link.closest('div')?.querySelector('.archive-button'))))\n" +
 "            this.addInvoiceInfos();\n" +
 "    }\n" +

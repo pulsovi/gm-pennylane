@@ -10,13 +10,13 @@ export default class ArchiveGroupedDocument extends Service {
     await waitElem('h3', 'Transactions');
 
     while (await waitFunc(() =>
-      $$('a[href*="invoices/"]')
+      $$('a[href*="/invoices/full_page?"]')
         .some(link => !link.closest('div')?.querySelector('.archive-button'))
     )) this.addInvoiceInfos();
   }
 
   addInvoiceInfos() {
-    const buttonsBlock = $$('a[href*="invoices/"]')
+    const buttonsBlock = $$('a[href*="/invoices/full_page?"]')
       .find(link => !link.closest('div')?.querySelector('.archive-button'))
       ?.closest('div');
     if (!buttonsBlock) {
