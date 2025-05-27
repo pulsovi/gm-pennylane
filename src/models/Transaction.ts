@@ -101,6 +101,7 @@ export default class Transaction extends ValidableDocument {
       ?? await this.hasVAT()
       ?? await this.isMissingBanking()
       ?? await this.isUnbalanced()
+      ?? await this.hasToSendToInvoice()
       ?? await this.isMissingCounterpart()
       ?? await this.isWrongDonationCounterpart()
       ?? await this.isTrashCounterpart()
@@ -114,7 +115,6 @@ export default class Transaction extends ValidableDocument {
       ?? await this.isTransfer()
       ?? await this.isAid()
       ?? await this.hasToSendToDMS()
-      ?? await this.hasToSendToInvoice()
       ?? 'OK'
     ) as string;
 
