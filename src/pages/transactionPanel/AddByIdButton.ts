@@ -1,6 +1,7 @@
 import { $, getParam, parseHTML, waitElem, waitFunc } from '../../_/index.js';
 import Service from '../../framework/Service.js';
 import Transaction from '../../models/Transaction.js';
+import { isPage } from '../../navigation/waitPage.js';
 import ValidMessage from './ValidMessage.js';
 
 /** Add 'add by ID' button on transaction reconciliation tab */
@@ -40,6 +41,16 @@ export default class TransactionAddByIdButton extends Service {
   attachEvent () {
     this.log({ button: this.button });
     this.button.addEventListener('click', () => { this.addById(); });
+    document.addEventListener('keydown', event => {
+      if (isPage('transactionDetail') && event.altKey && ['z', 'Z'].includes(event.key)) {
+        this.addById();
+      } else {
+        this.debug({
+          isPageTransactionDetail: isPage('transactionDetail'),
+          event,
+        });
+      }
+    });
   }
 
   async addById () {
