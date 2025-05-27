@@ -21,6 +21,7 @@ export async function updateInvoice(
 ): Promise<APIInvoiceUpdateResponse> {
   const response = await apiRequest(`/accountants/invoices/${id}`, { invoice: data }, 'PUT');
   const responseData = await response?.json();
+  if (!responseData) return null;
   return APIInvoiceUpdateResponse.Create(responseData);
 }
 

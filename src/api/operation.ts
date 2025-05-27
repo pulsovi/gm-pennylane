@@ -8,12 +8,14 @@ export async function getLedgerEvents (id): Promise<APILedgerEvent[]> {
   return data.map(item => APILedgerEvent.Create(item));
 }
 
-export async function getGroupedDocuments (id): Promise<APIGroupedDocument[]> {
+export async function getGroupedDocuments (id, page = 1): Promise<APIGroupedDocument[]> {
   if (!Number.isSafeInteger(id) || !id) {
     console.log('getGroupedDocuments', {id});
     throw new Error('`id` MUST be an integer');
   }
-  const response = await apiRequest(`accountants/operations/${id}/grouped_documents?per_page=-1`, null, 'GET');
-  const result = await response!.json();
-  return result.map(item => APIGroupedDocument.Create(item));
+  const response = await apiRequest(`accountants/operations/${id}/grouped_documents?per_page=20&page=${page}`, null, 'GET');
+  const result: unknown[] = await response!.json();
+  const list = result.map(item => APIGroupedDocument.Create(item));
+  if (list.length === 20) return list.concat(await getGroupedDocuments(id, page + 1));
+  return list;
 }

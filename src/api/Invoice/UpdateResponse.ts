@@ -4,7 +4,7 @@ let obj: any = null;
 export class APIInvoiceUpdateResponse {
   public readonly embeddable_in_browser: boolean;
   public readonly has_file: boolean;
-  public readonly preview_status: string;
+  public readonly preview_status: string | null;
   public readonly preview_urls: string[];
   public static Parse(d: string): APIInvoiceUpdateResponse {
     return APIInvoiceUpdateResponse.Create(JSON.parse(d));
@@ -23,7 +23,15 @@ export class APIInvoiceUpdateResponse {
     }
     checkBoolean(d.embeddable_in_browser, field + ".embeddable_in_browser");
     checkBoolean(d.has_file, field + ".has_file");
-    checkString(d.preview_status, field + ".preview_status");
+    // This will be refactored in the next release.
+    try {
+      checkString(d.preview_status, field + ".preview_status", "string | null");
+    } catch (e) {
+      try {
+        checkNull(d.preview_status, field + ".preview_status", "string | null");
+      } catch (e) {
+      }
+    }
     checkArray(d.preview_urls, field + ".preview_urls");
     if (d.preview_urls) {
       for (let i = 0; i < d.preview_urls.length; i++) {
@@ -60,6 +68,9 @@ function checkBoolean(value: any, field: string, multiple?: string): void {
 }
 function checkString(value: any, field: string, multiple?: string): void {
   if (typeof(value) !== 'string') errorHelper(field, value, multiple ?? "string");
+}
+function checkNull(value: any, field: string, multiple?: string): void {
+  if (value !== null) errorHelper(field, value, multiple ?? "null");
 }
 function errorHelper(field: string, d: any, type: string): void {
   if (type.includes(' | ')) {
