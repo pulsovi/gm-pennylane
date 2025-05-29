@@ -100,8 +100,8 @@ export default class Transaction extends ValidableDocument {
       ?? await this.is2025()
       ?? await this.hasVAT()
       ?? await this.isMissingBanking()
-      ?? await this.isUnbalanced()
       ?? await this.hasToSendToInvoice()
+      ?? await this.isUnbalanced()
       ?? await this.isMissingCounterpart()
       ?? await this.isWrongDonationCounterpart()
       ?? await this.isTrashCounterpart()
@@ -256,9 +256,16 @@ export default class Transaction extends ValidableDocument {
       }
       // On a parfois des calculs qui ne tombent pas très juste en JS
       if (Math.abs(balance.transaction - balance.CHQ) > 0.001) {
-        balance.addCHQ(null);
-        if (this.isCurrent()) this.log('isCheckRemittance(): somme des chèques incorrecte');
-        return 'La somme des chèques doit valoir le montant de la transaction';
+        const lost = doc.grouped_documents.find(gdoc=>gdoc.id === this.id)?.client_comments?.find(
+          comment => comment.content === 'PHOTO CHEQUE PERDUE'
+        );
+        if (!lost) {
+          balance.addCHQ(null);
+          if (this.isCurrent()) this.log('isCheckRemittance(): somme des chèques incorrecte');
+          return 'La somme des chèques doit valoir le montant de la transaction';
+        } else {
+          if (this.isCurrent()) this.log('isCheckRemittance(): photo chèque perdue');
+        }
       }
     }
   }
