@@ -45,7 +45,7 @@ export class InvoicesEntity {
   public readonly amount_without_tax: string;
   public readonly approval_status: null;
   public readonly archived: boolean;
-  public readonly checksum: string;
+  public readonly checksum: null | string;
   public readonly company_id: number;
   public readonly created_at: string;
   public readonly currency: string;
@@ -55,7 +55,7 @@ export class InvoicesEntity {
   public readonly deadline: string | null;
   public readonly direction: string;
   public readonly email_from: null;
-  public readonly filename: string;
+  public readonly filename: null | string;
   public readonly gdrive_path: null | string;
   public readonly id: number;
   public readonly incomplete: boolean;
@@ -92,7 +92,15 @@ export class InvoicesEntity {
     checkString(d.amount_without_tax, field + ".amount_without_tax");
     checkNull(d.approval_status, field + ".approval_status");
     checkBoolean(d.archived, field + ".archived");
-    checkString(d.checksum, field + ".checksum");
+    // This will be refactored in the next release.
+    try {
+      checkNull(d.checksum, field + ".checksum", "null | string");
+    } catch (e) {
+      try {
+        checkString(d.checksum, field + ".checksum", "null | string");
+      } catch (e) {
+      }
+    }
     checkNumber(d.company_id, field + ".company_id");
     checkString(d.created_at, field + ".created_at");
     checkString(d.currency, field + ".currency");
@@ -118,7 +126,15 @@ export class InvoicesEntity {
     }
     checkString(d.direction, field + ".direction");
     checkNull(d.email_from, field + ".email_from");
-    checkString(d.filename, field + ".filename");
+    // This will be refactored in the next release.
+    try {
+      checkNull(d.filename, field + ".filename", "null | string");
+    } catch (e) {
+      try {
+        checkString(d.filename, field + ".filename", "null | string");
+      } catch (e) {
+      }
+    }
     // This will be refactored in the next release.
     try {
       checkNull(d.gdrive_path, field + ".gdrive_path", "null | string");

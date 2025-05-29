@@ -3,14 +3,13 @@ import { isObject, isString } from '../_/typing.js';
 import Logger from '../framework/Logger.js';
 
 const logger = new Logger('apiRequest');
-let apiRequestWait: Promise<void> | null = null;
 
 export async function apiRequest (
   endpoint: string | (RequestInit & {url: string}),
   data: Record<string, unknown> | null = null,
   method = 'POST'
 ) {
-  if (apiRequestWait) await apiRequestWait;
+  await apiRequestQueue.wait();
   const options: RequestInit = isString(endpoint) ? {} : endpoint;
   const rawUrl = isString(endpoint) ? endpoint : endpoint.url;
   const url = rawUrl.startsWith('http') ? rawUrl : `${location.href.split('/').slice(0, 5).join('/')}/${rawUrl}`;
@@ -27,7 +26,8 @@ export async function apiRequest (
 
   if ('error' in response) {
     console.log('API request error :', { endpoint, data, method, error: response.error });
-    apiRequestWait = sleep(3000).then(() => { apiRequestWait = null; });
+    apiRequestQueue.push(3000);
+    logger.debug('apiRequestWait: 3000');
     return apiRequest(endpoint, data, method);
   }
 
@@ -44,19 +44,9 @@ export async function apiRequest (
   if (response.status === 422) {
     const message = (await response.clone().json()).message;
     logger.log(message, {endpoint, method, data});
-    if (typeof endpoint === 'string') {
-      endpoint = {
-        url: endpoint,
-        method,
-        body: data ? JSON.stringify(data) : null,
-        headers: {
-          "Content-Type": "application/json",
-          Accept: 'application/json',
-        },
-      }
-    }
-
-    if (!endpoint.headers?.['X-CSRF-TOKEN']) {
+    if (typeof endpoint !== 'string' && !endpoint.headers?.['X-CSRF-TOKEN']) {
+      apiRequestQueue.push(200);
+      logger.debug('apiRequestWait: 200');
       return apiRequest({
         ...endpoint,
         headers: {
@@ -85,7 +75,8 @@ export async function apiRequest (
   }
 
   if (response.status === 429 || response.status === 418) {
-    apiRequestWait = sleep(1000).then(() => { apiRequestWait = null; });
+    apiRequestQueue.push(1000);
+    logger.debug('apiRequestWait: 1000');
     return apiRequest(endpoint, data, method);
   }
 
@@ -95,6 +86,7 @@ export async function apiRequest (
     return null;
   }
 
+  apiRequestQueue.push(200);
   return response;
 }
 
@@ -107,3 +99,41 @@ function getCookies (key?: string) {
 }
 
 Object.assign(window, {apiRequest});
+
+class Queue {
+  private queue: ({ time: number } | { cb: () => void })[] = [];
+  private running = false;
+
+  wait () {
+    return new Promise<void>(rs => {
+      this.queue.push({ cb: rs });
+      this.run();
+    });
+  }
+
+  push (delay: number) {
+    const last = this.queue.reduce((last, item) => { if ('time' in item) return item.time; return last; }, Date.now());
+    const time = Math.max(last + 200, Date.now() + delay);
+    this.queue.push({ time });
+    this.run();
+  }
+
+  private run () {
+    if (this.running || this.queue.length === 0) return;
+    this.running = true;
+
+    const nextItem = this.queue.shift();
+
+    if ('time' in nextItem) {
+      setTimeout(() => {
+        this.running = false;
+        this.run();
+      }, nextItem.time - Date.now());
+    } else {
+      nextItem.cb();
+      this.running = false;
+      this.run();
+    }
+  }
+}
+const apiRequestQueue = new Queue();
