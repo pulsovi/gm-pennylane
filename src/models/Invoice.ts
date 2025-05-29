@@ -54,7 +54,11 @@ export default abstract class Invoice extends ValidableDocument {
     const invoice = await this.getInvoice();
     const filename = invoice.filename;
     const fileId = invoice.file_signed_id;
-    const invoiceName = `${invoice.invoice_number} - ${invoice.amount}€`;
+    const invoiceName = [
+      invoice.invoice_number,
+      invoice.thirdparty?.name ?? '',
+      `${invoice.amount.replace(/.0+$/, '')}€`
+    ].join(' - ');
     const response = await moveToDms(this.id, destId);
     this.debug('moveToDms response');
     const files = await getDMSItemList({
