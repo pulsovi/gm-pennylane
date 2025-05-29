@@ -616,10 +616,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "}\n" +
 "\n" +
 "const logger$1 = new Logger('apiRequest');\n" +
-"let apiRequestWait = null;\n" +
 "async function apiRequest(endpoint, data = null, method = 'POST') {\n" +
-"    if (apiRequestWait)\n" +
-"        await apiRequestWait;\n" +
+"    await apiRequestQueue.wait();\n" +
 "    const options = isString(endpoint) ? {} : endpoint;\n" +
 "    const rawUrl = isString(endpoint) ? endpoint : endpoint.url;\n" +
 "    const url = rawUrl.startsWith('http') ? rawUrl : `${location.href.split('/').slice(0, 5).join('/')}/${rawUrl}`;\n" +
@@ -635,7 +633,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }).catch(error => ({ error }));\n" +
 "    if ('error' in response) {\n" +
 "        console.log('API request error :', { endpoint, data, method, error: response.error });\n" +
-"        apiRequestWait = sleep(3000).then(() => { apiRequestWait = null; });\n" +
+"        apiRequestQueue.push(3000);\n" +
+"        logger$1.debug('apiRequestWait: 3000');\n" +
 "        return apiRequest(endpoint, data, method);\n" +
 "    }\n" +
 "    if (response.status === 204) {\n" +
@@ -649,18 +648,9 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    if (response.status === 422) {\n" +
 "        const message = (await response.clone().json()).message;\n" +
 "        logger$1.log(message, { endpoint, method, data });\n" +
-"        if (typeof endpoint === 'string') {\n" +
-"            endpoint = {\n" +
-"                url: endpoint,\n" +
-"                method,\n" +
-"                body: data ? JSON.stringify(data) : null,\n" +
-"                headers: {\n" +
-"                    \"Content-Type\": \"application/json\",\n" +
-"                    Accept: 'application/json',\n" +
-"                },\n" +
-"            };\n" +
-"        }\n" +
-"        if (!endpoint.headers?.['X-CSRF-TOKEN']) {\n" +
+"        if (typeof endpoint !== 'string' && !endpoint.headers?.['X-CSRF-TOKEN']) {\n" +
+"            apiRequestQueue.push(200);\n" +
+"            logger$1.debug('apiRequestWait: 200');\n" +
 "            return apiRequest({\n" +
 "                ...endpoint,\n" +
 "                headers: {\n" +
@@ -687,7 +677,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "    }\n" +
 "    if (response.status === 429 || response.status === 418) {\n" +
-"        apiRequestWait = sleep(1000).then(() => { apiRequestWait = null; });\n" +
+"        apiRequestQueue.push(1000);\n" +
+"        logger$1.debug('apiRequestWait: 1000');\n" +
 "        return apiRequest(endpoint, data, method);\n" +
 "    }\n" +
 "    if (response.status !== 200) {\n" +
@@ -695,6 +686,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        console.error('Todo : Créer un gestionnaire pour le code error status = ' + response.status);\n" +
 "        return null;\n" +
 "    }\n" +
+"    apiRequestQueue.push(200);\n" +
 "    return response;\n" +
 "}\n" +
 "function getCookies(key) {\n" +
@@ -702,8 +694,46 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    return allCookies.get(key);\n" +
 "}\n" +
 "Object.assign(window, { apiRequest });\n" +
+"class Queue {\n" +
+"    constructor() {\n" +
+"        this.queue = [];\n" +
+"        this.running = false;\n" +
+"    }\n" +
+"    wait() {\n" +
+"        return new Promise(rs => {\n" +
+"            this.queue.push({ cb: rs });\n" +
+"            this.run();\n" +
+"        });\n" +
+"    }\n" +
+"    push(delay) {\n" +
+"        const last = this.queue.reduce((last, item) => { if ('time' in item)\n" +
+"            return item.time; return last; }, Date.now());\n" +
+"        const time = Math.max(last + 200, Date.now() + delay);\n" +
+"        this.queue.push({ time });\n" +
+"        this.run();\n" +
+"    }\n" +
+"    run() {\n" +
+"        if (this.running || this.queue.length === 0)\n" +
+"            return;\n" +
+"        this.running = true;\n" +
+"        const nextItem = this.queue.shift();\n" +
+"        if ('time' in nextItem) {\n" +
+"            setTimeout(() => {\n" +
+"                this.running = false;\n" +
+"                this.run();\n" +
+"            }, nextItem.time - Date.now());\n" +
+"        }\n" +
+"        else {\n" +
+"            nextItem.cb();\n" +
+"            this.running = false;\n" +
+"            this.run();\n" +
+"        }\n" +
+"    }\n" +
+"}\n" +
+"const apiRequestQueue = new Queue();\n" +
 "\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
+"const proxyName$n = 'APIDocument';\n" +
 "let obj$n = null;\n" +
 "class APIDocument {\n" +
 "    static Parse(d) {\n" +
@@ -733,6 +763,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.account_id, field + \".account_id\", \"number | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -748,6 +779,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkString$l(d.archived_at, field + \".archived_at\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "            }\n" +
 "        }\n" +
 "        checkBoolean$d(d.attachment_lost, field + \".attachment_lost\");\n" +
@@ -766,6 +798,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.company, field + \".company\", \"Company | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -780,6 +813,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.complete, field + \".complete\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -793,6 +827,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.completeness, field + \".completeness\", \"number | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -831,6 +866,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$h(d.date, field + \".date\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"deadline\" in d) {\n" +
@@ -843,6 +879,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.deadline, field + \".deadline\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -881,6 +918,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.future_in_days, field + \".future_in_days\", \"number | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -893,6 +931,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkString$l(d.gdrive_path, field + \".gdrive_path\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"gross_amount\" in d) {\n" +
@@ -905,6 +944,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.gross_amount, field + \".gross_amount\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -918,6 +958,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkString$l(d.grouped_at, field + \".grouped_at\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "            }\n" +
 "        }\n" +
 "        checkArray$c(d.grouped_documents, field + \".grouped_documents\");\n" +
@@ -940,6 +981,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkString$l(d.invoice_kind, field + \".invoice_kind\", \"null | string\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -972,6 +1014,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$h(d.label, field + \".label\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"language\" in d) {\n" +
@@ -997,6 +1040,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNumber$i(d.ocr_thirdparty_id, field + \".ocr_thirdparty_id\", \"null | number\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1050,6 +1094,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkString$l(d.preview_status, field + \".preview_status\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"price_before_tax\" in d) {\n" +
@@ -1084,6 +1129,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.scored_invoices, field + \".scored_invoices\", \"ScoredInvoices | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1109,6 +1155,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.status, field + \".status\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1124,6 +1171,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNumber$i(d.thirdparty_id, field + \".thirdparty_id\", \"null | number\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$l(d.type, field + \".type\");\n" +
@@ -1350,6 +1398,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    d.account = Account$1.Create(d.account, field + \".account\", \"null | Account\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1363,6 +1412,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNumber$i(d.account_id, field + \".account_id\", \"null | number\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1376,6 +1426,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkString$l(d.accounting_status, field + \".accounting_status\", \"null | string\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1391,6 +1442,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkString$l(d.archived_at, field + \".archived_at\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"attachment_label\" in d) {\n" +
@@ -1403,6 +1455,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.attachment_label, field + \".attachment_label\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1419,6 +1472,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.can_be_stamped_as_paid_in_pdf, field + \".can_be_stamped_as_paid_in_pdf\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1438,6 +1492,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    d.company = Company1.Create(d.company, field + \".company\", \"null | Company1\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1463,6 +1518,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.credit_notes_amount, field + \".credit_notes_amount\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1478,6 +1534,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.currency_amount_before_tax, field + \".currency_amount_before_tax\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1491,6 +1548,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.currency_price_before_tax, field + \".currency_price_before_tax\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1504,6 +1562,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.currency_tax, field + \".currency_tax\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1517,6 +1576,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    d.current_account_plan_item = PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem.Create(d.current_account_plan_item, field + \".current_account_plan_item\", \"null | PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1530,6 +1590,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.custom_payment_reference, field + \".custom_payment_reference\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1542,6 +1603,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkString$l(d.date, field + \".date\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"deadline\" in d) {\n" +
@@ -1554,6 +1616,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkString$l(d.deadline, field + \".deadline\", \"null | string\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1567,6 +1630,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.direction, field + \".direction\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1580,6 +1644,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.discount, field + \".discount\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1593,6 +1658,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.discount_type, field + \".discount_type\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1608,6 +1674,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.embeddable_in_browser, field + \".embeddable_in_browser\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1621,6 +1688,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    d.establishment_comment = EstablishmentCommentOrClientCommentsEntity.Create(d.establishment_comment, field + \".establishment_comment\", \"null | EstablishmentCommentOrClientCommentsEntity\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1638,6 +1706,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.factor_status, field + \".factor_status\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1652,6 +1721,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.file_signed_id, field + \".file_signed_id\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1664,6 +1734,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkString$l(d.filename, field + \".filename\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"finalized_at\" in d) {\n" +
@@ -1682,6 +1753,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.future_in_days, field + \".future_in_days\", \"number | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1694,6 +1766,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$h(d.gdrive_path, field + \".gdrive_path\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"gross_amount\" in d) {\n" +
@@ -1706,6 +1779,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkString$l(d.gross_amount, field + \".gross_amount\", \"null | string\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1719,6 +1793,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkString$l(d.grouped_at, field + \".grouped_at\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "            }\n" +
 "        }\n" +
 "        checkBoolean$d(d.has_file, field + \".has_file\");\n" +
@@ -1732,6 +1807,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.has_linked_quotes, field + \".has_linked_quotes\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1746,6 +1822,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.iban, field + \".iban\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1760,6 +1837,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.incomplete, field + \".incomplete\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1773,6 +1851,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.invoice_kind, field + \".invoice_kind\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1791,6 +1870,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.invoice_lines, field + \".invoice_lines\", \"InvoiceLinesEntity[] | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1804,6 +1884,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.invoice_number, field + \".invoice_number\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1823,6 +1904,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.is_credit_note, field + \".is_credit_note\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1836,6 +1918,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.is_destroyable, field + \".is_destroyable\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1849,6 +1932,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.is_estimate, field + \".is_estimate\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1862,6 +1946,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.is_sendable, field + \".is_sendable\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1876,6 +1961,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.is_waiting_for_ocr, field + \".is_waiting_for_ocr\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1890,6 +1976,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$h(d.label, field + \".label\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"language\" in d) {\n" +
@@ -1902,6 +1989,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.language, field + \".language\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1922,6 +2010,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.manual_partial_invoices, field + \".manual_partial_invoices\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1936,6 +2025,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.multiplier, field + \".multiplier\", \"number | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1949,6 +2039,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.not_duplicate, field + \".not_duplicate\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1962,6 +2053,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNumber$i(d.ocr_thirdparty_id, field + \".ocr_thirdparty_id\", \"null | number\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1976,6 +2068,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.pages_count, field + \".pages_count\", \"number | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1989,6 +2082,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.paid, field + \".paid\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -2008,6 +2102,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.payment_reference, field + \".payment_reference\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -2021,6 +2116,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.payment_reminder_enabled, field + \".payment_reminder_enabled\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -2034,6 +2130,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.payment_status, field + \".payment_status\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -2048,6 +2145,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.pdf_invoice_display_products_list, field + \".pdf_invoice_display_products_list\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -2061,6 +2159,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.pdf_invoice_free_text, field + \".pdf_invoice_free_text\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -2074,6 +2173,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.pdf_invoice_free_text_enabled, field + \".pdf_invoice_free_text_enabled\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -2087,6 +2187,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.pdf_invoice_subject, field + \".pdf_invoice_subject\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -2100,6 +2201,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.pdf_invoice_subject_enabled, field + \".pdf_invoice_subject_enabled\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -2113,6 +2215,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.pdf_invoice_title, field + \".pdf_invoice_title\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -2126,6 +2229,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.pdf_paid_stamp, field + \".pdf_paid_stamp\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -2139,6 +2243,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkString$l(d.preview_status, field + \".preview_status\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "            }\n" +
 "        }\n" +
 "        checkArray$c(d.preview_urls, field + \".preview_urls\");\n" +
@@ -2157,6 +2262,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.price_before_tax, field + \".price_before_tax\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -2171,6 +2277,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.quote_group_uuid, field + \".quote_group_uuid\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -2194,6 +2301,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.recipients, field + \".recipients\", \"never[] | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -2210,6 +2318,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    d.scored_invoices = ScoredInvoices1.Create(d.scored_invoices, field + \".scored_invoices\", \"null | ScoredInvoices1\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -2228,6 +2337,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.scored_transactions, field + \".scored_transactions\", \"never[] | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -2241,6 +2351,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.size, field + \".size\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -2258,6 +2369,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkString$l(d.status, field + \".status\", \"null | string\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -2271,6 +2383,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.subcomplete, field + \".subcomplete\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -2284,6 +2397,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.tagged_at_ledger_events_level, field + \".tagged_at_ledger_events_level\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -2297,6 +2411,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.tax, field + \".tax\", \"string | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -2310,6 +2425,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.thirdparty, field + \".thirdparty\", \"Thirdparty | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -2322,6 +2438,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNumber$i(d.thirdparty_id, field + \".thirdparty_id\", \"null | number\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$l(d.type, field + \".type\");\n" +
@@ -2337,6 +2454,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.validation_needed, field + \".validation_needed\", \"boolean | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -2572,6 +2690,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$h(d.connection, field + \".connection\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$l(d.currency, field + \".currency\");\n" +
@@ -2587,6 +2706,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$h(d.iban, field + \".iban\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "            }\n" +
 "        }\n" +
 "        checkNumber$i(d.id, field + \".id\");\n" +
@@ -2600,6 +2720,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$h(d.last_successful_sync_at, field + \".last_successful_sync_at\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "            }\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
@@ -2611,6 +2732,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$h(d.last_sync_at, field + \".last_sync_at\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "            }\n" +
 "        }\n" +
 "        checkNull$h(d.last_sync_error, field + \".last_sync_error\");\n" +
@@ -2922,6 +3044,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                d.user = User.Create(d.user, field + \".user\", \"null | User\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "            }\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
@@ -2933,6 +3056,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNumber$i(d.user_id, field + \".user_id\", \"null | number\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "            }\n" +
 "        }\n" +
 "        const knownProperties = [\"author\", \"content\", \"created_at\", \"id\", \"name\", \"record_id\", \"record_type\", \"rich_content\", \"seen\", \"updated_at\", \"user\", \"user_id\"];\n" +
@@ -2986,6 +3110,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$h(d.asset_id, field + \".asset_id\", \"number | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "            }\n" +
 "        }\n" +
 "        checkNumber$i(d.company_id, field + \".company_id\");\n" +
@@ -3010,6 +3135,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$h(d.invoice_line_section_id, field + \".invoice_line_section_id\", \"number | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$l(d.label, field + \".label\");\n" +
@@ -3023,6 +3149,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkString$l(d.ocr_vat_rate, field + \".ocr_vat_rate\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "            }\n" +
 "        }\n" +
 "        d.pnl_plan_item = PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem1.Create(d.pnl_plan_item, field + \".pnl_plan_item\");\n" +
@@ -3040,6 +3167,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$h(d.rank, field + \".rank\", \"number | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$l(d.raw_currency_unit_price, field + \".raw_currency_unit_price\");\n" +
@@ -3054,6 +3182,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$h(d.unit, field + \".unit\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$l(d.vat_rate, field + \".vat_rate\");\n" +
@@ -3129,6 +3258,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkString$l(d.internal_identifier, field + \".internal_identifier\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$l(d.label, field + \".label\");\n" +
@@ -3224,6 +3354,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$h(d.label, field + \".label\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"lettering\" in d) {\n" +
@@ -3236,6 +3367,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.lettering, field + \".lettering\", \"Lettering | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -3248,6 +3380,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$h(d.lettering_id, field + \".lettering_id\", \"number | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "            }\n" +
 "        }\n" +
 "        checkNumber$i(d.plan_item_id, field + \".plan_item_id\");\n" +
@@ -3267,6 +3400,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkNull$h(d.reallocation, field + \".reallocation\", \"Reallocation | null\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -3279,6 +3413,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNumber$i(d.reallocation_id, field + \".reallocation_id\", \"null | number\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "            }\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
@@ -3290,6 +3425,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$h(d.reconciliation_id, field + \".reconciliation_id\", \"number | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$l(d.source, field + \".source\");\n" +
@@ -3391,6 +3527,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkString$l(d.internal_identifier, field + \".internal_identifier\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$l(d.label, field + \".label\");\n" +
@@ -3479,6 +3616,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$h(d.internal_identifier, field + \".internal_identifier\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$l(d.label, field + \".label\");\n" +
@@ -3572,6 +3710,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkString$l(d.country, field + \".country\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$l(d[\"country_alpha2\"], field + \".country_alpha2\");\n" +
@@ -3602,6 +3741,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkString$l(d.establishment_no, field + \".establishment_no\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "            }\n" +
 "        }\n" +
 "        checkNull$h(d.estimate_count, field + \".estimate_count\");\n" +
@@ -3624,6 +3764,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNumber$i(d.known_supplier_id, field + \".known_supplier_id\", \"null | number\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$l(d.last_name, field + \".last_name\");\n" +
@@ -3648,6 +3789,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$h(d.pnl_plan_item_id, field + \".pnl_plan_item_id\", \"number | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$l(d.postal_code, field + \".postal_code\");\n" +
@@ -3677,6 +3819,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$h(d.supplier_payment_method_last_updated_at, field + \".supplier_payment_method_last_updated_at\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "            }\n" +
 "        }\n" +
 "        checkArray$c(d.tags, field + \".tags\");\n" +
@@ -3697,6 +3840,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$h(d.vat_rate, field + \".vat_rate\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "            }\n" +
 "        }\n" +
 "        const knownProperties = [\"activity_code\", \"activity_nomenclature\", \"address\", \"address_additional_info\", \"admin_city_code\", \"balance\", \"billing_bank\", \"billing_bic\", \"billing_footer_invoice_id\", \"billing_footer_invoice_label\", \"billing_iban\", \"billing_language\", \"city\", \"company_id\", \"complete\", \"country\", \"country_alpha2\", \"credits\", \"current_mandate\", \"customer_type\", \"debits\", \"delivery_address\", \"delivery_address_additional_info\", \"delivery_city\", \"delivery_country\", \"delivery_country_alpha2\", \"delivery_postal_code\", \"disable_pending_vat\", \"display_name\", \"emails\", \"establishment_no\", \"estimate_count\", \"first_name\", \"force_pending_vat\", \"gender\", \"gocardless_id\", \"iban\", \"id\", \"invoice_count\", \"invoice_dump_id\", \"invoices_auto_generated\", \"invoices_auto_validated\", \"known_supplier_id\", \"last_name\", \"ledger_events_count\", \"legal_form_code\", \"method\", \"name\", \"notes\", \"notes_comment\", \"payment_conditions\", \"phone\", \"plan_item\", \"plan_item_attributes\", \"plan_item_id\", \"pnl_plan_item\", \"pnl_plan_item_id\", \"postal_code\", \"purchase_request_count\", \"received_a_mandate_request\", \"recipient\", \"recurrent\", \"reference\", \"reg_no\", \"role\", \"rule_enabled\", \"search_terms\", \"source_id\", \"stripe_id\", \"supplier_payment_method\", \"supplier_payment_method_last_updated_at\", \"tags\", \"turnover\", \"url\", \"vat_number\", \"vat_rate\"];\n" +
@@ -3861,10 +4005,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
 "\" + JSON.stringify(d), jsonClone);\n" +
+"        prompt(proxyName$n + ':', JSON.stringify(obj$n));\n" +
 "    }\n" +
 "}\n" +
 "\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
+"const proxyName$m = 'APIDocumentMatching';\n" +
 "let obj$m = null;\n" +
 "class APIDocumentMatching {\n" +
 "    static Parse(d) {\n" +
@@ -3896,6 +4042,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$g(d.date, field + \".date\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$m + ':', JSON.stringify(obj$m));\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$k(d.gross_amount, field + \".gross_amount\");\n" +
@@ -3964,6 +4111,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
 "\" + JSON.stringify(d), jsonClone);\n" +
+"        prompt(proxyName$m + ':', JSON.stringify(obj$m));\n" +
 "    }\n" +
 "}\n" +
 "\n" +
@@ -4003,6 +4151,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "}\n" +
 "\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
+"const proxyName$l = 'APIDMSCreateLink';\n" +
 "let obj$l = null;\n" +
 "class APIDMSCreateLink {\n" +
 "    static Parse(d) {\n" +
@@ -4058,10 +4207,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
 "\" + JSON.stringify(d), jsonClone);\n" +
+"        prompt(proxyName$l + ':', JSON.stringify(obj$l));\n" +
 "    }\n" +
 "}\n" +
 "\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
+"const proxyName$k = 'APIDMSItem';\n" +
 "let obj$k = null;\n" +
 "class APIDMSItem {\n" +
 "    static Parse(d) {\n" +
@@ -4090,6 +4241,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkString$j(d.archived_at, field + \".archived_at\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
 "            }\n" +
 "        }\n" +
 "        checkNumber$g(d.comments_count, field + \".comments_count\");\n" +
@@ -4113,6 +4265,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$f(d.parent_id, field + \".parent_id\", \"number | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$j(d.pusher_channel, field + \".pusher_channel\");\n" +
@@ -4232,10 +4385,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
 "\" + JSON.stringify(d), jsonClone);\n" +
+"        prompt(proxyName$k + ':', JSON.stringify(obj$k));\n" +
 "    }\n" +
 "}\n" +
 "\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
+"const proxyName$j = 'APIDMSItemLink';\n" +
 "let obj$j = null;\n" +
 "class APIDMSItemLink {\n" +
 "    static Parse(d) {\n" +
@@ -4309,10 +4464,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
 "\" + JSON.stringify(d), jsonClone);\n" +
+"        prompt(proxyName$j + ':', JSON.stringify(obj$j));\n" +
 "    }\n" +
 "}\n" +
 "\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
+"const proxyName$i = 'APIDMSItemList';\n" +
 "let obj$i = null;\n" +
 "class APIDMSItemList {\n" +
 "    static Parse(d) {\n" +
@@ -4548,10 +4705,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
 "\" + JSON.stringify(d), jsonClone);\n" +
+"        prompt(proxyName$i + ':', JSON.stringify(obj$i));\n" +
 "    }\n" +
 "}\n" +
 "\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
+"const proxyName$h = 'APIDMSItemListParams';\n" +
 "let obj$h = null;\n" +
 "class APIDMSItemListParams {\n" +
 "    static Parse(d) {\n" +
@@ -4586,6 +4745,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    checkString$g(d.filter, field + \".filter\", \"FilterEntity[] | string\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$h + ':', JSON.stringify(obj$h));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -4673,10 +4833,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
 "\" + JSON.stringify(d), jsonClone);\n" +
+"        prompt(proxyName$h + ':', JSON.stringify(obj$h));\n" +
 "    }\n" +
 "}\n" +
 "\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
+"const proxyName$g = 'APIDMSItemSettings';\n" +
 "let obj$g = null;\n" +
 "class APIDMSItemSettings {\n" +
 "    static Parse(d) {\n" +
@@ -4935,10 +5097,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
 "\" + JSON.stringify(d), jsonClone);\n" +
+"        prompt(proxyName$g + ':', JSON.stringify(obj$g));\n" +
 "    }\n" +
 "}\n" +
 "\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
+"const proxyName$f = 'APIDMSLink';\n" +
 "let obj$f = null;\n" +
 "class APIDMSLink {\n" +
 "    static Parse(d) {\n" +
@@ -5144,10 +5308,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
 "\" + JSON.stringify(d), jsonClone);\n" +
+"        prompt(proxyName$f + ':', JSON.stringify(obj$f));\n" +
 "    }\n" +
 "}\n" +
 "\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
+"const proxyName$e = 'APIDMSLinkList';\n" +
 "let obj$e = null;\n" +
 "class APIDMSLinkList {\n" +
 "    static Parse(d) {\n" +
@@ -5387,10 +5553,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
 "\" + JSON.stringify(d), jsonClone);\n" +
+"        prompt(proxyName$e + ':', JSON.stringify(obj$e));\n" +
 "    }\n" +
 "}\n" +
 "\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
+"const proxyName$d = 'APIDMSToInvoice';\n" +
 "let obj$d = null;\n" +
 "class APIDMSToInvoice {\n" +
 "    static Parse(d) {\n" +
@@ -5452,10 +5620,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
 "\" + JSON.stringify(d), jsonClone);\n" +
+"        prompt(proxyName$d + ':', JSON.stringify(obj$d));\n" +
 "    }\n" +
 "}\n" +
 "\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
+"const proxyName$c = 'APIDMSUpdateItem';\n" +
 "let obj$c = null;\n" +
 "class APIDMSUpdateItem {\n" +
 "    static Parse(d) {\n" +
@@ -5604,6 +5774,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
 "\" + JSON.stringify(d), jsonClone);\n" +
+"        prompt(proxyName$c + ':', JSON.stringify(obj$c));\n" +
 "    }\n" +
 "}\n" +
 "\n" +
@@ -5724,6 +5895,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "}\n" +
 "\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
+"const proxyName$b = 'APIGroupedDocument';\n" +
 "let obj$b = null;\n" +
 "class APIGroupedDocument {\n" +
 "    static Parse(d) {\n" +
@@ -5753,6 +5925,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkString$a(d.date, field + \".date\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$a(d.fec_pieceref, field + \".fec_pieceref\");\n" +
@@ -5871,10 +6044,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
 "\" + JSON.stringify(d), jsonClone);\n" +
+"        prompt(proxyName$b + ':', JSON.stringify(obj$b));\n" +
 "    }\n" +
 "}\n" +
 "\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
+"const proxyName$a = 'APILedgerEvent';\n" +
 "let obj$a = null;\n" +
 "class APILedgerEvent {\n" +
 "    static Parse(d) {\n" +
@@ -5909,6 +6084,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkString$9(d.label, field + \".label\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$a + ':', JSON.stringify(obj$a));\n" +
 "            }\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
@@ -5920,6 +6096,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                d.lettering = Lettering.Create(d.lettering, field + \".lettering\", \"null | Lettering\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$a + ':', JSON.stringify(obj$a));\n" +
 "            }\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
@@ -5931,6 +6108,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNumber$8(d.lettering_id, field + \".lettering_id\", \"null | number\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$a + ':', JSON.stringify(obj$a));\n" +
 "            }\n" +
 "        }\n" +
 "        checkNumber$8(d.plan_item_id, field + \".plan_item_id\");\n" +
@@ -5946,6 +6124,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNumber$8(d.reconciliation_id, field + \".reconciliation_id\", \"null | number\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$a + ':', JSON.stringify(obj$a));\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$9(d.source, field + \".source\");\n" +
@@ -6092,6 +6271,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
 "\" + JSON.stringify(d), jsonClone);\n" +
+"        prompt(proxyName$a + ':', JSON.stringify(obj$a));\n" +
 "    }\n" +
 "}\n" +
 "\n" +
@@ -6114,6 +6294,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "}\n" +
 "\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
+"const proxyName$9 = 'APIThirdparty';\n" +
 "let obj$9 = null;\n" +
 "class APIThirdparty {\n" +
 "    static Parse(d) {\n" +
@@ -6436,6 +6617,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkString$8(d.establishment_no, field + \".establishment_no\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$9 + ':', JSON.stringify(obj$9));\n" +
 "            }\n" +
 "        }\n" +
 "        checkBoolean$6(d.force_pending_vat, field + \".force_pending_vat\");\n" +
@@ -6449,6 +6631,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                d.iban_last_update = IbanLastUpdate.Create(d.iban_last_update, field + \".iban_last_update\", \"null | IbanLastUpdate\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$9 + ':', JSON.stringify(obj$9));\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"iban_proof\" in d) {\n" +
@@ -6766,6 +6949,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$7(d.pnl_plan_item, field + \".pnl_plan_item\", \"PnlPlanItem1 | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$9 + ':', JSON.stringify(obj$9));\n" +
 "            }\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
@@ -6777,6 +6961,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$7(d.vat_rate, field + \".vat_rate\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$9 + ':', JSON.stringify(obj$9));\n" +
 "            }\n" +
 "        }\n" +
 "        const knownProperties = [\"pnl_plan_item\", \"vat_rate\"];\n" +
@@ -6906,6 +7091,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
 "\" + JSON.stringify(d), jsonClone);\n" +
+"        prompt(proxyName$9 + ':', JSON.stringify(obj$9));\n" +
 "    }\n" +
 "}\n" +
 "\n" +
@@ -7028,6 +7214,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "}\n" +
 "\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
+"const proxyName$8 = 'APITransaction';\n" +
 "let obj$8 = null;\n" +
 "class APITransaction {\n" +
 "    static Parse(d) {\n" +
@@ -7059,6 +7246,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkString$7(d.archived_at, field + \".archived_at\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$8 + ':', JSON.stringify(obj$8));\n" +
 "            }\n" +
 "        }\n" +
 "        checkBoolean$5(d.attachment_lost, field + \".attachment_lost\");\n" +
@@ -7075,6 +7263,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$6(d.currency_fee, field + \".currency_fee\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$8 + ':', JSON.stringify(obj$8));\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$7(d.date, field + \".date\");\n" +
@@ -7087,6 +7276,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                d.dump = Dump$1.Create(d.dump, field + \".dump\", \"null | Dump\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$8 + ':', JSON.stringify(obj$8));\n" +
 "            }\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
@@ -7098,6 +7288,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNumber$6(d.dump_id, field + \".dump_id\", \"null | number\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$8 + ':', JSON.stringify(obj$8));\n" +
 "            }\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
@@ -7109,6 +7300,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$6(d.fee, field + \".fee\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$8 + ':', JSON.stringify(obj$8));\n" +
 "            }\n" +
 "        }\n" +
 "        checkNumber$6(d.files_count, field + \".files_count\");\n" +
@@ -7191,6 +7383,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$6(d.created_at, field + \".created_at\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$8 + ':', JSON.stringify(obj$8));\n" +
 "            }\n" +
 "        }\n" +
 "        checkNull$6(d.error_message, field + \".error_message\");\n" +
@@ -7203,6 +7396,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$6(d.triggered_manually, field + \".triggered_manually\", \"boolean | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$8 + ':', JSON.stringify(obj$8));\n" +
 "            }\n" +
 "        }\n" +
 "        const knownProperties = [\"created_at\", \"error_message\", \"triggered_manually\"];\n" +
@@ -7293,10 +7487,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
 "\" + JSON.stringify(d), jsonClone);\n" +
+"        prompt(proxyName$8 + ':', JSON.stringify(obj$8));\n" +
 "    }\n" +
 "}\n" +
 "\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
+"const proxyName$7 = 'APITransactionList';\n" +
 "let obj$7 = null;\n" +
 "class APITransactionList {\n" +
 "    static Parse(d) {\n" +
@@ -7405,6 +7601,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkString$6(d.archived_at, field + \".archived_at\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$7 + ':', JSON.stringify(obj$7));\n" +
 "            }\n" +
 "        }\n" +
 "        checkBoolean$4(d.attachment_lost, field + \".attachment_lost\");\n" +
@@ -7421,6 +7618,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$5(d.currency_fee, field + \".currency_fee\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$7 + ':', JSON.stringify(obj$7));\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$6(d.date, field + \".date\");\n" +
@@ -7433,6 +7631,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                d.dump = Dump.Create(d.dump, field + \".dump\", \"null | Dump\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$7 + ':', JSON.stringify(obj$7));\n" +
 "            }\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
@@ -7444,6 +7643,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNumber$5(d.dump_id, field + \".dump_id\", \"null | number\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$7 + ':', JSON.stringify(obj$7));\n" +
 "            }\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
@@ -7455,6 +7655,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$5(d.fee, field + \".fee\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$7 + ':', JSON.stringify(obj$7));\n" +
 "            }\n" +
 "        }\n" +
 "        checkNumber$5(d.files_count, field + \".files_count\");\n" +
@@ -7537,6 +7738,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$5(d.created_at, field + \".created_at\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$7 + ':', JSON.stringify(obj$7));\n" +
 "            }\n" +
 "        }\n" +
 "        checkNull$5(d.error_message, field + \".error_message\");\n" +
@@ -7549,6 +7751,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$5(d.triggered_manually, field + \".triggered_manually\", \"boolean | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$7 + ':', JSON.stringify(obj$7));\n" +
 "            }\n" +
 "        }\n" +
 "        const knownProperties = [\"created_at\", \"error_message\", \"triggered_manually\"];\n" +
@@ -7643,10 +7846,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
 "\" + JSON.stringify(d), jsonClone);\n" +
+"        prompt(proxyName$7 + ':', JSON.stringify(obj$7));\n" +
 "    }\n" +
 "}\n" +
 "\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
+"const proxyName$6 = 'APITransactionListParams';\n" +
 "let obj$6 = null;\n" +
 "class APITransactionListParams {\n" +
 "    static Parse(d) {\n" +
@@ -7725,10 +7930,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
 "\" + JSON.stringify(d), jsonClone);\n" +
+"        prompt(proxyName$6 + ':', JSON.stringify(obj$6));\n" +
 "    }\n" +
 "}\n" +
 "\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
+"const proxyName$5 = 'APITransactionLite';\n" +
 "let obj$5 = null;\n" +
 "class APITransactionLite {\n" +
 "    static Parse(d) {\n" +
@@ -7759,6 +7966,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$4(d.automation_rule_plan_item, field + \".automation_rule_plan_item\", \"AutomationRulePlanItem | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$5 + ':', JSON.stringify(obj$5));\n" +
 "            }\n" +
 "        }\n" +
 "        checkNumber$3(d.comments_count, field + \".comments_count\");\n" +
@@ -7956,6 +8164,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
 "\" + JSON.stringify(d), jsonClone);\n" +
+"        prompt(proxyName$5 + ':', JSON.stringify(obj$5));\n" +
 "    }\n" +
 "}\n" +
 "\n" +
@@ -7993,6 +8202,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "}\n" +
 "\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
+"const proxyName$4 = 'APIInvoice';\n" +
 "let obj$4 = null;\n" +
 "class APIInvoice {\n" +
 "    static Parse(d) {\n" +
@@ -8025,6 +8235,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$3(d.blob_id, field + \".blob_id\", \"number | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$4 + ':', JSON.stringify(obj$4));\n" +
 "            }\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
@@ -8036,6 +8247,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$3(d.checksum, field + \".checksum\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$4 + ':', JSON.stringify(obj$4));\n" +
 "            }\n" +
 "        }\n" +
 "        checkNumber$2(d.client_comments_count, field + \".client_comments_count\");\n" +
@@ -8054,6 +8266,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                d.current_account_plan_item = PnlPlanItemOrCurrentAccountPlanItem.Create(d.current_account_plan_item, field + \".current_account_plan_item\", \"null | PnlPlanItemOrCurrentAccountPlanItem\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$4 + ':', JSON.stringify(obj$4));\n" +
 "            }\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
@@ -8065,6 +8278,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNumber$2(d.current_account_plan_item_id, field + \".current_account_plan_item_id\", \"null | number\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$4 + ':', JSON.stringify(obj$4));\n" +
 "            }\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
@@ -8076,6 +8290,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkString$3(d.date, field + \".date\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$4 + ':', JSON.stringify(obj$4));\n" +
 "            }\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
@@ -8087,6 +8302,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkString$3(d.deadline, field + \".deadline\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$4 + ':', JSON.stringify(obj$4));\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$3(d.direction, field + \".direction\");\n" +
@@ -8109,6 +8325,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$3(d.filename, field + \".filename\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$4 + ':', JSON.stringify(obj$4));\n" +
 "            }\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
@@ -8120,6 +8337,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$3(d.gdrive_path, field + \".gdrive_path\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$4 + ':', JSON.stringify(obj$4));\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$3(d.group_uuid, field + \".group_uuid\");\n" +
@@ -8150,6 +8368,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$3(d.label, field + \".label\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$4 + ':', JSON.stringify(obj$4));\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$3(d.method, field + \".method\");\n" +
@@ -8164,6 +8383,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$3(d.pages_count, field + \".pages_count\", \"number | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$4 + ':', JSON.stringify(obj$4));\n" +
 "            }\n" +
 "        }\n" +
 "        checkBoolean$2(d.paid, field + \".paid\");\n" +
@@ -8177,6 +8397,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$3(d.preview_status, field + \".preview_status\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$4 + ':', JSON.stringify(obj$4));\n" +
 "            }\n" +
 "        }\n" +
 "        checkArray$3(d.preview_urls, field + \".preview_urls\");\n" +
@@ -8199,6 +8420,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$3(d.thirdparty, field + \".thirdparty\", \"Thirdparty | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$4 + ':', JSON.stringify(obj$4));\n" +
 "            }\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
@@ -8210,6 +8432,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$3(d.thirdparty_id, field + \".thirdparty_id\", \"number | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$4 + ':', JSON.stringify(obj$4));\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$3(d.type, field + \".type\");\n" +
@@ -8467,6 +8690,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                d.asset = Asset.Create(d.asset, field + \".asset\", \"null | Asset\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$4 + ':', JSON.stringify(obj$4));\n" +
 "            }\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
@@ -8478,6 +8702,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNumber$2(d.asset_id, field + \".asset_id\", \"null | number\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$4 + ':', JSON.stringify(obj$4));\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$3(d.currency_amount, field + \".currency_amount\");\n" +
@@ -8497,6 +8722,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkString$3(d.ledger_event_label, field + \".ledger_event_label\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$4 + ':', JSON.stringify(obj$4));\n" +
 "            }\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
@@ -8508,6 +8734,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkString$3(d.ocr_vat_rate, field + \".ocr_vat_rate\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$4 + ':', JSON.stringify(obj$4));\n" +
 "            }\n" +
 "        }\n" +
 "        d.pnl_plan_item = PnlPlanItemOrCurrentAccountPlanItem1.Create(d.pnl_plan_item, field + \".pnl_plan_item\");\n" +
@@ -8573,6 +8800,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$3(d.amortization_type, field + \".amortization_type\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$4 + ':', JSON.stringify(obj$4));\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$3(d.entry_date, field + \".entry_date\");\n" +
@@ -8590,6 +8818,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$3(d.start_date, field + \".start_date\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$4 + ':', JSON.stringify(obj$4));\n" +
 "            }\n" +
 "        }\n" +
 "        const knownProperties = [\"amortization_months\", \"amortization_type\", \"entry_date\", \"id\", \"invoice_line_editable\", \"name\", \"plan_item_id\", \"quantity\", \"start_date\"];\n" +
@@ -8687,6 +8916,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$3(d.country, field + \".country\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$4 + ':', JSON.stringify(obj$4));\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$3(d[\"country_alpha2\"], field + \".country_alpha2\");\n" +
@@ -8717,6 +8947,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkString$3(d.establishment_no, field + \".establishment_no\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$4 + ':', JSON.stringify(obj$4));\n" +
 "            }\n" +
 "        }\n" +
 "        checkNull$3(d.estimate_count, field + \".estimate_count\");\n" +
@@ -8739,6 +8970,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNumber$2(d.known_supplier_id, field + \".known_supplier_id\", \"null | number\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$4 + ':', JSON.stringify(obj$4));\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$3(d.last_name, field + \".last_name\");\n" +
@@ -8762,6 +8994,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$3(d.pnl_plan_item, field + \".pnl_plan_item\", \"PlanItemOrPnlPlanItem1 | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$4 + ':', JSON.stringify(obj$4));\n" +
 "            }\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
@@ -8773,6 +9006,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$3(d.pnl_plan_item_id, field + \".pnl_plan_item_id\", \"number | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$4 + ':', JSON.stringify(obj$4));\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$3(d.postal_code, field + \".postal_code\");\n" +
@@ -8802,6 +9036,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkString$3(d.supplier_payment_method_last_updated_at, field + \".supplier_payment_method_last_updated_at\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$4 + ':', JSON.stringify(obj$4));\n" +
 "            }\n" +
 "        }\n" +
 "        checkArray$3(d.tags, field + \".tags\");\n" +
@@ -8822,6 +9057,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$3(d.vat_rate, field + \".vat_rate\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$4 + ':', JSON.stringify(obj$4));\n" +
 "            }\n" +
 "        }\n" +
 "        const knownProperties = [\"activity_code\", \"activity_nomenclature\", \"address\", \"address_additional_info\", \"admin_city_code\", \"balance\", \"billing_bank\", \"billing_bic\", \"billing_footer_invoice_id\", \"billing_footer_invoice_label\", \"billing_iban\", \"billing_language\", \"city\", \"company_id\", \"complete\", \"country\", \"country_alpha2\", \"credits\", \"current_mandate\", \"customer_type\", \"debits\", \"delivery_address\", \"delivery_address_additional_info\", \"delivery_city\", \"delivery_country\", \"delivery_country_alpha2\", \"delivery_postal_code\", \"disable_pending_vat\", \"display_name\", \"emails\", \"establishment_no\", \"estimate_count\", \"first_name\", \"force_pending_vat\", \"gender\", \"gocardless_id\", \"iban\", \"id\", \"invoice_count\", \"invoice_dump_id\", \"invoices_auto_generated\", \"invoices_auto_validated\", \"known_supplier_id\", \"last_name\", \"ledger_events_count\", \"legal_form_code\", \"method\", \"name\", \"notes\", \"notes_comment\", \"payment_conditions\", \"phone\", \"plan_item\", \"plan_item_attributes\", \"plan_item_id\", \"pnl_plan_item\", \"pnl_plan_item_id\", \"postal_code\", \"purchase_request_count\", \"received_a_mandate_request\", \"recipient\", \"recurrent\", \"reference\", \"reg_no\", \"role\", \"rule_enabled\", \"search_terms\", \"source_id\", \"stripe_id\", \"supplier_payment_method\", \"supplier_payment_method_last_updated_at\", \"tags\", \"turnover\", \"url\", \"vat_number\", \"vat_rate\"];\n" +
@@ -8985,6 +9221,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkString$3(d.internal_identifier, field + \".internal_identifier\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$4 + ':', JSON.stringify(obj$4));\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$3(d.label, field + \".label\");\n" +
@@ -9059,10 +9296,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
 "\" + JSON.stringify(d), jsonClone);\n" +
+"        prompt(proxyName$4 + ':', JSON.stringify(obj$4));\n" +
 "    }\n" +
 "}\n" +
 "\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
+"const proxyName$3 = 'APIInvoiceList';\n" +
 "let obj$3 = null;\n" +
 "class APIInvoiceList {\n" +
 "    static Parse(d) {\n" +
@@ -9124,7 +9363,18 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkString$2(d.amount_without_tax, field + \".amount_without_tax\");\n" +
 "        checkNull$2(d.approval_status, field + \".approval_status\");\n" +
 "        checkBoolean$1(d.archived, field + \".archived\");\n" +
-"        checkString$2(d.checksum, field + \".checksum\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$2(d.checksum, field + \".checksum\", \"null | string\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkString$2(d.checksum, field + \".checksum\", \"null | string\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$3 + ':', JSON.stringify(obj$3));\n" +
+"            }\n" +
+"        }\n" +
 "        checkNumber$1(d.company_id, field + \".company_id\");\n" +
 "        checkString$2(d.created_at, field + \".created_at\");\n" +
 "        checkString$2(d.currency, field + \".currency\");\n" +
@@ -9139,6 +9389,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$2(d.date, field + \".date\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$3 + ':', JSON.stringify(obj$3));\n" +
 "            }\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
@@ -9150,11 +9401,23 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$2(d.deadline, field + \".deadline\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$3 + ':', JSON.stringify(obj$3));\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$2(d.direction, field + \".direction\");\n" +
 "        checkNull$2(d.email_from, field + \".email_from\");\n" +
-"        checkString$2(d.filename, field + \".filename\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$2(d.filename, field + \".filename\", \"null | string\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkString$2(d.filename, field + \".filename\", \"null | string\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                prompt(proxyName$3 + ':', JSON.stringify(obj$3));\n" +
+"            }\n" +
+"        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
 "            checkNull$2(d.gdrive_path, field + \".gdrive_path\", \"null | string\");\n" +
@@ -9164,6 +9427,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkString$2(d.gdrive_path, field + \".gdrive_path\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$3 + ':', JSON.stringify(obj$3));\n" +
 "            }\n" +
 "        }\n" +
 "        checkNumber$1(d.id, field + \".id\");\n" +
@@ -9186,6 +9450,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$2(d.label, field + \".label\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$3 + ':', JSON.stringify(obj$3));\n" +
 "            }\n" +
 "        }\n" +
 "        checkBoolean$1(d.not_duplicate, field + \".not_duplicate\");\n" +
@@ -9203,6 +9468,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull$2(d.thirdparty, field + \".thirdparty\", \"Thirdparty | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName$3 + ':', JSON.stringify(obj$3));\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$2(d.type, field + \".type\");\n" +
@@ -9435,10 +9701,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
 "\" + JSON.stringify(d), jsonClone);\n" +
+"        prompt(proxyName$3 + ':', JSON.stringify(obj$3));\n" +
 "    }\n" +
 "}\n" +
 "\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
+"const proxyName$2 = 'APIInvoiceListParams';\n" +
 "let obj$2 = null;\n" +
 "class APIInvoiceListParams {\n" +
 "    static Parse(d) {\n" +
@@ -9474,6 +9742,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    }\n" +
 "                }\n" +
 "                catch (e) {\n" +
+"                    prompt(proxyName$2 + ':', JSON.stringify(obj$2));\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -9571,10 +9840,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
 "\" + JSON.stringify(d), jsonClone);\n" +
+"        prompt(proxyName$2 + ':', JSON.stringify(obj$2));\n" +
 "    }\n" +
 "}\n" +
 "\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
+"const proxyName$1 = 'APIInvoiceToDMS';\n" +
 "let obj$1 = null;\n" +
 "class APIInvoiceToDMS {\n" +
 "    static Parse(d) {\n" +
@@ -9636,10 +9907,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
 "\" + JSON.stringify(d), jsonClone);\n" +
+"        prompt(proxyName$1 + ':', JSON.stringify(obj$1));\n" +
 "    }\n" +
 "}\n" +
 "\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
+"const proxyName = 'APIInvoiceUpdateResponse';\n" +
 "let obj = null;\n" +
 "class APIInvoiceUpdateResponse {\n" +
 "    static Parse(d) {\n" +
@@ -9670,6 +9943,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkNull(d.preview_status, field + \".preview_status\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                prompt(proxyName + ':', JSON.stringify(obj));\n" +
 "            }\n" +
 "        }\n" +
 "        checkArray(d.preview_urls, field + \".preview_urls\");\n" +
@@ -9734,6 +10008,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
 "\" + JSON.stringify(d), jsonClone);\n" +
+"        prompt(proxyName + ':', JSON.stringify(obj));\n" +
 "    }\n" +
 "}\n" +
 "\n" +
@@ -10120,8 +10395,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            ?? await this.is2025()\n" +
 "            ?? await this.hasVAT()\n" +
 "            ?? await this.isMissingBanking()\n" +
-"            ?? await this.isUnbalanced()\n" +
 "            ?? await this.hasToSendToInvoice()\n" +
+"            ?? await this.isUnbalanced()\n" +
 "            ?? await this.isMissingCounterpart()\n" +
 "            ?? await this.isWrongDonationCounterpart()\n" +
 "            ?? await this.isTrashCounterpart()\n" +
@@ -10260,10 +10535,17 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            // On a parfois des calculs qui ne tombent pas très juste en JS\n" +
 "            if (Math.abs(balance.transaction - balance.CHQ) > 0.001) {\n" +
-"                balance.addCHQ(null);\n" +
-"                if (this.isCurrent())\n" +
-"                    this.log('isCheckRemittance(): somme des chèques incorrecte');\n" +
-"                return 'La somme des chèques doit valoir le montant de la transaction';\n" +
+"                const lost = doc.grouped_documents.find(gdoc => gdoc.id === this.id)?.client_comments?.find(comment => comment.content === 'PHOTO CHEQUE PERDUE');\n" +
+"                if (!lost) {\n" +
+"                    balance.addCHQ(null);\n" +
+"                    if (this.isCurrent())\n" +
+"                        this.log('isCheckRemittance(): somme des chèques incorrecte');\n" +
+"                    return 'La somme des chèques doit valoir le montant de la transaction';\n" +
+"                }\n" +
+"                else {\n" +
+"                    if (this.isCurrent())\n" +
+"                        this.log('isCheckRemittance(): photo chèque perdue');\n" +
+"                }\n" +
 "            }\n" +
 "        }\n" +
 "    }\n" +
@@ -11601,7 +11883,11 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const invoice = await this.getInvoice();\n" +
 "        const filename = invoice.filename;\n" +
 "        const fileId = invoice.file_signed_id;\n" +
-"        const invoiceName = `${invoice.invoice_number} - ${invoice.amount}€`;\n" +
+"        const invoiceName = [\n" +
+"            invoice.invoice_number,\n" +
+"            invoice.thirdparty?.name ?? '',\n" +
+"            `${invoice.amount.replace(/.0+$/, '')}€`\n" +
+"        ].join(' - ');\n" +
 "        await moveToDms(this.id, destId);\n" +
 "        this.debug('moveToDms response');\n" +
 "        const files = await getDMSItemList({\n" +
@@ -12256,12 +12542,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "class ArchiveGroupedDocument extends Service {\n" +
 "    async init() {\n" +
 "        await waitElem('h3', 'Transactions');\n" +
-"        while (await waitFunc(() => $$('a[href*=\"/invoices/\"]')\n" +
+"        while (await waitFunc(() => $$('a[href*=\"/invoices/full_page?\"]')\n" +
 "            .some(link => !link.closest('div')?.querySelector('.archive-button'))))\n" +
 "            this.addInvoiceInfos();\n" +
 "    }\n" +
 "    addInvoiceInfos() {\n" +
-"        const buttonsBlock = $$('a[href*=\"invoices/\"]')\n" +
+"        const buttonsBlock = $$('a[href*=\"/invoices/full_page?\"]')\n" +
 "            .find(link => !link.closest('div')?.querySelector('.archive-button'))\n" +
 "            ?.closest('div');\n" +
 "        if (!buttonsBlock) {\n" +
