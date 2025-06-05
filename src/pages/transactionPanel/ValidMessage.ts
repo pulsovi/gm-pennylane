@@ -67,6 +67,7 @@ export default class ValidMessage extends Service {
     const rawTransaction = getReactProps($('.paragraph-body-m+.heading-page.mt-1'), 9).transaction;
     this.state.transaction = new Transaction(rawTransaction);
     const message = await this.state.transaction.getValidMessage();
+    if (this.state.transaction?.id !== rawTransaction.id) return;
     this.message = `${(await this.state.transaction.isValid()) ? '✓' : '✗'} ${message}`;
   }
 

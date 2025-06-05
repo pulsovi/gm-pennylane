@@ -122,6 +122,7 @@ export default class Transaction extends ValidableDocument {
 
     const assistant = [
       'orange',
+      'envoyer les reçus en facturation',
     ];
     if (
       assistant.some(needle => status.includes(needle)) === (user === 'assistant')
@@ -309,12 +310,13 @@ export default class Transaction extends ValidableDocument {
       return;
     }
 
-    // perte de reçu acceptable pour les petits montants, mais pas récurrents
+    // perte de reçu acceptable pour les petites dépenses, mais pas récurrents
     const requiredProof = [
       'DE: GOCARDLESS',
     ];
     if (
       Math.abs(balance.transaction) < 100
+      && balance.transaction < 0
       && !balance.hasAutre()
       && !requiredProof.some(label => doc.label.includes(label))
     ) {
