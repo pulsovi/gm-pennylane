@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name     Pennylane
-// @version  0.1.33
+// @version  0.1.34
 // @grant    unsafeWindow
 // @grant    GM.openInTab
 // @grant    GM.xmlHttpRequest
