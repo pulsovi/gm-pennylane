@@ -52,7 +52,13 @@ export default class MoveDMSToInvoice extends Service {
   }
 
   async moveToInvoice (item: DMSItem, card: HTMLDivElement) {
+    const button = $<HTMLButtonElement>('.to-invoice-button', card);
+    button.disabled = true;
+    button.classList.add('disabled');
+    button.innerText = '⟳';
     const invoice = await item.toInvoice();
+    if (invoice) card.remove();
+    else alert('move to invoice : erreur, voir la console');
     this.log('moveToInvoice', {invoice});
   }
 }
