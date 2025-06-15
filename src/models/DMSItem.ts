@@ -1,13 +1,18 @@
 import { jsonClone } from "../_/json.js";
+import { regexPartialMatch } from "../_/regex.js";
 import { dmsToInvoice, getDMSItem, getDMSItemLinks } from "../api/dms.js";
 import { APIDMSItem } from "../api/DMS/Item.js";
 import { getDocument } from "../api/document.js";
-import { findInvoice, getInvoicesList, updateInvoice } from "../api/invoice.js";
+import { findInvoice, updateInvoice } from "../api/invoice.js";
 import { APIInvoice } from "../api/Invoice/index.js";
-import { getLedgerEvents } from "../api/operation.js";
 import { getThirdparty } from "../api/thirdparties.js";
 import Logger from "../framework/Logger.js";
-import { openDocument } from "../navigation/openDocument.js";
+
+interface Template {
+  title: string;
+  text: string;
+  regex: RegExp;
+}
 
 export default class DMSItem extends Logger {
   public readonly id: number;
@@ -37,13 +42,17 @@ export default class DMSItem extends Logger {
     const dmsItem = await this.getItem();
     const regex = /^(?<number>.*?)(?: - (?<date>[0123]\d\/[01]\d\/\d{4}))?(?: - (?<amount>[\d .]*(?:,\d\d)?) ?€)$/u;
     const match = dmsItem.name.match(regex)?.groups;
+    if (!match) {
+      this.log('The file name does not match the Invoice Regex', { name: dmsItem.name, regex });
+      return;
+    }
     const date = match.date && new Date(match.date.split('/').reverse().join('-'));
     const groupedDocs = await this.getLinks();
     const transactionRecord = groupedDocs.find(gdoc => gdoc.record_type === 'BankTransaction');
     const transactionDocument = transactionRecord && await getDocument(transactionRecord.record_id);
     const direction = Number(transactionDocument?.amount) > 0 ? 'customer' : 'supplier';
 
-    this.debug(jsonClone({start, dmsItem, match: { ...match }, groupedDocs, direction, transactionRecord, transactionDocument, date: date.toLocaleDateString() }));
+    this.debug(jsonClone({ start, dmsItem, match: { ...match }, groupedDocs, direction, transactionRecord, transactionDocument, date: date.toLocaleDateString() }));
     if (!match) {
       this.log('toInvoice: Unable to parse invoice infos');
     }
@@ -85,8 +94,20 @@ export default class DMSItem extends Logger {
   }
 
   public async getValidMessage(): Promise<string> {
+    const rules = await this.getRules();
     const item = await this.getItem();
-    if (item.name.startsWith('RECU')) return 'OK';
+
+    if (rules) {
+      const match = rules.templates.some(template => template.regex.test(item.name));
+      if (!match) return rules.message;
+    }
+
+    return 'OK';
+  }
+
+  public async getRules(): Promise<{templates: Template[]; message: string; }> {
+    const item = await this.getItem();
+    if (item.name.startsWith('RECU')) return null;
 
     const links = await this.getLinks();
 
@@ -95,25 +116,23 @@ export default class DMSItem extends Logger {
       .some(transaction => transaction.record_name.startsWith('REMISE CHEQUE '));
 
     if (isCheckRemmitance) {
-      const templates = [
+      const templates: Template[] = [
         {
           title: 'Photo du chèque',
-          text: 'CHQ&lt;n° du chèque&gt; - &lt;nom donateur&gt; - jj/mm/aaa - &lt;montant&gt;€',
+          text: 'CHQ&lt;n° du chèque&gt; - &lt;nom donateur&gt; - jj/mm/aaaa - &lt;montant&gt;€',
           regex: /^CHQ ?\d* - .* - [0123]\d\/[01]\d\/\d{4} - [\d \.]*(?:,\d\d)? ?€$/u,
         },
         {
           title: 'Reçu de don',
-          text: 'CERFA n°&lt;n° de cerfa&gt; - &lt;nom donateur&gt; - jj/mm/aaa - &lt;montant&gt;€',
+          text: 'CERFA n°&lt;n° de cerfa&gt; - &lt;nom donateur&gt; - jj/mm/aaaa - &lt;montant&gt;€',
           regex: /^CERFA n° ?[\d-]* - .* - [0123]\d\/[01]\d\/\d{4} - [\d .]*(?:,\d\d)? ?€$/u,
         }
       ];
-      const match = templates.some(template => template.regex.test(item.name));
-      if (!match) {
-        return `<a
-          title="Le nom des fichiers attachés à une remise de chèque doit correspondre à un de ces modèles. Cliquer ici pour plus d'informations."
-          href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Nom%20fichier%20GED"
-        >Le nom de fichier doit correspondre à un de ces modèles ⓘ</a><ul style="margin:0;padding:0.8em;">${templates.map(it => `<li><b>${it.title} :</b><code>${it.text}</code></li>`).join('')}</ul>`;
-      }
+      const message = `<a
+        title="Le nom des fichiers attachés à une remise de chèque doit correspondre à un de ces modèles. Cliquer ici pour plus d'informations."
+        href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Nom%20fichier%20GED"
+      >Le nom de fichier doit correspondre à un de ces modèles ⓘ</a><ul style="margin:0;padding:0.8em;">${templates.map(it => `<li><b>${it.title} :</b><code>${it.text}</code></li>`).join('')}</ul>`;
+      return { templates, message };
     }
 
     const isEmittedCheck = transactions
@@ -128,22 +147,20 @@ export default class DMSItem extends Logger {
         },
         {
           title: 'Reçu de don à une association',
-          text: 'CERFA n°&lt;n° de cerfa&gt; - &lt;nom bénéficiaire&gt; - jj/mm/aaa - &lt;montant&gt;€',
+          text: 'CERFA n°&lt;n° de cerfa&gt; - &lt;nom bénéficiaire&gt; - jj/mm/aaaa - &lt;montant&gt;€',
           regex: /^CERFA n° ?[\d-]* - .* - [0123]\d\/[01]\d\/\d{4} - [\d .]*(?:,\d\d)? ?€$/u,
         },
         {
           title: 'Reçu d\'octroi d\'aide',
-          text: 'AIDES - &lt;nom bénéficiaire !!sans le prénom!!&gt; - jj/mm/aaa - &lt;montant&gt;€',
+          text: 'AIDES - &lt;nom bénéficiaire !!sans le prénom!!&gt; - jj/mm/aaaa - &lt;montant&gt;€',
           regex: /^AIDES?\d* - .* - [0123]\d\/[01]\d\/\d{4} - [\d .]*(?:,\d\d)? ?€$/u,
         },
       ];
-      const match = templates.some(template => template.regex.test(item.name));
-      if (!match) {
-        return `<a
-          title="Le nom des fichiers attachés à un paiement par chèque doit correspondre à un de ces modèles. Cliquer ici pour plus d'informations."
-          href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Nom%20fichier%20GED"
-        >Le nom de fichier doit correspondre à un de ces modèles ⓘ</a><ul style="margin:0;padding:0.8em;">${templates.map(it => `<li><b>${it.title} :</b><code>${it.text}</code></li>`).join('')}</ul>`;
-      }
+      const message = `<a
+        title="Le nom des fichiers attachés à un paiement par chèque doit correspondre à un de ces modèles. Cliquer ici pour plus d'informations."
+        href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Nom%20fichier%20GED"
+      >Le nom de fichier doit correspondre à un de ces modèles ⓘ</a><ul style="margin:0;padding:0.8em;">${templates.map(it => `<li><b>${it.title} :</b><code>${it.text}</code></li>`).join('')}</ul>`;
+      return { templates, message };
     }
 
     const isReceivedTransfer = transactions.some(transaction => [
@@ -156,17 +173,15 @@ export default class DMSItem extends Logger {
       const templates = [
         {
           title: 'Reçu de don',
-          text: 'CERFA n°&lt;n° de cerfa&gt; - &lt;nom donateur&gt; - jj/mm/aaa - &lt;montant&gt;€',
+          text: 'CERFA n°&lt;n° de cerfa&gt; - &lt;nom donateur&gt; - jj/mm/aaaa - &lt;montant&gt;€',
           regex: /^CERFA n° ?[\d-]* - .* - [0123]\d\/[01]\d\/\d{4} - [\d .]*(?:,\d\d)? ?€$/u,
         },
       ];
-      const match = templates.some(template => template.regex.test(item.name));
-      if (!match) {
-        return `<a
-          title="Le nom des fichiers attachés à un virement reçu doit correspondre à un de ces modèles. Cliquer ici pour plus d'informations."
-          href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Nom%20fichier%20GED"
-        >Le nom de fichier doit correspondre à un de ces modèles ⓘ</a><ul style="margin:0;padding:0.8em;">${templates.map(it => `<li><b>${it.title} :</b><code>${it.text}</code></li>`).join('')}</ul>`;
-      }
+      const message = `<a
+        title="Le nom des fichiers attachés à un virement reçu doit correspondre à un de ces modèles. Cliquer ici pour plus d'informations."
+        href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Nom%20fichier%20GED"
+      >Le nom de fichier doit correspondre à un de ces modèles ⓘ</a><ul style="margin:0;padding:0.8em;">${templates.map(it => `<li><b>${it.title} :</b><code>${it.text}</code></li>`).join('')}</ul>`;
+      return { templates, message };
     }
 
     const isEmittedTransfer = transactions.some(transaction => [
@@ -178,24 +193,33 @@ export default class DMSItem extends Logger {
       const templates = [
         {
           title: 'Reçu de don à une association',
-          text: 'CERFA n°&lt;n° de cerfa&gt; - &lt;nom bénéficiaire&gt; - jj/mm/aaa - &lt;montant&gt;€',
+          text: 'CERFA n°&lt;n° de cerfa&gt; - &lt;nom bénéficiaire&gt; - jj/mm/aaaa - &lt;montant&gt;€',
           regex: /^CERFA n° ?[\d-]* - .* - [0123]\d\/[01]\d\/\d{4} - [\d .]*(?:,\d\d)? ?€$/u,
         },
         {
           title: 'Reçu d\'octroi d\'aide',
-          text: 'AIDES - &lt;nom bénéficiaire !!sans le prénom!!&gt; - jj/mm/aaa - &lt;montant&gt;€',
+          text: 'AIDES - &lt;nom bénéficiaire !!sans le prénom!!&gt; - jj/mm/aaaa - &lt;montant&gt;€',
           regex: /^AIDES?\d* - .* - [0123]\d\/[01]\d\/\d{4} - [\d .]*(?:,\d\d)? ?€$/u,
         },
       ];
-      const match = templates.some(template => template.regex.test(item.name));
-      if (!match) {
-        return `<a
-          title="Le nom des fichiers attachés à un virement émis doit correspondre à un de ces modèles. Cliquer ici pour plus d'informations."
-          href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Nom%20fichier%20GED"
-        >Le nom de fichier doit correspondre à un de ces modèles ⓘ</a><ul style="margin:0;padding:0.8em;">${templates.map(it => `<li><b>${it.title} :</b><code>${it.text}</code></li>`).join('')}</ul>`;
-      }
+      const message = `<a
+        title="Le nom des fichiers attachés à un virement émis doit correspondre à un de ces modèles. Cliquer ici pour plus d'informations."
+        href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Nom%20fichier%20GED"
+      >Le nom de fichier doit correspondre à un de ces modèles ⓘ</a><ul style="margin:0;padding:0.8em;">${templates.map(it => `<li><b>${it.title} :</b><code>${it.text}</code></li>`).join('')}</ul>`;
+      return { templates, message };
     }
 
-    return 'OK';
+    return null;
+  }
+
+  public async partialMatch(str: string): Promise<[number, number]> {
+    if (str.startsWith('RECU')) return [str.length, str.length];
+    const rules = await this.getRules();
+    return (rules?.templates ?? []).reduce<[number, number]>((pmatch, template) => {
+      const templateMatch = regexPartialMatch(str, template.regex);
+      const pmatchLength = pmatch[1] - pmatch[0];
+      const templateMatchLength = templateMatch[1] - templateMatch[0];
+      return pmatchLength > templateMatchLength ? templateMatch : pmatch;
+    }, [0, str.length]);
   }
 }
