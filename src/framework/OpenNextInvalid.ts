@@ -62,6 +62,28 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
 
     this.invalidGenerator = this.loadInvalid();
     this.firstLoading();
+
+    window.addEventListener('beforeunload', event => {
+      if (this.running) {
+        this.log("Vous allez fermer la page alors que le prochain élément à corriger n'a pas été ouvert.");
+        event.returnValue = "Vous allez fermer la page alors que le prochain élément à corriger n'a pas été ouvert. Voulez-vous vraiment continuer ?";
+        const modal = parseHTML(`
+          <div class="modal" style="display: block;padding: 10em; background-color: #DDDD;">
+            <div class="modal-content" style="max-width: 40em;">
+              <div class="modal-header">
+                <h2>Confirmation</h2>
+              </div>
+              <div class="modal-body">
+                <p>Vous allez fermer la page alors que le prochain élément à corriger n'a pas été ouvert. Voulez-vous vraiment continuer ?</p>
+              </div>
+            </div>
+          </div>
+        `).firstElementChild as HTMLDivElement;
+        document.body.appendChild(modal);
+        event.preventDefault();
+        setTimeout(() => { modal.remove(); }, 100);
+      }
+    });
   }
 
   /**
@@ -146,11 +168,20 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
         if (!cachedItem?.valid) this.log('skip', cachedItem);
         continue;
       }
+      /**
+      const status = cachedItem;
+      this.updateStatus(cachedItem.id).then((updatedStatus) => {
+        if (this.isSkipped(updatedStatus) || updatedStatus.valid) {
+          this.start();
+        }
+      });
+      /*/
       const status = await this.updateStatus(cachedItem.id);
       if (this.isSkipped(status)) {
         if (!status?.valid) this.log('skip', status);
         continue;
       }
+      /**/
       yield status!;
     }
 
@@ -238,7 +269,7 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
 
     if (status) {
       this.log('next found :', { current: this.current, status, class: this });
-      openDocument(status.id);
+      this.open(status.id);
       this.running = false;
       return;
     }
@@ -252,6 +283,10 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
     }
 
     this.running = false;
+  }
+
+  protected open(id: number): void {
+    openDocument(id);
   }
 
   private async reloadAll() {
@@ -367,5 +402,9 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
     }
     this.spinner.index = ((this.spinner.index ?? 0) + 1) % this.spinner.frames.length;
     span.innerText = this.spinner.frames[this.spinner.index];
+  }
+
+  public getCache() {
+    return this.cache;
   }
 }
