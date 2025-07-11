@@ -78,6 +78,10 @@ export async function apiRequest (
   if (response.status === 429 || response.status === 418) {
     apiRequestQueue.unshift(1000);
     apiRequestQueue.MIN_DELAY = delayBefore + 1;
+    apiRequestQueue.VERY_MIN_DELAY = Math.max(
+      apiRequestQueue.VERY_MIN_DELAY,
+      delayBefore + 1
+    );
     logger.debug('apiRequestWait: 1000');
     return apiRequest(endpoint, data, method);
   }
@@ -88,7 +92,7 @@ export async function apiRequest (
     return null;
   }
 
-  apiRequestQueue.MIN_DELAY = Math.max(10, delayBefore * 0.99);
+  apiRequestQueue.MIN_DELAY = Math.max(apiRequestQueue.VERY_MIN_DELAY, delayBefore * 0.99);
   return response;
 }
 
@@ -103,6 +107,7 @@ function getCookies (key?: string) {
 Object.assign(window, {apiRequest});
 
 class Queue {
+  public VERY_MIN_DELAY = 0;
   public MIN_DELAY = 100;
   private queue: ({ time: number } | { cb: () => void })[] = [];
   private running = false;

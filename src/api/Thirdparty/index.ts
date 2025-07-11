@@ -328,7 +328,7 @@ export class PnlPlanItem {
 export class Supplier {
   public readonly activity_nomenclature: string;
   public readonly address: string;
-  public readonly admin_city_code: null;
+  public readonly admin_city_code: null | string;
   public readonly city: string;
   public readonly company_id: number;
   public readonly "country_alpha2": string;
@@ -374,7 +374,15 @@ export class Supplier {
     }
     checkString(d.activity_nomenclature, field + ".activity_nomenclature");
     checkString(d.address, field + ".address");
-    checkNull(d.admin_city_code, field + ".admin_city_code");
+    // This will be refactored in the next release.
+    try {
+      checkNull(d.admin_city_code, field + ".admin_city_code", "null | string");
+    } catch (e) {
+      try {
+        checkString(d.admin_city_code, field + ".admin_city_code", "null | string");
+      } catch (e) {
+      }
+    }
     checkString(d.city, field + ".city");
     checkNumber(d.company_id, field + ".company_id");
     checkString(d["country_alpha2"], field + ".country_alpha2");
@@ -559,6 +567,7 @@ export class PlanItem1 {
 }
 
 export class TagsEntityOrTag {
+  public readonly color?: string;
   public readonly group: Group;
   public readonly group_id: number;
   public readonly id: number;
@@ -578,16 +587,20 @@ export class TagsEntityOrTag {
     } else if (Array.isArray(d)) {
       throwIsArray(field, d);
     }
+    if ("color" in d) {
+      checkString(d.color, field + ".color");
+    }
     d.group = Group.Create(d.group, field + ".group");
     checkNumber(d.group_id, field + ".group_id");
     checkNumber(d.id, field + ".id");
     checkString(d.label, field + ".label");
-    const knownProperties = ["group","group_id","id","label"];
+    const knownProperties = ["color","group","group_id","id","label"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
     if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new TagsEntityOrTag(d);
   }
   private constructor(d: any) {
+    if ("color" in d) this.color = d.color;
     this.group = d.group;
     this.group_id = d.group_id;
     this.id = d.id;
@@ -661,6 +674,7 @@ export class ThirdpartiesTagsEntity {
 }
 
 export class TagsEntityOrTag1 {
+  public readonly color?: string;
   public readonly group: Group;
   public readonly group_id: number;
   public readonly id: number;
@@ -680,16 +694,20 @@ export class TagsEntityOrTag1 {
     } else if (Array.isArray(d)) {
       throwIsArray(field, d);
     }
+    if ("color" in d) {
+      checkString(d.color, field + ".color");
+    }
     d.group = Group.Create(d.group, field + ".group");
     checkNumber(d.group_id, field + ".group_id");
     checkNumber(d.id, field + ".id");
     checkString(d.label, field + ".label");
-    const knownProperties = ["group","group_id","id","label"];
+    const knownProperties = ["color","group","group_id","id","label"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
     if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new TagsEntityOrTag1(d);
   }
   private constructor(d: any) {
+    if ("color" in d) this.color = d.color;
     this.group = d.group;
     this.group_id = d.group_id;
     this.id = d.id;

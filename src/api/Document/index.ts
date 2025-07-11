@@ -2212,7 +2212,7 @@ export class EstablishmentCommentOrClientCommentsEntity {
 }
 
 export class InvoiceLinesEntity {
-  public readonly advance_id: null;
+  public readonly advance_id: null | number;
   public readonly amount: string;
   public readonly asset_id: number | null;
   public readonly company_id: number;
@@ -2259,7 +2259,15 @@ export class InvoiceLinesEntity {
     } else if (Array.isArray(d)) {
       throwIsArray(field, d);
     }
-    checkNull(d.advance_id, field + ".advance_id");
+    // This will be refactored in the next release.
+    try {
+      checkNull(d.advance_id, field + ".advance_id", "null | number");
+    } catch (e) {
+      try {
+        checkNumber(d.advance_id, field + ".advance_id", "null | number");
+      } catch (e) {
+      }
+    }
     checkString(d.amount, field + ".amount");
     // This will be refactored in the next release.
     try {
@@ -2828,7 +2836,7 @@ export class Thirdparty {
   public readonly activity_nomenclature: string;
   public readonly address: string;
   public readonly address_additional_info: string;
-  public readonly admin_city_code: null;
+  public readonly admin_city_code: null | string;
   public readonly balance: null;
   public readonly billing_bank: null;
   public readonly billing_bic: null;
@@ -2919,7 +2927,15 @@ export class Thirdparty {
     checkString(d.activity_nomenclature, field + ".activity_nomenclature");
     checkString(d.address, field + ".address");
     checkString(d.address_additional_info, field + ".address_additional_info");
-    checkNull(d.admin_city_code, field + ".admin_city_code");
+    // This will be refactored in the next release.
+    try {
+      checkNull(d.admin_city_code, field + ".admin_city_code", "null | string");
+    } catch (e) {
+      try {
+        checkString(d.admin_city_code, field + ".admin_city_code", "null | string");
+      } catch (e) {
+      }
+    }
     checkNull(d.balance, field + ".balance");
     checkNull(d.billing_bank, field + ".billing_bank");
     checkNull(d.billing_bic, field + ".billing_bic");

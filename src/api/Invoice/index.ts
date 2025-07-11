@@ -405,6 +405,7 @@ export class DocumentTagsEntity {
 
 export class Tag {
   public readonly analytical_code: null;
+  public readonly color?: null | string;
   public readonly group: Group;
   public readonly group_id: number;
   public readonly icon: null;
@@ -427,19 +428,31 @@ export class Tag {
       throwIsArray(field, d);
     }
     checkNull(d.analytical_code, field + ".analytical_code");
+    if ("color" in d) {
+      // This will be refactored in the next release.
+      try {
+        checkNull(d.color, field + ".color", "null | string");
+      } catch (e) {
+        try {
+          checkString(d.color, field + ".color", "null | string");
+        } catch (e) {
+        }
+      }
+    }
     d.group = Group.Create(d.group, field + ".group");
     checkNumber(d.group_id, field + ".group_id");
     checkNull(d.icon, field + ".icon");
     checkNumber(d.id, field + ".id");
     checkString(d.label, field + ".label");
     checkNull(d.variant, field + ".variant");
-    const knownProperties = ["analytical_code","group","group_id","icon","id","label","variant"];
+    const knownProperties = ["analytical_code","color","group","group_id","icon","id","label","variant"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
     if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new Tag(d);
   }
   private constructor(d: any) {
     this.analytical_code = d.analytical_code;
+    if ("color" in d) this.color = d.color;
     this.group = d.group;
     this.group_id = d.group_id;
     this.icon = d.icon;
@@ -709,81 +722,81 @@ export class PnlPlanItemOrCurrentAccountPlanItem1 {
 }
 
 export class Thirdparty {
-  public readonly activity_code: string;
-  public readonly activity_nomenclature: string;
-  public readonly address: string;
-  public readonly address_additional_info: string;
-  public readonly admin_city_code: null;
-  public readonly balance: null;
-  public readonly billing_bank: null;
-  public readonly billing_bic: null;
-  public readonly billing_footer_invoice_id: null;
-  public readonly billing_footer_invoice_label: null;
-  public readonly billing_iban: null;
-  public readonly billing_language: string;
-  public readonly city: string;
-  public readonly company_id: number;
-  public readonly complete: boolean;
-  public readonly country: string | null;
+  public readonly activity_code?: string;
+  public readonly activity_nomenclature?: string;
+  public readonly address?: string;
+  public readonly address_additional_info?: string;
+  public readonly admin_city_code?: null;
+  public readonly balance?: null;
+  public readonly billing_bank?: null;
+  public readonly billing_bic?: null;
+  public readonly billing_footer_invoice_id?: null;
+  public readonly billing_footer_invoice_label?: null;
+  public readonly billing_iban?: null;
+  public readonly billing_language?: string;
+  public readonly city?: string;
+  public readonly company_id?: number;
+  public readonly complete?: boolean;
+  public readonly country?: string | null;
   public readonly "country_alpha2": string;
-  public readonly credits: null;
-  public readonly current_mandate: null;
-  public readonly customer_type: string;
-  public readonly debits: null;
-  public readonly delivery_address: string;
-  public readonly delivery_address_additional_info: string;
-  public readonly delivery_city: string;
-  public readonly delivery_country: null;
-  public readonly "delivery_country_alpha2": string;
-  public readonly delivery_postal_code: string;
-  public readonly disable_pending_vat: boolean;
-  public readonly display_name: null;
-  public readonly emails: never[];
-  public readonly establishment_no: null | string;
-  public readonly estimate_count: null;
-  public readonly first_name: string;
-  public readonly force_pending_vat: boolean;
-  public readonly gender: null;
-  public readonly gocardless_id: null;
-  public readonly iban: string;
+  public readonly credits?: null;
+  public readonly current_mandate?: null;
+  public readonly customer_type?: string;
+  public readonly debits?: null;
+  public readonly delivery_address?: string;
+  public readonly delivery_address_additional_info?: string;
+  public readonly delivery_city?: string;
+  public readonly delivery_country?: null;
+  public readonly "delivery_country_alpha2"?: string;
+  public readonly delivery_postal_code?: string;
+  public readonly disable_pending_vat?: boolean;
+  public readonly display_name?: null;
+  public readonly emails?: never[];
+  public readonly establishment_no?: null | string;
+  public readonly estimate_count?: null;
+  public readonly first_name?: string;
+  public readonly force_pending_vat?: boolean;
+  public readonly gender?: null;
+  public readonly gocardless_id?: null;
+  public readonly iban?: string;
   public readonly id: number;
-  public readonly invoice_count: null;
-  public readonly invoice_dump_id: null;
-  public readonly invoices_auto_generated: boolean;
-  public readonly invoices_auto_validated: boolean;
-  public readonly known_supplier_id: null | number;
-  public readonly last_name: string;
-  public readonly ledger_events_count: null;
-  public readonly legal_form_code: string;
-  public readonly method: string;
+  public readonly invoice_count?: null;
+  public readonly invoice_dump_id?: null;
+  public readonly invoices_auto_generated?: boolean;
+  public readonly invoices_auto_validated?: boolean;
+  public readonly known_supplier_id?: null | number;
+  public readonly last_name?: string;
+  public readonly ledger_events_count?: null;
+  public readonly legal_form_code?: string;
+  public readonly method?: string;
   public readonly name: string;
-  public readonly notes: string;
-  public readonly notes_comment: null;
-  public readonly payment_conditions: string;
-  public readonly phone: string;
-  public readonly plan_item: PlanItemOrPnlPlanItem;
-  public readonly plan_item_attributes: null;
-  public readonly plan_item_id: number;
-  public readonly pnl_plan_item: PlanItemOrPnlPlanItem1 | null;
+  public readonly notes?: string;
+  public readonly notes_comment?: null;
+  public readonly payment_conditions?: string;
+  public readonly phone?: string;
+  public readonly plan_item?: PlanItemOrPnlPlanItem;
+  public readonly plan_item_attributes?: null;
+  public readonly plan_item_id?: number;
+  public readonly pnl_plan_item: PlanItemOrPnlPlanItemOrCurrentAccountPlanItem | null;
   public readonly pnl_plan_item_id: number | null;
-  public readonly postal_code: string;
-  public readonly purchase_request_count: null;
-  public readonly received_a_mandate_request: boolean;
-  public readonly recipient: string;
-  public readonly recurrent: boolean;
-  public readonly reference: string;
-  public readonly reg_no: string;
-  public readonly role: string;
-  public readonly rule_enabled: boolean;
-  public readonly search_terms: string[];
-  public readonly source_id: string;
-  public readonly stripe_id: null;
-  public readonly supplier_payment_method: null;
-  public readonly supplier_payment_method_last_updated_at: null | string;
-  public readonly tags: never[];
-  public readonly turnover: null;
-  public readonly url: string;
-  public readonly vat_number: string;
+  public readonly postal_code?: string;
+  public readonly purchase_request_count?: null;
+  public readonly received_a_mandate_request?: boolean;
+  public readonly recipient?: string;
+  public readonly recurrent?: boolean;
+  public readonly reference?: string;
+  public readonly reg_no?: string;
+  public readonly role?: string;
+  public readonly rule_enabled?: boolean;
+  public readonly search_terms?: string[];
+  public readonly source_id?: string;
+  public readonly stripe_id?: null;
+  public readonly supplier_payment_method?: null;
+  public readonly supplier_payment_method_last_updated_at?: null | string;
+  public readonly tags?: never[];
+  public readonly turnover?: null;
+  public readonly url?: string;
+  public readonly vat_number?: string;
   public readonly vat_rate: string | null;
   public static Parse(d: string): Thirdparty {
     return Thirdparty.Create(JSON.parse(d));
@@ -800,96 +813,200 @@ export class Thirdparty {
     } else if (Array.isArray(d)) {
       throwIsArray(field, d);
     }
-    checkString(d.activity_code, field + ".activity_code");
-    checkString(d.activity_nomenclature, field + ".activity_nomenclature");
-    checkString(d.address, field + ".address");
-    checkString(d.address_additional_info, field + ".address_additional_info");
-    checkNull(d.admin_city_code, field + ".admin_city_code");
-    checkNull(d.balance, field + ".balance");
-    checkNull(d.billing_bank, field + ".billing_bank");
-    checkNull(d.billing_bic, field + ".billing_bic");
-    checkNull(d.billing_footer_invoice_id, field + ".billing_footer_invoice_id");
-    checkNull(d.billing_footer_invoice_label, field + ".billing_footer_invoice_label");
-    checkNull(d.billing_iban, field + ".billing_iban");
-    checkString(d.billing_language, field + ".billing_language");
-    checkString(d.city, field + ".city");
-    checkNumber(d.company_id, field + ".company_id");
-    checkBoolean(d.complete, field + ".complete");
-    // This will be refactored in the next release.
-    try {
-      checkString(d.country, field + ".country", "string | null");
-    } catch (e) {
+    if ("activity_code" in d) {
+      checkString(d.activity_code, field + ".activity_code");
+    }
+    if ("activity_nomenclature" in d) {
+      checkString(d.activity_nomenclature, field + ".activity_nomenclature");
+    }
+    if ("address" in d) {
+      checkString(d.address, field + ".address");
+    }
+    if ("address_additional_info" in d) {
+      checkString(d.address_additional_info, field + ".address_additional_info");
+    }
+    if ("admin_city_code" in d) {
+      checkNull(d.admin_city_code, field + ".admin_city_code");
+    }
+    if ("balance" in d) {
+      checkNull(d.balance, field + ".balance");
+    }
+    if ("billing_bank" in d) {
+      checkNull(d.billing_bank, field + ".billing_bank");
+    }
+    if ("billing_bic" in d) {
+      checkNull(d.billing_bic, field + ".billing_bic");
+    }
+    if ("billing_footer_invoice_id" in d) {
+      checkNull(d.billing_footer_invoice_id, field + ".billing_footer_invoice_id");
+    }
+    if ("billing_footer_invoice_label" in d) {
+      checkNull(d.billing_footer_invoice_label, field + ".billing_footer_invoice_label");
+    }
+    if ("billing_iban" in d) {
+      checkNull(d.billing_iban, field + ".billing_iban");
+    }
+    if ("billing_language" in d) {
+      checkString(d.billing_language, field + ".billing_language");
+    }
+    if ("city" in d) {
+      checkString(d.city, field + ".city");
+    }
+    if ("company_id" in d) {
+      checkNumber(d.company_id, field + ".company_id");
+    }
+    if ("complete" in d) {
+      checkBoolean(d.complete, field + ".complete");
+    }
+    if ("country" in d) {
+      // This will be refactored in the next release.
       try {
-        checkNull(d.country, field + ".country", "string | null");
+        checkString(d.country, field + ".country", "string | null");
       } catch (e) {
+        try {
+          checkNull(d.country, field + ".country", "string | null");
+        } catch (e) {
+        }
       }
     }
     checkString(d["country_alpha2"], field + ".country_alpha2");
-    checkNull(d.credits, field + ".credits");
-    checkNull(d.current_mandate, field + ".current_mandate");
-    checkString(d.customer_type, field + ".customer_type");
-    checkNull(d.debits, field + ".debits");
-    checkString(d.delivery_address, field + ".delivery_address");
-    checkString(d.delivery_address_additional_info, field + ".delivery_address_additional_info");
-    checkString(d.delivery_city, field + ".delivery_city");
-    checkNull(d.delivery_country, field + ".delivery_country");
-    checkString(d["delivery_country_alpha2"], field + ".delivery_country_alpha2");
-    checkString(d.delivery_postal_code, field + ".delivery_postal_code");
-    checkBoolean(d.disable_pending_vat, field + ".disable_pending_vat");
-    checkNull(d.display_name, field + ".display_name");
-    checkArray(d.emails, field + ".emails");
-    if (d.emails) {
-      for (let i = 0; i < d.emails.length; i++) {
-        checkNever(d.emails[i], field + ".emails" + "[" + i + "]");
+    if ("credits" in d) {
+      checkNull(d.credits, field + ".credits");
+    }
+    if ("current_mandate" in d) {
+      checkNull(d.current_mandate, field + ".current_mandate");
+    }
+    if ("customer_type" in d) {
+      checkString(d.customer_type, field + ".customer_type");
+    }
+    if ("debits" in d) {
+      checkNull(d.debits, field + ".debits");
+    }
+    if ("delivery_address" in d) {
+      checkString(d.delivery_address, field + ".delivery_address");
+    }
+    if ("delivery_address_additional_info" in d) {
+      checkString(d.delivery_address_additional_info, field + ".delivery_address_additional_info");
+    }
+    if ("delivery_city" in d) {
+      checkString(d.delivery_city, field + ".delivery_city");
+    }
+    if ("delivery_country" in d) {
+      checkNull(d.delivery_country, field + ".delivery_country");
+    }
+    if ("delivery_country_alpha2" in d) {
+      checkString(d["delivery_country_alpha2"], field + ".delivery_country_alpha2");
+    }
+    if ("delivery_postal_code" in d) {
+      checkString(d.delivery_postal_code, field + ".delivery_postal_code");
+    }
+    if ("disable_pending_vat" in d) {
+      checkBoolean(d.disable_pending_vat, field + ".disable_pending_vat");
+    }
+    if ("display_name" in d) {
+      checkNull(d.display_name, field + ".display_name");
+    }
+    if ("emails" in d) {
+      checkArray(d.emails, field + ".emails");
+      if (d.emails) {
+        for (let i = 0; i < d.emails.length; i++) {
+          checkNever(d.emails[i], field + ".emails" + "[" + i + "]");
+        }
       }
     }
-    // This will be refactored in the next release.
-    try {
-      checkNull(d.establishment_no, field + ".establishment_no", "null | string");
-    } catch (e) {
+    if ("establishment_no" in d) {
+      // This will be refactored in the next release.
       try {
-        checkString(d.establishment_no, field + ".establishment_no", "null | string");
+        checkNull(d.establishment_no, field + ".establishment_no", "null | string");
       } catch (e) {
+        try {
+          checkString(d.establishment_no, field + ".establishment_no", "null | string");
+        } catch (e) {
+        }
       }
     }
-    checkNull(d.estimate_count, field + ".estimate_count");
-    checkString(d.first_name, field + ".first_name");
-    checkBoolean(d.force_pending_vat, field + ".force_pending_vat");
-    checkNull(d.gender, field + ".gender");
-    checkNull(d.gocardless_id, field + ".gocardless_id");
-    checkString(d.iban, field + ".iban");
+    if ("estimate_count" in d) {
+      checkNull(d.estimate_count, field + ".estimate_count");
+    }
+    if ("first_name" in d) {
+      checkString(d.first_name, field + ".first_name");
+    }
+    if ("force_pending_vat" in d) {
+      checkBoolean(d.force_pending_vat, field + ".force_pending_vat");
+    }
+    if ("gender" in d) {
+      checkNull(d.gender, field + ".gender");
+    }
+    if ("gocardless_id" in d) {
+      checkNull(d.gocardless_id, field + ".gocardless_id");
+    }
+    if ("iban" in d) {
+      checkString(d.iban, field + ".iban");
+    }
     checkNumber(d.id, field + ".id");
-    checkNull(d.invoice_count, field + ".invoice_count");
-    checkNull(d.invoice_dump_id, field + ".invoice_dump_id");
-    checkBoolean(d.invoices_auto_generated, field + ".invoices_auto_generated");
-    checkBoolean(d.invoices_auto_validated, field + ".invoices_auto_validated");
-    // This will be refactored in the next release.
-    try {
-      checkNull(d.known_supplier_id, field + ".known_supplier_id", "null | number");
-    } catch (e) {
+    if ("invoice_count" in d) {
+      checkNull(d.invoice_count, field + ".invoice_count");
+    }
+    if ("invoice_dump_id" in d) {
+      checkNull(d.invoice_dump_id, field + ".invoice_dump_id");
+    }
+    if ("invoices_auto_generated" in d) {
+      checkBoolean(d.invoices_auto_generated, field + ".invoices_auto_generated");
+    }
+    if ("invoices_auto_validated" in d) {
+      checkBoolean(d.invoices_auto_validated, field + ".invoices_auto_validated");
+    }
+    if ("known_supplier_id" in d) {
+      // This will be refactored in the next release.
       try {
-        checkNumber(d.known_supplier_id, field + ".known_supplier_id", "null | number");
+        checkNull(d.known_supplier_id, field + ".known_supplier_id", "null | number");
       } catch (e) {
+        try {
+          checkNumber(d.known_supplier_id, field + ".known_supplier_id", "null | number");
+        } catch (e) {
+        }
       }
     }
-    checkString(d.last_name, field + ".last_name");
-    checkNull(d.ledger_events_count, field + ".ledger_events_count");
-    checkString(d.legal_form_code, field + ".legal_form_code");
-    checkString(d.method, field + ".method");
+    if ("last_name" in d) {
+      checkString(d.last_name, field + ".last_name");
+    }
+    if ("ledger_events_count" in d) {
+      checkNull(d.ledger_events_count, field + ".ledger_events_count");
+    }
+    if ("legal_form_code" in d) {
+      checkString(d.legal_form_code, field + ".legal_form_code");
+    }
+    if ("method" in d) {
+      checkString(d.method, field + ".method");
+    }
     checkString(d.name, field + ".name");
-    checkString(d.notes, field + ".notes");
-    checkNull(d.notes_comment, field + ".notes_comment");
-    checkString(d.payment_conditions, field + ".payment_conditions");
-    checkString(d.phone, field + ".phone");
-    d.plan_item = PlanItemOrPnlPlanItem.Create(d.plan_item, field + ".plan_item");
-    checkNull(d.plan_item_attributes, field + ".plan_item_attributes");
-    checkNumber(d.plan_item_id, field + ".plan_item_id");
+    if ("notes" in d) {
+      checkString(d.notes, field + ".notes");
+    }
+    if ("notes_comment" in d) {
+      checkNull(d.notes_comment, field + ".notes_comment");
+    }
+    if ("payment_conditions" in d) {
+      checkString(d.payment_conditions, field + ".payment_conditions");
+    }
+    if ("phone" in d) {
+      checkString(d.phone, field + ".phone");
+    }
+    if ("plan_item" in d) {
+      d.plan_item = PlanItemOrPnlPlanItem.Create(d.plan_item, field + ".plan_item");
+    }
+    if ("plan_item_attributes" in d) {
+      checkNull(d.plan_item_attributes, field + ".plan_item_attributes");
+    }
+    if ("plan_item_id" in d) {
+      checkNumber(d.plan_item_id, field + ".plan_item_id");
+    }
     // This will be refactored in the next release.
     try {
-      d.pnl_plan_item = PlanItemOrPnlPlanItem1.Create(d.pnl_plan_item, field + ".pnl_plan_item", "PlanItemOrPnlPlanItem1 | null");
+      d.pnl_plan_item = PlanItemOrPnlPlanItemOrCurrentAccountPlanItem.Create(d.pnl_plan_item, field + ".pnl_plan_item", "PlanItemOrPnlPlanItemOrCurrentAccountPlanItem | null");
     } catch (e) {
       try {
-        checkNull(d.pnl_plan_item, field + ".pnl_plan_item", "PlanItemOrPnlPlanItem1 | null");
+        checkNull(d.pnl_plan_item, field + ".pnl_plan_item", "PlanItemOrPnlPlanItemOrCurrentAccountPlanItem | null");
       } catch (e) {
       }
     }
@@ -902,42 +1019,78 @@ export class Thirdparty {
       } catch (e) {
       }
     }
-    checkString(d.postal_code, field + ".postal_code");
-    checkNull(d.purchase_request_count, field + ".purchase_request_count");
-    checkBoolean(d.received_a_mandate_request, field + ".received_a_mandate_request");
-    checkString(d.recipient, field + ".recipient");
-    checkBoolean(d.recurrent, field + ".recurrent");
-    checkString(d.reference, field + ".reference");
-    checkString(d.reg_no, field + ".reg_no");
-    checkString(d.role, field + ".role");
-    checkBoolean(d.rule_enabled, field + ".rule_enabled");
-    checkArray(d.search_terms, field + ".search_terms");
-    if (d.search_terms) {
-      for (let i = 0; i < d.search_terms.length; i++) {
-        checkString(d.search_terms[i], field + ".search_terms" + "[" + i + "]");
+    if ("postal_code" in d) {
+      checkString(d.postal_code, field + ".postal_code");
+    }
+    if ("purchase_request_count" in d) {
+      checkNull(d.purchase_request_count, field + ".purchase_request_count");
+    }
+    if ("received_a_mandate_request" in d) {
+      checkBoolean(d.received_a_mandate_request, field + ".received_a_mandate_request");
+    }
+    if ("recipient" in d) {
+      checkString(d.recipient, field + ".recipient");
+    }
+    if ("recurrent" in d) {
+      checkBoolean(d.recurrent, field + ".recurrent");
+    }
+    if ("reference" in d) {
+      checkString(d.reference, field + ".reference");
+    }
+    if ("reg_no" in d) {
+      checkString(d.reg_no, field + ".reg_no");
+    }
+    if ("role" in d) {
+      checkString(d.role, field + ".role");
+    }
+    if ("rule_enabled" in d) {
+      checkBoolean(d.rule_enabled, field + ".rule_enabled");
+    }
+    if ("search_terms" in d) {
+      checkArray(d.search_terms, field + ".search_terms");
+      if (d.search_terms) {
+        for (let i = 0; i < d.search_terms.length; i++) {
+          checkString(d.search_terms[i], field + ".search_terms" + "[" + i + "]");
+        }
       }
     }
-    checkString(d.source_id, field + ".source_id");
-    checkNull(d.stripe_id, field + ".stripe_id");
-    checkNull(d.supplier_payment_method, field + ".supplier_payment_method");
-    // This will be refactored in the next release.
-    try {
-      checkNull(d.supplier_payment_method_last_updated_at, field + ".supplier_payment_method_last_updated_at", "null | string");
-    } catch (e) {
+    if ("source_id" in d) {
+      checkString(d.source_id, field + ".source_id");
+    }
+    if ("stripe_id" in d) {
+      checkNull(d.stripe_id, field + ".stripe_id");
+    }
+    if ("supplier_payment_method" in d) {
+      checkNull(d.supplier_payment_method, field + ".supplier_payment_method");
+    }
+    if ("supplier_payment_method_last_updated_at" in d) {
+      // This will be refactored in the next release.
       try {
-        checkString(d.supplier_payment_method_last_updated_at, field + ".supplier_payment_method_last_updated_at", "null | string");
+        checkNull(d.supplier_payment_method_last_updated_at, field + ".supplier_payment_method_last_updated_at", "null | string");
       } catch (e) {
+        try {
+          checkString(d.supplier_payment_method_last_updated_at, field + ".supplier_payment_method_last_updated_at", "null | string");
+        } catch (e) {
+        }
       }
     }
-    checkArray(d.tags, field + ".tags");
-    if (d.tags) {
-      for (let i = 0; i < d.tags.length; i++) {
-        checkNever(d.tags[i], field + ".tags" + "[" + i + "]");
+    if ("tags" in d) {
+      checkArray(d.tags, field + ".tags");
+      if (d.tags) {
+        for (let i = 0; i < d.tags.length; i++) {
+          checkNever(d.tags[i], field + ".tags" + "[" + i + "]");
+        }
       }
     }
-    checkNull(d.turnover, field + ".turnover");
-    checkString(d.url, field + ".url");
-    checkString(d.vat_number, field + ".vat_number");
+    if ("turnover" in d) {
+      checkNull(d.turnover, field + ".turnover");
+    }
+    if ("url" in d) {
+      checkString(d.url, field + ".url");
+    }
+    if ("vat_number" in d) {
+      checkString(d.vat_number, field + ".vat_number");
+    }
     // This will be refactored in the next release.
     try {
       checkString(d.vat_rate, field + ".vat_rate", "string | null");
@@ -953,81 +1106,81 @@ export class Thirdparty {
     return new Thirdparty(d);
   }
   private constructor(d: any) {
-    this.activity_code = d.activity_code;
-    this.activity_nomenclature = d.activity_nomenclature;
-    this.address = d.address;
-    this.address_additional_info = d.address_additional_info;
-    this.admin_city_code = d.admin_city_code;
-    this.balance = d.balance;
-    this.billing_bank = d.billing_bank;
-    this.billing_bic = d.billing_bic;
-    this.billing_footer_invoice_id = d.billing_footer_invoice_id;
-    this.billing_footer_invoice_label = d.billing_footer_invoice_label;
-    this.billing_iban = d.billing_iban;
-    this.billing_language = d.billing_language;
-    this.city = d.city;
-    this.company_id = d.company_id;
-    this.complete = d.complete;
-    this.country = d.country;
+    if ("activity_code" in d) this.activity_code = d.activity_code;
+    if ("activity_nomenclature" in d) this.activity_nomenclature = d.activity_nomenclature;
+    if ("address" in d) this.address = d.address;
+    if ("address_additional_info" in d) this.address_additional_info = d.address_additional_info;
+    if ("admin_city_code" in d) this.admin_city_code = d.admin_city_code;
+    if ("balance" in d) this.balance = d.balance;
+    if ("billing_bank" in d) this.billing_bank = d.billing_bank;
+    if ("billing_bic" in d) this.billing_bic = d.billing_bic;
+    if ("billing_footer_invoice_id" in d) this.billing_footer_invoice_id = d.billing_footer_invoice_id;
+    if ("billing_footer_invoice_label" in d) this.billing_footer_invoice_label = d.billing_footer_invoice_label;
+    if ("billing_iban" in d) this.billing_iban = d.billing_iban;
+    if ("billing_language" in d) this.billing_language = d.billing_language;
+    if ("city" in d) this.city = d.city;
+    if ("company_id" in d) this.company_id = d.company_id;
+    if ("complete" in d) this.complete = d.complete;
+    if ("country" in d) this.country = d.country;
     this["country_alpha2"] = d["country_alpha2"];
-    this.credits = d.credits;
-    this.current_mandate = d.current_mandate;
-    this.customer_type = d.customer_type;
-    this.debits = d.debits;
-    this.delivery_address = d.delivery_address;
-    this.delivery_address_additional_info = d.delivery_address_additional_info;
-    this.delivery_city = d.delivery_city;
-    this.delivery_country = d.delivery_country;
-    this["delivery_country_alpha2"] = d["delivery_country_alpha2"];
-    this.delivery_postal_code = d.delivery_postal_code;
-    this.disable_pending_vat = d.disable_pending_vat;
-    this.display_name = d.display_name;
-    this.emails = d.emails;
-    this.establishment_no = d.establishment_no;
-    this.estimate_count = d.estimate_count;
-    this.first_name = d.first_name;
-    this.force_pending_vat = d.force_pending_vat;
-    this.gender = d.gender;
-    this.gocardless_id = d.gocardless_id;
-    this.iban = d.iban;
+    if ("credits" in d) this.credits = d.credits;
+    if ("current_mandate" in d) this.current_mandate = d.current_mandate;
+    if ("customer_type" in d) this.customer_type = d.customer_type;
+    if ("debits" in d) this.debits = d.debits;
+    if ("delivery_address" in d) this.delivery_address = d.delivery_address;
+    if ("delivery_address_additional_info" in d) this.delivery_address_additional_info = d.delivery_address_additional_info;
+    if ("delivery_city" in d) this.delivery_city = d.delivery_city;
+    if ("delivery_country" in d) this.delivery_country = d.delivery_country;
+    if ("delivery_country_alpha2" in d) this["delivery_country_alpha2"] = d["delivery_country_alpha2"];
+    if ("delivery_postal_code" in d) this.delivery_postal_code = d.delivery_postal_code;
+    if ("disable_pending_vat" in d) this.disable_pending_vat = d.disable_pending_vat;
+    if ("display_name" in d) this.display_name = d.display_name;
+    if ("emails" in d) this.emails = d.emails;
+    if ("establishment_no" in d) this.establishment_no = d.establishment_no;
+    if ("estimate_count" in d) this.estimate_count = d.estimate_count;
+    if ("first_name" in d) this.first_name = d.first_name;
+    if ("force_pending_vat" in d) this.force_pending_vat = d.force_pending_vat;
+    if ("gender" in d) this.gender = d.gender;
+    if ("gocardless_id" in d) this.gocardless_id = d.gocardless_id;
+    if ("iban" in d) this.iban = d.iban;
     this.id = d.id;
-    this.invoice_count = d.invoice_count;
-    this.invoice_dump_id = d.invoice_dump_id;
-    this.invoices_auto_generated = d.invoices_auto_generated;
-    this.invoices_auto_validated = d.invoices_auto_validated;
-    this.known_supplier_id = d.known_supplier_id;
-    this.last_name = d.last_name;
-    this.ledger_events_count = d.ledger_events_count;
-    this.legal_form_code = d.legal_form_code;
-    this.method = d.method;
+    if ("invoice_count" in d) this.invoice_count = d.invoice_count;
+    if ("invoice_dump_id" in d) this.invoice_dump_id = d.invoice_dump_id;
+    if ("invoices_auto_generated" in d) this.invoices_auto_generated = d.invoices_auto_generated;
+    if ("invoices_auto_validated" in d) this.invoices_auto_validated = d.invoices_auto_validated;
+    if ("known_supplier_id" in d) this.known_supplier_id = d.known_supplier_id;
+    if ("last_name" in d) this.last_name = d.last_name;
+    if ("ledger_events_count" in d) this.ledger_events_count = d.ledger_events_count;
+    if ("legal_form_code" in d) this.legal_form_code = d.legal_form_code;
+    if ("method" in d) this.method = d.method;
     this.name = d.name;
-    this.notes = d.notes;
-    this.notes_comment = d.notes_comment;
-    this.payment_conditions = d.payment_conditions;
-    this.phone = d.phone;
-    this.plan_item = d.plan_item;
-    this.plan_item_attributes = d.plan_item_attributes;
-    this.plan_item_id = d.plan_item_id;
+    if ("notes" in d) this.notes = d.notes;
+    if ("notes_comment" in d) this.notes_comment = d.notes_comment;
+    if ("payment_conditions" in d) this.payment_conditions = d.payment_conditions;
+    if ("phone" in d) this.phone = d.phone;
+    if ("plan_item" in d) this.plan_item = d.plan_item;
+    if ("plan_item_attributes" in d) this.plan_item_attributes = d.plan_item_attributes;
+    if ("plan_item_id" in d) this.plan_item_id = d.plan_item_id;
     this.pnl_plan_item = d.pnl_plan_item;
     this.pnl_plan_item_id = d.pnl_plan_item_id;
-    this.postal_code = d.postal_code;
-    this.purchase_request_count = d.purchase_request_count;
-    this.received_a_mandate_request = d.received_a_mandate_request;
-    this.recipient = d.recipient;
-    this.recurrent = d.recurrent;
-    this.reference = d.reference;
-    this.reg_no = d.reg_no;
-    this.role = d.role;
-    this.rule_enabled = d.rule_enabled;
-    this.search_terms = d.search_terms;
-    this.source_id = d.source_id;
-    this.stripe_id = d.stripe_id;
-    this.supplier_payment_method = d.supplier_payment_method;
-    this.supplier_payment_method_last_updated_at = d.supplier_payment_method_last_updated_at;
-    this.tags = d.tags;
-    this.turnover = d.turnover;
-    this.url = d.url;
-    this.vat_number = d.vat_number;
+    if ("postal_code" in d) this.postal_code = d.postal_code;
+    if ("purchase_request_count" in d) this.purchase_request_count = d.purchase_request_count;
+    if ("received_a_mandate_request" in d) this.received_a_mandate_request = d.received_a_mandate_request;
+    if ("recipient" in d) this.recipient = d.recipient;
+    if ("recurrent" in d) this.recurrent = d.recurrent;
+    if ("reference" in d) this.reference = d.reference;
+    if ("reg_no" in d) this.reg_no = d.reg_no;
+    if ("role" in d) this.role = d.role;
+    if ("rule_enabled" in d) this.rule_enabled = d.rule_enabled;
+    if ("search_terms" in d) this.search_terms = d.search_terms;
+    if ("source_id" in d) this.source_id = d.source_id;
+    if ("stripe_id" in d) this.stripe_id = d.stripe_id;
+    if ("supplier_payment_method" in d) this.supplier_payment_method = d.supplier_payment_method;
+    if ("supplier_payment_method_last_updated_at" in d) this.supplier_payment_method_last_updated_at = d.supplier_payment_method_last_updated_at;
+    if ("tags" in d) this.tags = d.tags;
+    if ("turnover" in d) this.turnover = d.turnover;
+    if ("url" in d) this.url = d.url;
+    if ("vat_number" in d) this.vat_number = d.vat_number;
     this.vat_rate = d.vat_rate;
   }
 }
@@ -1084,20 +1237,20 @@ export class PlanItemOrPnlPlanItem {
   }
 }
 
-export class PlanItemOrPnlPlanItem1 {
-  public readonly company_id: number;
-  public readonly "country_alpha2": string;
+export class PlanItemOrPnlPlanItemOrCurrentAccountPlanItem {
+  public readonly company_id?: number;
+  public readonly "country_alpha2"?: string;
   public readonly enabled: boolean;
   public readonly id: number;
-  public readonly internal_identifier: null | string;
+  public readonly internal_identifier?: null | string;
   public readonly label: string;
-  public readonly label_is_editable: boolean;
+  public readonly label_is_editable?: boolean;
   public readonly number: string;
-  public readonly vat_rate: string;
-  public static Parse(d: string): PlanItemOrPnlPlanItem1 {
-    return PlanItemOrPnlPlanItem1.Create(JSON.parse(d));
+  public readonly vat_rate?: string;
+  public static Parse(d: string): PlanItemOrPnlPlanItemOrCurrentAccountPlanItem {
+    return PlanItemOrPnlPlanItemOrCurrentAccountPlanItem.Create(JSON.parse(d));
   }
-  public static Create(d: any, field?: string, multiple ?: string): PlanItemOrPnlPlanItem1 {
+  public static Create(d: any, field?: string, multiple ?: string): PlanItemOrPnlPlanItemOrCurrentAccountPlanItem {
     if (!field) {
       obj = d;
       field = "root";
@@ -1109,38 +1262,48 @@ export class PlanItemOrPnlPlanItem1 {
     } else if (Array.isArray(d)) {
       throwIsArray(field, d);
     }
-    checkNumber(d.company_id, field + ".company_id");
-    checkString(d["country_alpha2"], field + ".country_alpha2");
+    if ("company_id" in d) {
+      checkNumber(d.company_id, field + ".company_id");
+    }
+    if ("country_alpha2" in d) {
+      checkString(d["country_alpha2"], field + ".country_alpha2");
+    }
     checkBoolean(d.enabled, field + ".enabled");
     checkNumber(d.id, field + ".id");
-    // This will be refactored in the next release.
-    try {
-      checkNull(d.internal_identifier, field + ".internal_identifier", "null | string");
-    } catch (e) {
+    if ("internal_identifier" in d) {
+      // This will be refactored in the next release.
       try {
-        checkString(d.internal_identifier, field + ".internal_identifier", "null | string");
+        checkNull(d.internal_identifier, field + ".internal_identifier", "null | string");
       } catch (e) {
+        try {
+          checkString(d.internal_identifier, field + ".internal_identifier", "null | string");
+        } catch (e) {
+        }
       }
     }
     checkString(d.label, field + ".label");
-    checkBoolean(d.label_is_editable, field + ".label_is_editable");
+    if ("label_is_editable" in d) {
+      checkBoolean(d.label_is_editable, field + ".label_is_editable");
+    }
     checkString(d.number, field + ".number");
-    checkString(d.vat_rate, field + ".vat_rate");
+    if ("vat_rate" in d) {
+      checkString(d.vat_rate, field + ".vat_rate");
+    }
     const knownProperties = ["company_id","country_alpha2","enabled","id","internal_identifier","label","label_is_editable","number","vat_rate"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
     if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
-    return new PlanItemOrPnlPlanItem1(d);
+    return new PlanItemOrPnlPlanItemOrCurrentAccountPlanItem(d);
   }
   private constructor(d: any) {
-    this.company_id = d.company_id;
-    this["country_alpha2"] = d["country_alpha2"];
+    if ("company_id" in d) this.company_id = d.company_id;
+    if ("country_alpha2" in d) this["country_alpha2"] = d["country_alpha2"];
     this.enabled = d.enabled;
     this.id = d.id;
-    this.internal_identifier = d.internal_identifier;
+    if ("internal_identifier" in d) this.internal_identifier = d.internal_identifier;
     this.label = d.label;
-    this.label_is_editable = d.label_is_editable;
+    if ("label_is_editable" in d) this.label_is_editable = d.label_is_editable;
     this.number = d.number;
-    this.vat_rate = d.vat_rate;
+    if ("vat_rate" in d) this.vat_rate = d.vat_rate;
   }
 }
 

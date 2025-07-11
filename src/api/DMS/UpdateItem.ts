@@ -14,7 +14,7 @@ export class APIDMSUpdateItem {
   public readonly itemable_id: number;
   public readonly method: string;
   public readonly name: string;
-  public readonly parent_id: number;
+  public readonly parent_id: number | null;
   public readonly pusher_channel: string;
   public readonly readonly: boolean;
   public readonly reference_link: null;
@@ -49,7 +49,15 @@ export class APIDMSUpdateItem {
     checkNumber(d.itemable_id, field + ".itemable_id");
     checkString(d.method, field + ".method");
     checkString(d.name, field + ".name");
-    checkNumber(d.parent_id, field + ".parent_id");
+    // This will be refactored in the next release.
+    try {
+      checkNumber(d.parent_id, field + ".parent_id", "number | null");
+    } catch (e) {
+      try {
+        checkNull(d.parent_id, field + ".parent_id", "number | null");
+      } catch (e) {
+      }
+    }
     checkString(d.pusher_channel, field + ".pusher_channel");
     checkBoolean(d.readonly, field + ".readonly");
     checkNull(d.reference_link, field + ".reference_link");

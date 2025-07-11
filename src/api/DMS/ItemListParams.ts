@@ -3,7 +3,9 @@ const proxyName = 'APIDMSItemListParams';
 let obj: any = null;
 export class APIDMSItemListParams {
   public readonly filter?: FilterEntity[] | string;
+  public readonly page?: number;
   public readonly page_name?: string;
+  public readonly sort?: string;
   public static Parse(d: string): APIDMSItemListParams {
     return APIDMSItemListParams.Create(JSON.parse(d));
   }
@@ -35,17 +37,25 @@ export class APIDMSItemListParams {
         }
       }
     }
+    if ("page" in d) {
+      checkNumber(d.page, field + ".page");
+    }
     if ("page_name" in d) {
       checkString(d.page_name, field + ".page_name");
     }
-    const knownProperties = ["filter","page_name"];
+    if ("sort" in d) {
+      checkString(d.sort, field + ".sort");
+    }
+    const knownProperties = ["filter","page","page_name","sort"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
     if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new APIDMSItemListParams(d);
   }
   private constructor(d: any) {
     if ("filter" in d) this.filter = d.filter;
+    if ("page" in d) this.page = d.page;
     if ("page_name" in d) this.page_name = d.page_name;
+    if ("sort" in d) this.sort = d.sort;
   }
 }
 
@@ -94,6 +104,9 @@ function throwIsArray(field: string, value: any, multiple?: string): void {
 }
 function checkArray(value: any, field: string, multiple?: string): void {
   if (!Array.isArray(value)) errorHelper(field, value, multiple ?? "array");
+}
+function checkNumber(value: any, field: string, multiple?: string): void {
+  if (typeof(value) !== 'number') errorHelper(field, value, multiple ?? "number");
 }
 function checkString(value: any, field: string, multiple?: string): void {
   if (typeof(value) !== 'string') errorHelper(field, value, multiple ?? "string");

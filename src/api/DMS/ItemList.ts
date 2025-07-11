@@ -2,7 +2,7 @@
 const proxyName = 'APIDMSItemList';
 let obj: any = null;
 export class APIDMSItemList {
-  public readonly filters: string;
+  public readonly filters: string | null;
   public readonly items: ItemsEntity[];
   public readonly pagination: Pagination;
   public readonly sort: string;
@@ -21,7 +21,15 @@ export class APIDMSItemList {
     } else if (Array.isArray(d)) {
       throwIsArray(field, d);
     }
-    checkString(d.filters, field + ".filters");
+    // This will be refactored in the next release.
+    try {
+      checkString(d.filters, field + ".filters", "string | null");
+    } catch (e) {
+      try {
+        checkNull(d.filters, field + ".filters", "string | null");
+      } catch (e) {
+      }
+    }
     checkArray(d.items, field + ".items");
     if (d.items) {
       for (let i = 0; i < d.items.length; i++) {
@@ -44,27 +52,29 @@ export class APIDMSItemList {
 }
 
 export class ItemsEntity {
-  public readonly archived_at: null;
-  public readonly comments_count: number;
+  public readonly archived_at: null | string;
+  public readonly comments_count?: number;
   public readonly created_at: string;
-  public readonly creator: Creator;
-  public readonly favorite: boolean;
-  public readonly file_extension: string;
-  public readonly file_size: number;
-  public readonly file_url: string;
+  public readonly creator?: Creator;
+  public readonly favorite?: boolean;
+  public readonly file_extension?: string;
+  public readonly file_size?: number;
+  public readonly file_url?: string;
+  public readonly fixed?: boolean;
   public readonly id: number;
   public readonly imports_allowed: boolean;
   public readonly itemable_id: number;
   public readonly method: string;
   public readonly name: string;
-  public readonly parent_id: number;
-  public readonly pusher_channel: string;
-  public readonly readonly: boolean;
-  public readonly reference_link: null;
+  public readonly parent_id: number | null;
+  public readonly pusher_channel?: string;
+  public readonly readonly?: boolean;
+  public readonly reference_link?: null;
   public readonly shared: boolean;
-  public readonly signed_id: string;
+  public readonly signed_id?: string;
   public readonly type: string;
   public readonly updated_at: string;
+  public readonly visible?: boolean;
   public static Parse(d: string): ItemsEntity {
     return ItemsEntity.Create(JSON.parse(d));
   }
@@ -80,54 +90,98 @@ export class ItemsEntity {
     } else if (Array.isArray(d)) {
       throwIsArray(field, d);
     }
-    checkNull(d.archived_at, field + ".archived_at");
-    checkNumber(d.comments_count, field + ".comments_count");
+    // This will be refactored in the next release.
+    try {
+      checkNull(d.archived_at, field + ".archived_at", "null | string");
+    } catch (e) {
+      try {
+        checkString(d.archived_at, field + ".archived_at", "null | string");
+      } catch (e) {
+      }
+    }
+    if ("comments_count" in d) {
+      checkNumber(d.comments_count, field + ".comments_count");
+    }
     checkString(d.created_at, field + ".created_at");
-    d.creator = Creator.Create(d.creator, field + ".creator");
-    checkBoolean(d.favorite, field + ".favorite");
-    checkString(d.file_extension, field + ".file_extension");
-    checkNumber(d.file_size, field + ".file_size");
-    checkString(d.file_url, field + ".file_url");
+    if ("creator" in d) {
+      d.creator = Creator.Create(d.creator, field + ".creator");
+    }
+    if ("favorite" in d) {
+      checkBoolean(d.favorite, field + ".favorite");
+    }
+    if ("file_extension" in d) {
+      checkString(d.file_extension, field + ".file_extension");
+    }
+    if ("file_size" in d) {
+      checkNumber(d.file_size, field + ".file_size");
+    }
+    if ("file_url" in d) {
+      checkString(d.file_url, field + ".file_url");
+    }
+    if ("fixed" in d) {
+      checkBoolean(d.fixed, field + ".fixed");
+    }
     checkNumber(d.id, field + ".id");
     checkBoolean(d.imports_allowed, field + ".imports_allowed");
     checkNumber(d.itemable_id, field + ".itemable_id");
     checkString(d.method, field + ".method");
     checkString(d.name, field + ".name");
-    checkNumber(d.parent_id, field + ".parent_id");
-    checkString(d.pusher_channel, field + ".pusher_channel");
-    checkBoolean(d.readonly, field + ".readonly");
-    checkNull(d.reference_link, field + ".reference_link");
+    // This will be refactored in the next release.
+    try {
+      checkNumber(d.parent_id, field + ".parent_id", "number | null");
+    } catch (e) {
+      try {
+        checkNull(d.parent_id, field + ".parent_id", "number | null");
+      } catch (e) {
+      }
+    }
+    if ("pusher_channel" in d) {
+      checkString(d.pusher_channel, field + ".pusher_channel");
+    }
+    if ("readonly" in d) {
+      checkBoolean(d.readonly, field + ".readonly");
+    }
+    if ("reference_link" in d) {
+      checkNull(d.reference_link, field + ".reference_link");
+    }
     checkBoolean(d.shared, field + ".shared");
-    checkString(d.signed_id, field + ".signed_id");
+    if ("signed_id" in d) {
+      checkString(d.signed_id, field + ".signed_id");
+    }
     checkString(d.type, field + ".type");
     checkString(d.updated_at, field + ".updated_at");
-    const knownProperties = ["archived_at","comments_count","created_at","creator","favorite","file_extension","file_size","file_url","id","imports_allowed","itemable_id","method","name","parent_id","pusher_channel","readonly","reference_link","shared","signed_id","type","updated_at"];
+    if ("visible" in d) {
+      checkBoolean(d.visible, field + ".visible");
+    }
+    const knownProperties = ["archived_at","comments_count","created_at","creator","favorite","file_extension","file_size","file_url","fixed","id","imports_allowed","itemable_id","method","name","parent_id","pusher_channel","readonly","reference_link","shared","signed_id","type","updated_at","visible"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
     if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new ItemsEntity(d);
   }
   private constructor(d: any) {
     this.archived_at = d.archived_at;
-    this.comments_count = d.comments_count;
+    if ("comments_count" in d) this.comments_count = d.comments_count;
     this.created_at = d.created_at;
-    this.creator = d.creator;
-    this.favorite = d.favorite;
-    this.file_extension = d.file_extension;
-    this.file_size = d.file_size;
-    this.file_url = d.file_url;
+    if ("creator" in d) this.creator = d.creator;
+    if ("favorite" in d) this.favorite = d.favorite;
+    if ("file_extension" in d) this.file_extension = d.file_extension;
+    if ("file_size" in d) this.file_size = d.file_size;
+    if ("file_url" in d) this.file_url = d.file_url;
+    if ("fixed" in d) this.fixed = d.fixed;
     this.id = d.id;
     this.imports_allowed = d.imports_allowed;
     this.itemable_id = d.itemable_id;
     this.method = d.method;
     this.name = d.name;
     this.parent_id = d.parent_id;
-    this.pusher_channel = d.pusher_channel;
-    this.readonly = d.readonly;
-    this.reference_link = d.reference_link;
+    if ("pusher_channel" in d) this.pusher_channel = d.pusher_channel;
+    if ("readonly" in d) this.readonly = d.readonly;
+    if ("reference_link" in d) this.reference_link = d.reference_link;
     this.shared = d.shared;
-    this.signed_id = d.signed_id;
+    if ("signed_id" in d) this.signed_id = d.signed_id;
     this.type = d.type;
     this.updated_at = d.updated_at;
+    if ("visible" in d) this.visible = d.visible;
   }
 }
 

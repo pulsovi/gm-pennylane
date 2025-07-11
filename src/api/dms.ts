@@ -17,6 +17,12 @@ import { GroupedDocument } from './types.js';
 
 const logger = new Logger('API_DMS');
 
+/**
+ * Get DMS items linked to a record (a document)
+ * @param recordId
+ * @param recordType
+ * @returns
+ */
 export async function getDMSLinks(recordId: number, recordType?: string): Promise<APIDMSLink[]> {
   if (!recordType) recordType = (await getDocument(recordId)).type;
   const response = await apiRequest(`dms/links/data?record_ids[]=${recordId}&record_type=${recordType}`, null, 'GET');
@@ -26,35 +32,77 @@ export async function getDMSLinks(recordId: number, recordType?: string): Promis
   return list.dms_links.map(link => APIDMSLink.Create(link));
 }
 
+/**
+ * Get DMS item
+ * @param id
+ * @returns
+ */
 export async function getDMSItem(id: number): Promise<APIDMSItem> {
   const response = await apiRequest(`dms/items/${id}`, null, 'GET');
   const data = await response?.json();
-  if (!data) return (await getDMSItemSettings(id)).item;
+  if (!data) {
+    logger.error('getDMSItem', { id, response, data });
+    const settings = await getDMSItemSettings(id);
+    if (!settings?.item) return null;
+    return settings.item;
+  }
   return APIDMSItem.Create(data);
 }
 
+/**
+ * Get list of records (documents) linked to a DMS item
+ * @param dmsFileId
+ * @returns
+ */
 export async function getDMSItemLinks(
   /** the DMSItem.itemable_id */
   dmsFileId: number
-): Promise<APIDMSItemLink[] | null> {
+): Promise<APIDMSItemLink[]> {
   const response = await dmsRequest({ url: `dms/files/${dmsFileId}/links` });
   const data = await response?.json();
-  if (!data) return data;
+  if (!data) return [];
   if (!Array.isArray(data)) {
     logger.error('réponse inattendue pour getDMSItemLinks', { response, data });
-    return null;
+    return [];
   }
   const links = data.map(item => APIDMSItemLink.Create(item));
   return links;
 }
 
+/**
+ * Get DMS item settings
+ * @param id
+ * @returns
+ */
 export async function getDMSItemSettings(id: number): Promise<APIDMSItemSettings> {
   const response = await apiRequest(`dms/items/settings.json?filter=&item_id=${id}`, null, 'GET');
   const data = await response?.json();
-  if (!data) return data;
+  if (!data) {
+    logger.error('getDMSItemSettings', { id, response, data });
+    return data;
+  }
   return APIDMSItemSettings.Create(data);
 }
 
+/**
+ * Generate all result one by one as generator
+ */
+export async function* getDMSItemGenerator(
+  params: APIDMSItemListParams = {}
+): AsyncGenerator<APIDMSItem> {
+  let page = Number(params.page ?? 1);
+  if (!Number.isSafeInteger(page)) {
+    console.log('getDMSItemGenerator', { params, page });
+    throw new Error('params.page, if provided, MUST be a safe integer');
+  }
+  do {
+    const data = await getDMSItemList(Object.assign({}, params, { page }));
+    const items = data.items;
+    if (!items?.length) return;
+    for (const item of items) yield item;
+    ++page;
+  } while (true);
+}
 
 /**
  * Load list of DMS from API. paginated.
