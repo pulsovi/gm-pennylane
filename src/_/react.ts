@@ -28,6 +28,17 @@ export function getReactProps (elem?: Element | null, up = 0) {
 }
 
 /**
+ * Find React prop property value. Search for the given property name in the React Props
+ * of the given element and, if not found, in the React props of its ancestors.
+ * @param elem The element to find the React prop for.
+ * @param propName The prop to find.
+ * @returns The React prop value.
+ */
+export function getReactPropValue (elem: Element | null, propName: string) {
+  return getReactProps(elem, findReactProp(elem, propName))?.[propName];
+}
+
+/**
  * Find the React component that rendered the given element.
  * @param elem The element to find the React component for.
  * @param up The number of levels up the component tree to traverse.
@@ -38,7 +49,7 @@ export function getReactComponent (elem?: Element | null, up = 0) {
 }
 
 /**
- * Find the level of the component tree which have given props by name and returns the prop value.
+ * Find the level of the component tree which have given props by name and return the level.
  * @param elem The element to find the React props for.
  * @param propName The prop to find.
  * @returns The level of the component tree which have given props by name.
