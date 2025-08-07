@@ -6,7 +6,7 @@ export class APIDMSItem {
   public readonly children?: ChildrenEntity[];
   public readonly comments_count?: number;
   public readonly created_at: string;
-  public readonly creator: Creator | null;
+  public readonly creator?: Creator | null;
   public readonly favorite?: boolean;
   public readonly file_extension?: string;
   public readonly file_size?: number;
@@ -64,13 +64,15 @@ export class APIDMSItem {
       checkNumber(d.comments_count, field + ".comments_count");
     }
     checkString(d.created_at, field + ".created_at");
-    // This will be refactored in the next release.
-    try {
-      d.creator = Creator.Create(d.creator, field + ".creator", "Creator | null");
-    } catch (e) {
+    if ("creator" in d) {
+      // This will be refactored in the next release.
       try {
-        checkNull(d.creator, field + ".creator", "Creator | null");
+        d.creator = Creator.Create(d.creator, field + ".creator", "Creator | null");
       } catch (e) {
+        try {
+          checkNull(d.creator, field + ".creator", "Creator | null");
+        } catch (e) {
+        }
       }
     }
     if ("favorite" in d) {
@@ -136,7 +138,7 @@ export class APIDMSItem {
     if ("children" in d) this.children = d.children;
     if ("comments_count" in d) this.comments_count = d.comments_count;
     this.created_at = d.created_at;
-    this.creator = d.creator;
+    if ("creator" in d) this.creator = d.creator;
     if ("favorite" in d) this.favorite = d.favorite;
     if ("file_extension" in d) this.file_extension = d.file_extension;
     if ("file_size" in d) this.file_size = d.file_size;
@@ -183,6 +185,7 @@ export class ChildrenEntity {
   public readonly reference_link?: null;
   public readonly shared: boolean;
   public readonly signed_id?: string;
+  public readonly suggested_folders?: never[];
   public readonly type: string;
   public readonly updated_at: string;
   public readonly visible?: boolean;
@@ -254,12 +257,20 @@ export class ChildrenEntity {
     if ("signed_id" in d) {
       checkString(d.signed_id, field + ".signed_id");
     }
+    if ("suggested_folders" in d) {
+      checkArray(d.suggested_folders, field + ".suggested_folders");
+      if (d.suggested_folders) {
+        for (let i = 0; i < d.suggested_folders.length; i++) {
+          checkNever(d.suggested_folders[i], field + ".suggested_folders" + "[" + i + "]");
+        }
+      }
+    }
     checkString(d.type, field + ".type");
     checkString(d.updated_at, field + ".updated_at");
     if ("visible" in d) {
       checkBoolean(d.visible, field + ".visible");
     }
-    const knownProperties = ["archived_at","comments_count","created_at","creator","favorite","file_extension","file_size","file_url","files_count","fixed","id","imports_allowed","itemable_id","method","name","parent_id","pusher_channel","readonly","reference_link","shared","signed_id","type","updated_at","visible"];
+    const knownProperties = ["archived_at","comments_count","created_at","creator","favorite","file_extension","file_size","file_url","files_count","fixed","id","imports_allowed","itemable_id","method","name","parent_id","pusher_channel","readonly","reference_link","shared","signed_id","suggested_folders","type","updated_at","visible"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
     if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new ChildrenEntity(d);
@@ -286,6 +297,7 @@ export class ChildrenEntity {
     if ("reference_link" in d) this.reference_link = d.reference_link;
     this.shared = d.shared;
     if ("signed_id" in d) this.signed_id = d.signed_id;
+    if ("suggested_folders" in d) this.suggested_folders = d.suggested_folders;
     this.type = d.type;
     this.updated_at = d.updated_at;
     if ("visible" in d) this.visible = d.visible;
@@ -396,6 +408,9 @@ function checkString(value: any, field: string, multiple?: string): void {
 function checkNull(value: any, field: string, multiple?: string): void {
   if (value !== null) errorHelper(field, value, multiple ?? "null");
 }
+function checkNever(value: any, field: string, multiple?: string): void {
+  return errorHelper(field, value, multiple ?? "never");
+}
 function errorHelper(field: string, d: any, type: string): void {
   if (type.includes(' | ')) {
     throw new TypeError('Expected ' + type + " at " + field + " but found:\n" + JSON.stringify(d) + "\n\nFull object:\n" + JSON.stringify(obj));
@@ -406,6 +421,6 @@ function errorHelper(field: string, d: any, type: string): void {
     } catch(error) {
       console.log(error);
     }
-    console.log('Expected ' + type + " at " + field + " but found:\n" + JSON.stringify(d), jsonClone);
+    console.error('Expected "' + type + '" at ' + field + ' but found:\n' + JSON.stringify(d), jsonClone);
   }
 }

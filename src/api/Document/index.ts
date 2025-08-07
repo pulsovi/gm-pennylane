@@ -4,7 +4,7 @@ let obj: any = null;
 export class APIDocument {
   public readonly account_id?: number | null;
   public readonly accounting_type: boolean;
-  public readonly amount: string;
+  public readonly amount?: string;
   public readonly archived: boolean;
   public readonly archived_at: null | string;
   public readonly attachment_lost: boolean;
@@ -18,8 +18,8 @@ export class APIDocument {
   public readonly converted_invoice_urls?: never[];
   public readonly created_at: string;
   public readonly credit_notes_amount?: string;
-  public readonly currency: string;
-  public readonly currency_amount: string;
+  public readonly currency?: string;
+  public readonly currency_amount?: string;
   public readonly currency_amount_before_tax?: string;
   public readonly currency_price_before_tax?: string;
   public readonly currency_tax?: string;
@@ -61,7 +61,7 @@ export class APIDocument {
   public readonly multiplier?: number;
   public readonly not_duplicate?: boolean;
   public readonly ocr_thirdparty_id?: null | number;
-  public readonly outstanding_balance: string;
+  public readonly outstanding_balance?: string;
   public readonly paid?: boolean;
   public readonly payment_id?: null;
   public readonly payment_method?: null;
@@ -92,7 +92,7 @@ export class APIDocument {
   public readonly special_mention?: null;
   public readonly status?: string | null;
   public readonly tax?: string;
-  public readonly thirdparty_id: null | number;
+  public readonly thirdparty_id?: null | number;
   public readonly type: string;
   public readonly updated_at: string;
   public readonly url: string;
@@ -124,7 +124,9 @@ export class APIDocument {
       }
     }
     checkBoolean(d.accounting_type, field + ".accounting_type");
-    checkString(d.amount, field + ".amount");
+    if ("amount" in d) {
+      checkString(d.amount, field + ".amount");
+    }
     checkBoolean(d.archived, field + ".archived");
     // This will be refactored in the next release.
     try {
@@ -187,8 +189,12 @@ export class APIDocument {
     if ("credit_notes_amount" in d) {
       checkString(d.credit_notes_amount, field + ".credit_notes_amount");
     }
-    checkString(d.currency, field + ".currency");
-    checkString(d.currency_amount, field + ".currency_amount");
+    if ("currency" in d) {
+      checkString(d.currency, field + ".currency");
+    }
+    if ("currency_amount" in d) {
+      checkString(d.currency_amount, field + ".currency_amount");
+    }
     if ("currency_amount_before_tax" in d) {
       checkString(d.currency_amount_before_tax, field + ".currency_amount_before_tax");
     }
@@ -361,7 +367,9 @@ export class APIDocument {
         }
       }
     }
-    checkString(d.outstanding_balance, field + ".outstanding_balance");
+    if ("outstanding_balance" in d) {
+      checkString(d.outstanding_balance, field + ".outstanding_balance");
+    }
     if ("paid" in d) {
       checkBoolean(d.paid, field + ".paid");
     }
@@ -470,13 +478,15 @@ export class APIDocument {
     if ("tax" in d) {
       checkString(d.tax, field + ".tax");
     }
-    // This will be refactored in the next release.
-    try {
-      checkNull(d.thirdparty_id, field + ".thirdparty_id", "null | number");
-    } catch (e) {
+    if ("thirdparty_id" in d) {
+      // This will be refactored in the next release.
       try {
-        checkNumber(d.thirdparty_id, field + ".thirdparty_id", "null | number");
+        checkNull(d.thirdparty_id, field + ".thirdparty_id", "null | number");
       } catch (e) {
+        try {
+          checkNumber(d.thirdparty_id, field + ".thirdparty_id", "null | number");
+        } catch (e) {
+        }
       }
     }
     checkString(d.type, field + ".type");
@@ -493,7 +503,7 @@ export class APIDocument {
   private constructor(d: any) {
     if ("account_id" in d) this.account_id = d.account_id;
     this.accounting_type = d.accounting_type;
-    this.amount = d.amount;
+    if ("amount" in d) this.amount = d.amount;
     this.archived = d.archived;
     this.archived_at = d.archived_at;
     this.attachment_lost = d.attachment_lost;
@@ -507,8 +517,8 @@ export class APIDocument {
     if ("converted_invoice_urls" in d) this.converted_invoice_urls = d.converted_invoice_urls;
     this.created_at = d.created_at;
     if ("credit_notes_amount" in d) this.credit_notes_amount = d.credit_notes_amount;
-    this.currency = d.currency;
-    this.currency_amount = d.currency_amount;
+    if ("currency" in d) this.currency = d.currency;
+    if ("currency_amount" in d) this.currency_amount = d.currency_amount;
     if ("currency_amount_before_tax" in d) this.currency_amount_before_tax = d.currency_amount_before_tax;
     if ("currency_price_before_tax" in d) this.currency_price_before_tax = d.currency_price_before_tax;
     if ("currency_tax" in d) this.currency_tax = d.currency_tax;
@@ -550,7 +560,7 @@ export class APIDocument {
     if ("multiplier" in d) this.multiplier = d.multiplier;
     if ("not_duplicate" in d) this.not_duplicate = d.not_duplicate;
     if ("ocr_thirdparty_id" in d) this.ocr_thirdparty_id = d.ocr_thirdparty_id;
-    this.outstanding_balance = d.outstanding_balance;
+    if ("outstanding_balance" in d) this.outstanding_balance = d.outstanding_balance;
     if ("paid" in d) this.paid = d.paid;
     if ("payment_id" in d) this.payment_id = d.payment_id;
     if ("payment_method" in d) this.payment_method = d.payment_method;
@@ -581,7 +591,7 @@ export class APIDocument {
     if ("special_mention" in d) this.special_mention = d.special_mention;
     if ("status" in d) this.status = d.status;
     if ("tax" in d) this.tax = d.tax;
-    this.thirdparty_id = d.thirdparty_id;
+    if ("thirdparty_id" in d) this.thirdparty_id = d.thirdparty_id;
     this.type = d.type;
     this.updated_at = d.updated_at;
     this.url = d.url;
@@ -622,7 +632,7 @@ export class GroupedDocumentsEntity {
   public readonly account_id?: null | number;
   public readonly accounting_status?: null | string;
   public readonly accounting_type: boolean;
-  public readonly amount: string;
+  public readonly amount?: string;
   public readonly archived: boolean;
   public readonly archived_at: null | string;
   public readonly attachment_label?: string | null;
@@ -633,13 +643,13 @@ export class GroupedDocumentsEntity {
   public readonly client_comments: ClientCommentsEntityOrEstablishmentComment[];
   public readonly company?: null | Company1;
   public readonly company_id: number;
-  public readonly complete: boolean;
-  public readonly completeness: number;
+  public readonly complete?: boolean;
+  public readonly completeness?: number;
   public readonly converted_invoice_urls?: never[];
   public readonly created_at: string;
   public readonly credit_notes_amount?: string | null;
-  public readonly currency: string;
-  public readonly currency_amount: string;
+  public readonly currency?: string;
+  public readonly currency_amount?: string;
   public readonly currency_amount_before_tax?: string | null;
   public readonly currency_price_before_tax?: string | null;
   public readonly currency_tax?: string | null;
@@ -695,7 +705,7 @@ export class GroupedDocumentsEntity {
   public readonly multiplier?: number | null;
   public readonly not_duplicate?: boolean | null;
   public readonly ocr_thirdparty_id?: null | number;
-  public readonly outstanding_balance: string;
+  public readonly outstanding_balance?: string;
   public readonly pages_count?: number | null;
   public readonly paid?: boolean | null;
   public readonly payment_id?: null;
@@ -734,7 +744,7 @@ export class GroupedDocumentsEntity {
   public readonly tagged_at_ledger_events_level?: boolean | null;
   public readonly tax?: string | null;
   public readonly thirdparty?: Thirdparty | null;
-  public readonly thirdparty_id: null | number;
+  public readonly thirdparty_id?: null | number;
   public readonly type: string;
   public readonly updated_at: string;
   public readonly url: string;
@@ -788,7 +798,9 @@ export class GroupedDocumentsEntity {
       }
     }
     checkBoolean(d.accounting_type, field + ".accounting_type");
-    checkString(d.amount, field + ".amount");
+    if ("amount" in d) {
+      checkString(d.amount, field + ".amount");
+    }
     checkBoolean(d.archived, field + ".archived");
     // This will be refactored in the next release.
     try {
@@ -842,8 +854,12 @@ export class GroupedDocumentsEntity {
       }
     }
     checkNumber(d.company_id, field + ".company_id");
-    checkBoolean(d.complete, field + ".complete");
-    checkNumber(d.completeness, field + ".completeness");
+    if ("complete" in d) {
+      checkBoolean(d.complete, field + ".complete");
+    }
+    if ("completeness" in d) {
+      checkNumber(d.completeness, field + ".completeness");
+    }
     if ("converted_invoice_urls" in d) {
       checkArray(d.converted_invoice_urls, field + ".converted_invoice_urls");
       if (d.converted_invoice_urls) {
@@ -864,8 +880,12 @@ export class GroupedDocumentsEntity {
         }
       }
     }
-    checkString(d.currency, field + ".currency");
-    checkString(d.currency_amount, field + ".currency_amount");
+    if ("currency" in d) {
+      checkString(d.currency, field + ".currency");
+    }
+    if ("currency_amount" in d) {
+      checkString(d.currency_amount, field + ".currency_amount");
+    }
     if ("currency_amount_before_tax" in d) {
       // This will be refactored in the next release.
       try {
@@ -1291,7 +1311,9 @@ export class GroupedDocumentsEntity {
         }
       }
     }
-    checkString(d.outstanding_balance, field + ".outstanding_balance");
+    if ("outstanding_balance" in d) {
+      checkString(d.outstanding_balance, field + ".outstanding_balance");
+    }
     if ("pages_count" in d) {
       // This will be refactored in the next release.
       try {
@@ -1591,13 +1613,15 @@ export class GroupedDocumentsEntity {
         }
       }
     }
-    // This will be refactored in the next release.
-    try {
-      checkNull(d.thirdparty_id, field + ".thirdparty_id", "null | number");
-    } catch (e) {
+    if ("thirdparty_id" in d) {
+      // This will be refactored in the next release.
       try {
-        checkNumber(d.thirdparty_id, field + ".thirdparty_id", "null | number");
+        checkNull(d.thirdparty_id, field + ".thirdparty_id", "null | number");
       } catch (e) {
+        try {
+          checkNumber(d.thirdparty_id, field + ".thirdparty_id", "null | number");
+        } catch (e) {
+        }
       }
     }
     checkString(d.type, field + ".type");
@@ -1624,7 +1648,7 @@ export class GroupedDocumentsEntity {
     if ("account_id" in d) this.account_id = d.account_id;
     if ("accounting_status" in d) this.accounting_status = d.accounting_status;
     this.accounting_type = d.accounting_type;
-    this.amount = d.amount;
+    if ("amount" in d) this.amount = d.amount;
     this.archived = d.archived;
     this.archived_at = d.archived_at;
     if ("attachment_label" in d) this.attachment_label = d.attachment_label;
@@ -1635,13 +1659,13 @@ export class GroupedDocumentsEntity {
     this.client_comments = d.client_comments;
     if ("company" in d) this.company = d.company;
     this.company_id = d.company_id;
-    this.complete = d.complete;
-    this.completeness = d.completeness;
+    if ("complete" in d) this.complete = d.complete;
+    if ("completeness" in d) this.completeness = d.completeness;
     if ("converted_invoice_urls" in d) this.converted_invoice_urls = d.converted_invoice_urls;
     this.created_at = d.created_at;
     if ("credit_notes_amount" in d) this.credit_notes_amount = d.credit_notes_amount;
-    this.currency = d.currency;
-    this.currency_amount = d.currency_amount;
+    if ("currency" in d) this.currency = d.currency;
+    if ("currency_amount" in d) this.currency_amount = d.currency_amount;
     if ("currency_amount_before_tax" in d) this.currency_amount_before_tax = d.currency_amount_before_tax;
     if ("currency_price_before_tax" in d) this.currency_price_before_tax = d.currency_price_before_tax;
     if ("currency_tax" in d) this.currency_tax = d.currency_tax;
@@ -1697,7 +1721,7 @@ export class GroupedDocumentsEntity {
     if ("multiplier" in d) this.multiplier = d.multiplier;
     if ("not_duplicate" in d) this.not_duplicate = d.not_duplicate;
     if ("ocr_thirdparty_id" in d) this.ocr_thirdparty_id = d.ocr_thirdparty_id;
-    this.outstanding_balance = d.outstanding_balance;
+    if ("outstanding_balance" in d) this.outstanding_balance = d.outstanding_balance;
     if ("pages_count" in d) this.pages_count = d.pages_count;
     if ("paid" in d) this.paid = d.paid;
     if ("payment_id" in d) this.payment_id = d.payment_id;
@@ -1736,7 +1760,7 @@ export class GroupedDocumentsEntity {
     if ("tagged_at_ledger_events_level" in d) this.tagged_at_ledger_events_level = d.tagged_at_ledger_events_level;
     if ("tax" in d) this.tax = d.tax;
     if ("thirdparty" in d) this.thirdparty = d.thirdparty;
-    this.thirdparty_id = d.thirdparty_id;
+    if ("thirdparty_id" in d) this.thirdparty_id = d.thirdparty_id;
     this.type = d.type;
     this.updated_at = d.updated_at;
     this.url = d.url;
@@ -3217,6 +3241,6 @@ function errorHelper(field: string, d: any, type: string): void {
     } catch(error) {
       console.log(error);
     }
-    console.log('Expected ' + type + " at " + field + " but found:\n" + JSON.stringify(d), jsonClone);
+    console.error('Expected "' + type + '" at ' + field + ' but found:\n' + JSON.stringify(d), jsonClone);
   }
 }

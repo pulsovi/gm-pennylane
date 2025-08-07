@@ -95,6 +95,6 @@ function errorHelper(field: string, d: any, type: string): void {
     } catch(error) {
       console.log(error);
     }
-    console.log('Expected ' + type + " at " + field + " but found:\n" + JSON.stringify(d), jsonClone);
+    console.error('Expected "' + type + '" at ' + field + ' but found:\n' + JSON.stringify(d), jsonClone);
   }
 }

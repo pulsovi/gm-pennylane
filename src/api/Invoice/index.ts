@@ -497,8 +497,8 @@ export class Group {
 }
 
 export class InvoiceLinesEntity {
-  public readonly advance: null;
-  public readonly advance_id: null;
+  public readonly advance: null | Advance;
+  public readonly advance_id: null | number;
   public readonly advance_pnl: boolean;
   public readonly amount: string;
   public readonly asset: null | Asset;
@@ -533,8 +533,24 @@ export class InvoiceLinesEntity {
     } else if (Array.isArray(d)) {
       throwIsArray(field, d);
     }
-    checkNull(d.advance, field + ".advance");
-    checkNull(d.advance_id, field + ".advance_id");
+    // This will be refactored in the next release.
+    try {
+      checkNull(d.advance, field + ".advance", "null | Advance");
+    } catch (e) {
+      try {
+        d.advance = Advance.Create(d.advance, field + ".advance", "null | Advance");
+      } catch (e) {
+      }
+    }
+    // This will be refactored in the next release.
+    try {
+      checkNull(d.advance_id, field + ".advance_id", "null | number");
+    } catch (e) {
+      try {
+        checkNumber(d.advance_id, field + ".advance_id", "null | number");
+      } catch (e) {
+      }
+    }
     checkBoolean(d.advance_pnl, field + ".advance_pnl");
     checkString(d.amount, field + ".amount");
     // This will be refactored in the next release.
@@ -613,6 +629,43 @@ export class InvoiceLinesEntity {
     this.prepaid_pnl = d.prepaid_pnl;
     this.tax = d.tax;
     this.vat_rate = d.vat_rate;
+  }
+}
+
+export class Advance {
+  public readonly company_id: number;
+  public readonly date: string;
+  public readonly has_ledger_events: boolean;
+  public readonly id: number;
+  public static Parse(d: string): Advance {
+    return Advance.Create(JSON.parse(d));
+  }
+  public static Create(d: any, field?: string, multiple ?: string): Advance {
+    if (!field) {
+      obj = d;
+      field = "root";
+    }
+    if (!d) {
+      throwNull2NonNull(field, d, multiple ?? this.name);
+    } else if (typeof(d) !== 'object') {
+      throwNotObject(field, d);
+    } else if (Array.isArray(d)) {
+      throwIsArray(field, d);
+    }
+    checkNumber(d.company_id, field + ".company_id");
+    checkString(d.date, field + ".date");
+    checkBoolean(d.has_ledger_events, field + ".has_ledger_events");
+    checkNumber(d.id, field + ".id");
+    const knownProperties = ["company_id","date","has_ledger_events","id"];
+    const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
+    return new Advance(d);
+  }
+  private constructor(d: any) {
+    this.company_id = d.company_id;
+    this.date = d.date;
+    this.has_ledger_events = d.has_ledger_events;
+    this.id = d.id;
   }
 }
 
@@ -1344,6 +1397,6 @@ function errorHelper(field: string, d: any, type: string): void {
     } catch(error) {
       console.log(error);
     }
-    console.log('Expected ' + type + " at " + field + " but found:\n" + JSON.stringify(d), jsonClone);
+    console.error('Expected "' + type + '" at ' + field + ' but found:\n' + JSON.stringify(d), jsonClone);
   }
 }
