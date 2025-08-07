@@ -13,7 +13,10 @@ export function rotateImage (imageUrl: string, spin: number) {
 
       resolve(canvas.toDataURL());
     };
-    img.onerror = reject;
+    img.onerror = (error) => {
+      console.error('rotateImage', error, {imageUrl, spin});
+      reject(error);
+    };
     img.src = imageUrl;
   });
 }
