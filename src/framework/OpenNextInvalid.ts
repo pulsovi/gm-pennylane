@@ -389,6 +389,26 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
       updateWaitDisplay();
     });
 
+    waitButton.addEventListener('contextmenu', event => {
+      event.preventDefault();
+      const date = prompt('Date de fin de timeout ? (jj/mm/aaaa)', '');
+      if (!date) return;
+      const d = date.split('/');
+      if (d.length !== 3) {
+        alert(' Format attendu : jj/mm/aaaa');
+        return;
+      }
+      try {
+        const wait = new Date(Number(d[2]), Number(d[1]) - 1, Number(d[0])).toISOString();
+        const status = this.cache.find({ id: this.current });
+        if (!status) return this.log({ cachedStatus: status, id: this.current });
+        this.cache.updateItem({ id: this.current }, Object.assign(status, { wait }));
+        updateWaitDisplay();
+      } catch {
+        alert(' Format attendu : jj/mm/aaaa');
+      }
+    });
+
     this.cache.on('change', () => { updateWaitDisplay(); });
     this.on('reload', () => { updateWaitDisplay(); });
   }
