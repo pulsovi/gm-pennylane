@@ -8,7 +8,17 @@ export default class CacheListRecord<T extends object> extends CacheList<T> {
    * @param create Create the item if no match found
    * @return Old value
    */
-  public updateItem (match: Partial<T>, newValue: T, create = true): T | undefined {
+  public updateItem (newValue: T, create?: boolean): typeof newValue extends {id: number} ? T | undefined : never;
+  public updateItem (match: Partial<T>, newValue: T, create?: boolean): T | undefined;
+  public updateItem (match: Partial<T> | T, newValueOrCreate?: T | boolean, create = true): T | undefined | never {
+    let newValue: T;
+    if (typeof newValueOrCreate === 'object') {
+      newValue = newValueOrCreate;
+    } else {
+      if (!('id' in match)) throw new ReferenceError('updating without match/newValue pair requires id property');
+      create = newValueOrCreate ?? true;
+      newValue = match as T;
+    }
     this.load();
     const oldValue = this.find(match);
     if (oldValue) {

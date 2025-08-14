@@ -32,4 +32,14 @@ export default class CacheRecord<T extends object> extends Cache<T> {
     this.emit('change', this);
     return oldValue;
   }
+
+  /**
+   * Check if the record has a specific key
+   *
+   * @param key The key to check
+   * @return True if the record has the key
+   */
+  public has (key: keyof T): boolean {
+    return key in this.data;
+  }
 }
