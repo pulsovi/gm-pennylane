@@ -10,6 +10,7 @@ import { createDMSLink } from '../api/dms.js';
 import { jsonClone } from '../_/json.js';
 import Balance from './Balance.js';
 import { APITransactionLite } from '../api/Transaction/Lite.js';
+import CacheStatus, { Status } from '../framework/CacheStatus.js';
 
 const user = localStorage.getItem('user') ?? 'assistant';
 
@@ -17,10 +18,12 @@ export default class Transaction extends ValidableDocument {
   protected _raw: { id: number; };
   protected _transaction: Promise<APITransactionLite> | APITransactionLite;
   protected _balance: SyncOrPromise<Balance>;
+  public readonly cacheStatus: CacheStatus;
 
   constructor(raw: { id: number }) {
     super(raw);
     this._raw = raw
+    this.cacheStatus = CacheStatus.getInstance<Status>('transactionValidation');
   }
 
   public async getTransaction(): Promise<APITransactionLite> {
@@ -88,6 +91,12 @@ export default class Transaction extends ValidableDocument {
     }
     if (this._balance instanceof Promise) return await this._balance;
     return this._balance;
+  }
+
+  public async getStatus (): Promise<Status> {
+    const status = await super.getStatus();
+    this.cacheStatus.updateItem(status, false);
+    return status;
   }
 
   protected async loadValidMessage(): Promise<string> {

@@ -15,7 +15,7 @@ import Transaction from './models/Transaction.js';
 import Invoice from './models/Invoice.js';
 import RotateImg from './pages/transactionPanel/RotateImg.js';
 import { getInvoice, getInvoicesList } from './api/invoice.js';
-import { getDocument } from './api/document.js';
+import { documentMatching, getDocument } from './api/document.js';
 import { getGroupedDocuments, getLedgerEvents } from './api/operation.js';
 import { getThirdparty } from './api/thirdparties.js';
 import { getTransactionsList } from './api/transaction.js';
@@ -26,7 +26,7 @@ import { getButtonClassName } from './_/getButtonClassName.js';
 import DMSRotateImg from './pages/DMS/RotateImg.js';
 import { GMXmlHttpRequest } from './_/gmXhr.js';
 import DMSDisplayStatus from './pages/DMS/DisplayStatus.js';
-import { dmsToInvoice, getDMSItem, getDMSItemLinks, getDMSItemList, getDMSLinks } from './api/dms.js';
+import { dmsToInvoice, getDMSItem, getDMSItemLinks, getDMSItemList, getDMSItemSettings, getDMSLinks } from './api/dms.js';
 import OpenRefTransaction from './pages/invoicePanel/OpenRefTransaction.js';
 import ImproveMatchSuggestions from './pages/transactionPanel/ImproveMatchSuggestions.js';
 import { waitPage } from './navigation/waitPage.js';
@@ -36,6 +36,8 @@ import Document from './models/Document.js';
 import Item from './models/Item.js';
 import DMSToInvoiceButton from './pages/DMS/toInvoice.js';
 import MoveDMSToInvoice from './pages/transactionPanel/MoveDMSToInvoice.js';
+import { DMSListHasLinks } from './pages/DMS/hasLinks.js';
+import NextInvalidDMS from './pages/DMS/NextInvalidDMS.js';
 
 last7DaysFilter();
 AddInvoiceIdColumn.start();
@@ -51,6 +53,7 @@ HighlightWrongDMSFilenames.start();
 ImproveMatchSuggestions.start();
 InvoiceDisplayInfos.start();
 MoveDMSToInvoice.start();
+NextInvalidDMS.start();
 NextInvalidInvoice.start();
 NextInvalidTransaction.start();
 OpenRefTransaction.start();
@@ -59,6 +62,7 @@ TransactionAddByIdButton.start();
 TransactionPanelHotkeys.start();
 TransactionPannelStyle.start();
 TransactionValidMessage.start();
+DMSListHasLinks.start();
 
 /*
 async function mergeInvoices () {
@@ -79,6 +83,7 @@ const augmentation = {
   GM_Pennylane_Version: /** version **/'0.1.34',
   GM: {
     API: {
+      documentMatching,
       getDocument,
       getGroupedDocuments,
       getInvoice,
@@ -86,6 +91,11 @@ const augmentation = {
       getLedgerEvents,
       getThirdparty,
       getTransactionsList,
+      getDMSItem,
+      getDMSLinks,
+      getDMSItemLinks,
+      getDMSItemList,
+      getDMSItemSettings,
     },
     $$,
     $,

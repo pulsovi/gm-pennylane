@@ -6,6 +6,7 @@ import OpenNextInvalid, { RawStatus as Status } from '../../framework/OpenNextIn
 import Transaction from '../../models/Transaction.js';
 
 export default class NextInvalidTransaction extends OpenNextInvalid {
+  protected static instance: NextInvalidTransaction;
   public readonly id = 'next-invalid-transaction';
   protected readonly storageKey = 'transactionValidation';
   protected readonly idParamName = 'transaction_id';
@@ -15,7 +16,7 @@ export default class NextInvalidTransaction extends OpenNextInvalid {
     // Wait for appending button in the matching page before init auto open service
     await this.appendContainer();
 
-    this.cache = CacheStatus.getInstance(this.storageKey);
+    this.cache = CacheStatus.getInstance<Status>(this.storageKey);
     await super.init();
   }
 

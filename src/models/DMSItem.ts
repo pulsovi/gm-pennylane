@@ -1,12 +1,19 @@
+import { $, findElem } from "../_/dom.js";
 import { jsonClone } from "../_/json.js";
+import { getReactProps } from "../_/react.js";
 import { regexPartialMatch } from "../_/regex.js";
-import { dmsToInvoice, getDMSItem, getDMSItemLinks } from "../api/dms.js";
+import { getParam } from "../_/url.js";
+import { dmsToInvoice, getDMSItem, getDMSItemLinks, updateDMSItem } from "../api/dms.js";
 import { APIDMSItem } from "../api/DMS/Item.js";
+import { APIDMSItemLink } from "../api/DMS/ItemLink.js";
+import { APIDMSLink } from "../api/DMS/Link.js";
 import { getDocument } from "../api/document.js";
 import { findInvoice, updateInvoice } from "../api/invoice.js";
 import { APIInvoice } from "../api/Invoice/index.js";
 import { getThirdparty } from "../api/thirdparties.js";
+import { Status } from "../framework/CacheStatus.js";
 import Logger from "../framework/Logger.js";
+import Document from "./Document.js";
 
 interface Template {
   title: string;
@@ -14,13 +21,19 @@ interface Template {
   regex: RegExp;
 }
 
+export type DMSItemStatus = Omit<Status, 'date'>;
+
 export default class DMSItem extends Logger {
   public readonly id: number;
   private item: Promise<APIDMSItem> | APIDMSItem;
+  private valid: boolean | null;
+  private validMessage: string | null;
 
   public constructor({ id }: { id: number }) {
     super();
     this.id = id;
+    this.valid = null;
+    this.validMessage = null;
   }
 
   public async getLinks() {
@@ -40,13 +53,13 @@ export default class DMSItem extends Logger {
   public async toInvoice() {
     const start = new Date().toISOString();
     const dmsItem = await this.getItem();
-    const regex = /^(?<number>.*?)(?: - (?<date>[0123]\d\/[01]\d\/\d{4}))?(?: - (?<amount>[\d .]*(?:,\d\d)?) ?€)$/u;
+    const regex = /^(?<number>.*?)(?: - (?<date>[0123]\d-[01]\d-\d{4}))?(?: - (?<amount>[\d .]*(?:,\d\d)?) ?€)$/u;
     const match = dmsItem.name.match(regex)?.groups;
     if (!match) {
       this.log('The file name does not match the Invoice Regex', { name: dmsItem.name, regex });
       return;
     }
-    const date = match.date && new Date(match.date.split('/').reverse().join('-'));
+    const date = match.date && new Date(match.date.split('-').reverse().join('-'));
     const groupedDocs = await this.getLinks();
     const transactionRecord = groupedDocs.find(gdoc => gdoc.record_type === 'BankTransaction');
     const transactionDocument = transactionRecord && await getDocument(transactionRecord.record_id);
@@ -93,13 +106,79 @@ export default class DMSItem extends Logger {
     return invoice;
   }
 
-  public async getValidMessage(): Promise<string> {
-    const rules = await this.getRules();
+  private async loadValidation () {
+    if (this.validMessage === null)
+      this.validMessage = await this.getValidMessage();
+    this.valid = this.validMessage === 'OK';
+  }
+
+  async isValid () {
+    if (this.valid === null)
+      await this.loadValidation();
+    return this.valid!;
+  }
+
+  isCurrent () {
+    return this.id === Number(getParam(location.href, 'item_id'));
+  }
+
+  async fixDateCase () {
     const item = await this.getItem();
+    if (!item) return;
+    const re = / - (?<date>(?<day>[0123]\d)\/(?<month>0[1-9]|1[0-2])\/(?<year>\d{4})) - /;
+    const date = item.name.match(re)?.groups;
+    if (!date) return;
+    const name = item.name.replace(re, ` - ${date.day}-${date.month}-${date.year} - `);
+    const updatedItem = await updateDMSItem({ id: this.id, name });
+    const input = $('input[name="name"]') as HTMLInputElement;
+    input.value = name;
+    const rightList = findElem<HTMLDivElement>('div', 'Nom du Fichier').closest('div.w-100');
+    const props = getReactProps(rightList, 7);
+    if (props) props.item = updatedItem;
+  }
+
+  async getStatus (): Promise<Status> {
+    const id = this.id;
+    const item = await this.getItem();
+    if (!item) return null;
+    const valid = await this.isValid();
+    const message = await this.getValidMessage();
+    const createdAt = new Date(item.created_at).getTime();
+    const date = new Date(item.updated_at).getTime();
+    return { id, valid, message, createdAt, date };
+  }
+
+  private async isPermanent (): Promise<boolean> {
+    const item = await this.getItem();
+    if (!item) return null;
+    return [
+      21994019, // 05. Contrats
+    ].includes(item.parent_id)
+  }
+
+  public async getValidMessage(): Promise<string> {
+    const item = await this.getItem();
+    if (!item) return null;
+
+    if (item.type === 'dms_folder') return 'OK';
+    if (this.isPermanent()) return 'OK';
+
+    const rules = await this.getRules();
+
+    if (getParam(location.href, 'item_id') === this.id.toString(10)) {
+      this.log('getValidMessage', { rules, item });
+    }
+
+    if (item.archived_at) return 'OK';
+
+    if (this.isCurrent()) this.fixDateCase();
 
     if (rules) {
       const match = rules.templates.some(template => template.regex.test(item.name));
       if (!match) return rules.message;
+    } else {
+      const links = await this.getLinks();
+      if (!links.length) return 'Ce document n\'est pas lié';
     }
 
     return 'OK';
@@ -107,9 +186,11 @@ export default class DMSItem extends Logger {
 
   public async getRules(): Promise<{templates: Template[]; message: string; }> {
     const item = await this.getItem();
-    if (item.name.startsWith('RECU')) return null;
+    if (!item) return null;
+    if (item.name.startsWith('RECU') || item.name.startsWith('§')) return null;
 
     const links = await this.getLinks();
+    if (await this.hasClosedLink(links)) return null;
 
     const transactions = links.filter(link => link.record_type === 'BankTransaction');
     const isCheckRemmitance = transactions
@@ -119,13 +200,13 @@ export default class DMSItem extends Logger {
       const templates: Template[] = [
         {
           title: 'Photo du chèque',
-          text: 'CHQ&lt;n° du chèque&gt; - &lt;nom donateur&gt; - jj/mm/aaaa - &lt;montant&gt;€',
-          regex: /^CHQ ?\d* - .* - [0123]\d\/[01]\d\/\d{4} - [\d \.]*(?:,\d\d)? ?€$/u,
+          text: 'CHQ&lt;n° du chèque&gt; - &lt;nom donateur&gt; - jj-mm-aaaa - &lt;montant&gt;€',
+          regex: /^CHQ(?: n°)? ?\d* - .* - [0123]\d-[01]\d-\d{4} - [\d \.]*(?:,\d\d)? ?€(?:\.[a-zA-Z]{3,4})?$/u,
         },
         {
           title: 'Reçu de don',
-          text: 'CERFA n°&lt;n° de cerfa&gt; - &lt;nom donateur&gt; - jj/mm/aaaa - &lt;montant&gt;€',
-          regex: /^CERFA n° ?[\d-]* - .* - [0123]\d\/[01]\d\/\d{4} - [\d .]*(?:,\d\d)? ?€$/u,
+          text: 'CERFA n°&lt;n° de cerfa&gt; - &lt;nom donateur&gt; - jj-mm-aaaa - &lt;montant&gt;€',
+          regex: /^CERFA(?: n°)? ?[\d-]* - .* - [0123]\d-[01]\d-\d{4} - [\d .]*(?:,\d\d)? ?€(?:\.[a-zA-Z]{3,4})?$/u,
         }
       ];
       const message = `<a
@@ -143,17 +224,17 @@ export default class DMSItem extends Logger {
         {
           title: 'Talon du chèque',
           text: 'CHQ&lt;numéro du chèque&gt; - &lt;destinataire du chèque&gt; - &lt;montant&gt;€',
-          regex: /^CHQ ?\d* - .* - [\d .]*(?:,\d\d)? ?€$/u,
+          regex: /^CHQ ?\d* - .* - [\d .]*(?:,\d\d)? ?€(?:\.[a-zA-Z]{3,4})?$/u,
         },
         {
           title: 'Reçu de don à une association',
-          text: 'CERFA n°&lt;n° de cerfa&gt; - &lt;nom bénéficiaire&gt; - jj/mm/aaaa - &lt;montant&gt;€',
-          regex: /^CERFA n° ?[\d-]* - .* - [0123]\d\/[01]\d\/\d{4} - [\d .]*(?:,\d\d)? ?€$/u,
+          text: 'CERFA n°&lt;n° de cerfa&gt; - &lt;nom bénéficiaire&gt; - jj-mm-aaaa - &lt;montant&gt;€',
+          regex: /^CERFA n° ?[\d-]* - .* - [0123]\d-[01]\d-\d{4} - [\d .]*(?:,\d\d)? ?€(?:\.[a-zA-Z]{3,4})?$/u,
         },
         {
           title: 'Reçu d\'octroi d\'aide',
-          text: 'AIDES - &lt;nom bénéficiaire !!sans le prénom!!&gt; - jj/mm/aaaa - &lt;montant&gt;€',
-          regex: /^AIDES?\d* - .* - [0123]\d\/[01]\d\/\d{4} - [\d .]*(?:,\d\d)? ?€$/u,
+          text: 'AIDES - &lt;nom bénéficiaire !!sans le prénom!!&gt; - jj-mm-aaaa - &lt;montant&gt;€',
+          regex: /^AIDES?\d* - .* - [0123]\d-[01]\d-\d{4} - [\d .]*(?:,\d\d)? ?€(?:\.[a-zA-Z]{3,4})?$/u,
         },
       ];
       const message = `<a
@@ -173,8 +254,8 @@ export default class DMSItem extends Logger {
       const templates = [
         {
           title: 'Reçu de don',
-          text: 'CERFA n°&lt;n° de cerfa&gt; - &lt;nom donateur&gt; - jj/mm/aaaa - &lt;montant&gt;€',
-          regex: /^CERFA n° ?[\d-]* - .* - [0123]\d\/[01]\d\/\d{4} - [\d .]*(?:,\d\d)? ?€$/u,
+          text: 'CERFA n°&lt;n° de cerfa&gt; - &lt;nom donateur&gt; - jj-mm-aaaa - &lt;montant&gt;€',
+          regex: /^CERFA n° ?[\d-]* - .* - [0123]\d-[01]\d-\d{4} - [\d .]*(?:,\d\d)? ?€(?:\.[a-zA-Z]{3,4})?$/u,
         },
       ];
       const message = `<a
@@ -193,13 +274,13 @@ export default class DMSItem extends Logger {
       const templates = [
         {
           title: 'Reçu de don à une association',
-          text: 'CERFA n°&lt;n° de cerfa&gt; - &lt;nom bénéficiaire&gt; - jj/mm/aaaa - &lt;montant&gt;€',
-          regex: /^CERFA n° ?[\d-]* - .* - [0123]\d\/[01]\d\/\d{4} - [\d .]*(?:,\d\d)? ?€$/u,
+          text: 'CERFA n°&lt;n° de cerfa&gt; - &lt;nom bénéficiaire&gt; - jj-mm-aaaa - &lt;montant&gt;€',
+          regex: /^CERFA n° ?[\d-]* - .* - [0123]\d-[01]\d-\d{4} - [\d .]*(?:,\d\d)? ?€(?:\.[a-zA-Z]{3,4})?$/u,
         },
         {
           title: 'Reçu d\'octroi d\'aide',
-          text: 'AIDES - &lt;nom bénéficiaire !!sans le prénom!!&gt; - jj/mm/aaaa - &lt;montant&gt;€',
-          regex: /^AIDES?\d* - .* - [0123]\d\/[01]\d\/\d{4} - [\d .]*(?:,\d\d)? ?€$/u,
+          text: 'AIDES - &lt;nom bénéficiaire !!sans le prénom!!&gt; - jj-mm-aaaa - &lt;montant&gt;€',
+          regex: /^AIDES?\d* - .* - [0123]\d-[01]\d-\d{4} - [\d .]*(?:,\d\d)? ?€(?:\.[a-zA-Z]{3,4})?$/u,
         },
       ];
       const message = `<a
@@ -221,5 +302,10 @@ export default class DMSItem extends Logger {
       const templateMatchLength = templateMatch[1] - templateMatch[0];
       return pmatchLength > templateMatchLength ? templateMatch : pmatch;
     }, [0, str.length]);
+  }
+
+  public async hasClosedLink(links: APIDMSItemLink[]) {
+    const closed = await Promise.all(links.map(link => Document.isClosed(link.record_id)))
+    return closed.some(closed => closed);
   }
 }

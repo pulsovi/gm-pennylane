@@ -2,6 +2,7 @@ import { $, waitElem, findElem, getReactProps, parseHTML, waitFunc, $$, getParam
 import { APILedgerEvent } from '../../api/LedgerEvent/index.js';
 import Service from '../../framework/Service.js';
 import Transaction from '../../models/Transaction.js';
+import NextInvalidTransaction from './NextInvalidTransaction.js';
 
 /** Add validation message on transaction panel */
 export default class ValidMessage extends Service {
@@ -66,6 +67,11 @@ export default class ValidMessage extends Service {
 
     const rawTransaction = getReactProps($('.paragraph-body-m+.heading-page.mt-1'), 9).transaction;
     this.state.transaction = new Transaction(rawTransaction);
+
+    const cache = (NextInvalidTransaction.getInstance() as NextInvalidTransaction).getCache();
+    const cachedStatus = cache.find({id: this.state.transaction?.id});
+    if (cachedStatus) this.message = `<aside style="background: lightgray;">⟳ ${cachedStatus.message}</aside>`;
+
     const message = await this.state.transaction.getValidMessage();
     if (this.state.transaction?.id !== rawTransaction.id) return;
     this.message = `${(await this.state.transaction.isValid()) ? '✓' : '✗'} ${message}`;
