@@ -1,3 +1,5 @@
+export const WEEK_IN_MS = 7 * 24 * 60 * 60 * 1000;
+
 export async function sleep (ms: number) {
   await new Promise(rs => setTimeout(rs, ms));
 }

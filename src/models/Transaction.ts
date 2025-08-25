@@ -94,7 +94,7 @@ export default class Transaction extends ValidableDocument {
     if (this.isCurrent()) this.log('loadValidMessage', this);
 
     const status = (
-      await this.isClosed()
+      await this.isClosedCheck()
       ?? await this.isArchived()
       ?? await this.hasMalnammedDMSLink()
       ?? await this.is2025()
@@ -145,11 +145,9 @@ export default class Transaction extends ValidableDocument {
     }
   }
 
-  private async isClosed() {
-    const ledgerEvents = await this.getLedgerEvents();
-
-    // Fait partie d'un exercice clos
-    if (ledgerEvents.some(event => event.closed)) {
+  private async isClosedCheck() {
+    const closed = await Document.isClosed(this.id);
+    if (closed) {
       if (this.isCurrent()) this.log('fait partie d\'un exercice clos');
       return 'OK';
     }

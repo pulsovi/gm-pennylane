@@ -107,7 +107,7 @@ class SupplierInvoice extends Invoice {
 
     return (
       await this.isUnreachable()
-      ?? await this.isClosed()
+      ?? await this.isClosedInvoice()
       ?? await this.isArchived()
       //?? await this.validTemplate()
       ?? await this.is2025()
@@ -134,7 +134,7 @@ class SupplierInvoice extends Invoice {
     }
   }
 
-  private async isClosed() {
+  private async isClosedInvoice() {
     const invoice = await this.getInvoice();
 
     // Fait partie d'un exercice clôturé

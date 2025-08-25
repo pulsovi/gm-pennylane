@@ -6,6 +6,7 @@ interface Status {
   valid: boolean;
   message: string;
   createdAt: number;
+  /** Document.date */
   date: number;
 }
 

@@ -1,3 +1,4 @@
+import { WEEK_IN_MS } from '../_/time.js';
 import { getDMSLinks } from '../api/dms.js';
 import { APIDMSLink } from '../api/DMS/Link.js';
 import { archiveDocument, getDocument, reloadLedgerEvents } from '../api/document.js';
@@ -6,7 +7,14 @@ import { APILedgerEvent } from '../api/LedgerEvent/index.js';
 import { getGroupedDocuments, getLedgerEvents } from '../api/operation.js';
 import { getThirdparty, type Thirdparty } from '../api/thirdparties.js';
 import { GroupedDocument } from '../api/types.js';
+import CacheList from '../framework/CacheList.js';
 import { Logger } from '../framework/Logger.js';
+
+interface ClosedStatus {
+  id: number;
+  closed: boolean;
+  updatedAt: string;
+}
 
 export default class Document extends Logger {
   public readonly type: 'transaction' | 'invoice';
@@ -15,6 +23,7 @@ export default class Document extends Logger {
   protected groupedDocuments: SyncOrPromise<GroupedDocument[]>;
   protected ledgerEvents?: APILedgerEvent[] | Promise<APILedgerEvent[]>;
   protected thirdparty?: Promise<Thirdparty>;
+  private static closedCache = new CacheList<ClosedStatus>('closedDocumentsCache', []);
 
   constructor ({ id }: { id: number }) {
     super();
@@ -56,6 +65,11 @@ export default class Document extends Logger {
     return this.document;
   }
 
+  public async isClosed() {
+    const ledgerEvents = await this.getLedgerEvents();
+    return ledgerEvents.some(event => event.closed);
+  }
+
   async archive (unarchive = false) {
     return await archiveDocument(this.id, unarchive);
   }
@@ -95,7 +109,16 @@ export default class Document extends Logger {
     return await getThirdparty(doc.thirdparty_id);
   }
 
-  public async getDMSLinks(recordType: string): Promise<APIDMSLink[]> {
+  public async getDMSLinks(recordType?: string): Promise<APIDMSLink[]> {
     return await getDMSLinks(this.id, recordType);
+  }
+
+  public static async isClosed (id: number): Promise<boolean> {
+    const cached = this.closedCache.find({ id });
+    if (cached && new Date(cached.updatedAt) > new Date(Date.now() - WEEK_IN_MS)) return cached.closed;
+    const doc = new Document({ id });
+    const closed = await doc.isClosed();
+    this.closedCache.updateItem({ id, closed, updatedAt: new Date().toISOString() });
+    return closed;
   }
 }
