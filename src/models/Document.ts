@@ -71,8 +71,12 @@ export default class Document extends Logger {
   }
 
   async _loadGroupedDocuments (): Promise<GroupedDocument[]> {
-    const otherDocuments = await getGroupedDocuments(this.id);
     const mainDocument = await this.getDocument();
+    if (!mainDocument) {
+      this.error(`Document introuvable ${this.id}`);
+      return [];
+    }
+    const otherDocuments = await getGroupedDocuments(this.id);
     this.groupedDocuments = [
       ...otherDocuments,
       mainDocument.grouped_documents.find(doc => doc.id === this.id)!
