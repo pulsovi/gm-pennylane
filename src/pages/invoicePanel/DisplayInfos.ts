@@ -1,5 +1,5 @@
 import { openInNewTabIcon } from '../../_/icons.js';
-import { $, $$, findElem, getReactProps, parseHTML, waitElem, waitFunc } from '../../_/index.js';
+import { $, $$, findElem, getReactProps, getReactPropValue, parseHTML, waitElem, waitFunc } from '../../_/index.js';
 import { APIInvoice } from '../../api/Invoice/index.js';
 import { APILedgerEvent } from '../../api/LedgerEvent/index.js';
 import CacheStatus, { Status } from '../../framework/CacheStatus.js';
@@ -86,7 +86,9 @@ export default class InvoiceDisplayInfos extends Service {
 
   async watch () {
     const infos = await waitElem('h4.heading-section-3.mr-2', 'Informations');
-    const invoice: APIInvoice = getReactProps(infos, 28).invoice;
+    const invoice: APIInvoice = getReactPropValue(infos, 'invoice');
+
+    if (!invoice) this.error('Unable to load invoice');
 
     let reload = false;
 
@@ -123,8 +125,8 @@ export default class InvoiceDisplayInfos extends Service {
   async appendContainer () {
     if (!this.container) {
       this.container = parseHTML(`<div class="sc-iGgVNO clwwQL d-flex align-items-center gap-1 gm-tag-container">
-        <div id="is-valid-tag" class="d-inline-block bg-secondary-100 dihsuQ px-0_5">⟳</div>
         <div id="invoice-id" class="d-inline-block bg-secondary-100 dihsuQ px-0_5"></div>
+        <div id="is-valid-tag" class="d-inline-block bg-secondary-100 dihsuQ px-0_5">⟳</div>
       </div>`).firstElementChild as HTMLDivElement;
 
       const messageDiv = $<HTMLDivElement>('#is-valid-tag', this.container)!;

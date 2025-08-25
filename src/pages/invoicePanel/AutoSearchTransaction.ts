@@ -1,6 +1,7 @@
 import { $, findElem, parseHTML } from "../../_/dom.js";
 import { getButtonClassName } from "../../_/getButtonClassName.js";
 import { waitFunc } from "../../_/time.js";
+import { getParam } from "../../_/url.js";
 import Service from "../../framework/Service.js";
 import Tooltip from "../../framework/Tooltip.js";
 import { openInTab } from "../../GM/openInTab.js";
@@ -62,7 +63,9 @@ export default class AutoSearchTransaction extends Service {
       const url = `${urlRoot}/transactions?filter=${JSON.stringify(filters)
         }&per_page=300&sort=-date&sidepanel_tab=reconciliation&period_start=${minDate.slice(0, 4)
         }-01-01&period_end=${maxDate.slice(0, 4)}-12-31`;
+
       openInTab(url);
+      navigator.clipboard.writeText(getParam(location.href, 'id'))
     });
   }
 
@@ -70,7 +73,7 @@ export default class AutoSearchTransaction extends Service {
     const refEl = await waitPage("invoiceDetail");
 
     const amountInput = findElem<HTMLInputElement>('input[name="currency_amount"]')!;
-    amountInput.closest('.form-group').querySelector('label').appendChild(this.container);
+    amountInput.closest('.ui-form-group').querySelector('label').appendChild(this.container);
 
     await waitFunc(async () => await waitPage('invoiceDetail') !== refEl);
     this.init();
