@@ -37,6 +37,7 @@ import Item from './models/Item.js';
 import DMSToInvoiceButton from './pages/DMS/toInvoice.js';
 import MoveDMSToInvoice from './pages/transactionPanel/MoveDMSToInvoice.js';
 import { DMSListHasLinks } from './pages/DMS/hasLinks.js';
+import PreviewDMSFiles from './pages/transactionPanel/PreviewDMSFiles.js';
 import NextInvalidDMS from './pages/DMS/NextInvalidDMS.js';
 
 last7DaysFilter();
@@ -57,6 +58,7 @@ NextInvalidDMS.start();
 NextInvalidInvoice.start();
 NextInvalidTransaction.start();
 OpenRefTransaction.start();
+PreviewDMSFiles.start();
 RotateImg.start();
 TransactionAddByIdButton.start();
 TransactionPanelHotkeys.start();
