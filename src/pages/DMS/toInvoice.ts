@@ -18,13 +18,13 @@ export default class DMSToInvoiceButton extends Service {
    * @inheritDoc
    */
   async init() {
-    await waitPage('DMS');
+    await waitPage('DMSDetail');
     this.createButton();
     this.watch();
   }
 
   async watch() {
-    await waitPage('DMS');
+    await waitPage('DMSDetail');
 
     const div = await waitElem('div', 'Liens avec la comptabilité');
     const buttonRef = $('button', div.nextElementSibling);

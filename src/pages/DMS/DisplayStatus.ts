@@ -16,7 +16,7 @@ export default class DMSDisplayStatus extends Service {
    * @inheritDoc
    */
   async init() {
-    await waitPage('DMS');
+    await waitPage('DMSDetail');
 
     const container = findElem<HTMLDivElement>('div', 'Nom du Fichier').closest('div.w-100');
     this.container = parseHTML(`<div class="${container.firstElementChild.className}"></div>`).firstElementChild as HTMLDivElement;
@@ -24,8 +24,8 @@ export default class DMSDisplayStatus extends Service {
   }
 
   async watch() {
-    await waitPage('DMS');
-    const rightList = findElem<HTMLDivElement>('div', 'Nom du Fichier').closest('div.w-100')
+    await waitPage('DMSDetail');
+    const rightList = findElem<HTMLDivElement>('div', 'Nom du Fichier').closest('div.w-100');
     const ref = getReactProps(rightList, 7).item;
 
     rightList.insertBefore(this.container, rightList.firstChild);
@@ -41,6 +41,19 @@ export default class DMSDisplayStatus extends Service {
       const input = $<HTMLInputElement>('input[name="name"]');
       input?.focus();
       input?.select();
+      const indexes = await item.partialMatch(input.value);
+      this.log(
+        'partialMatch indexes',
+        indexes,
+        [
+          input.value,
+          input.value.slice(0, indexes[0]),
+          input.value.slice(indexes[0], indexes[1]),
+          input.value.slice(indexes[1]),
+        ]
+      );
+      input.selectionStart = indexes[0];
+      input.selectionEnd = indexes[1];
     }
 
     await waitFunc(() => getReactProps(rightList, 7)?.item !== ref);

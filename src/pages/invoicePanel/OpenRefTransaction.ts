@@ -53,7 +53,7 @@ export default class OpenRefTransaction extends Service {
     const refEl = await waitPage("invoiceDetail");
 
     const invoiceNumber = findElem<HTMLInputElement>('input[name="invoice_number"]')!;
-    invoiceNumber.closest('.form-group').querySelector('label').appendChild(this.container);
+    invoiceNumber.closest('.ui-form-group').querySelector('label').appendChild(this.container);
 
     await waitFunc(async () => await waitPage('invoiceDetail') !== refEl);
     this.init();

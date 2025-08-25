@@ -34,7 +34,7 @@ export default class DMSRotateImg extends Service {
    * @inheritDoc
    */
   async init() {
-    await waitPage('DMS');
+    await waitPage('DMSDetail');
 
     this.rotateButton.className = getButtonClassName();
     const container = findElem<HTMLDivElement>('div', 'Nom du Fichier').closest('div.w-100');
@@ -44,7 +44,7 @@ export default class DMSRotateImg extends Service {
   }
 
   async watch() {
-    await waitPage('DMS');
+    await waitPage('DMSDetail');
     const rightList = findElem<HTMLDivElement>('div', 'Nom du Fichier').closest('div.w-100')
     rightList.appendChild(this.container);
 
