@@ -57,6 +57,7 @@ export default abstract class Invoice extends ValidableDocument {
     const invoiceName = [
       invoice.invoice_number,
       invoice.thirdparty?.name ?? '',
+      invoice.date ? new Date(invoice.date).toLocaleDateString().replace(/\//g, '-') : '',
       `${invoice.amount.replace(/.0+$/, '')}€`
     ].join(' - ');
     const response = await moveToDms(this.id, destId);

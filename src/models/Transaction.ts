@@ -80,7 +80,7 @@ export default class Transaction extends ValidableDocument {
 
         ledgerEvents.forEach(event => {
           // pertes/gains de change
-          if (['47600001', '656', '75800002'].includes(event.planItem.number)) {
+          if (['47600001', '656', '609', '756', '75800002'].includes(event.planItem.number)) {
             balance.addAutre(parseFloat(event.amount) * -1);
           }
         });
@@ -119,8 +119,8 @@ export default class Transaction extends ValidableDocument {
       //?? await this.isMissingAttachment() // déjà inclus dans isUnbalanced()
       ?? await this.isOldUnbalanced()
       ?? await this.isBankFees()
-      ?? await this.isAllodons()
-      ?? await this.isDonationRenewal()
+      //?? await this.isAllodons()
+      //?? await this.isDonationRenewal()
       ?? await this.isTransfer()
       ?? await this.isAid()
       ?? await this.hasToSendToDMS()
@@ -203,16 +203,17 @@ export default class Transaction extends ValidableDocument {
   private async hasUnbalancedThirdparty (){
     const ledgerEvents = await this.getLedgerEvents();
 
-    const thirdparties: Record<string, number> = ledgerEvents.reduce((tp, event) => {
+    const thirdparties: Record<string, number[]> = ledgerEvents.reduce((tp, event) => {
       const nb = event.planItem.number;
       if (nb.startsWith('4')) {
-        tp[nb] = (tp[nb] ?? 0) + parseFloat(event.amount);
+        tp[nb] = (tp[nb] ?? []).concat(parseFloat(event.amount));
       }
       return tp;
     }, {});
-    const [unbalanced] = Object.entries(thirdparties).find(([key, val]) => val !== 0) ?? [];
+    const [unbalanced, events] = Object.entries(thirdparties)
+      .find(([key, val]) => Math.abs(val.reduce((a, b) => a + b, 0)) > 0.001) ?? [];
     if (unbalanced) {
-      this.log('hasUnbalancedThirdparty', { ledgerEvents, thirdparties, unbalanced });
+      this.log('hasUnbalancedThirdparty', { ledgerEvents, thirdparties, unbalanced, events });
       return `Le compte tiers "${unbalanced}" n'est pas équilibré.`;
     }
   }
@@ -452,7 +453,7 @@ export default class Transaction extends ValidableDocument {
   private async isBankFees() {
     return (
       await this.isIntlTransferFees()
-      ?? await this.isStripeFees()
+      //?? await this.isStripeFees()
     );
   }
 
