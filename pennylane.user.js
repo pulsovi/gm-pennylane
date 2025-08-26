@@ -210,8 +210,10 @@ class Service extends Logger {
         this.getInstance();
     }
     static getInstance() {
-        if (!this.instance)
-            this.instance = new this();
+        if (!this.instance) {
+            const instance = new this();
+            this.instance = instance;
+        }
         return this.instance;
     }
     init() { }
@@ -266,6 +268,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    location.replace(url);\n" +
 "}\n" +
 "\n" +
+"const WEEK_IN_MS = 7 * 24 * 60 * 60 * 1000;\n" +
 "async function sleep(ms) {\n" +
 "    await new Promise(rs => setTimeout(rs, ms));\n" +
 "}\n" +
@@ -299,12 +302,6 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "}\n" +
 "function findElem(selector, content) {\n" +
 "    return $$(selector).find(el => !content || el.textContent === content) ?? null;\n" +
-"}\n" +
-"function upElement(elem, upCount) {\n" +
-"    let retval = elem;\n" +
-"    for (let i = 0; i < upCount; ++i)\n" +
-"        retval = retval?.parentElement;\n" +
-"    return retval;\n" +
 "}\n" +
 "/**\n" +
 " * Parse an HTML string and return a DocumentFragment which can be inserted in the DOM as is\n" +
@@ -363,6 +360,16 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "function getReactProps(elem, up = 0) {\n" +
 "    return getReact(elem, up)?.memoizedProps;\n" +
 "}\n" +
+"/**\n" +
+" * Find React prop property value. Search for the given property name in the React Props\n" +
+" * of the given element and, if not found, in the React props of its ancestors.\n" +
+" * @param elem The element to find the React prop for.\n" +
+" * @param propName The prop to find.\n" +
+" * @returns The React prop value.\n" +
+" */\n" +
+"function getReactPropValue(elem, propName) {\n" +
+"    return getReactProps(elem, findReactProp(elem, propName))?.[propName];\n" +
+"}\n" +
 "function findReactProp(elem, propName) {\n" +
 "    const propList = new Set();\n" +
 "    let i = 0;\n" +
@@ -397,7 +404,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            ctx.drawImage(img, -img.width / 2, -img.height / 2);\n" +
 "            resolve(canvas.toDataURL());\n" +
 "        };\n" +
-"        img.onerror = reject;\n" +
+"        img.onerror = (error) => {\n" +
+"            console.error('rotateImage', error, { imageUrl, spin });\n" +
+"            reject(error);\n" +
+"        };\n" +
 "        img.src = imageUrl;\n" +
 "    });\n" +
 "}\n" +
@@ -603,8 +613,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        this.getInstance();\n" +
 "    }\n" +
 "    static getInstance() {\n" +
-"        if (!this.instance)\n" +
-"            this.instance = new this();\n" +
+"        if (!this.instance) {\n" +
+"            const instance = new this();\n" +
+"            this.instance = instance;\n" +
+"        }\n" +
 "        return this.instance;\n" +
 "    }\n" +
 "    init() { }\n" +
@@ -615,7 +627,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    return typeof data === 'string';\n" +
 "}\n" +
 "\n" +
-"const logger$1 = new Logger('apiRequest');\n" +
+"const logger$2 = new Logger('apiRequest');\n" +
 "async function apiRequest(endpoint, data = null, method = 'POST') {\n" +
 "    await apiRequestQueue.wait(200);\n" +
 "    const delayBefore = apiRequestQueue.MIN_DELAY;\n" +
@@ -635,7 +647,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    if ('error' in response) {\n" +
 "        console.log('API request error :', { endpoint, data, method, error: response.error });\n" +
 "        apiRequestQueue.push(3000);\n" +
-"        logger$1.debug('apiRequestWait: 3000');\n" +
+"        logger$2.debug('apiRequestWait: 3000');\n" +
 "        return apiRequest(endpoint, data, method);\n" +
 "    }\n" +
 "    if (response.status === 204) {\n" +
@@ -648,10 +660,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    if (response.status === 422) {\n" +
 "        const message = (await response.clone().json()).message;\n" +
-"        logger$1.log(message, { endpoint, method, data });\n" +
+"        logger$2.log(message, { endpoint, method, data });\n" +
 "        if (typeof endpoint !== 'string' && !endpoint.headers?.['X-CSRF-TOKEN']) {\n" +
 "            apiRequestQueue.push(200);\n" +
-"            logger$1.debug('apiRequestWait: 200');\n" +
+"            logger$2.debug('apiRequestWait: 200');\n" +
 "            return apiRequest({\n" +
 "                ...endpoint,\n" +
 "                headers: {\n" +
@@ -680,7 +692,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    if (response.status === 429 || response.status === 418) {\n" +
 "        apiRequestQueue.unshift(1000);\n" +
 "        apiRequestQueue.MIN_DELAY = delayBefore + 1;\n" +
-"        logger$1.debug('apiRequestWait: 1000');\n" +
+"        apiRequestQueue.VERY_MIN_DELAY = Math.max(apiRequestQueue.VERY_MIN_DELAY, delayBefore + 1);\n" +
+"        logger$2.debug('apiRequestWait: 1000');\n" +
 "        return apiRequest(endpoint, data, method);\n" +
 "    }\n" +
 "    if (response.status !== 200) {\n" +
@@ -688,7 +701,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        console.error('Todo : Créer un gestionnaire pour le code error status = ' + response.status);\n" +
 "        return null;\n" +
 "    }\n" +
-"    apiRequestQueue.MIN_DELAY = Math.max(10, delayBefore * 0.99);\n" +
+"    apiRequestQueue.MIN_DELAY = Math.max(apiRequestQueue.VERY_MIN_DELAY, delayBefore * 0.99);\n" +
 "    return response;\n" +
 "}\n" +
 "function getCookies(key) {\n" +
@@ -698,6 +711,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "Object.assign(window, { apiRequest });\n" +
 "class Queue {\n" +
 "    constructor() {\n" +
+"        this.VERY_MIN_DELAY = 0;\n" +
 "        this.MIN_DELAY = 100;\n" +
 "        this.queue = [];\n" +
 "        this.running = false;\n" +
@@ -743,7 +757,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "}\n" +
 "const apiRequestQueue = new Queue();\n" +
-"logger$1.log({ apiRequestQueue });\n" +
+"logger$2.log({ apiRequestQueue });\n" +
 "\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
 "let obj$n = null;\n" +
@@ -768,7 +782,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"account_id\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkNumber$i(d.account_id, field + \".account_id\", \"number | null\");\n" +
+"                checkNumber$j(d.account_id, field + \".account_id\", \"number | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
@@ -779,7 +793,9 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "        }\n" +
 "        checkBoolean$d(d.accounting_type, field + \".accounting_type\");\n" +
-"        checkString$l(d.amount, field + \".amount\");\n" +
+"        if (\"amount\" in d) {\n" +
+"            checkString$l(d.amount, field + \".amount\");\n" +
+"        }\n" +
 "        checkBoolean$d(d.archived, field + \".archived\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
@@ -811,7 +827,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkNumber$i(d.company_id, field + \".company_id\");\n" +
+"        checkNumber$j(d.company_id, field + \".company_id\");\n" +
 "        if (\"complete\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
@@ -828,7 +844,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"completeness\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkNumber$i(d.completeness, field + \".completeness\", \"number | null\");\n" +
+"                checkNumber$j(d.completeness, field + \".completeness\", \"number | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
@@ -839,10 +855,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"converted_invoice_urls\" in d) {\n" +
-"            checkArray$c(d.converted_invoice_urls, field + \".converted_invoice_urls\");\n" +
+"            checkArray$d(d.converted_invoice_urls, field + \".converted_invoice_urls\");\n" +
 "            if (d.converted_invoice_urls) {\n" +
 "                for (let i = 0; i < d.converted_invoice_urls.length; i++) {\n" +
-"                    checkNever$4(d.converted_invoice_urls[i], field + \".converted_invoice_urls\" + \"[\" + i + \"]\");\n" +
+"                    checkNever$5(d.converted_invoice_urls[i], field + \".converted_invoice_urls\" + \"[\" + i + \"]\");\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -850,8 +866,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"credit_notes_amount\" in d) {\n" +
 "            checkString$l(d.credit_notes_amount, field + \".credit_notes_amount\");\n" +
 "        }\n" +
-"        checkString$l(d.currency, field + \".currency\");\n" +
-"        checkString$l(d.currency_amount, field + \".currency_amount\");\n" +
+"        if (\"currency\" in d) {\n" +
+"            checkString$l(d.currency, field + \".currency\");\n" +
+"        }\n" +
+"        if (\"currency_amount\" in d) {\n" +
+"            checkString$l(d.currency_amount, field + \".currency_amount\");\n" +
+"        }\n" +
 "        if (\"currency_amount_before_tax\" in d) {\n" +
 "            checkString$l(d.currency_amount_before_tax, field + \".currency_amount_before_tax\");\n" +
 "        }\n" +
@@ -916,7 +936,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"future_in_days\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkNumber$i(d.future_in_days, field + \".future_in_days\", \"number | null\");\n" +
+"                checkNumber$j(d.future_in_days, field + \".future_in_days\", \"number | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
@@ -962,7 +982,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            catch (e) {\n" +
 "            }\n" +
 "        }\n" +
-"        checkArray$c(d.grouped_documents, field + \".grouped_documents\");\n" +
+"        checkArray$d(d.grouped_documents, field + \".grouped_documents\");\n" +
 "        if (d.grouped_documents) {\n" +
 "            for (let i = 0; i < d.grouped_documents.length; i++) {\n" +
 "                d.grouped_documents[i] = GroupedDocumentsEntity$1.Create(d.grouped_documents[i], field + \".grouped_documents\" + \"[\" + i + \"]\");\n" +
@@ -971,7 +991,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"iban\" in d) {\n" +
 "            checkString$l(d.iban, field + \".iban\");\n" +
 "        }\n" +
-"        checkNumber$i(d.id, field + \".id\");\n" +
+"        checkNumber$j(d.id, field + \".id\");\n" +
 "        if (\"invoice_kind\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
@@ -1004,7 +1024,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"is_waiting_for_ocr\" in d) {\n" +
 "            checkBoolean$d(d.is_waiting_for_ocr, field + \".is_waiting_for_ocr\");\n" +
 "        }\n" +
-"        checkNumber$i(d.journal_id, field + \".journal_id\");\n" +
+"        checkNumber$j(d.journal_id, field + \".journal_id\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
 "            checkString$l(d.label, field + \".label\", \"string | null\");\n" +
@@ -1024,7 +1044,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        checkString$l(d.method, field + \".method\");\n" +
 "        if (\"multiplier\" in d) {\n" +
-"            checkNumber$i(d.multiplier, field + \".multiplier\");\n" +
+"            checkNumber$j(d.multiplier, field + \".multiplier\");\n" +
 "        }\n" +
 "        if (\"not_duplicate\" in d) {\n" +
 "            checkBoolean$d(d.not_duplicate, field + \".not_duplicate\");\n" +
@@ -1036,13 +1056,15 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNumber$i(d.ocr_thirdparty_id, field + \".ocr_thirdparty_id\", \"null | number\");\n" +
+"                    checkNumber$j(d.ocr_thirdparty_id, field + \".ocr_thirdparty_id\", \"null | number\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkString$l(d.outstanding_balance, field + \".outstanding_balance\");\n" +
+"        if (\"outstanding_balance\" in d) {\n" +
+"            checkString$l(d.outstanding_balance, field + \".outstanding_balance\");\n" +
+"        }\n" +
 "        if (\"paid\" in d) {\n" +
 "            checkBoolean$d(d.paid, field + \".paid\");\n" +
 "        }\n" +
@@ -1107,10 +1129,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkBoolean$d(d.quotes, field + \".quotes\");\n" +
 "        checkBoolean$d(d.readonly, field + \".readonly\");\n" +
 "        if (\"recipients\" in d) {\n" +
-"            checkArray$c(d.recipients, field + \".recipients\");\n" +
+"            checkArray$d(d.recipients, field + \".recipients\");\n" +
 "            if (d.recipients) {\n" +
 "                for (let i = 0; i < d.recipients.length; i++) {\n" +
-"                    checkNever$4(d.recipients[i], field + \".recipients\" + \"[\" + i + \"]\");\n" +
+"                    checkNever$5(d.recipients[i], field + \".recipients\" + \"[\" + i + \"]\");\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1130,10 +1152,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"scored_transactions\" in d) {\n" +
-"            checkArray$c(d.scored_transactions, field + \".scored_transactions\");\n" +
+"            checkArray$d(d.scored_transactions, field + \".scored_transactions\");\n" +
 "            if (d.scored_transactions) {\n" +
 "                for (let i = 0; i < d.scored_transactions.length; i++) {\n" +
-"                    checkNever$4(d.scored_transactions[i], field + \".scored_transactions\" + \"[\" + i + \"]\");\n" +
+"                    checkNever$5(d.scored_transactions[i], field + \".scored_transactions\" + \"[\" + i + \"]\");\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1157,15 +1179,17 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"tax\" in d) {\n" +
 "            checkString$l(d.tax, field + \".tax\");\n" +
 "        }\n" +
-"        // This will be refactored in the next release.\n" +
-"        try {\n" +
-"            checkNull$h(d.thirdparty_id, field + \".thirdparty_id\", \"null | number\");\n" +
-"        }\n" +
-"        catch (e) {\n" +
+"        if (\"thirdparty_id\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkNumber$i(d.thirdparty_id, field + \".thirdparty_id\", \"null | number\");\n" +
+"                checkNull$h(d.thirdparty_id, field + \".thirdparty_id\", \"null | number\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                try {\n" +
+"                    checkNumber$j(d.thirdparty_id, field + \".thirdparty_id\", \"null | number\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                }\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$l(d.type, field + \".type\");\n" +
@@ -1184,7 +1208,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"account_id\" in d)\n" +
 "            this.account_id = d.account_id;\n" +
 "        this.accounting_type = d.accounting_type;\n" +
-"        this.amount = d.amount;\n" +
+"        if (\"amount\" in d)\n" +
+"            this.amount = d.amount;\n" +
 "        this.archived = d.archived;\n" +
 "        this.archived_at = d.archived_at;\n" +
 "        this.attachment_lost = d.attachment_lost;\n" +
@@ -1204,8 +1229,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        this.created_at = d.created_at;\n" +
 "        if (\"credit_notes_amount\" in d)\n" +
 "            this.credit_notes_amount = d.credit_notes_amount;\n" +
-"        this.currency = d.currency;\n" +
-"        this.currency_amount = d.currency_amount;\n" +
+"        if (\"currency\" in d)\n" +
+"            this.currency = d.currency;\n" +
+"        if (\"currency_amount\" in d)\n" +
+"            this.currency_amount = d.currency_amount;\n" +
 "        if (\"currency_amount_before_tax\" in d)\n" +
 "            this.currency_amount_before_tax = d.currency_amount_before_tax;\n" +
 "        if (\"currency_price_before_tax\" in d)\n" +
@@ -1274,7 +1301,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            this.not_duplicate = d.not_duplicate;\n" +
 "        if (\"ocr_thirdparty_id\" in d)\n" +
 "            this.ocr_thirdparty_id = d.ocr_thirdparty_id;\n" +
-"        this.outstanding_balance = d.outstanding_balance;\n" +
+"        if (\"outstanding_balance\" in d)\n" +
+"            this.outstanding_balance = d.outstanding_balance;\n" +
 "        if (\"paid\" in d)\n" +
 "            this.paid = d.paid;\n" +
 "        if (\"payment_id\" in d)\n" +
@@ -1327,7 +1355,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            this.status = d.status;\n" +
 "        if (\"tax\" in d)\n" +
 "            this.tax = d.tax;\n" +
-"        this.thirdparty_id = d.thirdparty_id;\n" +
+"        if (\"thirdparty_id\" in d)\n" +
+"            this.thirdparty_id = d.thirdparty_id;\n" +
 "        this.type = d.type;\n" +
 "        this.updated_at = d.updated_at;\n" +
 "        this.url = d.url;\n" +
@@ -1402,7 +1431,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNumber$i(d.account_id, field + \".account_id\", \"null | number\");\n" +
+"                    checkNumber$j(d.account_id, field + \".account_id\", \"null | number\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -1422,7 +1451,9 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "        }\n" +
 "        checkBoolean$d(d.accounting_type, field + \".accounting_type\");\n" +
-"        checkString$l(d.amount, field + \".amount\");\n" +
+"        if (\"amount\" in d) {\n" +
+"            checkString$l(d.amount, field + \".amount\");\n" +
+"        }\n" +
 "        checkBoolean$d(d.archived, field + \".archived\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
@@ -1464,7 +1495,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkArray$c(d.client_comments, field + \".client_comments\");\n" +
+"        checkArray$d(d.client_comments, field + \".client_comments\");\n" +
 "        if (d.client_comments) {\n" +
 "            for (let i = 0; i < d.client_comments.length; i++) {\n" +
 "                d.client_comments[i] = ClientCommentsEntityOrEstablishmentComment.Create(d.client_comments[i], field + \".client_comments\" + \"[\" + i + \"]\");\n" +
@@ -1483,14 +1514,18 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkNumber$i(d.company_id, field + \".company_id\");\n" +
-"        checkBoolean$d(d.complete, field + \".complete\");\n" +
-"        checkNumber$i(d.completeness, field + \".completeness\");\n" +
+"        checkNumber$j(d.company_id, field + \".company_id\");\n" +
+"        if (\"complete\" in d) {\n" +
+"            checkBoolean$d(d.complete, field + \".complete\");\n" +
+"        }\n" +
+"        if (\"completeness\" in d) {\n" +
+"            checkNumber$j(d.completeness, field + \".completeness\");\n" +
+"        }\n" +
 "        if (\"converted_invoice_urls\" in d) {\n" +
-"            checkArray$c(d.converted_invoice_urls, field + \".converted_invoice_urls\");\n" +
+"            checkArray$d(d.converted_invoice_urls, field + \".converted_invoice_urls\");\n" +
 "            if (d.converted_invoice_urls) {\n" +
 "                for (let i = 0; i < d.converted_invoice_urls.length; i++) {\n" +
-"                    checkNever$4(d.converted_invoice_urls[i], field + \".converted_invoice_urls\" + \"[\" + i + \"]\");\n" +
+"                    checkNever$5(d.converted_invoice_urls[i], field + \".converted_invoice_urls\" + \"[\" + i + \"]\");\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1508,8 +1543,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkString$l(d.currency, field + \".currency\");\n" +
-"        checkString$l(d.currency_amount, field + \".currency_amount\");\n" +
+"        if (\"currency\" in d) {\n" +
+"            checkString$l(d.currency, field + \".currency\");\n" +
+"        }\n" +
+"        if (\"currency_amount\" in d) {\n" +
+"            checkString$l(d.currency_amount, field + \".currency_amount\");\n" +
+"        }\n" +
 "        if (\"currency_amount_before_tax\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
@@ -1717,7 +1756,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"future_in_days\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkNumber$i(d.future_in_days, field + \".future_in_days\", \"number | null\");\n" +
+"                checkNumber$j(d.future_in_days, field + \".future_in_days\", \"number | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
@@ -1791,7 +1830,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkNumber$i(d.id, field + \".id\");\n" +
+"        checkNumber$j(d.id, field + \".id\");\n" +
 "        if (\"incomplete\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
@@ -1821,7 +1860,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"invoice_lines\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkArray$c(d.invoice_lines, field + \".invoice_lines\", \"InvoiceLinesEntity[] | null\");\n" +
+"                checkArray$d(d.invoice_lines, field + \".invoice_lines\", \"InvoiceLinesEntity[] | null\");\n" +
 "                if (d.invoice_lines) {\n" +
 "                    for (let i = 0; i < d.invoice_lines.length; i++) {\n" +
 "                        d.invoice_lines[i] = InvoiceLinesEntity$2.Create(d.invoice_lines[i], field + \".invoice_lines\" + \"[\" + i + \"]\");\n" +
@@ -1922,7 +1961,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "        }\n" +
 "        d.journal = Journal$1.Create(d.journal, field + \".journal\");\n" +
-"        checkNumber$i(d.journal_id, field + \".journal_id\");\n" +
+"        checkNumber$j(d.journal_id, field + \".journal_id\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
 "            checkString$l(d.label, field + \".label\", \"string | null\");\n" +
@@ -1947,13 +1986,13 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkArray$c(d.ledgerEvents, field + \".ledgerEvents\");\n" +
+"        checkArray$d(d.ledgerEvents, field + \".ledgerEvents\");\n" +
 "        if (d.ledgerEvents) {\n" +
 "            for (let i = 0; i < d.ledgerEvents.length; i++) {\n" +
 "                d.ledgerEvents[i] = LedgerEventsEntity.Create(d.ledgerEvents[i], field + \".ledgerEvents\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
-"        checkNumber$i(d.ledgerEventsCount, field + \".ledgerEventsCount\");\n" +
+"        checkNumber$j(d.ledgerEventsCount, field + \".ledgerEventsCount\");\n" +
 "        if (\"manual_partial_invoices\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
@@ -1971,7 +2010,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"multiplier\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkNumber$i(d.multiplier, field + \".multiplier\", \"number | null\");\n" +
+"                checkNumber$j(d.multiplier, field + \".multiplier\", \"number | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
@@ -2001,17 +2040,19 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNumber$i(d.ocr_thirdparty_id, field + \".ocr_thirdparty_id\", \"null | number\");\n" +
+"                    checkNumber$j(d.ocr_thirdparty_id, field + \".ocr_thirdparty_id\", \"null | number\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkString$l(d.outstanding_balance, field + \".outstanding_balance\");\n" +
+"        if (\"outstanding_balance\" in d) {\n" +
+"            checkString$l(d.outstanding_balance, field + \".outstanding_balance\");\n" +
+"        }\n" +
 "        if (\"pages_count\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkNumber$i(d.pages_count, field + \".pages_count\", \"number | null\");\n" +
+"                checkNumber$j(d.pages_count, field + \".pages_count\", \"number | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
@@ -2183,7 +2224,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            catch (e) {\n" +
 "            }\n" +
 "        }\n" +
-"        checkArray$c(d.preview_urls, field + \".preview_urls\");\n" +
+"        checkArray$d(d.preview_urls, field + \".preview_urls\");\n" +
 "        if (d.preview_urls) {\n" +
 "            for (let i = 0; i < d.preview_urls.length; i++) {\n" +
 "                checkString$l(d.preview_urls[i], field + \".preview_urls\" + \"[\" + i + \"]\");\n" +
@@ -2224,10 +2265,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"recipients\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkArray$c(d.recipients, field + \".recipients\", \"never[] | null\");\n" +
+"                checkArray$d(d.recipients, field + \".recipients\", \"never[] | null\");\n" +
 "                if (d.recipients) {\n" +
 "                    for (let i = 0; i < d.recipients.length; i++) {\n" +
-"                        checkNever$4(d.recipients[i], field + \".recipients\" + \"[\" + i + \"]\");\n" +
+"                        checkNever$5(d.recipients[i], field + \".recipients\" + \"[\" + i + \"]\");\n" +
 "                    }\n" +
 "                }\n" +
 "            }\n" +
@@ -2258,10 +2299,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"scored_transactions\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkArray$c(d.scored_transactions, field + \".scored_transactions\", \"never[] | null\");\n" +
+"                checkArray$d(d.scored_transactions, field + \".scored_transactions\", \"never[] | null\");\n" +
 "                if (d.scored_transactions) {\n" +
 "                    for (let i = 0; i < d.scored_transactions.length; i++) {\n" +
-"                        checkNever$4(d.scored_transactions[i], field + \".scored_transactions\" + \"[\" + i + \"]\");\n" +
+"                        checkNever$5(d.scored_transactions[i], field + \".scored_transactions\" + \"[\" + i + \"]\");\n" +
 "                    }\n" +
 "                }\n" +
 "            }\n" +
@@ -2355,15 +2396,17 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        // This will be refactored in the next release.\n" +
-"        try {\n" +
-"            checkNull$h(d.thirdparty_id, field + \".thirdparty_id\", \"null | number\");\n" +
-"        }\n" +
-"        catch (e) {\n" +
+"        if (\"thirdparty_id\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkNumber$i(d.thirdparty_id, field + \".thirdparty_id\", \"null | number\");\n" +
+"                checkNull$h(d.thirdparty_id, field + \".thirdparty_id\", \"null | number\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
+"                try {\n" +
+"                    checkNumber$j(d.thirdparty_id, field + \".thirdparty_id\", \"null | number\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                }\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$l(d.type, field + \".type\");\n" +
@@ -2396,7 +2439,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"accounting_status\" in d)\n" +
 "            this.accounting_status = d.accounting_status;\n" +
 "        this.accounting_type = d.accounting_type;\n" +
-"        this.amount = d.amount;\n" +
+"        if (\"amount\" in d)\n" +
+"            this.amount = d.amount;\n" +
 "        this.archived = d.archived;\n" +
 "        this.archived_at = d.archived_at;\n" +
 "        if (\"attachment_label\" in d)\n" +
@@ -2410,15 +2454,19 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"company\" in d)\n" +
 "            this.company = d.company;\n" +
 "        this.company_id = d.company_id;\n" +
-"        this.complete = d.complete;\n" +
-"        this.completeness = d.completeness;\n" +
+"        if (\"complete\" in d)\n" +
+"            this.complete = d.complete;\n" +
+"        if (\"completeness\" in d)\n" +
+"            this.completeness = d.completeness;\n" +
 "        if (\"converted_invoice_urls\" in d)\n" +
 "            this.converted_invoice_urls = d.converted_invoice_urls;\n" +
 "        this.created_at = d.created_at;\n" +
 "        if (\"credit_notes_amount\" in d)\n" +
 "            this.credit_notes_amount = d.credit_notes_amount;\n" +
-"        this.currency = d.currency;\n" +
-"        this.currency_amount = d.currency_amount;\n" +
+"        if (\"currency\" in d)\n" +
+"            this.currency = d.currency;\n" +
+"        if (\"currency_amount\" in d)\n" +
+"            this.currency_amount = d.currency_amount;\n" +
 "        if (\"currency_amount_before_tax\" in d)\n" +
 "            this.currency_amount_before_tax = d.currency_amount_before_tax;\n" +
 "        if (\"currency_price_before_tax\" in d)\n" +
@@ -2510,7 +2558,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            this.not_duplicate = d.not_duplicate;\n" +
 "        if (\"ocr_thirdparty_id\" in d)\n" +
 "            this.ocr_thirdparty_id = d.ocr_thirdparty_id;\n" +
-"        this.outstanding_balance = d.outstanding_balance;\n" +
+"        if (\"outstanding_balance\" in d)\n" +
+"            this.outstanding_balance = d.outstanding_balance;\n" +
 "        if (\"pages_count\" in d)\n" +
 "            this.pages_count = d.pages_count;\n" +
 "        if (\"paid\" in d)\n" +
@@ -2576,7 +2625,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            this.tax = d.tax;\n" +
 "        if (\"thirdparty\" in d)\n" +
 "            this.thirdparty = d.thirdparty;\n" +
-"        this.thirdparty_id = d.thirdparty_id;\n" +
+"        if (\"thirdparty_id\" in d)\n" +
+"            this.thirdparty_id = d.thirdparty_id;\n" +
 "        this.type = d.type;\n" +
 "        this.updated_at = d.updated_at;\n" +
 "        this.url = d.url;\n" +
@@ -2604,7 +2654,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        checkString$l(d.balance, field + \".balance\");\n" +
 "        checkString$l(d.bic, field + \".bic\");\n" +
-"        checkNumber$i(d.company_id, field + \".company_id\");\n" +
+"        checkNumber$j(d.company_id, field + \".company_id\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
 "            checkString$l(d.connection, field + \".connection\", \"string | null\");\n" +
@@ -2619,7 +2669,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkString$l(d.currency, field + \".currency\");\n" +
 "        checkString$l(d.currency_balance, field + \".currency_balance\");\n" +
 "        d.establishment = Establishment.Create(d.establishment, field + \".establishment\");\n" +
-"        checkNumber$i(d.establishment_id, field + \".establishment_id\");\n" +
+"        checkNumber$j(d.establishment_id, field + \".establishment_id\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
 "            checkString$l(d.iban, field + \".iban\", \"string | null\");\n" +
@@ -2631,7 +2681,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            catch (e) {\n" +
 "            }\n" +
 "        }\n" +
-"        checkNumber$i(d.id, field + \".id\");\n" +
+"        checkNumber$j(d.id, field + \".id\");\n" +
 "        checkString$l(d.label, field + \".label\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
@@ -2656,7 +2706,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "        }\n" +
 "        checkNull$h(d.last_sync_error, field + \".last_sync_error\");\n" +
-"        checkNumber$i(d.last_sync_http_code, field + \".last_sync_http_code\");\n" +
+"        checkNumber$j(d.last_sync_http_code, field + \".last_sync_http_code\");\n" +
 "        checkNull$h(d.ledger_events_count, field + \".ledger_events_count\");\n" +
 "        checkNull$h(d.ledger_events_max_date, field + \".ledger_events_max_date\");\n" +
 "        checkNull$h(d.ledger_events_min_date, field + \".ledger_events_min_date\");\n" +
@@ -2735,16 +2785,16 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$n(field, d);\n" +
 "        }\n" +
-"        checkNumber$i(d.accounts_count, field + \".accounts_count\");\n" +
-"        checkArray$c(d.bridge_ids, field + \".bridge_ids\");\n" +
+"        checkNumber$j(d.accounts_count, field + \".accounts_count\");\n" +
+"        checkArray$d(d.bridge_ids, field + \".bridge_ids\");\n" +
 "        if (d.bridge_ids) {\n" +
 "            for (let i = 0; i < d.bridge_ids.length; i++) {\n" +
-"                checkNumber$i(d.bridge_ids[i], field + \".bridge_ids\" + \"[\" + i + \"]\");\n" +
+"                checkNumber$j(d.bridge_ids[i], field + \".bridge_ids\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
 "        checkNull$h(d.budgetinsight_id, field + \".budgetinsight_id\");\n" +
 "        checkString$l(d.crm_url, field + \".crm_url\");\n" +
-"        checkNumber$i(d.id, field + \".id\");\n" +
+"        checkNumber$j(d.id, field + \".id\");\n" +
 "        checkString$l(d.logo_url, field + \".logo_url\");\n" +
 "        checkString$l(d.method, field + \".method\");\n" +
 "        checkString$l(d.name, field + \".name\");\n" +
@@ -2785,15 +2835,15 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        checkString$l(d.content, field + \".content\");\n" +
 "        checkString$l(d.created_at, field + \".created_at\");\n" +
-"        checkNumber$i(d.id, field + \".id\");\n" +
+"        checkNumber$j(d.id, field + \".id\");\n" +
 "        checkString$l(d.name, field + \".name\");\n" +
-"        checkNumber$i(d.record_id, field + \".record_id\");\n" +
+"        checkNumber$j(d.record_id, field + \".record_id\");\n" +
 "        checkString$l(d.record_type, field + \".record_type\");\n" +
 "        checkNull$h(d.rich_content, field + \".rich_content\");\n" +
 "        checkBoolean$d(d.seen, field + \".seen\");\n" +
 "        checkString$l(d.updated_at, field + \".updated_at\");\n" +
 "        d.user = User.Create(d.user, field + \".user\");\n" +
-"        checkNumber$i(d.user_id, field + \".user_id\");\n" +
+"        checkNumber$j(d.user_id, field + \".user_id\");\n" +
 "        const knownProperties = [\"content\", \"created_at\", \"id\", \"name\", \"record_id\", \"record_type\", \"rich_content\", \"seen\", \"updated_at\", \"user\", \"user_id\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -2834,7 +2884,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        checkString$l(d.first_name, field + \".first_name\");\n" +
 "        checkString$l(d.full_name, field + \".full_name\");\n" +
-"        checkNumber$i(d.id, field + \".id\");\n" +
+"        checkNumber$j(d.id, field + \".id\");\n" +
 "        checkString$l(d.last_name, field + \".last_name\");\n" +
 "        checkNull$h(d.profile_picture_url, field + \".profile_picture_url\");\n" +
 "        const knownProperties = [\"first_name\", \"full_name\", \"id\", \"last_name\", \"profile_picture_url\"];\n" +
@@ -2898,10 +2948,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$n(field, d);\n" +
 "        }\n" +
-"        checkNumber$i(d.company_id, field + \".company_id\");\n" +
+"        checkNumber$j(d.company_id, field + \".company_id\");\n" +
 "        checkString$l(d[\"country_alpha2\"], field + \".country_alpha2\");\n" +
 "        checkBoolean$d(d.enabled, field + \".enabled\");\n" +
-"        checkNumber$i(d.id, field + \".id\");\n" +
+"        checkNumber$j(d.id, field + \".id\");\n" +
 "        checkNull$h(d.internal_identifier, field + \".internal_identifier\");\n" +
 "        checkString$l(d.label, field + \".label\");\n" +
 "        checkBoolean$d(d.label_is_editable, field + \".label_is_editable\");\n" +
@@ -2948,9 +2998,9 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        checkString$l(d.content, field + \".content\");\n" +
 "        checkString$l(d.created_at, field + \".created_at\");\n" +
-"        checkNumber$i(d.id, field + \".id\");\n" +
+"        checkNumber$j(d.id, field + \".id\");\n" +
 "        checkString$l(d.name, field + \".name\");\n" +
-"        checkNumber$i(d.record_id, field + \".record_id\");\n" +
+"        checkNumber$j(d.record_id, field + \".record_id\");\n" +
 "        checkString$l(d.record_type, field + \".record_type\");\n" +
 "        checkNull$h(d.rich_content, field + \".rich_content\");\n" +
 "        checkBoolean$d(d.seen, field + \".seen\");\n" +
@@ -2972,7 +3022,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNumber$i(d.user_id, field + \".user_id\", \"null | number\");\n" +
+"                checkNumber$j(d.user_id, field + \".user_id\", \"null | number\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -3017,11 +3067,21 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$n(field, d);\n" +
 "        }\n" +
-"        checkNull$h(d.advance_id, field + \".advance_id\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$h(d.advance_id, field + \".advance_id\", \"null | number\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNumber$j(d.advance_id, field + \".advance_id\", \"null | number\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"            }\n" +
+"        }\n" +
 "        checkString$l(d.amount, field + \".amount\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNumber$i(d.asset_id, field + \".asset_id\", \"number | null\");\n" +
+"            checkNumber$j(d.asset_id, field + \".asset_id\", \"number | null\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -3030,7 +3090,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            catch (e) {\n" +
 "            }\n" +
 "        }\n" +
-"        checkNumber$i(d.company_id, field + \".company_id\");\n" +
+"        checkNumber$j(d.company_id, field + \".company_id\");\n" +
 "        checkString$l(d.created_at, field + \".created_at\");\n" +
 "        checkString$l(d.currency_amount, field + \".currency_amount\");\n" +
 "        checkString$l(d.currency_price_before_tax, field + \".currency_price_before_tax\");\n" +
@@ -3040,12 +3100,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkString$l(d.description, field + \".description\");\n" +
 "        checkString$l(d.discount, field + \".discount\");\n" +
 "        checkString$l(d.discount_type, field + \".discount_type\");\n" +
-"        checkNumber$i(d.document_id, field + \".document_id\");\n" +
+"        checkNumber$j(d.document_id, field + \".document_id\");\n" +
 "        checkBoolean$d(d.global_vat, field + \".global_vat\");\n" +
-"        checkNumber$i(d.id, field + \".id\");\n" +
+"        checkNumber$j(d.id, field + \".id\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNumber$i(d.invoice_line_section_id, field + \".invoice_line_section_id\", \"number | null\");\n" +
+"            checkNumber$j(d.invoice_line_section_id, field + \".invoice_line_section_id\", \"number | null\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -3068,14 +3128,14 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "        }\n" +
 "        d.pnl_plan_item = PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem1.Create(d.pnl_plan_item, field + \".pnl_plan_item\");\n" +
-"        checkNumber$i(d.pnl_plan_item_id, field + \".pnl_plan_item_id\");\n" +
+"        checkNumber$j(d.pnl_plan_item_id, field + \".pnl_plan_item_id\");\n" +
 "        checkBoolean$d(d.prepaid_pnl, field + \".prepaid_pnl\");\n" +
 "        checkString$l(d.price_before_tax, field + \".price_before_tax\");\n" +
 "        checkNull$h(d.product_id, field + \".product_id\");\n" +
 "        checkString$l(d.quantity, field + \".quantity\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNumber$i(d.rank, field + \".rank\", \"number | null\");\n" +
+"            checkNumber$j(d.rank, field + \".rank\", \"number | null\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -3158,10 +3218,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$n(field, d);\n" +
 "        }\n" +
-"        checkNumber$i(d.company_id, field + \".company_id\");\n" +
+"        checkNumber$j(d.company_id, field + \".company_id\");\n" +
 "        checkString$l(d[\"country_alpha2\"], field + \".country_alpha2\");\n" +
 "        checkBoolean$d(d.enabled, field + \".enabled\");\n" +
-"        checkNumber$i(d.id, field + \".id\");\n" +
+"        checkNumber$j(d.id, field + \".id\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
 "            checkNull$h(d.internal_identifier, field + \".internal_identifier\", \"null | string\");\n" +
@@ -3214,7 +3274,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            throwIsArray$n(field, d);\n" +
 "        }\n" +
 "        checkString$l(d.code, field + \".code\");\n" +
-"        checkNumber$i(d.id, field + \".id\");\n" +
+"        checkNumber$j(d.id, field + \".id\");\n" +
 "        checkString$l(d.label, field + \".label\");\n" +
 "        const knownProperties = [\"code\", \"id\", \"label\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
@@ -3247,16 +3307,16 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            throwIsArray$n(field, d);\n" +
 "        }\n" +
 "        checkString$l(d.balance, field + \".balance\");\n" +
-"        checkNumber$i(d.company_id, field + \".company_id\");\n" +
+"        checkNumber$j(d.company_id, field + \".company_id\");\n" +
 "        checkString$l(d.created_at, field + \".created_at\");\n" +
 "        checkString$l(d.credit, field + \".credit\");\n" +
 "        checkString$l(d.date, field + \".date\");\n" +
 "        checkString$l(d.debit, field + \".debit\");\n" +
-"        checkNumber$i(d.document_id, field + \".document_id\");\n" +
+"        checkNumber$j(d.document_id, field + \".document_id\");\n" +
 "        if (\"document_label\" in d) {\n" +
 "            checkString$l(d.document_label, field + \".document_label\");\n" +
 "        }\n" +
-"        checkNumber$i(d.id, field + \".id\");\n" +
+"        checkNumber$j(d.id, field + \".id\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
 "            checkString$l(d.label, field + \".label\", \"string | null\");\n" +
@@ -3283,7 +3343,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNumber$i(d.lettering_id, field + \".lettering_id\", \"number | null\");\n" +
+"            checkNumber$j(d.lettering_id, field + \".lettering_id\", \"number | null\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -3292,7 +3352,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            catch (e) {\n" +
 "            }\n" +
 "        }\n" +
-"        checkNumber$i(d.plan_item_id, field + \".plan_item_id\");\n" +
+"        checkNumber$j(d.plan_item_id, field + \".plan_item_id\");\n" +
 "        d.planItem = PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem2.Create(d.planItem, field + \".planItem\");\n" +
 "        if (\"processed_label\" in d) {\n" +
 "            checkString$l(d.processed_label, field + \".processed_label\");\n" +
@@ -3318,14 +3378,14 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNumber$i(d.reallocation_id, field + \".reallocation_id\", \"null | number\");\n" +
+"                checkNumber$j(d.reallocation_id, field + \".reallocation_id\", \"null | number\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNumber$i(d.reconciliation_id, field + \".reconciliation_id\", \"number | null\");\n" +
+"            checkNumber$j(d.reconciliation_id, field + \".reconciliation_id\", \"number | null\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -3388,7 +3448,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            throwIsArray$n(field, d);\n" +
 "        }\n" +
 "        checkString$l(d.balance, field + \".balance\");\n" +
-"        checkNumber$i(d.id, field + \".id\");\n" +
+"        checkNumber$j(d.id, field + \".id\");\n" +
 "        checkString$l(d.plan_item_number, field + \".plan_item_number\");\n" +
 "        const knownProperties = [\"balance\", \"id\", \"plan_item_number\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
@@ -3420,10 +3480,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$n(field, d);\n" +
 "        }\n" +
-"        checkNumber$i(d.company_id, field + \".company_id\");\n" +
+"        checkNumber$j(d.company_id, field + \".company_id\");\n" +
 "        checkString$l(d[\"country_alpha2\"], field + \".country_alpha2\");\n" +
 "        checkBoolean$d(d.enabled, field + \".enabled\");\n" +
-"        checkNumber$i(d.id, field + \".id\");\n" +
+"        checkNumber$j(d.id, field + \".id\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
 "            checkNull$h(d.internal_identifier, field + \".internal_identifier\", \"null | string\");\n" +
@@ -3477,7 +3537,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        checkString$l(d.created_at, field + \".created_at\");\n" +
 "        d.fromPlanItem = PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem3.Create(d.fromPlanItem, field + \".fromPlanItem\");\n" +
-"        checkNumber$i(d.id, field + \".id\");\n" +
+"        checkNumber$j(d.id, field + \".id\");\n" +
 "        const knownProperties = [\"created_at\", \"fromPlanItem\", \"id\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -3508,10 +3568,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$n(field, d);\n" +
 "        }\n" +
-"        checkNumber$i(d.company_id, field + \".company_id\");\n" +
+"        checkNumber$j(d.company_id, field + \".company_id\");\n" +
 "        checkString$l(d[\"country_alpha2\"], field + \".country_alpha2\");\n" +
 "        checkBoolean$d(d.enabled, field + \".enabled\");\n" +
-"        checkNumber$i(d.id, field + \".id\");\n" +
+"        checkNumber$j(d.id, field + \".id\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
 "            checkString$l(d.internal_identifier, field + \".internal_identifier\", \"string | null\");\n" +
@@ -3594,7 +3654,17 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkString$l(d.activity_nomenclature, field + \".activity_nomenclature\");\n" +
 "        checkString$l(d.address, field + \".address\");\n" +
 "        checkString$l(d.address_additional_info, field + \".address_additional_info\");\n" +
-"        checkNull$h(d.admin_city_code, field + \".admin_city_code\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$h(d.admin_city_code, field + \".admin_city_code\", \"null | string\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkString$l(d.admin_city_code, field + \".admin_city_code\", \"null | string\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"            }\n" +
+"        }\n" +
 "        checkNull$h(d.balance, field + \".balance\");\n" +
 "        checkNull$h(d.billing_bank, field + \".billing_bank\");\n" +
 "        checkNull$h(d.billing_bic, field + \".billing_bic\");\n" +
@@ -3603,7 +3673,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkNull$h(d.billing_iban, field + \".billing_iban\");\n" +
 "        checkString$l(d.billing_language, field + \".billing_language\");\n" +
 "        checkString$l(d.city, field + \".city\");\n" +
-"        checkNumber$i(d.company_id, field + \".company_id\");\n" +
+"        checkNumber$j(d.company_id, field + \".company_id\");\n" +
 "        checkBoolean$d(d.complete, field + \".complete\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
@@ -3629,10 +3699,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkString$l(d.delivery_postal_code, field + \".delivery_postal_code\");\n" +
 "        checkBoolean$d(d.disable_pending_vat, field + \".disable_pending_vat\");\n" +
 "        checkNull$h(d.display_name, field + \".display_name\");\n" +
-"        checkArray$c(d.emails, field + \".emails\");\n" +
+"        checkArray$d(d.emails, field + \".emails\");\n" +
 "        if (d.emails) {\n" +
 "            for (let i = 0; i < d.emails.length; i++) {\n" +
-"                checkNever$4(d.emails[i], field + \".emails\" + \"[\" + i + \"]\");\n" +
+"                checkNever$5(d.emails[i], field + \".emails\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
@@ -3652,7 +3722,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkNull$h(d.gender, field + \".gender\");\n" +
 "        checkNull$h(d.gocardless_id, field + \".gocardless_id\");\n" +
 "        checkString$l(d.iban, field + \".iban\");\n" +
-"        checkNumber$i(d.id, field + \".id\");\n" +
+"        checkNumber$j(d.id, field + \".id\");\n" +
 "        checkNull$h(d.invoice_count, field + \".invoice_count\");\n" +
 "        checkNull$h(d.invoice_dump_id, field + \".invoice_dump_id\");\n" +
 "        checkBoolean$d(d.invoices_auto_generated, field + \".invoices_auto_generated\");\n" +
@@ -3663,7 +3733,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNumber$i(d.known_supplier_id, field + \".known_supplier_id\", \"null | number\");\n" +
+"                checkNumber$j(d.known_supplier_id, field + \".known_supplier_id\", \"null | number\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -3679,11 +3749,11 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkString$l(d.phone, field + \".phone\");\n" +
 "        checkNull$h(d.plan_item, field + \".plan_item\");\n" +
 "        checkNull$h(d.plan_item_attributes, field + \".plan_item_attributes\");\n" +
-"        checkNumber$i(d.plan_item_id, field + \".plan_item_id\");\n" +
+"        checkNumber$j(d.plan_item_id, field + \".plan_item_id\");\n" +
 "        checkNull$h(d.pnl_plan_item, field + \".pnl_plan_item\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNumber$i(d.pnl_plan_item_id, field + \".pnl_plan_item_id\", \"number | null\");\n" +
+"            checkNumber$j(d.pnl_plan_item_id, field + \".pnl_plan_item_id\", \"number | null\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -3701,7 +3771,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkString$l(d.reg_no, field + \".reg_no\");\n" +
 "        checkString$l(d.role, field + \".role\");\n" +
 "        checkBoolean$d(d.rule_enabled, field + \".rule_enabled\");\n" +
-"        checkArray$c(d.search_terms, field + \".search_terms\");\n" +
+"        checkArray$d(d.search_terms, field + \".search_terms\");\n" +
 "        if (d.search_terms) {\n" +
 "            for (let i = 0; i < d.search_terms.length; i++) {\n" +
 "                checkString$l(d.search_terms[i], field + \".search_terms\" + \"[\" + i + \"]\");\n" +
@@ -3721,10 +3791,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            catch (e) {\n" +
 "            }\n" +
 "        }\n" +
-"        checkArray$c(d.tags, field + \".tags\");\n" +
+"        checkArray$d(d.tags, field + \".tags\");\n" +
 "        if (d.tags) {\n" +
 "            for (let i = 0; i < d.tags.length; i++) {\n" +
-"                checkNever$4(d.tags[i], field + \".tags\" + \"[\" + i + \"]\");\n" +
+"                checkNever$5(d.tags[i], field + \".tags\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
 "        checkNull$h(d.turnover, field + \".turnover\");\n" +
@@ -3862,11 +3932,11 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "function throwIsArray$n(field, value, multiple) {\n" +
 "    return errorHelper$n(field, value, \"object\");\n" +
 "}\n" +
-"function checkArray$c(value, field, multiple) {\n" +
+"function checkArray$d(value, field, multiple) {\n" +
 "    if (!Array.isArray(value))\n" +
 "        errorHelper$n(field, value, multiple ?? \"array\");\n" +
 "}\n" +
-"function checkNumber$i(value, field, multiple) {\n" +
+"function checkNumber$j(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'number')\n" +
 "        errorHelper$n(field, value, multiple ?? \"number\");\n" +
 "}\n" +
@@ -3882,7 +3952,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    if (value !== null)\n" +
 "        errorHelper$n(field, value, multiple ?? \"null\");\n" +
 "}\n" +
-"function checkNever$4(value, field, multiple) {\n" +
+"function checkNever$5(value, field, multiple) {\n" +
 "    return errorHelper$n(field, value, \"never\");\n" +
 "}\n" +
 "function errorHelper$n(field, d, type) {\n" +
@@ -3901,8 +3971,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        catch (error) {\n" +
 "            console.log(error);\n" +
 "        }\n" +
-"        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
-"\" + JSON.stringify(d), jsonClone);\n" +
+"        console.error('Expected \"' + type + '\" at ' + field + ' but found:\\n" +
+"' + JSON.stringify(d), jsonClone);\n" +
 "    }\n" +
 "}\n" +
 "\n" +
@@ -3927,7 +3997,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            throwIsArray$m(field, d);\n" +
 "        }\n" +
 "        checkString$k(d.amount, field + \".amount\");\n" +
-"        checkNumber$h(d.company_id, field + \".company_id\");\n" +
+"        checkNumber$i(d.company_id, field + \".company_id\");\n" +
 "        checkString$k(d.currency, field + \".currency\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
@@ -3942,7 +4012,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        checkString$k(d.gross_amount, field + \".gross_amount\");\n" +
 "        checkString$k(d.group_uuid, field + \".group_uuid\");\n" +
-"        checkNumber$h(d.id, field + \".id\");\n" +
+"        checkNumber$i(d.id, field + \".id\");\n" +
 "        checkString$k(d.outstanding_balance, field + \".outstanding_balance\");\n" +
 "        checkNull$g(d.proof_count, field + \".proof_count\");\n" +
 "        checkString$k(d.type, field + \".type\");\n" +
@@ -3976,7 +4046,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "function throwIsArray$m(field, value, multiple) {\n" +
 "    return errorHelper$m(field, value, \"object\");\n" +
 "}\n" +
-"function checkNumber$h(value, field, multiple) {\n" +
+"function checkNumber$i(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'number')\n" +
 "        errorHelper$m(field, value, \"number\");\n" +
 "}\n" +
@@ -4004,8 +4074,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        catch (error) {\n" +
 "            console.log(error);\n" +
 "        }\n" +
-"        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
-"\" + JSON.stringify(d), jsonClone);\n" +
+"        console.error('Expected \"' + type + '\" at ' + field + ' but found:\\n" +
+"' + JSON.stringify(d), jsonClone);\n" +
 "    }\n" +
 "}\n" +
 "\n" +
@@ -4098,8 +4168,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        catch (error) {\n" +
 "            console.log(error);\n" +
 "        }\n" +
-"        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
-"\" + JSON.stringify(d), jsonClone);\n" +
+"        console.error('Expected \"' + type + '\" at ' + field + ' but found:\\n" +
+"' + JSON.stringify(d), jsonClone);\n" +
 "    }\n" +
 "}\n" +
 "\n" +
@@ -4134,21 +4204,68 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            catch (e) {\n" +
 "            }\n" +
 "        }\n" +
-"        checkNumber$g(d.comments_count, field + \".comments_count\");\n" +
+"        if (\"children\" in d) {\n" +
+"            checkArray$c(d.children, field + \".children\");\n" +
+"            if (d.children) {\n" +
+"                for (let i = 0; i < d.children.length; i++) {\n" +
+"                    d.children[i] = ChildrenEntity.Create(d.children[i], field + \".children\" + \"[\" + i + \"]\");\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"comments_count\" in d) {\n" +
+"            checkNumber$h(d.comments_count, field + \".comments_count\");\n" +
+"        }\n" +
 "        checkString$j(d.created_at, field + \".created_at\");\n" +
-"        d.creator = Creator$5.Create(d.creator, field + \".creator\");\n" +
-"        checkBoolean$c(d.favorite, field + \".favorite\");\n" +
-"        checkString$j(d.file_extension, field + \".file_extension\");\n" +
-"        checkNumber$g(d.file_size, field + \".file_size\");\n" +
-"        checkString$j(d.file_url, field + \".file_url\");\n" +
-"        checkNumber$g(d.id, field + \".id\");\n" +
+"        if (\"creator\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                d.creator = Creator$5.Create(d.creator, field + \".creator\", \"Creator | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$f(d.creator, field + \".creator\", \"Creator | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"favorite\" in d) {\n" +
+"            checkBoolean$c(d.favorite, field + \".favorite\");\n" +
+"        }\n" +
+"        if (\"file_extension\" in d) {\n" +
+"            checkString$j(d.file_extension, field + \".file_extension\");\n" +
+"        }\n" +
+"        if (\"file_size\" in d) {\n" +
+"            checkNumber$h(d.file_size, field + \".file_size\");\n" +
+"        }\n" +
+"        if (\"file_url\" in d) {\n" +
+"            checkString$j(d.file_url, field + \".file_url\");\n" +
+"        }\n" +
+"        if (\"filters\" in d) {\n" +
+"            checkNull$f(d.filters, field + \".filters\");\n" +
+"        }\n" +
+"        if (\"fixed\" in d) {\n" +
+"            checkBoolean$c(d.fixed, field + \".fixed\");\n" +
+"        }\n" +
+"        checkNumber$h(d.id, field + \".id\");\n" +
 "        checkBoolean$c(d.imports_allowed, field + \".imports_allowed\");\n" +
-"        checkNumber$g(d.itemable_id, field + \".itemable_id\");\n" +
+"        checkNumber$h(d.itemable_id, field + \".itemable_id\");\n" +
+"        if (\"items\" in d) {\n" +
+"            checkArray$c(d.items, field + \".items\");\n" +
+"            if (d.items) {\n" +
+"                for (let i = 0; i < d.items.length; i++) {\n" +
+"                    d.items[i] = ItemsEntity$1.Create(d.items[i], field + \".items\" + \"[\" + i + \"]\");\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
 "        checkString$j(d.method, field + \".method\");\n" +
 "        checkString$j(d.name, field + \".name\");\n" +
+"        if (\"pagination\" in d) {\n" +
+"            d.pagination = Pagination$3.Create(d.pagination, field + \".pagination\");\n" +
+"        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNumber$g(d.parent_id, field + \".parent_id\", \"number | null\");\n" +
+"            checkNumber$h(d.parent_id, field + \".parent_id\", \"number | null\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -4157,14 +4274,28 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            catch (e) {\n" +
 "            }\n" +
 "        }\n" +
-"        checkString$j(d.pusher_channel, field + \".pusher_channel\");\n" +
-"        checkBoolean$c(d.readonly, field + \".readonly\");\n" +
-"        checkNull$f(d.reference_link, field + \".reference_link\");\n" +
+"        if (\"pusher_channel\" in d) {\n" +
+"            checkString$j(d.pusher_channel, field + \".pusher_channel\");\n" +
+"        }\n" +
+"        if (\"readonly\" in d) {\n" +
+"            checkBoolean$c(d.readonly, field + \".readonly\");\n" +
+"        }\n" +
+"        if (\"reference_link\" in d) {\n" +
+"            checkNull$f(d.reference_link, field + \".reference_link\");\n" +
+"        }\n" +
 "        checkBoolean$c(d.shared, field + \".shared\");\n" +
-"        checkString$j(d.signed_id, field + \".signed_id\");\n" +
+"        if (\"signed_id\" in d) {\n" +
+"            checkString$j(d.signed_id, field + \".signed_id\");\n" +
+"        }\n" +
+"        if (\"sort\" in d) {\n" +
+"            checkString$j(d.sort, field + \".sort\");\n" +
+"        }\n" +
 "        checkString$j(d.type, field + \".type\");\n" +
 "        checkString$j(d.updated_at, field + \".updated_at\");\n" +
-"        const knownProperties = [\"archived_at\", \"comments_count\", \"created_at\", \"creator\", \"favorite\", \"file_extension\", \"file_size\", \"file_url\", \"id\", \"imports_allowed\", \"itemable_id\", \"method\", \"name\", \"parent_id\", \"pusher_channel\", \"readonly\", \"reference_link\", \"shared\", \"signed_id\", \"type\", \"updated_at\"];\n" +
+"        if (\"visible\" in d) {\n" +
+"            checkBoolean$c(d.visible, field + \".visible\");\n" +
+"        }\n" +
+"        const knownProperties = [\"archived_at\", \"children\", \"comments_count\", \"created_at\", \"creator\", \"favorite\", \"file_extension\", \"file_size\", \"file_url\", \"filters\", \"fixed\", \"id\", \"imports_allowed\", \"itemable_id\", \"items\", \"method\", \"name\", \"pagination\", \"parent_id\", \"pusher_channel\", \"readonly\", \"reference_link\", \"shared\", \"signed_id\", \"sort\", \"type\", \"updated_at\", \"visible\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
 "            errorHelper$k(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
@@ -4172,26 +4303,221 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    constructor(d) {\n" +
 "        this.archived_at = d.archived_at;\n" +
-"        this.comments_count = d.comments_count;\n" +
+"        if (\"children\" in d)\n" +
+"            this.children = d.children;\n" +
+"        if (\"comments_count\" in d)\n" +
+"            this.comments_count = d.comments_count;\n" +
 "        this.created_at = d.created_at;\n" +
-"        this.creator = d.creator;\n" +
-"        this.favorite = d.favorite;\n" +
-"        this.file_extension = d.file_extension;\n" +
-"        this.file_size = d.file_size;\n" +
-"        this.file_url = d.file_url;\n" +
+"        if (\"creator\" in d)\n" +
+"            this.creator = d.creator;\n" +
+"        if (\"favorite\" in d)\n" +
+"            this.favorite = d.favorite;\n" +
+"        if (\"file_extension\" in d)\n" +
+"            this.file_extension = d.file_extension;\n" +
+"        if (\"file_size\" in d)\n" +
+"            this.file_size = d.file_size;\n" +
+"        if (\"file_url\" in d)\n" +
+"            this.file_url = d.file_url;\n" +
+"        if (\"filters\" in d)\n" +
+"            this.filters = d.filters;\n" +
+"        if (\"fixed\" in d)\n" +
+"            this.fixed = d.fixed;\n" +
+"        this.id = d.id;\n" +
+"        this.imports_allowed = d.imports_allowed;\n" +
+"        this.itemable_id = d.itemable_id;\n" +
+"        if (\"items\" in d)\n" +
+"            this.items = d.items;\n" +
+"        this.method = d.method;\n" +
+"        this.name = d.name;\n" +
+"        if (\"pagination\" in d)\n" +
+"            this.pagination = d.pagination;\n" +
+"        this.parent_id = d.parent_id;\n" +
+"        if (\"pusher_channel\" in d)\n" +
+"            this.pusher_channel = d.pusher_channel;\n" +
+"        if (\"readonly\" in d)\n" +
+"            this.readonly = d.readonly;\n" +
+"        if (\"reference_link\" in d)\n" +
+"            this.reference_link = d.reference_link;\n" +
+"        this.shared = d.shared;\n" +
+"        if (\"signed_id\" in d)\n" +
+"            this.signed_id = d.signed_id;\n" +
+"        if (\"sort\" in d)\n" +
+"            this.sort = d.sort;\n" +
+"        this.type = d.type;\n" +
+"        this.updated_at = d.updated_at;\n" +
+"        if (\"visible\" in d)\n" +
+"            this.visible = d.visible;\n" +
+"    }\n" +
+"}\n" +
+"class ChildrenEntity {\n" +
+"    static Parse(d) {\n" +
+"        return ChildrenEntity.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$k = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$k(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$k(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$k(field, d);\n" +
+"        }\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$f(d.archived_at, field + \".archived_at\", \"null | string\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkString$j(d.archived_at, field + \".archived_at\", \"null | string\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"comments_count\" in d) {\n" +
+"            checkNumber$h(d.comments_count, field + \".comments_count\");\n" +
+"        }\n" +
+"        checkString$j(d.created_at, field + \".created_at\");\n" +
+"        if (\"creator\" in d) {\n" +
+"            d.creator = Creator1.Create(d.creator, field + \".creator\");\n" +
+"        }\n" +
+"        if (\"favorite\" in d) {\n" +
+"            checkBoolean$c(d.favorite, field + \".favorite\");\n" +
+"        }\n" +
+"        if (\"file_extension\" in d) {\n" +
+"            checkString$j(d.file_extension, field + \".file_extension\");\n" +
+"        }\n" +
+"        if (\"file_size\" in d) {\n" +
+"            checkNumber$h(d.file_size, field + \".file_size\");\n" +
+"        }\n" +
+"        if (\"file_url\" in d) {\n" +
+"            checkString$j(d.file_url, field + \".file_url\");\n" +
+"        }\n" +
+"        if (\"files_count\" in d) {\n" +
+"            checkNumber$h(d.files_count, field + \".files_count\");\n" +
+"        }\n" +
+"        if (\"fixed\" in d) {\n" +
+"            checkBoolean$c(d.fixed, field + \".fixed\");\n" +
+"        }\n" +
+"        checkNumber$h(d.id, field + \".id\");\n" +
+"        checkBoolean$c(d.imports_allowed, field + \".imports_allowed\");\n" +
+"        checkNumber$h(d.itemable_id, field + \".itemable_id\");\n" +
+"        checkString$j(d.method, field + \".method\");\n" +
+"        checkString$j(d.name, field + \".name\");\n" +
+"        checkNumber$h(d.parent_id, field + \".parent_id\");\n" +
+"        if (\"pusher_channel\" in d) {\n" +
+"            checkString$j(d.pusher_channel, field + \".pusher_channel\");\n" +
+"        }\n" +
+"        if (\"readonly\" in d) {\n" +
+"            checkBoolean$c(d.readonly, field + \".readonly\");\n" +
+"        }\n" +
+"        if (\"reference_link\" in d) {\n" +
+"            checkNull$f(d.reference_link, field + \".reference_link\");\n" +
+"        }\n" +
+"        checkBoolean$c(d.shared, field + \".shared\");\n" +
+"        if (\"signed_id\" in d) {\n" +
+"            checkString$j(d.signed_id, field + \".signed_id\");\n" +
+"        }\n" +
+"        if (\"suggested_folders\" in d) {\n" +
+"            checkArray$c(d.suggested_folders, field + \".suggested_folders\");\n" +
+"            if (d.suggested_folders) {\n" +
+"                for (let i = 0; i < d.suggested_folders.length; i++) {\n" +
+"                    checkNever$4(d.suggested_folders[i], field + \".suggested_folders\" + \"[\" + i + \"]\");\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        checkString$j(d.type, field + \".type\");\n" +
+"        checkString$j(d.updated_at, field + \".updated_at\");\n" +
+"        if (\"visible\" in d) {\n" +
+"            checkBoolean$c(d.visible, field + \".visible\");\n" +
+"        }\n" +
+"        const knownProperties = [\"archived_at\", \"comments_count\", \"created_at\", \"creator\", \"favorite\", \"file_extension\", \"file_size\", \"file_url\", \"files_count\", \"fixed\", \"id\", \"imports_allowed\", \"itemable_id\", \"method\", \"name\", \"parent_id\", \"pusher_channel\", \"readonly\", \"reference_link\", \"shared\", \"signed_id\", \"suggested_folders\", \"type\", \"updated_at\", \"visible\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$k(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
+"        return new ChildrenEntity(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.archived_at = d.archived_at;\n" +
+"        if (\"comments_count\" in d)\n" +
+"            this.comments_count = d.comments_count;\n" +
+"        this.created_at = d.created_at;\n" +
+"        if (\"creator\" in d)\n" +
+"            this.creator = d.creator;\n" +
+"        if (\"favorite\" in d)\n" +
+"            this.favorite = d.favorite;\n" +
+"        if (\"file_extension\" in d)\n" +
+"            this.file_extension = d.file_extension;\n" +
+"        if (\"file_size\" in d)\n" +
+"            this.file_size = d.file_size;\n" +
+"        if (\"file_url\" in d)\n" +
+"            this.file_url = d.file_url;\n" +
+"        if (\"files_count\" in d)\n" +
+"            this.files_count = d.files_count;\n" +
+"        if (\"fixed\" in d)\n" +
+"            this.fixed = d.fixed;\n" +
 "        this.id = d.id;\n" +
 "        this.imports_allowed = d.imports_allowed;\n" +
 "        this.itemable_id = d.itemable_id;\n" +
 "        this.method = d.method;\n" +
 "        this.name = d.name;\n" +
 "        this.parent_id = d.parent_id;\n" +
-"        this.pusher_channel = d.pusher_channel;\n" +
-"        this.readonly = d.readonly;\n" +
-"        this.reference_link = d.reference_link;\n" +
+"        if (\"pusher_channel\" in d)\n" +
+"            this.pusher_channel = d.pusher_channel;\n" +
+"        if (\"readonly\" in d)\n" +
+"            this.readonly = d.readonly;\n" +
+"        if (\"reference_link\" in d)\n" +
+"            this.reference_link = d.reference_link;\n" +
 "        this.shared = d.shared;\n" +
-"        this.signed_id = d.signed_id;\n" +
+"        if (\"signed_id\" in d)\n" +
+"            this.signed_id = d.signed_id;\n" +
+"        if (\"suggested_folders\" in d)\n" +
+"            this.suggested_folders = d.suggested_folders;\n" +
 "        this.type = d.type;\n" +
 "        this.updated_at = d.updated_at;\n" +
+"        if (\"visible\" in d)\n" +
+"            this.visible = d.visible;\n" +
+"    }\n" +
+"}\n" +
+"class Creator1 {\n" +
+"    static Parse(d) {\n" +
+"        return Creator1.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$k = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$k(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$k(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$k(field, d);\n" +
+"        }\n" +
+"        checkString$j(d.email, field + \".email\");\n" +
+"        checkString$j(d.first_name, field + \".first_name\");\n" +
+"        checkString$j(d.full_name, field + \".full_name\");\n" +
+"        checkString$j(d.last_name, field + \".last_name\");\n" +
+"        checkString$j(d.role, field + \".role\");\n" +
+"        const knownProperties = [\"email\", \"first_name\", \"full_name\", \"last_name\", \"role\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$k(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
+"        return new Creator1(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.email = d.email;\n" +
+"        this.first_name = d.first_name;\n" +
+"        this.full_name = d.full_name;\n" +
+"        this.last_name = d.last_name;\n" +
+"        this.role = d.role;\n" +
 "    }\n" +
 "}\n" +
 "let Creator$5 = class Creator {\n" +
@@ -4231,6 +4557,123 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        this.role = d.role;\n" +
 "    }\n" +
 "};\n" +
+"let ItemsEntity$1 = class ItemsEntity {\n" +
+"    static Parse(d) {\n" +
+"        return ItemsEntity.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$k = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$k(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$k(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$k(field, d);\n" +
+"        }\n" +
+"        checkNull$f(d.archived_at, field + \".archived_at\");\n" +
+"        checkNumber$h(d.comments_count, field + \".comments_count\");\n" +
+"        checkString$j(d.created_at, field + \".created_at\");\n" +
+"        checkNull$f(d.creator, field + \".creator\");\n" +
+"        checkBoolean$c(d.favorite, field + \".favorite\");\n" +
+"        checkString$j(d.file_extension, field + \".file_extension\");\n" +
+"        checkNumber$h(d.file_size, field + \".file_size\");\n" +
+"        checkString$j(d.file_url, field + \".file_url\");\n" +
+"        checkNumber$h(d.id, field + \".id\");\n" +
+"        checkBoolean$c(d.imports_allowed, field + \".imports_allowed\");\n" +
+"        checkNumber$h(d.itemable_id, field + \".itemable_id\");\n" +
+"        checkString$j(d.method, field + \".method\");\n" +
+"        checkString$j(d.name, field + \".name\");\n" +
+"        checkNumber$h(d.parent_id, field + \".parent_id\");\n" +
+"        checkString$j(d.pusher_channel, field + \".pusher_channel\");\n" +
+"        checkBoolean$c(d.readonly, field + \".readonly\");\n" +
+"        checkNull$f(d.reference_link, field + \".reference_link\");\n" +
+"        checkBoolean$c(d.shared, field + \".shared\");\n" +
+"        checkString$j(d.signed_id, field + \".signed_id\");\n" +
+"        checkArray$c(d.suggested_folders, field + \".suggested_folders\");\n" +
+"        if (d.suggested_folders) {\n" +
+"            for (let i = 0; i < d.suggested_folders.length; i++) {\n" +
+"                checkNever$4(d.suggested_folders[i], field + \".suggested_folders\" + \"[\" + i + \"]\");\n" +
+"            }\n" +
+"        }\n" +
+"        checkString$j(d.type, field + \".type\");\n" +
+"        checkString$j(d.updated_at, field + \".updated_at\");\n" +
+"        const knownProperties = [\"archived_at\", \"comments_count\", \"created_at\", \"creator\", \"favorite\", \"file_extension\", \"file_size\", \"file_url\", \"id\", \"imports_allowed\", \"itemable_id\", \"method\", \"name\", \"parent_id\", \"pusher_channel\", \"readonly\", \"reference_link\", \"shared\", \"signed_id\", \"suggested_folders\", \"type\", \"updated_at\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$k(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
+"        return new ItemsEntity(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.archived_at = d.archived_at;\n" +
+"        this.comments_count = d.comments_count;\n" +
+"        this.created_at = d.created_at;\n" +
+"        this.creator = d.creator;\n" +
+"        this.favorite = d.favorite;\n" +
+"        this.file_extension = d.file_extension;\n" +
+"        this.file_size = d.file_size;\n" +
+"        this.file_url = d.file_url;\n" +
+"        this.id = d.id;\n" +
+"        this.imports_allowed = d.imports_allowed;\n" +
+"        this.itemable_id = d.itemable_id;\n" +
+"        this.method = d.method;\n" +
+"        this.name = d.name;\n" +
+"        this.parent_id = d.parent_id;\n" +
+"        this.pusher_channel = d.pusher_channel;\n" +
+"        this.readonly = d.readonly;\n" +
+"        this.reference_link = d.reference_link;\n" +
+"        this.shared = d.shared;\n" +
+"        this.signed_id = d.signed_id;\n" +
+"        this.suggested_folders = d.suggested_folders;\n" +
+"        this.type = d.type;\n" +
+"        this.updated_at = d.updated_at;\n" +
+"    }\n" +
+"};\n" +
+"let Pagination$3 = class Pagination {\n" +
+"    static Parse(d) {\n" +
+"        return Pagination.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$k = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$k(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$k(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$k(field, d);\n" +
+"        }\n" +
+"        checkBoolean$c(d.hasNextPage, field + \".hasNextPage\");\n" +
+"        checkNumber$h(d.page, field + \".page\");\n" +
+"        checkNumber$h(d.pages, field + \".pages\");\n" +
+"        checkNumber$h(d.pageSize, field + \".pageSize\");\n" +
+"        checkNumber$h(d.totalEntries, field + \".totalEntries\");\n" +
+"        checkString$j(d.totalEntriesPrecision, field + \".totalEntriesPrecision\");\n" +
+"        checkString$j(d.totalEntriesStr, field + \".totalEntriesStr\");\n" +
+"        const knownProperties = [\"hasNextPage\", \"page\", \"pages\", \"pageSize\", \"totalEntries\", \"totalEntriesPrecision\", \"totalEntriesStr\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$k(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
+"        return new Pagination(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.hasNextPage = d.hasNextPage;\n" +
+"        this.page = d.page;\n" +
+"        this.pages = d.pages;\n" +
+"        this.pageSize = d.pageSize;\n" +
+"        this.totalEntries = d.totalEntries;\n" +
+"        this.totalEntriesPrecision = d.totalEntriesPrecision;\n" +
+"        this.totalEntriesStr = d.totalEntriesStr;\n" +
+"    }\n" +
+"};\n" +
 "function throwNull2NonNull$k(field, value, multiple) {\n" +
 "    return errorHelper$k(field, value, multiple ?? \"non-nullable object\");\n" +
 "}\n" +
@@ -4240,7 +4683,11 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "function throwIsArray$k(field, value, multiple) {\n" +
 "    return errorHelper$k(field, value, \"object\");\n" +
 "}\n" +
-"function checkNumber$g(value, field, multiple) {\n" +
+"function checkArray$c(value, field, multiple) {\n" +
+"    if (!Array.isArray(value))\n" +
+"        errorHelper$k(field, value, \"array\");\n" +
+"}\n" +
+"function checkNumber$h(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'number')\n" +
 "        errorHelper$k(field, value, multiple ?? \"number\");\n" +
 "}\n" +
@@ -4255,6 +4702,9 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "function checkNull$f(value, field, multiple) {\n" +
 "    if (value !== null)\n" +
 "        errorHelper$k(field, value, multiple ?? \"null\");\n" +
+"}\n" +
+"function checkNever$4(value, field, multiple) {\n" +
+"    return errorHelper$k(field, value, \"never\");\n" +
 "}\n" +
 "function errorHelper$k(field, d, type) {\n" +
 "    if (type.includes(' | ')) {\n" +
@@ -4272,8 +4722,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        catch (error) {\n" +
 "            console.log(error);\n" +
 "        }\n" +
-"        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
-"\" + JSON.stringify(d), jsonClone);\n" +
+"        console.error('Expected \"' + type + '\" at ' + field + ' but found:\\n" +
+"' + JSON.stringify(d), jsonClone);\n" +
 "    }\n" +
 "}\n" +
 "\n" +
@@ -4297,8 +4747,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$j(field, d);\n" +
 "        }\n" +
-"        checkNumber$f(d.id, field + \".id\");\n" +
-"        checkNumber$f(d.record_id, field + \".record_id\");\n" +
+"        checkNumber$g(d.id, field + \".id\");\n" +
+"        checkNumber$g(d.record_id, field + \".record_id\");\n" +
 "        checkString$i(d.record_name, field + \".record_name\");\n" +
 "        checkString$i(d.record_type, field + \".record_type\");\n" +
 "        checkString$i(d.record_url, field + \".record_url\");\n" +
@@ -4325,7 +4775,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "function throwIsArray$j(field, value, multiple) {\n" +
 "    return errorHelper$j(field, value, \"object\");\n" +
 "}\n" +
-"function checkNumber$f(value, field, multiple) {\n" +
+"function checkNumber$g(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'number')\n" +
 "        errorHelper$j(field, value, \"number\");\n" +
 "}\n" +
@@ -4349,8 +4799,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        catch (error) {\n" +
 "            console.log(error);\n" +
 "        }\n" +
-"        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
-"\" + JSON.stringify(d), jsonClone);\n" +
+"        console.error('Expected \"' + type + '\" at ' + field + ' but found:\\n" +
+"' + JSON.stringify(d), jsonClone);\n" +
 "    }\n" +
 "}\n" +
 "\n" +
@@ -4374,7 +4824,17 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$i(field, d);\n" +
 "        }\n" +
-"        checkString$h(d.filters, field + \".filters\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkString$h(d.filters, field + \".filters\", \"string | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$e(d.filters, field + \".filters\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"            }\n" +
+"        }\n" +
 "        checkArray$b(d.items, field + \".items\");\n" +
 "        if (d.items) {\n" +
 "            for (let i = 0; i < d.items.length; i++) {\n" +
@@ -4414,28 +4874,74 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$i(field, d);\n" +
 "        }\n" +
-"        checkNull$e(d.archived_at, field + \".archived_at\");\n" +
-"        checkNumber$e(d.comments_count, field + \".comments_count\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$e(d.archived_at, field + \".archived_at\", \"null | string\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkString$h(d.archived_at, field + \".archived_at\", \"null | string\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"comments_count\" in d) {\n" +
+"            checkNumber$f(d.comments_count, field + \".comments_count\");\n" +
+"        }\n" +
 "        checkString$h(d.created_at, field + \".created_at\");\n" +
-"        d.creator = Creator$4.Create(d.creator, field + \".creator\");\n" +
-"        checkBoolean$b(d.favorite, field + \".favorite\");\n" +
-"        checkString$h(d.file_extension, field + \".file_extension\");\n" +
-"        checkNumber$e(d.file_size, field + \".file_size\");\n" +
-"        checkString$h(d.file_url, field + \".file_url\");\n" +
-"        checkNumber$e(d.id, field + \".id\");\n" +
+"        if (\"creator\" in d) {\n" +
+"            d.creator = Creator$4.Create(d.creator, field + \".creator\");\n" +
+"        }\n" +
+"        if (\"favorite\" in d) {\n" +
+"            checkBoolean$b(d.favorite, field + \".favorite\");\n" +
+"        }\n" +
+"        if (\"file_extension\" in d) {\n" +
+"            checkString$h(d.file_extension, field + \".file_extension\");\n" +
+"        }\n" +
+"        if (\"file_size\" in d) {\n" +
+"            checkNumber$f(d.file_size, field + \".file_size\");\n" +
+"        }\n" +
+"        if (\"file_url\" in d) {\n" +
+"            checkString$h(d.file_url, field + \".file_url\");\n" +
+"        }\n" +
+"        if (\"fixed\" in d) {\n" +
+"            checkBoolean$b(d.fixed, field + \".fixed\");\n" +
+"        }\n" +
+"        checkNumber$f(d.id, field + \".id\");\n" +
 "        checkBoolean$b(d.imports_allowed, field + \".imports_allowed\");\n" +
-"        checkNumber$e(d.itemable_id, field + \".itemable_id\");\n" +
+"        checkNumber$f(d.itemable_id, field + \".itemable_id\");\n" +
 "        checkString$h(d.method, field + \".method\");\n" +
 "        checkString$h(d.name, field + \".name\");\n" +
-"        checkNumber$e(d.parent_id, field + \".parent_id\");\n" +
-"        checkString$h(d.pusher_channel, field + \".pusher_channel\");\n" +
-"        checkBoolean$b(d.readonly, field + \".readonly\");\n" +
-"        checkNull$e(d.reference_link, field + \".reference_link\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNumber$f(d.parent_id, field + \".parent_id\", \"number | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$e(d.parent_id, field + \".parent_id\", \"number | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"pusher_channel\" in d) {\n" +
+"            checkString$h(d.pusher_channel, field + \".pusher_channel\");\n" +
+"        }\n" +
+"        if (\"readonly\" in d) {\n" +
+"            checkBoolean$b(d.readonly, field + \".readonly\");\n" +
+"        }\n" +
+"        if (\"reference_link\" in d) {\n" +
+"            checkNull$e(d.reference_link, field + \".reference_link\");\n" +
+"        }\n" +
 "        checkBoolean$b(d.shared, field + \".shared\");\n" +
-"        checkString$h(d.signed_id, field + \".signed_id\");\n" +
+"        if (\"signed_id\" in d) {\n" +
+"            checkString$h(d.signed_id, field + \".signed_id\");\n" +
+"        }\n" +
 "        checkString$h(d.type, field + \".type\");\n" +
 "        checkString$h(d.updated_at, field + \".updated_at\");\n" +
-"        const knownProperties = [\"archived_at\", \"comments_count\", \"created_at\", \"creator\", \"favorite\", \"file_extension\", \"file_size\", \"file_url\", \"id\", \"imports_allowed\", \"itemable_id\", \"method\", \"name\", \"parent_id\", \"pusher_channel\", \"readonly\", \"reference_link\", \"shared\", \"signed_id\", \"type\", \"updated_at\"];\n" +
+"        if (\"visible\" in d) {\n" +
+"            checkBoolean$b(d.visible, field + \".visible\");\n" +
+"        }\n" +
+"        const knownProperties = [\"archived_at\", \"comments_count\", \"created_at\", \"creator\", \"favorite\", \"file_extension\", \"file_size\", \"file_url\", \"fixed\", \"id\", \"imports_allowed\", \"itemable_id\", \"method\", \"name\", \"parent_id\", \"pusher_channel\", \"readonly\", \"reference_link\", \"shared\", \"signed_id\", \"type\", \"updated_at\", \"visible\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
 "            errorHelper$i(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
@@ -4443,26 +4949,40 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    constructor(d) {\n" +
 "        this.archived_at = d.archived_at;\n" +
-"        this.comments_count = d.comments_count;\n" +
+"        if (\"comments_count\" in d)\n" +
+"            this.comments_count = d.comments_count;\n" +
 "        this.created_at = d.created_at;\n" +
-"        this.creator = d.creator;\n" +
-"        this.favorite = d.favorite;\n" +
-"        this.file_extension = d.file_extension;\n" +
-"        this.file_size = d.file_size;\n" +
-"        this.file_url = d.file_url;\n" +
+"        if (\"creator\" in d)\n" +
+"            this.creator = d.creator;\n" +
+"        if (\"favorite\" in d)\n" +
+"            this.favorite = d.favorite;\n" +
+"        if (\"file_extension\" in d)\n" +
+"            this.file_extension = d.file_extension;\n" +
+"        if (\"file_size\" in d)\n" +
+"            this.file_size = d.file_size;\n" +
+"        if (\"file_url\" in d)\n" +
+"            this.file_url = d.file_url;\n" +
+"        if (\"fixed\" in d)\n" +
+"            this.fixed = d.fixed;\n" +
 "        this.id = d.id;\n" +
 "        this.imports_allowed = d.imports_allowed;\n" +
 "        this.itemable_id = d.itemable_id;\n" +
 "        this.method = d.method;\n" +
 "        this.name = d.name;\n" +
 "        this.parent_id = d.parent_id;\n" +
-"        this.pusher_channel = d.pusher_channel;\n" +
-"        this.readonly = d.readonly;\n" +
-"        this.reference_link = d.reference_link;\n" +
+"        if (\"pusher_channel\" in d)\n" +
+"            this.pusher_channel = d.pusher_channel;\n" +
+"        if (\"readonly\" in d)\n" +
+"            this.readonly = d.readonly;\n" +
+"        if (\"reference_link\" in d)\n" +
+"            this.reference_link = d.reference_link;\n" +
 "        this.shared = d.shared;\n" +
-"        this.signed_id = d.signed_id;\n" +
+"        if (\"signed_id\" in d)\n" +
+"            this.signed_id = d.signed_id;\n" +
 "        this.type = d.type;\n" +
 "        this.updated_at = d.updated_at;\n" +
+"        if (\"visible\" in d)\n" +
+"            this.visible = d.visible;\n" +
 "    }\n" +
 "}\n" +
 "let Creator$4 = class Creator {\n" +
@@ -4521,10 +5041,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            throwIsArray$i(field, d);\n" +
 "        }\n" +
 "        checkBoolean$b(d.hasNextPage, field + \".hasNextPage\");\n" +
-"        checkNumber$e(d.page, field + \".page\");\n" +
-"        checkNumber$e(d.pages, field + \".pages\");\n" +
-"        checkNumber$e(d.pageSize, field + \".pageSize\");\n" +
-"        checkNumber$e(d.totalEntries, field + \".totalEntries\");\n" +
+"        checkNumber$f(d.page, field + \".page\");\n" +
+"        checkNumber$f(d.pages, field + \".pages\");\n" +
+"        checkNumber$f(d.pageSize, field + \".pageSize\");\n" +
+"        checkNumber$f(d.totalEntries, field + \".totalEntries\");\n" +
 "        checkString$h(d.totalEntriesPrecision, field + \".totalEntriesPrecision\");\n" +
 "        checkString$h(d.totalEntriesStr, field + \".totalEntriesStr\");\n" +
 "        const knownProperties = [\"hasNextPage\", \"page\", \"pages\", \"pageSize\", \"totalEntries\", \"totalEntriesPrecision\", \"totalEntriesStr\"];\n" +
@@ -4556,9 +5076,9 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    if (!Array.isArray(value))\n" +
 "        errorHelper$i(field, value, \"array\");\n" +
 "}\n" +
-"function checkNumber$e(value, field, multiple) {\n" +
+"function checkNumber$f(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'number')\n" +
-"        errorHelper$i(field, value, \"number\");\n" +
+"        errorHelper$i(field, value, multiple ?? \"number\");\n" +
 "}\n" +
 "function checkBoolean$b(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'boolean')\n" +
@@ -4566,11 +5086,11 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "}\n" +
 "function checkString$h(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'string')\n" +
-"        errorHelper$i(field, value, \"string\");\n" +
+"        errorHelper$i(field, value, multiple ?? \"string\");\n" +
 "}\n" +
 "function checkNull$e(value, field, multiple) {\n" +
 "    if (value !== null)\n" +
-"        errorHelper$i(field, value, \"null\");\n" +
+"        errorHelper$i(field, value, multiple ?? \"null\");\n" +
 "}\n" +
 "function errorHelper$i(field, d, type) {\n" +
 "    if (type.includes(' | ')) {\n" +
@@ -4588,8 +5108,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        catch (error) {\n" +
 "            console.log(error);\n" +
 "        }\n" +
-"        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
-"\" + JSON.stringify(d), jsonClone);\n" +
+"        console.error('Expected \"' + type + '\" at ' + field + ' but found:\\n" +
+"' + JSON.stringify(d), jsonClone);\n" +
 "    }\n" +
 "}\n" +
 "\n" +
@@ -4631,10 +5151,16 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
+"        if (\"page\" in d) {\n" +
+"            checkNumber$e(d.page, field + \".page\");\n" +
+"        }\n" +
 "        if (\"page_name\" in d) {\n" +
 "            checkString$g(d.page_name, field + \".page_name\");\n" +
 "        }\n" +
-"        const knownProperties = [\"filter\", \"page_name\"];\n" +
+"        if (\"sort\" in d) {\n" +
+"            checkString$g(d.sort, field + \".sort\");\n" +
+"        }\n" +
+"        const knownProperties = [\"filter\", \"page\", \"page_name\", \"sort\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
 "            errorHelper$h(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
@@ -4643,8 +5169,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    constructor(d) {\n" +
 "        if (\"filter\" in d)\n" +
 "            this.filter = d.filter;\n" +
+"        if (\"page\" in d)\n" +
+"            this.page = d.page;\n" +
 "        if (\"page_name\" in d)\n" +
 "            this.page_name = d.page_name;\n" +
+"        if (\"sort\" in d)\n" +
+"            this.sort = d.sort;\n" +
 "    }\n" +
 "}\n" +
 "let FilterEntity$1 = class FilterEntity {\n" +
@@ -4693,6 +5223,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    if (!Array.isArray(value))\n" +
 "        errorHelper$h(field, value, multiple);\n" +
 "}\n" +
+"function checkNumber$e(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'number')\n" +
+"        errorHelper$h(field, value, \"number\");\n" +
+"}\n" +
 "function checkString$g(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'string')\n" +
 "        errorHelper$h(field, value, multiple ?? \"string\");\n" +
@@ -4713,8 +5247,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        catch (error) {\n" +
 "            console.log(error);\n" +
 "        }\n" +
-"        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
-"\" + JSON.stringify(d), jsonClone);\n" +
+"        console.error('Expected \"' + type + '\" at ' + field + ' but found:\\n" +
+"' + JSON.stringify(d), jsonClone);\n" +
 "    }\n" +
 "}\n" +
 "\n" +
@@ -4975,8 +5509,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        catch (error) {\n" +
 "            console.log(error);\n" +
 "        }\n" +
-"        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
-"\" + JSON.stringify(d), jsonClone);\n" +
+"        console.error('Expected \"' + type + '\" at ' + field + ' but found:\\n" +
+"' + JSON.stringify(d), jsonClone);\n" +
 "    }\n" +
 "}\n" +
 "\n" +
@@ -5184,8 +5718,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        catch (error) {\n" +
 "            console.log(error);\n" +
 "        }\n" +
-"        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
-"\" + JSON.stringify(d), jsonClone);\n" +
+"        console.error('Expected \"' + type + '\" at ' + field + ' but found:\\n" +
+"' + JSON.stringify(d), jsonClone);\n" +
 "    }\n" +
 "}\n" +
 "\n" +
@@ -5427,8 +5961,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        catch (error) {\n" +
 "            console.log(error);\n" +
 "        }\n" +
-"        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
-"\" + JSON.stringify(d), jsonClone);\n" +
+"        console.error('Expected \"' + type + '\" at ' + field + ' but found:\\n" +
+"' + JSON.stringify(d), jsonClone);\n" +
 "    }\n" +
 "}\n" +
 "\n" +
@@ -5492,8 +6026,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        catch (error) {\n" +
 "            console.log(error);\n" +
 "        }\n" +
-"        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
-"\" + JSON.stringify(d), jsonClone);\n" +
+"        console.error('Expected \"' + type + '\" at ' + field + ' but found:\\n" +
+"' + JSON.stringify(d), jsonClone);\n" +
 "    }\n" +
 "}\n" +
 "\n" +
@@ -5529,7 +6063,17 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkNumber$a(d.itemable_id, field + \".itemable_id\");\n" +
 "        checkString$b(d.method, field + \".method\");\n" +
 "        checkString$b(d.name, field + \".name\");\n" +
-"        checkNumber$a(d.parent_id, field + \".parent_id\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNumber$a(d.parent_id, field + \".parent_id\", \"number | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$a(d.parent_id, field + \".parent_id\", \"number | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"            }\n" +
+"        }\n" +
 "        checkString$b(d.pusher_channel, field + \".pusher_channel\");\n" +
 "        checkBoolean$9(d.readonly, field + \".readonly\");\n" +
 "        checkNull$a(d.reference_link, field + \".reference_link\");\n" +
@@ -5614,7 +6158,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "}\n" +
 "function checkNumber$a(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'number')\n" +
-"        errorHelper$c(field, value, \"number\");\n" +
+"        errorHelper$c(field, value, multiple ?? \"number\");\n" +
 "}\n" +
 "function checkBoolean$9(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'boolean')\n" +
@@ -5626,7 +6170,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "}\n" +
 "function checkNull$a(value, field, multiple) {\n" +
 "    if (value !== null)\n" +
-"        errorHelper$c(field, value, \"null\");\n" +
+"        errorHelper$c(field, value, multiple ?? \"null\");\n" +
 "}\n" +
 "function errorHelper$c(field, d, type) {\n" +
 "    if (type.includes(' | ')) {\n" +
@@ -5644,12 +6188,18 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        catch (error) {\n" +
 "            console.log(error);\n" +
 "        }\n" +
-"        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
-"\" + JSON.stringify(d), jsonClone);\n" +
+"        console.error('Expected \"' + type + '\" at ' + field + ' but found:\\n" +
+"' + JSON.stringify(d), jsonClone);\n" +
 "    }\n" +
 "}\n" +
 "\n" +
-"const logger = new Logger('API_DMS');\n" +
+"const logger$1 = new Logger('API_DMS');\n" +
+"/**\n" +
+" * Get DMS items linked to a record (a document)\n" +
+" * @param recordId\n" +
+" * @param recordType\n" +
+" * @returns\n" +
+" */\n" +
 "async function getDMSLinks(recordId, recordType) {\n" +
 "    if (!recordType)\n" +
 "        recordType = (await getDocument(recordId)).type;\n" +
@@ -5660,33 +6210,74 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    const list = APIDMSLinkList.Create(data);\n" +
 "    return list.dms_links.map(link => APIDMSLink.Create(link));\n" +
 "}\n" +
+"/**\n" +
+" * Get DMS item\n" +
+" * @param id\n" +
+" * @returns\n" +
+" */\n" +
 "async function getDMSItem(id) {\n" +
 "    const response = await apiRequest(`dms/items/${id}`, null, 'GET');\n" +
 "    const data = await response?.json();\n" +
-"    if (!data)\n" +
-"        return (await getDMSItemSettings(id)).item;\n" +
+"    if (!data) {\n" +
+"        logger$1.error('getDMSItem', { id, response, data });\n" +
+"        const settings = await getDMSItemSettings(id);\n" +
+"        if (!settings?.item)\n" +
+"            return null;\n" +
+"        return settings.item;\n" +
+"    }\n" +
 "    return APIDMSItem.Create(data);\n" +
 "}\n" +
+"/**\n" +
+" * Get list of records (documents) linked to a DMS item\n" +
+" * @param dmsFileId\n" +
+" * @returns\n" +
+" */\n" +
 "async function getDMSItemLinks(\n" +
 "/** the DMSItem.itemable_id */\n" +
 "dmsFileId) {\n" +
 "    const response = await dmsRequest({ url: `dms/files/${dmsFileId}/links` });\n" +
 "    const data = await response?.json();\n" +
 "    if (!data)\n" +
-"        return data;\n" +
+"        return [];\n" +
 "    if (!Array.isArray(data)) {\n" +
-"        logger.error('réponse inattendue pour getDMSItemLinks', { response, data });\n" +
-"        return null;\n" +
+"        logger$1.error('réponse inattendue pour getDMSItemLinks', { response, data });\n" +
+"        return [];\n" +
 "    }\n" +
 "    const links = data.map(item => APIDMSItemLink.Create(item));\n" +
 "    return links;\n" +
 "}\n" +
+"/**\n" +
+" * Get DMS item settings\n" +
+" * @param id\n" +
+" * @returns\n" +
+" */\n" +
 "async function getDMSItemSettings(id) {\n" +
 "    const response = await apiRequest(`dms/items/settings.json?filter=&item_id=${id}`, null, 'GET');\n" +
 "    const data = await response?.json();\n" +
-"    if (!data)\n" +
+"    if (!data) {\n" +
+"        logger$1.error('getDMSItemSettings', { id, response, data });\n" +
 "        return data;\n" +
+"    }\n" +
 "    return APIDMSItemSettings.Create(data);\n" +
+"}\n" +
+"/**\n" +
+" * Generate all result one by one as generator\n" +
+" */\n" +
+"async function* getDMSItemGenerator(params = {}) {\n" +
+"    let page = Number(params.page ?? 1);\n" +
+"    if (!Number.isSafeInteger(page)) {\n" +
+"        console.log('getDMSItemGenerator', { params, page });\n" +
+"        throw new Error('params.page, if provided, MUST be a safe integer');\n" +
+"    }\n" +
+"    do {\n" +
+"        const data = await getDMSItemList(Object.assign({}, params, { page }));\n" +
+"        const items = data.items;\n" +
+"        if (!items?.length)\n" +
+"            return;\n" +
+"        for (const item of items)\n" +
+"            yield item;\n" +
+"        ++page;\n" +
+"    } while (true);\n" +
 "}\n" +
 "/**\n" +
 " * Load list of DMS from API. paginated.\n" +
@@ -5745,7 +6336,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    if (ref.type === 'Invoice' && 'direction' in ref) {\n" +
 "        direction = ref.direction;\n" +
 "    }\n" +
-"    logger.log('getDMSDestId', { ref, direction, year });\n" +
+"    logger$1.log('getDMSDestId', { ref, direction, year });\n" +
 "    switch (direction) {\n" +
 "        case 'customer':\n" +
 "            switch (year) {\n" +
@@ -5761,7 +6352,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            break;\n" +
 "    }\n" +
-"    logger.log('getDMSDestId', { ref });\n" +
+"    logger$1.log('getDMSDestId', { ref });\n" +
 "    return 0;\n" +
 "}\n" +
 "\n" +
@@ -5911,8 +6502,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        catch (error) {\n" +
 "            console.log(error);\n" +
 "        }\n" +
-"        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
-"\" + JSON.stringify(d), jsonClone);\n" +
+"        console.error('Expected \"' + type + '\" at ' + field + ' but found:\\n" +
+"' + JSON.stringify(d), jsonClone);\n" +
 "    }\n" +
 "}\n" +
 "\n" +
@@ -6132,26 +6723,44 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        catch (error) {\n" +
 "            console.log(error);\n" +
 "        }\n" +
-"        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
-"\" + JSON.stringify(d), jsonClone);\n" +
+"        console.error('Expected \"' + type + '\" at ' + field + ' but found:\\n" +
+"' + JSON.stringify(d), jsonClone);\n" +
 "    }\n" +
 "}\n" +
 "\n" +
+"const logger = new Logger('Operation');\n" +
 "async function getLedgerEvents(id) {\n" +
 "    const response = await apiRequest(`accountants/operations/${id}/ledger_events?per_page=-1`, null, 'GET');\n" +
+"    if (!response) {\n" +
+"        logger.error(`Unable to load ledger events for ${id}`);\n" +
+"        return [];\n" +
+"    }\n" +
 "    const data = await response.json();\n" +
 "    return data.map(item => APILedgerEvent.Create(item));\n" +
 "}\n" +
+"const groupedDocumentsCache = {};\n" +
 "async function getGroupedDocuments(id, page = 1) {\n" +
 "    if (!Number.isSafeInteger(id) || !id) {\n" +
-"        console.log('getGroupedDocuments', { id });\n" +
+"        logger.error('`id` MUST be an integer', { id });\n" +
 "        throw new Error('`id` MUST be an integer');\n" +
 "    }\n" +
+"    if (page === 1 && groupedDocumentsCache[id])\n" +
+"        return groupedDocumentsCache[id];\n" +
 "    const response = await apiRequest(`accountants/operations/${id}/grouped_documents?per_page=20&page=${page}`, null, 'GET');\n" +
+"    if (!response) {\n" +
+"        // probablement une facture supprimée\n" +
+"        logger.error(`Unable to load grouped documents for ${id}`);\n" +
+"        return [];\n" +
+"    }\n" +
 "    const result = await response.json();\n" +
 "    const list = result.map(item => APIGroupedDocument.Create(item));\n" +
 "    if (list.length === 20)\n" +
-"        return list.concat(await getGroupedDocuments(id, page + 1));\n" +
+"        list.push(...await getGroupedDocuments(id, page + 1));\n" +
+"    if (page === 1) {\n" +
+"        list.forEach(item => {\n" +
+"            groupedDocumentsCache[item.id] = list;\n" +
+"        });\n" +
+"    }\n" +
 "    return list;\n" +
 "}\n" +
 "\n" +
@@ -6458,7 +7067,17 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        checkString$8(d.activity_nomenclature, field + \".activity_nomenclature\");\n" +
 "        checkString$8(d.address, field + \".address\");\n" +
-"        checkNull$7(d.admin_city_code, field + \".admin_city_code\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$7(d.admin_city_code, field + \".admin_city_code\", \"null | string\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkString$8(d.admin_city_code, field + \".admin_city_code\", \"null | string\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"            }\n" +
+"        }\n" +
 "        checkString$8(d.city, field + \".city\");\n" +
 "        checkNumber$7(d.company_id, field + \".company_id\");\n" +
 "        checkString$8(d[\"country_alpha2\"], field + \".country_alpha2\");\n" +
@@ -6665,17 +7284,22 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$9(field, d);\n" +
 "        }\n" +
+"        if (\"color\" in d) {\n" +
+"            checkString$8(d.color, field + \".color\");\n" +
+"        }\n" +
 "        d.group = Group$1.Create(d.group, field + \".group\");\n" +
 "        checkNumber$7(d.group_id, field + \".group_id\");\n" +
 "        checkNumber$7(d.id, field + \".id\");\n" +
 "        checkString$8(d.label, field + \".label\");\n" +
-"        const knownProperties = [\"group\", \"group_id\", \"id\", \"label\"];\n" +
+"        const knownProperties = [\"color\", \"group\", \"group_id\", \"id\", \"label\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
 "            errorHelper$9(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new TagsEntityOrTag(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
+"        if (\"color\" in d)\n" +
+"            this.color = d.color;\n" +
 "        this.group = d.group;\n" +
 "        this.group_id = d.group_id;\n" +
 "        this.id = d.id;\n" +
@@ -6764,17 +7388,22 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$9(field, d);\n" +
 "        }\n" +
+"        if (\"color\" in d) {\n" +
+"            checkString$8(d.color, field + \".color\");\n" +
+"        }\n" +
 "        d.group = Group$1.Create(d.group, field + \".group\");\n" +
 "        checkNumber$7(d.group_id, field + \".group_id\");\n" +
 "        checkNumber$7(d.id, field + \".id\");\n" +
 "        checkString$8(d.label, field + \".label\");\n" +
-"        const knownProperties = [\"group\", \"group_id\", \"id\", \"label\"];\n" +
+"        const knownProperties = [\"color\", \"group\", \"group_id\", \"id\", \"label\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
 "            errorHelper$9(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new TagsEntityOrTag1(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
+"        if (\"color\" in d)\n" +
+"            this.color = d.color;\n" +
 "        this.group = d.group;\n" +
 "        this.group_id = d.group_id;\n" +
 "        this.id = d.id;\n" +
@@ -6946,8 +7575,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        catch (error) {\n" +
 "            console.log(error);\n" +
 "        }\n" +
-"        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
-"\" + JSON.stringify(d), jsonClone);\n" +
+"        console.error('Expected \"' + type + '\" at ' + field + ' but found:\\n" +
+"' + JSON.stringify(d), jsonClone);\n" +
 "    }\n" +
 "}\n" +
 "\n" +
@@ -6963,6 +7592,157 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    const [direction, thirdparty] = Object.entries(data)[0];\n" +
 "    return { direction, thirdparty };\n" +
 "}\n" +
+"\n" +
+"class Cache extends Logger {\n" +
+"    constructor(key, initialValue) {\n" +
+"        super();\n" +
+"        this.storageKey = key;\n" +
+"        this.data = initialValue;\n" +
+"        this.load();\n" +
+"        this.debug('new Cache', this);\n" +
+"        this.follow();\n" +
+"    }\n" +
+"    /**\n" +
+"     * stringify data for storage\n" +
+"     */\n" +
+"    stringify(value) {\n" +
+"        return JSON.stringify(value);\n" +
+"    }\n" +
+"    /**\n" +
+"     * Load data from localStorage\n" +
+"     */\n" +
+"    load() {\n" +
+"        try {\n" +
+"            this.data = this.parse(localStorage.getItem(this.storageKey));\n" +
+"            this.emit('loadend', this);\n" +
+"        }\n" +
+"        catch (_error) { /* Reject data and overrid it at next save() */ }\n" +
+"    }\n" +
+"    /**\n" +
+"     * Save data to localStorage\n" +
+"     */\n" +
+"    save(data) {\n" +
+"        if (data) {\n" +
+"            this.parse(this.stringify(data)); // validate value: throws if invalid\n" +
+"            this.data = data;\n" +
+"        }\n" +
+"        localStorage.setItem(this.storageKey, this.stringify(this.data));\n" +
+"        this.emit('saved', this);\n" +
+"    }\n" +
+"    /**\n" +
+"     * Follow storage change from other Browser pages\n" +
+"     */\n" +
+"    follow() {\n" +
+"        window.addEventListener('storage', event => {\n" +
+"            if (event.storageArea !== localStorage || event.key !== this.storageKey)\n" +
+"                return;\n" +
+"            try {\n" +
+"                this.data = this.parse(event.newValue);\n" +
+"                this.emit('change', this);\n" +
+"            }\n" +
+"            catch (error) {\n" +
+"                this.log('storage event error', { error, value: event.newValue });\n" +
+"                /* Reject data and overrid it at next save() */\n" +
+"            }\n" +
+"        });\n" +
+"    }\n" +
+"}\n" +
+"\n" +
+"class CacheList extends Cache {\n" +
+"    static getInstance(storageKey) {\n" +
+"        if (!this.instances[storageKey]) {\n" +
+"            this.instances[storageKey] = new this(storageKey);\n" +
+"        }\n" +
+"        return this.instances[storageKey];\n" +
+"    }\n" +
+"    constructor(key, initialValue = []) {\n" +
+"        super(key, initialValue);\n" +
+"    }\n" +
+"    parse(data) {\n" +
+"        const value = JSON.parse(data);\n" +
+"        if (!Array.isArray(value))\n" +
+"            throw new Error('The given value does not parse as an Array.');\n" +
+"        return value;\n" +
+"    }\n" +
+"    filter(matchOrPredicate) {\n" +
+"        this.load();\n" +
+"        if (typeof matchOrPredicate === 'function')\n" +
+"            return this.data.filter(matchOrPredicate);\n" +
+"        return this.data.filter(item => Object.entries(matchOrPredicate).every(([key, value]) => item[key] === value));\n" +
+"    }\n" +
+"    find(match) {\n" +
+"        this.load();\n" +
+"        if (typeof match === 'function')\n" +
+"            return this.data.find(match);\n" +
+"        return this.data.find(item => Object.entries(match).every(([key, value]) => item[key] === value));\n" +
+"    }\n" +
+"    /**\n" +
+"     * delete one item\n" +
+"     *\n" +
+"     * @return Deleted item if found\n" +
+"     */\n" +
+"    delete(match) {\n" +
+"        this.load();\n" +
+"        const found = this.find(match);\n" +
+"        if (!found)\n" +
+"            return null;\n" +
+"        this.data.splice(this.data.indexOf(found), 1);\n" +
+"        this.emit('delete', { old: found });\n" +
+"        this.save();\n" +
+"        this.emit('change', this);\n" +
+"        return found;\n" +
+"    }\n" +
+"    /**\n" +
+"     * clear all data\n" +
+"     */\n" +
+"    clear() {\n" +
+"        this.data.length = 0;\n" +
+"        this.emit('clear', this);\n" +
+"        this.save();\n" +
+"        this.emit('change', this);\n" +
+"        return this;\n" +
+"    }\n" +
+"    updateItem(matchOrValue, valueOrCreate, create) {\n" +
+"        let match;\n" +
+"        let value;\n" +
+"        if (typeof valueOrCreate === 'boolean' || typeof valueOrCreate === 'undefined') {\n" +
+"            if (!('id' in matchOrValue))\n" +
+"                throw new Error('`matchOrValue` MUST have an `id` property');\n" +
+"            create = valueOrCreate ?? true;\n" +
+"            value = matchOrValue;\n" +
+"            match = { id: matchOrValue.id };\n" +
+"        }\n" +
+"        else {\n" +
+"            value = valueOrCreate;\n" +
+"            match = matchOrValue;\n" +
+"        }\n" +
+"        this.load();\n" +
+"        const item = this.find(match);\n" +
+"        if (item) {\n" +
+"            this.data.splice(this.data.indexOf(item), 1, value);\n" +
+"            this.emit('update', { old: item, new: value });\n" +
+"        }\n" +
+"        else {\n" +
+"            if (!create)\n" +
+"                return;\n" +
+"            this.data.push(value);\n" +
+"            this.emit('add', { new: value });\n" +
+"        }\n" +
+"        this.save();\n" +
+"        this.emit('change', this);\n" +
+"        return item;\n" +
+"    }\n" +
+"    /**\n" +
+"     * Calls the specified callback function for all the elements in an array.\n" +
+"     * The return value of the callback function is the accumulated result,\n" +
+"     * and is provided as an argument in the next call to the callback function.\n" +
+"     */\n" +
+"    reduce(cb, startingValue) {\n" +
+"        this.load();\n" +
+"        return this.data.reduce(cb, startingValue);\n" +
+"    }\n" +
+"}\n" +
+"CacheList.instances = {};\n" +
 "\n" +
 "class Document extends Logger {\n" +
 "    constructor({ id }) {\n" +
@@ -6998,6 +7778,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        this.document = await this.document;\n" +
 "        return this.document;\n" +
 "    }\n" +
+"    async isClosed() {\n" +
+"        const ledgerEvents = await this.getLedgerEvents();\n" +
+"        return ledgerEvents.some(event => event.closed);\n" +
+"    }\n" +
 "    async archive(unarchive = false) {\n" +
 "        return await archiveDocument(this.id, unarchive);\n" +
 "    }\n" +
@@ -7010,8 +7794,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        return await this.groupedDocuments;\n" +
 "    }\n" +
 "    async _loadGroupedDocuments() {\n" +
-"        const otherDocuments = await getGroupedDocuments(this.id);\n" +
 "        const mainDocument = await this.getDocument();\n" +
+"        if (!mainDocument) {\n" +
+"            this.error(`Document introuvable ${this.id}`);\n" +
+"            return [];\n" +
+"        }\n" +
+"        const otherDocuments = await getGroupedDocuments(this.id);\n" +
 "        this.groupedDocuments = [\n" +
 "            ...otherDocuments,\n" +
 "            mainDocument.grouped_documents.find(doc => doc.id === this.id)\n" +
@@ -7030,7 +7818,17 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    async getDMSLinks(recordType) {\n" +
 "        return await getDMSLinks(this.id, recordType);\n" +
 "    }\n" +
+"    static async isClosed(id) {\n" +
+"        const cached = this.closedCache.find({ id });\n" +
+"        if (cached && new Date(cached.updatedAt) > new Date(Date.now() - WEEK_IN_MS))\n" +
+"            return cached.closed;\n" +
+"        const doc = new Document({ id });\n" +
+"        const closed = await doc.isClosed();\n" +
+"        this.closedCache.updateItem({ id, closed, updatedAt: new Date().toISOString() });\n" +
+"        return closed;\n" +
+"    }\n" +
 "}\n" +
+"Document.closedCache = new CacheList('closedDocumentsCache', []);\n" +
 "\n" +
 "class ValidableDocument extends Document {\n" +
 "    constructor() {\n" +
@@ -7333,8 +8131,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        catch (error) {\n" +
 "            console.log(error);\n" +
 "        }\n" +
-"        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
-"\" + JSON.stringify(d), jsonClone);\n" +
+"        console.error('Expected \"' + type + '\" at ' + field + ' but found:\\n" +
+"' + JSON.stringify(d), jsonClone);\n" +
 "    }\n" +
 "}\n" +
 "\n" +
@@ -7683,8 +8481,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        catch (error) {\n" +
 "            console.log(error);\n" +
 "        }\n" +
-"        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
-"\" + JSON.stringify(d), jsonClone);\n" +
+"        console.error('Expected \"' + type + '\" at ' + field + ' but found:\\n" +
+"' + JSON.stringify(d), jsonClone);\n" +
 "    }\n" +
 "}\n" +
 "\n" +
@@ -7765,8 +8563,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        catch (error) {\n" +
 "            console.log(error);\n" +
 "        }\n" +
-"        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
-"\" + JSON.stringify(d), jsonClone);\n" +
+"        console.error('Expected \"' + type + '\" at ' + field + ' but found:\\n" +
+"' + JSON.stringify(d), jsonClone);\n" +
 "    }\n" +
 "}\n" +
 "\n" +
@@ -7996,8 +8794,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        catch (error) {\n" +
 "            console.log(error);\n" +
 "        }\n" +
-"        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
-"\" + JSON.stringify(d), jsonClone);\n" +
+"        console.error('Expected \"' + type + '\" at ' + field + ' but found:\\n" +
+"' + JSON.stringify(d), jsonClone);\n" +
 "    }\n" +
 "}\n" +
 "\n" +
@@ -8032,6 +8830,43 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            yield transaction;\n" +
 "        ++page;\n" +
 "    } while (true);\n" +
+"}\n" +
+"\n" +
+"/**\n" +
+" * Take a string and a RegExp, search for partial match and return\n" +
+" * the start and stop indexes of the unmatch portion.\n" +
+" *\n" +
+" * @param str The string to search in\n" +
+" * @param regex The RegExp to search for\n" +
+" * @returns The start and stop indexes of the unmatch portion\n" +
+" */\n" +
+"function regexPartialMatch(str, regex) {\n" +
+"    if (regex.test(str))\n" +
+"        return [str.length, str.length];\n" +
+"    const source = regex.source;\n" +
+"    let partialRegex = regex;\n" +
+"    for (let i = 1; i < source.length; ++i) {\n" +
+"        try {\n" +
+"            partialRegex = new RegExp(source.slice(0, -i));\n" +
+"            if (partialRegex.test(str))\n" +
+"                break;\n" +
+"        }\n" +
+"        catch (_error) { /* do nothing */ }\n" +
+"    }\n" +
+"    const start = partialRegex.test(str) ? str.match(partialRegex)[0].length : 0;\n" +
+"    partialRegex = regex;\n" +
+"    for (let i = 0; i < source.length; ++i) {\n" +
+"        try {\n" +
+"            partialRegex = new RegExp(source.slice(i));\n" +
+"            if (partialRegex.test(str))\n" +
+"                break;\n" +
+"        }\n" +
+"        catch (_error) { /* do nothing */ }\n" +
+"    }\n" +
+"    if (!partialRegex.test(str))\n" +
+"        return [start, str.length];\n" +
+"    const stop = str.length - str.match(partialRegex)[0].length;\n" +
+"    return [start, stop];\n" +
 "}\n" +
 "\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
@@ -8423,13 +9258,26 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            throwIsArray$4(field, d);\n" +
 "        }\n" +
 "        checkNull$3(d.analytical_code, field + \".analytical_code\");\n" +
+"        if (\"color\" in d) {\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                checkNull$3(d.color, field + \".color\", \"null | string\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkString$3(d.color, field + \".color\", \"null | string\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
 "        d.group = Group.Create(d.group, field + \".group\");\n" +
 "        checkNumber$2(d.group_id, field + \".group_id\");\n" +
 "        checkNull$3(d.icon, field + \".icon\");\n" +
 "        checkNumber$2(d.id, field + \".id\");\n" +
 "        checkString$3(d.label, field + \".label\");\n" +
 "        checkNull$3(d.variant, field + \".variant\");\n" +
-"        const knownProperties = [\"analytical_code\", \"group\", \"group_id\", \"icon\", \"id\", \"label\", \"variant\"];\n" +
+"        const knownProperties = [\"analytical_code\", \"color\", \"group\", \"group_id\", \"icon\", \"id\", \"label\", \"variant\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
 "            errorHelper$4(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
@@ -8437,6 +9285,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    constructor(d) {\n" +
 "        this.analytical_code = d.analytical_code;\n" +
+"        if (\"color\" in d)\n" +
+"            this.color = d.color;\n" +
 "        this.group = d.group;\n" +
 "        this.group_id = d.group_id;\n" +
 "        this.icon = d.icon;\n" +
@@ -8496,8 +9346,28 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$4(field, d);\n" +
 "        }\n" +
-"        checkNull$3(d.advance, field + \".advance\");\n" +
-"        checkNull$3(d.advance_id, field + \".advance_id\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$3(d.advance, field + \".advance\", \"null | Advance\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                d.advance = Advance.Create(d.advance, field + \".advance\", \"null | Advance\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"            }\n" +
+"        }\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$3(d.advance_id, field + \".advance_id\", \"null | number\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNumber$2(d.advance_id, field + \".advance_id\", \"null | number\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"            }\n" +
+"        }\n" +
 "        checkBoolean$2(d.advance_pnl, field + \".advance_pnl\");\n" +
 "        checkString$3(d.amount, field + \".amount\");\n" +
 "        // This will be refactored in the next release.\n" +
@@ -8587,6 +9457,41 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        this.vat_rate = d.vat_rate;\n" +
 "    }\n" +
 "};\n" +
+"class Advance {\n" +
+"    static Parse(d) {\n" +
+"        return Advance.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$4 = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$4(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$4(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$4(field, d);\n" +
+"        }\n" +
+"        checkNumber$2(d.company_id, field + \".company_id\");\n" +
+"        checkString$3(d.date, field + \".date\");\n" +
+"        checkBoolean$2(d.has_ledger_events, field + \".has_ledger_events\");\n" +
+"        checkNumber$2(d.id, field + \".id\");\n" +
+"        const knownProperties = [\"company_id\", \"date\", \"has_ledger_events\", \"id\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$4(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
+"        return new Advance(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.company_id = d.company_id;\n" +
+"        this.date = d.date;\n" +
+"        this.has_ledger_events = d.has_ledger_events;\n" +
+"        this.id = d.id;\n" +
+"    }\n" +
+"}\n" +
 "class Asset {\n" +
 "    static Parse(d) {\n" +
 "        return Asset.Create(JSON.parse(d));\n" +
@@ -9324,8 +10229,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        catch (error) {\n" +
 "            console.log(error);\n" +
 "        }\n" +
-"        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
-"\" + JSON.stringify(d), jsonClone);\n" +
+"        console.error('Expected \"' + type + '\" at ' + field + ' but found:\\n" +
+"' + JSON.stringify(d), jsonClone);\n" +
 "    }\n" +
 "}\n" +
 "\n" +
@@ -9720,8 +10625,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        catch (error) {\n" +
 "            console.log(error);\n" +
 "        }\n" +
-"        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
-"\" + JSON.stringify(d), jsonClone);\n" +
+"        console.error('Expected \"' + type + '\" at ' + field + ' but found:\\n" +
+"' + JSON.stringify(d), jsonClone);\n" +
 "    }\n" +
 "}\n" +
 "\n" +
@@ -9856,8 +10761,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        catch (error) {\n" +
 "            console.log(error);\n" +
 "        }\n" +
-"        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
-"\" + JSON.stringify(d), jsonClone);\n" +
+"        console.error('Expected \"' + type + '\" at ' + field + ' but found:\\n" +
+"' + JSON.stringify(d), jsonClone);\n" +
 "    }\n" +
 "}\n" +
 "\n" +
@@ -9921,8 +10826,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        catch (error) {\n" +
 "            console.log(error);\n" +
 "        }\n" +
-"        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
-"\" + JSON.stringify(d), jsonClone);\n" +
+"        console.error('Expected \"' + type + '\" at ' + field + ' but found:\\n" +
+"' + JSON.stringify(d), jsonClone);\n" +
 "    }\n" +
 "}\n" +
 "\n" +
@@ -10019,8 +10924,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        catch (error) {\n" +
 "            console.log(error);\n" +
 "        }\n" +
-"        console.log('Expected ' + type + \" at \" + field + \" but found:\\n" +
-"\" + JSON.stringify(d), jsonClone);\n" +
+"        console.error('Expected \"' + type + '\" at ' + field + ' but found:\\n" +
+"' + JSON.stringify(d), jsonClone);\n" +
 "    }\n" +
 "}\n" +
 "\n" +
@@ -10111,6 +11016,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    constructor({ id }) {\n" +
 "        super();\n" +
 "        this.id = id;\n" +
+"        this.valid = null;\n" +
+"        this.validMessage = null;\n" +
 "    }\n" +
 "    async getLinks() {\n" +
 "        const fileId = (await this.getItem())?.itemable_id;\n" +
@@ -10128,9 +11035,13 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    async toInvoice() {\n" +
 "        const start = new Date().toISOString();\n" +
 "        const dmsItem = await this.getItem();\n" +
-"        const regex = /^(?<number>.*?)(?: - (?<date>[0123]\\d\\/[01]\\d\\/\\d{4}))?(?: - (?<amount>[\\d .]*(?:,\\d\\d)?) ?€)$/u;\n" +
+"        const regex = /^(?<number>.*?)(?: - (?<date>[0123]\\d-[01]\\d-\\d{4}))?(?: - (?<amount>[\\d .]*(?:,\\d\\d)?) ?€)$/u;\n" +
 "        const match = dmsItem.name.match(regex)?.groups;\n" +
-"        const date = match.date && new Date(match.date.split('/').reverse().join('-'));\n" +
+"        if (!match) {\n" +
+"            this.log('The file name does not match the Invoice Regex', { name: dmsItem.name, regex });\n" +
+"            return;\n" +
+"        }\n" +
+"        const date = match.date && new Date(match.date.split('-').reverse().join('-'));\n" +
 "        const groupedDocs = await this.getLinks();\n" +
 "        const transactionRecord = groupedDocs.find(gdoc => gdoc.record_type === 'BankTransaction');\n" +
 "        const transactionDocument = transactionRecord && await getDocument(transactionRecord.record_id);\n" +
@@ -10171,11 +11082,92 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        this.log({ dmsToInvoiceResponse, updateInvoiceResponse, invoice, data });\n" +
 "        return invoice;\n" +
 "    }\n" +
+"    async loadValidation() {\n" +
+"        if (this.validMessage === null)\n" +
+"            this.validMessage = await this.getValidMessage();\n" +
+"        this.valid = this.validMessage === 'OK';\n" +
+"    }\n" +
+"    async isValid() {\n" +
+"        if (this.valid === null)\n" +
+"            await this.loadValidation();\n" +
+"        return this.valid;\n" +
+"    }\n" +
+"    isCurrent() {\n" +
+"        return this.id === Number(getParam(location.href, 'item_id'));\n" +
+"    }\n" +
+"    async fixDateCase() {\n" +
+"        const item = await this.getItem();\n" +
+"        if (!item)\n" +
+"            return;\n" +
+"        const re = / - (?<date>(?<day>[0123]\\d)\\/(?<month>0[1-9]|1[0-2])\\/(?<year>\\d{4})) - /;\n" +
+"        const date = item.name.match(re)?.groups;\n" +
+"        if (!date)\n" +
+"            return;\n" +
+"        const name = item.name.replace(re, ` - ${date.day}-${date.month}-${date.year} - `);\n" +
+"        const updatedItem = await updateDMSItem({ id: this.id, name });\n" +
+"        const input = $('input[name=\"name\"]');\n" +
+"        input.value = name;\n" +
+"        const rightList = findElem('div', 'Nom du Fichier').closest('div.w-100');\n" +
+"        const props = getReactProps(rightList, 7);\n" +
+"        if (props)\n" +
+"            props.item = updatedItem;\n" +
+"    }\n" +
+"    async getStatus() {\n" +
+"        const id = this.id;\n" +
+"        const item = await this.getItem();\n" +
+"        if (!item)\n" +
+"            return null;\n" +
+"        const valid = await this.isValid();\n" +
+"        const message = await this.getValidMessage();\n" +
+"        const createdAt = new Date(item.created_at).getTime();\n" +
+"        const date = new Date(item.updated_at).getTime();\n" +
+"        return { id, valid, message, createdAt, date };\n" +
+"    }\n" +
+"    async isPermanent() {\n" +
+"        const item = await this.getItem();\n" +
+"        if (!item)\n" +
+"            return null;\n" +
+"        return [\n" +
+"            21994019, // 05. Contrats\n" +
+"        ].includes(item.parent_id);\n" +
+"    }\n" +
 "    async getValidMessage() {\n" +
 "        const item = await this.getItem();\n" +
-"        if (item.name.startsWith('RECU'))\n" +
+"        if (!item)\n" +
+"            return null;\n" +
+"        if (item.type === 'dms_folder')\n" +
 "            return 'OK';\n" +
+"        if (this.isPermanent())\n" +
+"            return 'OK';\n" +
+"        const rules = await this.getRules();\n" +
+"        if (getParam(location.href, 'item_id') === this.id.toString(10)) {\n" +
+"            this.log('getValidMessage', { rules, item });\n" +
+"        }\n" +
+"        if (item.archived_at)\n" +
+"            return 'OK';\n" +
+"        if (this.isCurrent())\n" +
+"            this.fixDateCase();\n" +
+"        if (rules) {\n" +
+"            const match = rules.templates.some(template => template.regex.test(item.name));\n" +
+"            if (!match)\n" +
+"                return rules.message;\n" +
+"        }\n" +
+"        else {\n" +
+"            const links = await this.getLinks();\n" +
+"            if (!links.length)\n" +
+"                return 'Ce document n\\'est pas lié';\n" +
+"        }\n" +
+"        return 'OK';\n" +
+"    }\n" +
+"    async getRules() {\n" +
+"        const item = await this.getItem();\n" +
+"        if (!item)\n" +
+"            return null;\n" +
+"        if (item.name.startsWith('RECU') || item.name.startsWith('§'))\n" +
+"            return null;\n" +
 "        const links = await this.getLinks();\n" +
+"        if (await this.hasClosedLink(links))\n" +
+"            return null;\n" +
 "        const transactions = links.filter(link => link.record_type === 'BankTransaction');\n" +
 "        const isCheckRemmitance = transactions\n" +
 "            .some(transaction => transaction.record_name.startsWith('REMISE CHEQUE '));\n" +
@@ -10183,22 +11175,20 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            const templates = [\n" +
 "                {\n" +
 "                    title: 'Photo du chèque',\n" +
-"                    text: 'CHQ&lt;n° du chèque&gt; - &lt;nom donateur&gt; - jj/mm/aaa - &lt;montant&gt;€',\n" +
-"                    regex: /^CHQ ?\\d* - .* - [0123]\\d\\/[01]\\d\\/\\d{4} - [\\d \\.]*(?:,\\d\\d)? ?€$/u,\n" +
+"                    text: 'CHQ&lt;n° du chèque&gt; - &lt;nom donateur&gt; - jj-mm-aaaa - &lt;montant&gt;€',\n" +
+"                    regex: /^CHQ(?: n°)? ?\\d* - .* - [0123]\\d-[01]\\d-\\d{4} - [\\d \\.]*(?:,\\d\\d)? ?€(?:\\.[a-zA-Z]{3,4})?$/u,\n" +
 "                },\n" +
 "                {\n" +
 "                    title: 'Reçu de don',\n" +
-"                    text: 'CERFA n°&lt;n° de cerfa&gt; - &lt;nom donateur&gt; - jj/mm/aaa - &lt;montant&gt;€',\n" +
-"                    regex: /^CERFA n° ?[\\d-]* - .* - [0123]\\d\\/[01]\\d\\/\\d{4} - [\\d .]*(?:,\\d\\d)? ?€$/u,\n" +
+"                    text: 'CERFA n°&lt;n° de cerfa&gt; - &lt;nom donateur&gt; - jj-mm-aaaa - &lt;montant&gt;€',\n" +
+"                    regex: /^CERFA(?: n°)? ?[\\d-]* - .* - [0123]\\d-[01]\\d-\\d{4} - [\\d .]*(?:,\\d\\d)? ?€(?:\\.[a-zA-Z]{3,4})?$/u,\n" +
 "                }\n" +
 "            ];\n" +
-"            const match = templates.some(template => template.regex.test(item.name));\n" +
-"            if (!match) {\n" +
-"                return `<a\n" +
-"          title=\"Le nom des fichiers attachés à une remise de chèque doit correspondre à un de ces modèles. Cliquer ici pour plus d'informations.\"\n" +
-"          href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Nom%20fichier%20GED\"\n" +
-"        >Le nom de fichier doit correspondre à un de ces modèles ⓘ</a><ul style=\"margin:0;padding:0.8em;\">${templates.map(it => `<li><b>${it.title} :</b><code>${it.text}</code></li>`).join('')}</ul>`;\n" +
-"            }\n" +
+"            const message = `<a\n" +
+"        title=\"Le nom des fichiers attachés à une remise de chèque doit correspondre à un de ces modèles. Cliquer ici pour plus d'informations.\"\n" +
+"        href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Nom%20fichier%20GED\"\n" +
+"      >Le nom de fichier doit correspondre à un de ces modèles ⓘ</a><ul style=\"margin:0;padding:0.8em;\">${templates.map(it => `<li><b>${it.title} :</b><code>${it.text}</code></li>`).join('')}</ul>`;\n" +
+"            return { templates, message };\n" +
 "        }\n" +
 "        const isEmittedCheck = transactions\n" +
 "            .some(transaction => transaction.record_name.startsWith('CHEQUE '));\n" +
@@ -10207,26 +11197,24 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                {\n" +
 "                    title: 'Talon du chèque',\n" +
 "                    text: 'CHQ&lt;numéro du chèque&gt; - &lt;destinataire du chèque&gt; - &lt;montant&gt;€',\n" +
-"                    regex: /^CHQ ?\\d* - .* - [\\d .]*(?:,\\d\\d)? ?€$/u,\n" +
+"                    regex: /^CHQ ?\\d* - .* - [\\d .]*(?:,\\d\\d)? ?€(?:\\.[a-zA-Z]{3,4})?$/u,\n" +
 "                },\n" +
 "                {\n" +
 "                    title: 'Reçu de don à une association',\n" +
-"                    text: 'CERFA n°&lt;n° de cerfa&gt; - &lt;nom bénéficiaire&gt; - jj/mm/aaa - &lt;montant&gt;€',\n" +
-"                    regex: /^CERFA n° ?[\\d-]* - .* - [0123]\\d\\/[01]\\d\\/\\d{4} - [\\d .]*(?:,\\d\\d)? ?€$/u,\n" +
+"                    text: 'CERFA n°&lt;n° de cerfa&gt; - &lt;nom bénéficiaire&gt; - jj-mm-aaaa - &lt;montant&gt;€',\n" +
+"                    regex: /^CERFA n° ?[\\d-]* - .* - [0123]\\d-[01]\\d-\\d{4} - [\\d .]*(?:,\\d\\d)? ?€(?:\\.[a-zA-Z]{3,4})?$/u,\n" +
 "                },\n" +
 "                {\n" +
 "                    title: 'Reçu d\\'octroi d\\'aide',\n" +
-"                    text: 'AIDES - &lt;nom bénéficiaire !!sans le prénom!!&gt; - jj/mm/aaa - &lt;montant&gt;€',\n" +
-"                    regex: /^AIDES?\\d* - .* - [0123]\\d\\/[01]\\d\\/\\d{4} - [\\d .]*(?:,\\d\\d)? ?€$/u,\n" +
+"                    text: 'AIDES - &lt;nom bénéficiaire !!sans le prénom!!&gt; - jj-mm-aaaa - &lt;montant&gt;€',\n" +
+"                    regex: /^AIDES?\\d* - .* - [0123]\\d-[01]\\d-\\d{4} - [\\d .]*(?:,\\d\\d)? ?€(?:\\.[a-zA-Z]{3,4})?$/u,\n" +
 "                },\n" +
 "            ];\n" +
-"            const match = templates.some(template => template.regex.test(item.name));\n" +
-"            if (!match) {\n" +
-"                return `<a\n" +
-"          title=\"Le nom des fichiers attachés à un paiement par chèque doit correspondre à un de ces modèles. Cliquer ici pour plus d'informations.\"\n" +
-"          href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Nom%20fichier%20GED\"\n" +
-"        >Le nom de fichier doit correspondre à un de ces modèles ⓘ</a><ul style=\"margin:0;padding:0.8em;\">${templates.map(it => `<li><b>${it.title} :</b><code>${it.text}</code></li>`).join('')}</ul>`;\n" +
-"            }\n" +
+"            const message = `<a\n" +
+"        title=\"Le nom des fichiers attachés à un paiement par chèque doit correspondre à un de ces modèles. Cliquer ici pour plus d'informations.\"\n" +
+"        href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Nom%20fichier%20GED\"\n" +
+"      >Le nom de fichier doit correspondre à un de ces modèles ⓘ</a><ul style=\"margin:0;padding:0.8em;\">${templates.map(it => `<li><b>${it.title} :</b><code>${it.text}</code></li>`).join('')}</ul>`;\n" +
+"            return { templates, message };\n" +
 "        }\n" +
 "        const isReceivedTransfer = transactions.some(transaction => [\n" +
 "            'VIR INST RE',\n" +
@@ -10237,17 +11225,15 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            const templates = [\n" +
 "                {\n" +
 "                    title: 'Reçu de don',\n" +
-"                    text: 'CERFA n°&lt;n° de cerfa&gt; - &lt;nom donateur&gt; - jj/mm/aaa - &lt;montant&gt;€',\n" +
-"                    regex: /^CERFA n° ?[\\d-]* - .* - [0123]\\d\\/[01]\\d\\/\\d{4} - [\\d .]*(?:,\\d\\d)? ?€$/u,\n" +
+"                    text: 'CERFA n°&lt;n° de cerfa&gt; - &lt;nom donateur&gt; - jj-mm-aaaa - &lt;montant&gt;€',\n" +
+"                    regex: /^CERFA n° ?[\\d-]* - .* - [0123]\\d-[01]\\d-\\d{4} - [\\d .]*(?:,\\d\\d)? ?€(?:\\.[a-zA-Z]{3,4})?$/u,\n" +
 "                },\n" +
 "            ];\n" +
-"            const match = templates.some(template => template.regex.test(item.name));\n" +
-"            if (!match) {\n" +
-"                return `<a\n" +
-"          title=\"Le nom des fichiers attachés à un virement reçu doit correspondre à un de ces modèles. Cliquer ici pour plus d'informations.\"\n" +
-"          href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Nom%20fichier%20GED\"\n" +
-"        >Le nom de fichier doit correspondre à un de ces modèles ⓘ</a><ul style=\"margin:0;padding:0.8em;\">${templates.map(it => `<li><b>${it.title} :</b><code>${it.text}</code></li>`).join('')}</ul>`;\n" +
-"            }\n" +
+"            const message = `<a\n" +
+"        title=\"Le nom des fichiers attachés à un virement reçu doit correspondre à un de ces modèles. Cliquer ici pour plus d'informations.\"\n" +
+"        href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Nom%20fichier%20GED\"\n" +
+"      >Le nom de fichier doit correspondre à un de ces modèles ⓘ</a><ul style=\"margin:0;padding:0.8em;\">${templates.map(it => `<li><b>${it.title} :</b><code>${it.text}</code></li>`).join('')}</ul>`;\n" +
+"            return { templates, message };\n" +
 "        }\n" +
 "        const isEmittedTransfer = transactions.some(transaction => [\n" +
 "            'VIR EUROPEEN EMIS',\n" +
@@ -10257,24 +11243,37 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            const templates = [\n" +
 "                {\n" +
 "                    title: 'Reçu de don à une association',\n" +
-"                    text: 'CERFA n°&lt;n° de cerfa&gt; - &lt;nom bénéficiaire&gt; - jj/mm/aaa - &lt;montant&gt;€',\n" +
-"                    regex: /^CERFA n° ?[\\d-]* - .* - [0123]\\d\\/[01]\\d\\/\\d{4} - [\\d .]*(?:,\\d\\d)? ?€$/u,\n" +
+"                    text: 'CERFA n°&lt;n° de cerfa&gt; - &lt;nom bénéficiaire&gt; - jj-mm-aaaa - &lt;montant&gt;€',\n" +
+"                    regex: /^CERFA n° ?[\\d-]* - .* - [0123]\\d-[01]\\d-\\d{4} - [\\d .]*(?:,\\d\\d)? ?€(?:\\.[a-zA-Z]{3,4})?$/u,\n" +
 "                },\n" +
 "                {\n" +
 "                    title: 'Reçu d\\'octroi d\\'aide',\n" +
-"                    text: 'AIDES - &lt;nom bénéficiaire !!sans le prénom!!&gt; - jj/mm/aaa - &lt;montant&gt;€',\n" +
-"                    regex: /^AIDES?\\d* - .* - [0123]\\d\\/[01]\\d\\/\\d{4} - [\\d .]*(?:,\\d\\d)? ?€$/u,\n" +
+"                    text: 'AIDES - &lt;nom bénéficiaire !!sans le prénom!!&gt; - jj-mm-aaaa - &lt;montant&gt;€',\n" +
+"                    regex: /^AIDES?\\d* - .* - [0123]\\d-[01]\\d-\\d{4} - [\\d .]*(?:,\\d\\d)? ?€(?:\\.[a-zA-Z]{3,4})?$/u,\n" +
 "                },\n" +
 "            ];\n" +
-"            const match = templates.some(template => template.regex.test(item.name));\n" +
-"            if (!match) {\n" +
-"                return `<a\n" +
-"          title=\"Le nom des fichiers attachés à un virement émis doit correspondre à un de ces modèles. Cliquer ici pour plus d'informations.\"\n" +
-"          href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Nom%20fichier%20GED\"\n" +
-"        >Le nom de fichier doit correspondre à un de ces modèles ⓘ</a><ul style=\"margin:0;padding:0.8em;\">${templates.map(it => `<li><b>${it.title} :</b><code>${it.text}</code></li>`).join('')}</ul>`;\n" +
-"            }\n" +
+"            const message = `<a\n" +
+"        title=\"Le nom des fichiers attachés à un virement émis doit correspondre à un de ces modèles. Cliquer ici pour plus d'informations.\"\n" +
+"        href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Nom%20fichier%20GED\"\n" +
+"      >Le nom de fichier doit correspondre à un de ces modèles ⓘ</a><ul style=\"margin:0;padding:0.8em;\">${templates.map(it => `<li><b>${it.title} :</b><code>${it.text}</code></li>`).join('')}</ul>`;\n" +
+"            return { templates, message };\n" +
 "        }\n" +
-"        return 'OK';\n" +
+"        return null;\n" +
+"    }\n" +
+"    async partialMatch(str) {\n" +
+"        if (str.startsWith('RECU'))\n" +
+"            return [str.length, str.length];\n" +
+"        const rules = await this.getRules();\n" +
+"        return (rules?.templates ?? []).reduce((pmatch, template) => {\n" +
+"            const templateMatch = regexPartialMatch(str, template.regex);\n" +
+"            const pmatchLength = pmatch[1] - pmatch[0];\n" +
+"            const templateMatchLength = templateMatch[1] - templateMatch[0];\n" +
+"            return pmatchLength > templateMatchLength ? templateMatch : pmatch;\n" +
+"        }, [0, str.length]);\n" +
+"    }\n" +
+"    async hasClosedLink(links) {\n" +
+"        const closed = await Promise.all(links.map(link => Document.isClosed(link.record_id)));\n" +
+"        return closed.some(closed => closed);\n" +
 "    }\n" +
 "}\n" +
 "\n" +
@@ -10325,11 +11324,48 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "}\n" +
 "\n" +
+"class CacheListRecord extends CacheList {\n" +
+"    updateItem(match, newValueOrCreate, create = true) {\n" +
+"        let newValue;\n" +
+"        if (typeof newValueOrCreate === 'object') {\n" +
+"            newValue = newValueOrCreate;\n" +
+"        }\n" +
+"        else {\n" +
+"            if (!('id' in match))\n" +
+"                throw new ReferenceError('updating without match/newValue pair requires id property');\n" +
+"            create = newValueOrCreate ?? true;\n" +
+"            newValue = match;\n" +
+"        }\n" +
+"        this.load();\n" +
+"        const oldValue = this.find(match);\n" +
+"        if (oldValue) {\n" +
+"            newValue = { ...oldValue, ...newValue };\n" +
+"            this.data.splice(this.data.indexOf(oldValue), 1, newValue);\n" +
+"            if (('id' in newValue) && newValue.id == getParam(location.href, 'id'))\n" +
+"                this.debug('updateItem', { match, create, oldValue, newValue, stack: new Error('').stack });\n" +
+"            this.emit('update', { oldValue, newValue });\n" +
+"        }\n" +
+"        else {\n" +
+"            if (!create)\n" +
+"                return;\n" +
+"            this.data.push(newValue);\n" +
+"            this.emit('add', { newValue });\n" +
+"        }\n" +
+"        this.save();\n" +
+"        this.emit('change', this);\n" +
+"        return oldValue;\n" +
+"    }\n" +
+"}\n" +
+"\n" +
+"class CacheStatus extends CacheListRecord {\n" +
+"}\n" +
+"\n" +
 "const user = localStorage.getItem('user') ?? 'assistant';\n" +
 "class Transaction extends ValidableDocument {\n" +
 "    constructor(raw) {\n" +
 "        super(raw);\n" +
 "        this._raw = raw;\n" +
+"        this.cacheStatus = CacheStatus.getInstance('transactionValidation');\n" +
 "    }\n" +
 "    async getTransaction() {\n" +
 "        if (!this._transaction) {\n" +
@@ -10386,7 +11422,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                });\n" +
 "                ledgerEvents.forEach(event => {\n" +
 "                    // pertes/gains de change\n" +
-"                    if (['47600001', '656', '75800002'].includes(event.planItem.number)) {\n" +
+"                    if (['47600001', '656', '609', '756', '75800002'].includes(event.planItem.number)) {\n" +
 "                        balance.addAutre(parseFloat(event.amount) * -1);\n" +
 "                    }\n" +
 "                });\n" +
@@ -10398,10 +11434,15 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            return await this._balance;\n" +
 "        return this._balance;\n" +
 "    }\n" +
+"    async getStatus() {\n" +
+"        const status = await super.getStatus();\n" +
+"        this.cacheStatus.updateItem(status, false);\n" +
+"        return status;\n" +
+"    }\n" +
 "    async loadValidMessage() {\n" +
 "        if (this.isCurrent())\n" +
 "            this.log('loadValidMessage', this);\n" +
-"        const status = (await this.isClosed()\n" +
+"        const status = (await this.isClosedCheck()\n" +
 "            ?? await this.isArchived()\n" +
 "            ?? await this.hasMalnammedDMSLink()\n" +
 "            ?? await this.is2025()\n" +
@@ -10416,8 +11457,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            //?? await this.isMissingAttachment() // déjà inclus dans isUnbalanced()\n" +
 "            ?? await this.isOldUnbalanced()\n" +
 "            ?? await this.isBankFees()\n" +
-"            ?? await this.isAllodons()\n" +
-"            ?? await this.isDonationRenewal()\n" +
+"            //?? await this.isAllodons()\n" +
+"            //?? await this.isDonationRenewal()\n" +
 "            ?? await this.isTransfer()\n" +
 "            ?? await this.isAid()\n" +
 "            ?? await this.hasToSendToDMS()\n" +
@@ -10444,10 +11485,9 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                ?? 'OK');\n" +
 "        }\n" +
 "    }\n" +
-"    async isClosed() {\n" +
-"        const ledgerEvents = await this.getLedgerEvents();\n" +
-"        // Fait partie d'un exercice clos\n" +
-"        if (ledgerEvents.some(event => event.closed)) {\n" +
+"    async isClosedCheck() {\n" +
+"        const closed = await Document.isClosed(this.id);\n" +
+"        if (closed) {\n" +
 "            if (this.isCurrent())\n" +
 "                this.log('fait partie d\\'un exercice clos');\n" +
 "            return 'OK';\n" +
@@ -10494,13 +11534,14 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const thirdparties = ledgerEvents.reduce((tp, event) => {\n" +
 "            const nb = event.planItem.number;\n" +
 "            if (nb.startsWith('4')) {\n" +
-"                tp[nb] = (tp[nb] ?? 0) + parseFloat(event.amount);\n" +
+"                tp[nb] = (tp[nb] ?? []).concat(parseFloat(event.amount));\n" +
 "            }\n" +
 "            return tp;\n" +
 "        }, {});\n" +
-"        const [unbalanced] = Object.entries(thirdparties).find(([key, val]) => val !== 0) ?? [];\n" +
+"        const [unbalanced, events] = Object.entries(thirdparties)\n" +
+"            .find(([key, val]) => Math.abs(val.reduce((a, b) => a + b, 0)) > 0.001) ?? [];\n" +
 "        if (unbalanced) {\n" +
-"            this.log('hasUnbalancedThirdparty', { ledgerEvents, thirdparties, unbalanced });\n" +
+"            this.log('hasUnbalancedThirdparty', { ledgerEvents, thirdparties, unbalanced, events });\n" +
 "            return `Le compte tiers \"${unbalanced}\" n'est pas équilibré.`;\n" +
 "        }\n" +
 "    }\n" +
@@ -10714,7 +11755,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    async isBankFees() {\n" +
 "        return (await this.isIntlTransferFees()\n" +
-"            ?? await this.isStripeFees());\n" +
+"        //?? await this.isStripeFees()\n" +
+"        );\n" +
 "    }\n" +
 "    async isIntlTransferFees() {\n" +
 "        const doc = await this.getDocument();\n" +
@@ -10950,363 +11992,6 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "}\n" +
 "\n" +
-"/** Add validation message on transaction panel */\n" +
-"class ValidMessage extends Service {\n" +
-"    constructor() {\n" +
-"        super(...arguments);\n" +
-"        this.container = parseHTML(`<div><div class=\"headband-is-valid\">⟳</div></div>`)\n" +
-"            .firstElementChild;\n" +
-"        this.state = { ledgerEvents: [] };\n" +
-"        this._message = '⟳';\n" +
-"    }\n" +
-"    static getInstance() {\n" +
-"        if (!this.instance)\n" +
-"            this.instance = new this();\n" +
-"        return this.instance;\n" +
-"    }\n" +
-"    async init() {\n" +
-"        await this.insertContainer();\n" +
-"        this.on('message-change', () => this.displayMessage());\n" +
-"        this.watchReloadHotkey();\n" +
-"        await this.loadMessage();\n" +
-"        setInterval(() => this.watch(), 200);\n" +
-"    }\n" +
-"    async insertContainer() {\n" +
-"        await waitElem('h3', 'Transactions'); // Transactions panel\n" +
-"        await waitElem('.paragraph-body-m+.heading-page.mt-1'); // transaction detail panel\n" +
-"        const detailTab = await waitElem('aside div');\n" +
-"        detailTab.insertBefore(this.container, detailTab.firstChild);\n" +
-"        waitFunc(() => $('aside div') !== detailTab).then(() => { this.insertContainer(); });\n" +
-"    }\n" +
-"    watchReloadHotkey() {\n" +
-"        document.addEventListener('keydown', event => {\n" +
-"            if (findElem('h3', 'Transactions') && event.ctrlKey && event.key.toLowerCase() === 's') {\n" +
-"                event.preventDefault();\n" +
-"                this.reload();\n" +
-"            }\n" +
-"        });\n" +
-"    }\n" +
-"    reload() {\n" +
-"        this.loadMessage();\n" +
-"    }\n" +
-"    set message(html) {\n" +
-"        this._message = html;\n" +
-"        this.emit('message-change', html);\n" +
-"    }\n" +
-"    get message() {\n" +
-"        return this._message;\n" +
-"    }\n" +
-"    async loadMessage() {\n" +
-"        this.log('loadMessage', this);\n" +
-"        this.message = '⟳';\n" +
-"        const rawTransaction = getReactProps($('.paragraph-body-m+.heading-page.mt-1'), 9).transaction;\n" +
-"        this.state.transaction = new Transaction(rawTransaction);\n" +
-"        const message = await this.state.transaction.getValidMessage();\n" +
-"        if (this.state.transaction?.id !== rawTransaction.id)\n" +
-"            return;\n" +
-"        this.message = `${(await this.state.transaction.isValid()) ? '✓' : '✗'} ${message}`;\n" +
-"    }\n" +
-"    async watch() {\n" +
-"        const ledgerEvents = $$('form[name^=DocumentEntries-]')\n" +
-"            .reduce((events, form) => {\n" +
-"            const formEvents = getReactProps(form.parentElement, 3)?.initialValues?.ledgerEvents ?? [];\n" +
-"            return [...events, ...formEvents];\n" +
-"        }, []);\n" +
-"        if (ledgerEvents.some((event, id) => this.state.ledgerEvents[id] !== event)) {\n" +
-"            const logData = { oldEvents: this.state.ledgerEvents };\n" +
-"            this.state.ledgerEvents = ledgerEvents;\n" +
-"            this.debug('ledgerEvents desynchronisé', { ...logData, ...this });\n" +
-"            this.reload();\n" +
-"        }\n" +
-"        const current = Number(getParam(location.href, 'transaction_id'));\n" +
-"        if (current && current !== this.state.transaction?.id) {\n" +
-"            this.debug('transaction desynchronisée', { current, ...this });\n" +
-"            this.reload();\n" +
-"        }\n" +
-"    }\n" +
-"    async displayMessage() {\n" +
-"        $('.headband-is-valid', this.container).innerHTML =\n" +
-"            `${this.getTransactionId()}${this.getCommentLogo()} ${this.message}`;\n" +
-"    }\n" +
-"    getTransactionId() {\n" +
-"        if (!this.state.transaction?.id)\n" +
-"            return '';\n" +
-"        return `<span class=\"transaction-id d-inline-block bg-secondary-100 dihsuQ px-0_5 m-0\">#${this.state.transaction.id}</span>`;\n" +
-"    }\n" +
-"    getCommentLogo() {\n" +
-"        if (!this.state.transaction)\n" +
-"            return '';\n" +
-"        if (!this.state.comments || this.state.transaction.id !== this.state.comments.transactionId) {\n" +
-"            this.reloadCommentState();\n" +
-"            return '';\n" +
-"        }\n" +
-"        return this.state.comments.hasComment ?\n" +
-"            '<span class=\"d-inline-block bg-danger m-0\">💬</span>' : '';\n" +
-"    }\n" +
-"    async reloadCommentState() {\n" +
-"        if (!this.state.transaction)\n" +
-"            return;\n" +
-"        const transactionId = this.state.transaction.id;\n" +
-"        const transactionDoc = await this.state.transaction.getDocument();\n" +
-"        const transaction = transactionDoc.grouped_documents.find(doc => doc.id === transactionId);\n" +
-"        this.state.comments = {\n" +
-"            transactionId,\n" +
-"            hasComment: Boolean(transaction?.client_comments?.length),\n" +
-"        };\n" +
-"        this.displayMessage();\n" +
-"    }\n" +
-"}\n" +
-"/** Open next invalid transaction */\n" +
-"/**\n" +
-" * Dans la page des transactions, utiliser le code suivant pour afficher une transaction :\n" +
-"getReactProps($('tbody tr'),5).extra.openSidePanel(transactionId);\n" +
-" */\n" +
-"\n" +
-"async function waitPage(pageName) {\n" +
-"    return await waitFunc(() => isPage(pageName));\n" +
-"}\n" +
-"function isPage(pageName) {\n" +
-"    switch (pageName) {\n" +
-"        case 'invoiceDetail': return findElem('h4', 'Réconciliation') ?? false;\n" +
-"        case 'DMS': return ((location.href.split('/')[5] === 'dms' && findElem('h3', 'Détail du document'))\n" +
-"            || false);\n" +
-"        case 'transactionDetail': return findElem('button.tabbarlink', 'Réconciliation') ?? false;\n" +
-"        default: throw new Error(`unknown page required : \"${pageName}\"`);\n" +
-"    }\n" +
-"}\n" +
-"\n" +
-"/** Add 'add by ID' button on transaction reconciliation tab */\n" +
-"class TransactionAddByIdButton extends Service {\n" +
-"    constructor() {\n" +
-"        super(...arguments);\n" +
-"        this.button = parseHTML('<div class=\"btn-sm w-100 btn-primary add-by-id-btn\" style=\"cursor: pointer;\">Ajouter par ID</div>').firstElementChild;\n" +
-"    }\n" +
-"    async init() {\n" +
-"        await this.insertContainer();\n" +
-"        this.attachEvent();\n" +
-"    }\n" +
-"    async insertContainer() {\n" +
-"        const div = (await Promise.race([\n" +
-"            waitElem('button', 'Voir plus de factures'),\n" +
-"            waitElem('button', 'Chercher parmi les factures'),\n" +
-"        ])).closest('.mt-2');\n" +
-"        if (!div) {\n" +
-"            this.log('TransactionAddByIdButton', { button: await Promise.race([\n" +
-"                    waitElem('button', 'Voir plus de factures'),\n" +
-"                    waitElem('button', 'Chercher parmi les factures'),\n" +
-"                ]), div });\n" +
-"            throw new Error('Impossible de trouver le bloc de boutons');\n" +
-"        }\n" +
-"        div.insertBefore(this.button, div.lastElementChild);\n" +
-"        waitFunc(async () => {\n" +
-"            const currentDiv = (await Promise.race([\n" +
-"                waitElem('button', 'Voir plus de factures'),\n" +
-"                waitElem('button', 'Chercher parmi les factures'),\n" +
-"            ])).closest('.mt-2');\n" +
-"            return currentDiv !== div;\n" +
-"        }).then(() => this.insertContainer());\n" +
-"    }\n" +
-"    attachEvent() {\n" +
-"        this.log({ button: this.button });\n" +
-"        this.button.addEventListener('click', () => { this.addById(); });\n" +
-"        document.addEventListener('keydown', event => {\n" +
-"            if (isPage('transactionDetail') && event.altKey && ['z', 'Z'].includes(event.key)) {\n" +
-"                this.addById();\n" +
-"            }\n" +
-"            else {\n" +
-"                this.debug({\n" +
-"                    isPageTransactionDetail: isPage('transactionDetail'),\n" +
-"                    event,\n" +
-"                });\n" +
-"            }\n" +
-"        });\n" +
-"    }\n" +
-"    async addById() {\n" +
-"        /**\n" +
-"         * Obligé de recharger la transaction à chaque appel : le numéro guid du\n" +
-"         * groupe change à chaque attachement de nouvelle pièce\n" +
-"         */\n" +
-"        const transactionId = Number(getParam(location.href, 'transaction_id'));\n" +
-"        const id = Number(prompt('ID du justificatif ?'));\n" +
-"        const transaction = new Transaction({ id: transactionId });\n" +
-"        await transaction.groupAdd(id);\n" +
-"        ValidMessage.getInstance().reload();\n" +
-"    }\n" +
-"}\n" +
-"\n" +
-"class Cache extends Logger {\n" +
-"    constructor(key, initialValue) {\n" +
-"        super();\n" +
-"        this.storageKey = key;\n" +
-"        this.data = initialValue;\n" +
-"        this.load();\n" +
-"        this.debug('new Cache', this);\n" +
-"        this.follow();\n" +
-"    }\n" +
-"    /**\n" +
-"     * stringify data for storage\n" +
-"     */\n" +
-"    stringify(value) {\n" +
-"        return JSON.stringify(value);\n" +
-"    }\n" +
-"    /**\n" +
-"     * Load data from localStorage\n" +
-"     */\n" +
-"    load() {\n" +
-"        try {\n" +
-"            this.data = this.parse(localStorage.getItem(this.storageKey));\n" +
-"            this.emit('loadend', this);\n" +
-"        }\n" +
-"        catch (_error) { /* Reject data and overrid it at next save() */ }\n" +
-"    }\n" +
-"    /**\n" +
-"     * Save data to localStorage\n" +
-"     */\n" +
-"    save(data) {\n" +
-"        if (data) {\n" +
-"            this.parse(this.stringify(data)); // validate value: throws if invalid\n" +
-"            this.data = data;\n" +
-"        }\n" +
-"        localStorage.setItem(this.storageKey, this.stringify(this.data));\n" +
-"        this.emit('saved', this);\n" +
-"    }\n" +
-"    /**\n" +
-"     * Follow storage change from other Browser pages\n" +
-"     */\n" +
-"    follow() {\n" +
-"        window.addEventListener('storage', event => {\n" +
-"            if (event.storageArea !== localStorage || event.key !== this.storageKey)\n" +
-"                return;\n" +
-"            try {\n" +
-"                this.data = this.parse(event.newValue);\n" +
-"                this.emit('change', this);\n" +
-"            }\n" +
-"            catch (error) {\n" +
-"                this.log('storage event error', { error, value: event.newValue });\n" +
-"                /* Reject data and overrid it at next save() */\n" +
-"            }\n" +
-"        });\n" +
-"    }\n" +
-"}\n" +
-"\n" +
-"class CacheList extends Cache {\n" +
-"    static getInstance(storageKey) {\n" +
-"        if (!this.instances[storageKey]) {\n" +
-"            this.instances[storageKey] = new this(storageKey);\n" +
-"        }\n" +
-"        return this.instances[storageKey];\n" +
-"    }\n" +
-"    constructor(key, initialValue = []) {\n" +
-"        super(key, initialValue);\n" +
-"    }\n" +
-"    parse(data) {\n" +
-"        const value = JSON.parse(data);\n" +
-"        if (!Array.isArray(value))\n" +
-"            throw new Error('The given value does not parse as an Array.');\n" +
-"        return value;\n" +
-"    }\n" +
-"    filter(matchOrPredicate) {\n" +
-"        this.load();\n" +
-"        if (typeof matchOrPredicate === 'function')\n" +
-"            return this.data.filter(matchOrPredicate);\n" +
-"        return this.data.filter(item => Object.entries(matchOrPredicate).every(([key, value]) => item[key] === value));\n" +
-"    }\n" +
-"    find(match) {\n" +
-"        this.load();\n" +
-"        if (typeof match === 'function')\n" +
-"            return this.data.find(match);\n" +
-"        return this.data.find(item => Object.entries(match).every(([key, value]) => item[key] === value));\n" +
-"    }\n" +
-"    /**\n" +
-"     * delete one item\n" +
-"     *\n" +
-"     * @return Deleted item if found\n" +
-"     */\n" +
-"    delete(match) {\n" +
-"        this.load();\n" +
-"        const found = this.find(match);\n" +
-"        if (!found)\n" +
-"            return null;\n" +
-"        this.data.splice(this.data.indexOf(found), 1);\n" +
-"        this.emit('delete', { old: found });\n" +
-"        this.save();\n" +
-"        this.emit('change', this);\n" +
-"        return found;\n" +
-"    }\n" +
-"    /**\n" +
-"     * clear all data\n" +
-"     */\n" +
-"    clear() {\n" +
-"        this.data.length = 0;\n" +
-"        this.emit('clear', this);\n" +
-"        this.save();\n" +
-"        this.emit('change', this);\n" +
-"        return this;\n" +
-"    }\n" +
-"    /**\n" +
-"     * Update one item\n" +
-"     *\n" +
-"     * @param create Create the item if no match found\n" +
-"     * @return Old value\n" +
-"     */\n" +
-"    updateItem(match, value, create = true) {\n" +
-"        this.load();\n" +
-"        const item = this.find(match);\n" +
-"        if (item) {\n" +
-"            this.data.splice(this.data.indexOf(item), 1, value);\n" +
-"            this.emit('update', { old: item, new: value });\n" +
-"        }\n" +
-"        else {\n" +
-"            if (!create)\n" +
-"                return;\n" +
-"            this.data.push(value);\n" +
-"            this.emit('add', { new: value });\n" +
-"        }\n" +
-"        this.save();\n" +
-"        this.emit('change', this);\n" +
-"        return item;\n" +
-"    }\n" +
-"    /**\n" +
-"     * Calls the specified callback function for all the elements in an array.\n" +
-"     * The return value of the callback function is the accumulated result,\n" +
-"     * and is provided as an argument in the next call to the callback function.\n" +
-"     */\n" +
-"    reduce(cb, startingValue) {\n" +
-"        this.load();\n" +
-"        return this.data.reduce(cb, startingValue);\n" +
-"    }\n" +
-"}\n" +
-"CacheList.instances = {};\n" +
-"\n" +
-"class CacheListRecord extends CacheList {\n" +
-"    /**\n" +
-"     * Update one item\n" +
-"     *\n" +
-"     * @param create Create the item if no match found\n" +
-"     * @return Old value\n" +
-"     */\n" +
-"    updateItem(match, newValue, create = true) {\n" +
-"        this.load();\n" +
-"        const oldValue = this.find(match);\n" +
-"        if (oldValue) {\n" +
-"            newValue = { ...oldValue, ...newValue };\n" +
-"            this.data.splice(this.data.indexOf(oldValue), 1, newValue);\n" +
-"            if (('id' in newValue) && newValue.id == getParam(location.href, 'id'))\n" +
-"                this.debug('updateItem', { match, create, oldValue, newValue, stack: new Error('').stack });\n" +
-"            this.emit('update', { oldValue, newValue });\n" +
-"        }\n" +
-"        else {\n" +
-"            if (!create)\n" +
-"                return;\n" +
-"            this.data.push(newValue);\n" +
-"            this.emit('add', { newValue });\n" +
-"        }\n" +
-"        this.save();\n" +
-"        this.emit('change', this);\n" +
-"        return oldValue;\n" +
-"    }\n" +
-"}\n" +
-"\n" +
 "function openInTab(url, options = {}) {\n" +
 "    document.body.appendChild(parseHTML(`<div\n" +
 "      class=\"open_tab\"\n" +
@@ -11440,6 +12125,15 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        this.save();\n" +
 "        this.emit('change', this);\n" +
 "        return oldValue;\n" +
+"    }\n" +
+"    /**\n" +
+"     * Check if the record has a specific key\n" +
+"     *\n" +
+"     * @param key The key to check\n" +
+"     * @return True if the record has the key\n" +
+"     */\n" +
+"    has(key) {\n" +
+"        return key in this.data;\n" +
 "    }\n" +
 "}\n" +
 "\n" +
@@ -11578,6 +12272,27 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        this.autostart = new Autostarter(this);\n" +
 "        this.invalidGenerator = this.loadInvalid();\n" +
 "        this.firstLoading();\n" +
+"        window.addEventListener('beforeunload', event => {\n" +
+"            if (this.running) {\n" +
+"                this.log(\"Vous allez fermer la page alors que le prochain élément à corriger n'a pas été ouvert.\");\n" +
+"                event.returnValue = \"Vous allez fermer la page alors que le prochain élément à corriger n'a pas été ouvert. Voulez-vous vraiment continuer ?\";\n" +
+"                const modal = parseHTML(`\n" +
+"          <div class=\"modal\" style=\"display: block;padding: 10em; background-color: #DDDD;\">\n" +
+"            <div class=\"modal-content\" style=\"max-width: 40em;\">\n" +
+"              <div class=\"modal-header\">\n" +
+"                <h2>Confirmation</h2>\n" +
+"              </div>\n" +
+"              <div class=\"modal-body\">\n" +
+"                <p>Vous allez fermer la page alors que le prochain élément à corriger n'a pas été ouvert. Voulez-vous vraiment continuer ?</p>\n" +
+"              </div>\n" +
+"            </div>\n" +
+"          </div>\n" +
+"        `).firstElementChild;\n" +
+"                document.body.appendChild(modal);\n" +
+"                event.preventDefault();\n" +
+"                setTimeout(() => { modal.remove(); }, 100);\n" +
+"            }\n" +
+"        });\n" +
 "    }\n" +
 "    /**\n" +
 "     * Load current item ID\n" +
@@ -11659,12 +12374,21 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    this.log('skip', cachedItem);\n" +
 "                continue;\n" +
 "            }\n" +
+"            /**\n" +
+"            const status = cachedItem;\n" +
+"            this.updateStatus(cachedItem.id).then((updatedStatus) => {\n" +
+"              if (this.isSkipped(updatedStatus) || updatedStatus.valid) {\n" +
+"                this.start();\n" +
+"              }\n" +
+"            });\n" +
+"            /*/\n" +
 "            const status = await this.updateStatus(cachedItem.id);\n" +
 "            if (this.isSkipped(status)) {\n" +
 "                if (!status?.valid)\n" +
 "                    this.log('skip', status);\n" +
 "                continue;\n" +
 "            }\n" +
+"            /**/\n" +
 "            yield status;\n" +
 "        }\n" +
 "        // verifier les entrées non encore chargées\n" +
@@ -11744,7 +12468,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        if (status) {\n" +
 "            this.log('next found :', { current: this.current, status, class: this });\n" +
-"            openDocument(status.id);\n" +
+"            this.open(status.id);\n" +
 "            this.running = false;\n" +
 "            return;\n" +
 "        }\n" +
@@ -11754,6 +12478,9 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            return this.openNext(interactionAllowed);\n" +
 "        }\n" +
 "        this.running = false;\n" +
+"    }\n" +
+"    open(id) {\n" +
+"        openDocument(id);\n" +
 "    }\n" +
 "    async reloadAll() {\n" +
 "        this.cache.clear();\n" +
@@ -11839,6 +12566,28 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            this.cache.updateItem({ id: this.current }, Object.assign(status, { wait }));\n" +
 "            updateWaitDisplay();\n" +
 "        });\n" +
+"        waitButton.addEventListener('contextmenu', event => {\n" +
+"            event.preventDefault();\n" +
+"            const date = prompt('Date de fin de timeout ? (jj/mm/aaaa)', '');\n" +
+"            if (!date)\n" +
+"                return;\n" +
+"            const d = date.split('/');\n" +
+"            if (d.length !== 3) {\n" +
+"                alert(' Format attendu : jj/mm/aaaa');\n" +
+"                return;\n" +
+"            }\n" +
+"            try {\n" +
+"                const wait = new Date(Number(d[2]), Number(d[1]) - 1, Number(d[0])).toISOString();\n" +
+"                const status = this.cache.find({ id: this.current });\n" +
+"                if (!status)\n" +
+"                    return this.log({ cachedStatus: status, id: this.current });\n" +
+"                this.cache.updateItem({ id: this.current }, Object.assign(status, { wait }));\n" +
+"                updateWaitDisplay();\n" +
+"            }\n" +
+"            catch {\n" +
+"                alert(' Format attendu : jj/mm/aaaa');\n" +
+"            }\n" +
+"        });\n" +
 "        this.cache.on('change', () => { updateWaitDisplay(); });\n" +
 "        this.on('reload', () => { updateWaitDisplay(); });\n" +
 "    }\n" +
@@ -11853,6 +12602,246 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        this.spinner.index = ((this.spinner.index ?? 0) + 1) % this.spinner.frames.length;\n" +
 "        span.innerText = this.spinner.frames[this.spinner.index];\n" +
+"    }\n" +
+"    getCache() {\n" +
+"        return this.cache;\n" +
+"    }\n" +
+"}\n" +
+"\n" +
+"class NextInvalidTransaction extends OpenNextInvalid {\n" +
+"    constructor() {\n" +
+"        super(...arguments);\n" +
+"        this.id = 'next-invalid-transaction';\n" +
+"        this.storageKey = 'transactionValidation';\n" +
+"        this.idParamName = 'transaction_id';\n" +
+"    }\n" +
+"    async init() {\n" +
+"        // Wait for appending button in the matching page before init auto open service\n" +
+"        await this.appendContainer();\n" +
+"        this.cache = CacheStatus.getInstance(this.storageKey);\n" +
+"        await super.init();\n" +
+"    }\n" +
+"    async *walk() {\n" +
+"        // Load new added transactions\n" +
+"        const max = this.cache.reduce((acc, status) => Math.max(status.createdAt, acc), 0);\n" +
+"        if (max) {\n" +
+"            const params = {\n" +
+"                filter: JSON.stringify([{ field: 'created_at', operator: 'gteq', value: new Date(max).toISOString() }]),\n" +
+"                sort: '+created_at',\n" +
+"            };\n" +
+"            for await (const transaction of getTransactionGenerator(params)) {\n" +
+"                yield new Transaction(transaction).getStatus();\n" +
+"            }\n" +
+"        }\n" +
+"        // Load old unloaded transactions\n" +
+"        const min = this.cache.reduce((acc, status) => Math.min(status.createdAt, acc), Date.now());\n" +
+"        const params = {\n" +
+"            filter: JSON.stringify([{ field: 'created_at', operator: 'lteq', value: new Date(min).toISOString() }]),\n" +
+"            sort: '-created_at',\n" +
+"        };\n" +
+"        for await (const transaction of getTransactionGenerator(params)) {\n" +
+"            yield new Transaction(transaction).getStatus();\n" +
+"        }\n" +
+"    }\n" +
+"    async getStatus(id) {\n" +
+"        const transaction = new Transaction({ id });\n" +
+"        return await transaction.getStatus();\n" +
+"    }\n" +
+"    /** Add \"next invalid transaction\" button on transactions list */\n" +
+"    async appendContainer() {\n" +
+"        const nextButton = await waitFunc(() => findElem('div', 'Détails')?.querySelector('button+button:last-child') ?? false);\n" +
+"        nextButton.parentElement?.insertBefore(this.container, nextButton.previousElementSibling);\n" +
+"        waitFunc(() => findElem('div', 'Détails')?.querySelector('button+button:last-child') !== nextButton)\n" +
+"            .then(() => this.appendContainer());\n" +
+"    }\n" +
+"}\n" +
+"\n" +
+"/** Add validation message on transaction panel */\n" +
+"class ValidMessage extends Service {\n" +
+"    constructor() {\n" +
+"        super(...arguments);\n" +
+"        this.container = parseHTML(`<div><div class=\"headband-is-valid\">⟳</div></div>`)\n" +
+"            .firstElementChild;\n" +
+"        this.state = { ledgerEvents: [] };\n" +
+"        this._message = '⟳';\n" +
+"    }\n" +
+"    static getInstance() {\n" +
+"        if (!this.instance)\n" +
+"            this.instance = new this();\n" +
+"        return this.instance;\n" +
+"    }\n" +
+"    async init() {\n" +
+"        await this.insertContainer();\n" +
+"        this.on('message-change', () => this.displayMessage());\n" +
+"        this.watchReloadHotkey();\n" +
+"        await this.loadMessage();\n" +
+"        setInterval(() => this.watch(), 200);\n" +
+"    }\n" +
+"    async insertContainer() {\n" +
+"        await waitElem('h3', 'Transactions'); // Transactions panel\n" +
+"        await waitElem('.paragraph-body-m+.heading-page.mt-1'); // transaction detail panel\n" +
+"        const detailTab = await waitElem('aside div');\n" +
+"        detailTab.insertBefore(this.container, detailTab.firstChild);\n" +
+"        waitFunc(() => $('aside div') !== detailTab).then(() => { this.insertContainer(); });\n" +
+"    }\n" +
+"    watchReloadHotkey() {\n" +
+"        document.addEventListener('keydown', event => {\n" +
+"            if (findElem('h3', 'Transactions') && event.ctrlKey && event.key.toLowerCase() === 's') {\n" +
+"                event.preventDefault();\n" +
+"                this.reload();\n" +
+"            }\n" +
+"        });\n" +
+"    }\n" +
+"    reload() {\n" +
+"        this.loadMessage();\n" +
+"    }\n" +
+"    set message(html) {\n" +
+"        this._message = html;\n" +
+"        this.emit('message-change', html);\n" +
+"    }\n" +
+"    get message() {\n" +
+"        return this._message;\n" +
+"    }\n" +
+"    async loadMessage() {\n" +
+"        this.log('loadMessage', this);\n" +
+"        this.message = '⟳';\n" +
+"        const rawTransaction = getReactProps($('.paragraph-body-m+.heading-page.mt-1'), 9).transaction;\n" +
+"        this.state.transaction = new Transaction(rawTransaction);\n" +
+"        const cache = NextInvalidTransaction.getInstance().getCache();\n" +
+"        const cachedStatus = cache.find({ id: this.state.transaction?.id });\n" +
+"        if (cachedStatus)\n" +
+"            this.message = `<aside style=\"background: lightgray;\">⟳ ${cachedStatus.message}</aside>`;\n" +
+"        const message = await this.state.transaction.getValidMessage();\n" +
+"        if (this.state.transaction?.id !== rawTransaction.id)\n" +
+"            return;\n" +
+"        this.message = `${(await this.state.transaction.isValid()) ? '✓' : '✗'} ${message}`;\n" +
+"    }\n" +
+"    async watch() {\n" +
+"        const ledgerEvents = $$('form[name^=DocumentEntries-]')\n" +
+"            .reduce((events, form) => {\n" +
+"            const formEvents = getReactProps(form.parentElement, 3)?.initialValues?.ledgerEvents ?? [];\n" +
+"            return [...events, ...formEvents];\n" +
+"        }, []);\n" +
+"        if (ledgerEvents.some((event, id) => this.state.ledgerEvents[id] !== event)) {\n" +
+"            const logData = { oldEvents: this.state.ledgerEvents };\n" +
+"            this.state.ledgerEvents = ledgerEvents;\n" +
+"            this.debug('ledgerEvents desynchronisé', { ...logData, ...this });\n" +
+"            this.reload();\n" +
+"        }\n" +
+"        const current = Number(getParam(location.href, 'transaction_id'));\n" +
+"        if (current && current !== this.state.transaction?.id) {\n" +
+"            this.debug('transaction desynchronisée', { current, ...this });\n" +
+"            this.reload();\n" +
+"        }\n" +
+"    }\n" +
+"    async displayMessage() {\n" +
+"        $('.headband-is-valid', this.container).innerHTML =\n" +
+"            `${this.getTransactionId()}${this.getCommentLogo()} ${this.message}`;\n" +
+"    }\n" +
+"    getTransactionId() {\n" +
+"        if (!this.state.transaction?.id)\n" +
+"            return '';\n" +
+"        return `<span class=\"transaction-id d-inline-block bg-secondary-100 dihsuQ px-0_5 m-0\">#${this.state.transaction.id}</span>`;\n" +
+"    }\n" +
+"    getCommentLogo() {\n" +
+"        if (!this.state.transaction)\n" +
+"            return '';\n" +
+"        if (!this.state.comments || this.state.transaction.id !== this.state.comments.transactionId) {\n" +
+"            this.reloadCommentState();\n" +
+"            return '';\n" +
+"        }\n" +
+"        return this.state.comments.hasComment ?\n" +
+"            '<span class=\"d-inline-block bg-danger m-0\">💬</span>' : '';\n" +
+"    }\n" +
+"    async reloadCommentState() {\n" +
+"        if (!this.state.transaction)\n" +
+"            return;\n" +
+"        const transactionId = this.state.transaction.id;\n" +
+"        const transactionDoc = await this.state.transaction.getDocument();\n" +
+"        const transaction = transactionDoc.grouped_documents.find(doc => doc.id === transactionId);\n" +
+"        this.state.comments = {\n" +
+"            transactionId,\n" +
+"            hasComment: Boolean(transaction?.client_comments?.length),\n" +
+"        };\n" +
+"        this.displayMessage();\n" +
+"    }\n" +
+"}\n" +
+"/** Open next invalid transaction */\n" +
+"/**\n" +
+" * Dans la page des transactions, utiliser le code suivant pour afficher une transaction :\n" +
+"getReactProps($('tbody tr'),5).extra.openSidePanel(transactionId);\n" +
+" */\n" +
+"\n" +
+"async function waitPage(pageName) {\n" +
+"    return await waitFunc(() => isPage(pageName));\n" +
+"}\n" +
+"function isPage(pageName) {\n" +
+"    switch (pageName) {\n" +
+"        case 'invoiceDetail': return findElem('h4', 'Réconciliation') ?? false;\n" +
+"        case 'DMS': return location.href.split('/')[5] === 'dms' && findElem('h3', 'GED') || false;\n" +
+"        case 'DMSDetail': return ((location.href.split('/')[5] === 'dms' && findElem('h3', 'Détail du document'))\n" +
+"            || false);\n" +
+"        case 'transactionDetail': return findElem('button.tabbarlink', 'Réconciliation') ?? false;\n" +
+"        default: throw new Error(`unknown page required : \"${pageName}\"`);\n" +
+"    }\n" +
+"}\n" +
+"\n" +
+"/** Add 'add by ID' button on transaction reconciliation tab */\n" +
+"class TransactionAddByIdButton extends Service {\n" +
+"    constructor() {\n" +
+"        super(...arguments);\n" +
+"        this.button = parseHTML('<div class=\"btn-sm w-100 btn-primary add-by-id-btn\" style=\"cursor: pointer;\">Ajouter par ID</div>').firstElementChild;\n" +
+"    }\n" +
+"    async init() {\n" +
+"        await this.insertContainer();\n" +
+"        this.attachEvent();\n" +
+"    }\n" +
+"    async insertContainer() {\n" +
+"        const div = (await Promise.race([\n" +
+"            waitElem('button', 'Voir plus de factures'),\n" +
+"            waitElem('button', 'Chercher parmi les factures'),\n" +
+"        ])).closest('.mt-2');\n" +
+"        if (!div) {\n" +
+"            this.log('TransactionAddByIdButton', { button: await Promise.race([\n" +
+"                    waitElem('button', 'Voir plus de factures'),\n" +
+"                    waitElem('button', 'Chercher parmi les factures'),\n" +
+"                ]), div });\n" +
+"            throw new Error('Impossible de trouver le bloc de boutons');\n" +
+"        }\n" +
+"        div.insertBefore(this.button, div.lastElementChild);\n" +
+"        waitFunc(async () => {\n" +
+"            const currentDiv = (await Promise.race([\n" +
+"                waitElem('button', 'Voir plus de factures'),\n" +
+"                waitElem('button', 'Chercher parmi les factures'),\n" +
+"            ])).closest('.mt-2');\n" +
+"            return currentDiv !== div;\n" +
+"        }).then(() => this.insertContainer());\n" +
+"    }\n" +
+"    attachEvent() {\n" +
+"        this.log({ button: this.button });\n" +
+"        this.button.addEventListener('click', () => { this.addById(); });\n" +
+"        document.addEventListener('keydown', event => {\n" +
+"            if (isPage('transactionDetail') && event.altKey && ['z', 'Z'].includes(event.key)) {\n" +
+"                this.addById();\n" +
+"            }\n" +
+"            else {\n" +
+"                this.debug({\n" +
+"                    isPageTransactionDetail: isPage('transactionDetail'),\n" +
+"                    event,\n" +
+"                });\n" +
+"            }\n" +
+"        });\n" +
+"    }\n" +
+"    async addById() {\n" +
+"        /**\n" +
+"         * Obligé de recharger la transaction à chaque appel : le numéro guid du\n" +
+"         * groupe change à chaque attachement de nouvelle pièce\n" +
+"         */\n" +
+"        const transactionId = Number(getParam(location.href, 'transaction_id'));\n" +
+"        const id = Number(prompt('ID du justificatif ?'));\n" +
+"        const transaction = new Transaction({ id: transactionId });\n" +
+"        await transaction.groupAdd(id);\n" +
+"        ValidMessage.getInstance().reload();\n" +
 "    }\n" +
 "}\n" +
 "\n" +
@@ -11902,6 +12891,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const invoiceName = [\n" +
 "            invoice.invoice_number,\n" +
 "            invoice.thirdparty?.name ?? '',\n" +
+"            invoice.date ? new Date(invoice.date).toLocaleDateString().replace(/\\//g, '-') : '',\n" +
 "            `${invoice.amount.replace(/.0+$/, '')}€`\n" +
 "        ].join(' - ');\n" +
 "        await moveToDms(this.id, destId);\n" +
@@ -11949,7 +12939,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (this.isCurrent())\n" +
 "            this.log('loadValidMessage', this);\n" +
 "        return (await this.isUnreachable()\n" +
-"            ?? await this.isClosed()\n" +
+"            ?? await this.isClosedInvoice()\n" +
 "            ?? await this.isArchived()\n" +
 "            //?? await this.validTemplate()\n" +
 "            ?? await this.is2025()\n" +
@@ -11972,7 +12962,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            return `Impossible de valider : ${invoice.message}`;\n" +
 "        }\n" +
 "    }\n" +
-"    async isClosed() {\n" +
+"    async isClosedInvoice() {\n" +
 "        const invoice = await this.getInvoice();\n" +
 "        // Fait partie d'un exercice clôturé\n" +
 "        if (invoice.has_closed_ledger_events) {\n" +
@@ -12399,9 +13389,6 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    return parseHTML(stringHTML).firstElementChild;\n" +
 "}\n" +
 "\n" +
-"class CacheStatus extends CacheListRecord {\n" +
-"}\n" +
-"\n" +
 "/** Add infos on Invoice full page display */\n" +
 "class InvoiceDisplayInfos extends Service {\n" +
 "    constructor() {\n" +
@@ -12470,7 +13457,9 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    async watch() {\n" +
 "        const infos = await waitElem('h4.heading-section-3.mr-2', 'Informations');\n" +
-"        const invoice = getReactProps(infos, 28).invoice;\n" +
+"        const invoice = getReactPropValue(infos, 'invoice');\n" +
+"        if (!invoice)\n" +
+"            this.error('Unable to load invoice');\n" +
 "        let reload = false;\n" +
 "        if (this.state.reactInvoice !== invoice) {\n" +
 "            this.state.reactInvoice = invoice;\n" +
@@ -12496,8 +13485,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    async appendContainer() {\n" +
 "        if (!this.container) {\n" +
 "            this.container = parseHTML(`<div class=\"sc-iGgVNO clwwQL d-flex align-items-center gap-1 gm-tag-container\">\n" +
-"        <div id=\"is-valid-tag\" class=\"d-inline-block bg-secondary-100 dihsuQ px-0_5\">⟳</div>\n" +
 "        <div id=\"invoice-id\" class=\"d-inline-block bg-secondary-100 dihsuQ px-0_5\"></div>\n" +
+"        <div id=\"is-valid-tag\" class=\"d-inline-block bg-secondary-100 dihsuQ px-0_5\">⟳</div>\n" +
 "      </div>`).firstElementChild;\n" +
 "            const messageDiv = $('#is-valid-tag', this.container);\n" +
 "            this.on('message-change', message => { messageDiv.innerHTML = message; });\n" +
@@ -12557,21 +13546,35 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "/** Add \"Archive\" button on bonded invoice in transaction pannel */\n" +
 "class ArchiveGroupedDocument extends Service {\n" +
 "    async init() {\n" +
-"        await waitElem('h3', 'Transactions');\n" +
-"        while (await waitFunc(() => $$('a[href*=\"/invoices/full_page?\"]')\n" +
-"            .some(link => !link.closest('div')?.querySelector('.archive-button'))))\n" +
-"            this.addInvoiceInfos();\n" +
+"        this.state = [];\n" +
+"        this.state.push('wait for transaction detail panel');\n" +
+"        await waitPage('transactionDetail');\n" +
+"        this.state.push('wait for items');\n" +
+"        let item = await this.getNext();\n" +
+"        while (true) {\n" +
+"            this.addGroupedActions(item);\n" +
+"            item = await this.getNext();\n" +
+"        }\n" +
 "    }\n" +
-"    addInvoiceInfos() {\n" +
-"        const buttonsBlock = $$('a[href*=\"/invoices/full_page?\"]')\n" +
-"            .find(link => !link.closest('div')?.querySelector('.archive-button'))\n" +
-"            ?.closest('div');\n" +
+"    async getNext() {\n" +
+"        return await waitFunc(() => $('.ui-card:not(.GM-archive-grouped-document) a.ui-button.ui-button-secondary+button.ui-button-secondary-danger') ?? false);\n" +
+"    }\n" +
+"    addGroupedActions(item) {\n" +
+"        const card = item.closest('.ui-card');\n" +
+"        if (!card) {\n" +
+"            this.error('addGroupedActions : no invoice found', item);\n" +
+"            return;\n" +
+"        }\n" +
+"        card.classList.add('GM-archive-grouped-document');\n" +
+"        const id = getReactProps(card, 2).invoice.id;\n" +
+"        const buttonsBlock = $(`a[href$=\"${id}.html\"]`, card)?.closest('div');\n" +
 "        if (!buttonsBlock) {\n" +
-"            this.log('addInvoiceInfos : no invoice found');\n" +
+"            this.error('addGroupedActions : no buttons block found', card);\n" +
 "            return;\n" +
 "        }\n" +
 "        const buttonClass = buttonsBlock.querySelector('button')?.className ?? '';\n" +
-"        const id = getReactProps(buttonsBlock, 4).invoiceId;\n" +
+"        this.state.push(`addGroupedActions for #${id}`);\n" +
+"        this.log('addGroupedActions', { card, buttonsBlock, id });\n" +
 "        buttonsBlock.insertBefore(parseHTML(`\n" +
 "        <button\n" +
 "          class=\"dms-button noCaret ui-button ui-button-sm ui-button-secondary ui-button-secondary-primary ui-button-sm-icon-only\" aria-haspopup=\"true\" aria-expanded=\"false\" type=\"button\">\n" +
@@ -12579,105 +13582,68 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        </button>\n" +
 "        <button class=\"archive-button ${buttonClass}\">&nbsp;x&nbsp;</button>\n" +
 "      `), buttonsBlock.firstElementChild);\n" +
-"        const archiveButton = buttonsBlock.querySelector('.archive-button');\n" +
+"        const archiveButton = $('.archive-button', buttonsBlock);\n" +
 "        Tooltip.make({ target: archiveButton, text: 'Archiver ce justificatif' });\n" +
-"        archiveButton.addEventListener('click', async () => {\n" +
-"            archiveButton.disabled = true;\n" +
-"            archiveButton.classList.add('disabled');\n" +
-"            archiveButton.innerText = '⟳';\n" +
-"            const invoice = await Invoice.load(id);\n" +
-"            if (!invoice) {\n" +
-"                alert('Impossible de trouver la facture #' + id);\n" +
-"                archiveButton.innerText = '⚠';\n" +
-"                return;\n" +
-"            }\n" +
-"            const invoiceDoc = await invoice?.getInvoice();\n" +
-"            const docs = await invoice.getGroupedDocuments();\n" +
-"            const transactions = docs.filter(doc => doc.type === 'Transaction').map(doc => `#${doc.id}`);\n" +
-"            await invoice.update({\n" +
-"                invoice_number: `§ ${transactions.join(' - ')} - ${invoiceDoc.invoice_number}`\n" +
-"            });\n" +
-"            await invoice.archive();\n" +
-"            buttonsBlock.closest('.ui-card')?.remove();\n" +
-"            this.log(`archive invoice #${id}`, { invoice });\n" +
-"            ValidMessage.getInstance().reload();\n" +
+"        archiveButton.addEventListener('click', () => this.archive(card));\n" +
+"        const dmsButton = $('.dms-button', buttonsBlock);\n" +
+"        Tooltip.make({ target: dmsButton, text: 'Envoyer la facture en GED' });\n" +
+"        dmsButton.addEventListener('click', () => this.dms(card));\n" +
+"    }\n" +
+"    async archive(card) {\n" +
+"        const id = getReactProps(card, 2).invoice.id;\n" +
+"        const buttonsBlock = $(`a[href$=\"${id}.html\"]`, card).closest('div');\n" +
+"        if (!buttonsBlock) {\n" +
+"            this.error('archive : no buttons block found', card);\n" +
+"            return;\n" +
+"        }\n" +
+"        const archiveButton = $('.archive-button', buttonsBlock);\n" +
+"        this.log('archive invoice', { card, id });\n" +
+"        archiveButton.disabled = true;\n" +
+"        archiveButton.classList.add('disabled');\n" +
+"        archiveButton.innerText = '⟳';\n" +
+"        const invoice = await Invoice.load(id);\n" +
+"        if (!invoice) {\n" +
+"            alert('Impossible de trouver la facture #' + id);\n" +
+"            archiveButton.innerText = '⚠';\n" +
+"            return;\n" +
+"        }\n" +
+"        const invoiceDoc = await invoice?.getInvoice();\n" +
+"        const docs = await invoice.getGroupedDocuments();\n" +
+"        const transactions = docs.filter(doc => doc.type === 'Transaction').map(doc => `#${doc.id}`);\n" +
+"        await invoice.update({\n" +
+"            invoice_number: `§ ${transactions.join(' - ')} - ${invoiceDoc.invoice_number}`\n" +
 "        });\n" +
-"        const dmsButton = buttonsBlock.querySelector('.dms-button');\n" +
-"        dmsButton.addEventListener('click', async () => {\n" +
-"            this.debug('click event on dmsButton', { buttonsBlock, id });\n" +
-"            dmsButton.disabled = true;\n" +
-"            dmsButton.classList.add('disabled');\n" +
-"            dmsButton.innerText = '⟳';\n" +
-"            const invoice = await Invoice.load(id);\n" +
-"            if (!invoice) {\n" +
-"                alert('Impossible de trouver la facture #' + id);\n" +
-"                dmsButton.innerText = '⚠';\n" +
-"                return;\n" +
-"            }\n" +
-"            const dmsItem = await invoice.moveToDms();\n" +
-"            if (!dmsItem) {\n" +
-"                this.error('move to dms error');\n" +
-"                return;\n" +
-"            }\n" +
-"            buttonsBlock.closest('.ui-card')?.remove();\n" +
-"            this.log('moveToDms', { dmsItem });\n" +
-"            ValidMessage.getInstance().reload();\n" +
-"        });\n" +
-"        if (id) {\n" +
-"            this.log({ buttonsBlock, id });\n" +
-"            upElement(buttonsBlock, 3).querySelector('.flex-grow-1 .d-block:last-child')?.appendChild(parseHTML(`&nbsp;<span class=\"invoice-id d-inline-block bg-secondary-100 dihsuQ px-0_5\">#${id}</span>`));\n" +
+"        await invoice.archive();\n" +
+"        buttonsBlock.closest('.ui-card')?.remove();\n" +
+"        this.log(`archive invoice #${id}`, { invoice });\n" +
+"        ValidMessage.getInstance().reload();\n" +
+"    }\n" +
+"    async dms(card) {\n" +
+"        const id = getReactProps(card, 2).invoice.id;\n" +
+"        const buttonsBlock = $(`a[href$=\"${id}.html\"]`, card).closest('div');\n" +
+"        if (!buttonsBlock) {\n" +
+"            this.error('dms : no buttons block found', card);\n" +
+"            return;\n" +
 "        }\n" +
-"        else {\n" +
-"            this.log('Impossible de retrouver l\\'ID', { buttonsBlock });\n" +
+"        const dmsButton = $('.dms-button', buttonsBlock);\n" +
+"        this.log('move to dms', { card, id });\n" +
+"        dmsButton.disabled = true;\n" +
+"        dmsButton.classList.add('disabled');\n" +
+"        dmsButton.innerText = '⟳';\n" +
+"        const invoice = await Invoice.load(id);\n" +
+"        if (!invoice) {\n" +
+"            alert('Impossible de trouver la facture #' + id);\n" +
+"            dmsButton.innerText = '⚠';\n" +
+"            return;\n" +
 "        }\n" +
-"    }\n" +
-"}\n" +
-"\n" +
-"class NextInvalidTransaction extends OpenNextInvalid {\n" +
-"    constructor() {\n" +
-"        super(...arguments);\n" +
-"        this.id = 'next-invalid-transaction';\n" +
-"        this.storageKey = 'transactionValidation';\n" +
-"        this.idParamName = 'transaction_id';\n" +
-"    }\n" +
-"    async init() {\n" +
-"        // Wait for appending button in the matching page before init auto open service\n" +
-"        await this.appendContainer();\n" +
-"        this.cache = CacheStatus.getInstance(this.storageKey);\n" +
-"        await super.init();\n" +
-"    }\n" +
-"    async *walk() {\n" +
-"        // Load new added transactions\n" +
-"        const max = this.cache.reduce((acc, status) => Math.max(status.createdAt, acc), 0);\n" +
-"        if (max) {\n" +
-"            const params = {\n" +
-"                filter: JSON.stringify([{ field: 'created_at', operator: 'gteq', value: new Date(max).toISOString() }]),\n" +
-"                sort: '+created_at',\n" +
-"            };\n" +
-"            for await (const transaction of getTransactionGenerator(params)) {\n" +
-"                yield new Transaction(transaction).getStatus();\n" +
-"            }\n" +
+"        const dmsItem = await invoice.moveToDms();\n" +
+"        if (!dmsItem) {\n" +
+"            this.error('move to dms error');\n" +
+"            return;\n" +
 "        }\n" +
-"        // Load old unloaded transactions\n" +
-"        const min = this.cache.reduce((acc, status) => Math.min(status.createdAt, acc), Date.now());\n" +
-"        const params = {\n" +
-"            filter: JSON.stringify([{ field: 'created_at', operator: 'lteq', value: new Date(min).toISOString() }]),\n" +
-"            sort: '-created_at',\n" +
-"        };\n" +
-"        for await (const transaction of getTransactionGenerator(params)) {\n" +
-"            yield new Transaction(transaction).getStatus();\n" +
-"        }\n" +
-"    }\n" +
-"    async getStatus(id) {\n" +
-"        const transaction = new Transaction({ id });\n" +
-"        return await transaction.getStatus();\n" +
-"    }\n" +
-"    /** Add \"next invalid transaction\" button on transactions list */\n" +
-"    async appendContainer() {\n" +
-"        const nextButton = await waitFunc(() => findElem('div', 'Détails')?.querySelector('button+button:last-child') ?? false);\n" +
-"        nextButton.parentElement?.insertBefore(this.container, nextButton.previousElementSibling);\n" +
-"        waitFunc(() => findElem('div', 'Détails')?.querySelector('button+button:last-child') !== nextButton)\n" +
-"            .then(() => this.appendContainer());\n" +
+"        buttonsBlock.closest('.ui-card')?.remove();\n" +
+"        this.log('moveToDms', { dmsItem });\n" +
+"        ValidMessage.getInstance().reload();\n" +
 "    }\n" +
 "}\n" +
 "\n" +
@@ -13104,12 +14070,13 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            const urlRoot = location.href.split('/').slice(0, 6).join('/');\n" +
 "            const url = `${urlRoot}/transactions?filter=${JSON.stringify(filters)}&per_page=300&sort=-date&sidepanel_tab=reconciliation&period_start=${minDate.slice(0, 4)}-01-01&period_end=${maxDate.slice(0, 4)}-12-31`;\n" +
 "            openInTab(url);\n" +
+"            navigator.clipboard.writeText(getParam(location.href, 'id'));\n" +
 "        });\n" +
 "    }\n" +
 "    async watch() {\n" +
 "        const refEl = await waitPage(\"invoiceDetail\");\n" +
 "        const amountInput = findElem('input[name=\"currency_amount\"]');\n" +
-"        amountInput.closest('.form-group').querySelector('label').appendChild(this.container);\n" +
+"        amountInput.closest('.ui-form-group').querySelector('label').appendChild(this.container);\n" +
 "        await waitFunc(async () => await waitPage('invoiceDetail') !== refEl);\n" +
 "        this.init();\n" +
 "    }\n" +
@@ -13138,7 +14105,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "     * @inheritDoc\n" +
 "     */\n" +
 "    async init() {\n" +
-"        await waitPage('DMS');\n" +
+"        await waitPage('DMSDetail');\n" +
 "        this.rotateButton.className = getButtonClassName();\n" +
 "        const container = findElem('div', 'Nom du Fichier').closest('div.w-100');\n" +
 "        this.container = parseHTML(`<div class=\"${container.firstElementChild.className}\"></div>`).firstElementChild;\n" +
@@ -13146,7 +14113,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        this.watch();\n" +
 "    }\n" +
 "    async watch() {\n" +
-"        await waitPage('DMS');\n" +
+"        await waitPage('DMSDetail');\n" +
 "        const rightList = findElem('div', 'Nom du Fichier').closest('div.w-100');\n" +
 "        rightList.appendChild(this.container);\n" +
 "        const iframe = $('iframe', rightList.parentElement.previousElementSibling);\n" +
@@ -13313,13 +14280,13 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "     * @inheritDoc\n" +
 "     */\n" +
 "    async init() {\n" +
-"        await waitPage('DMS');\n" +
+"        await waitPage('DMSDetail');\n" +
 "        const container = findElem('div', 'Nom du Fichier').closest('div.w-100');\n" +
 "        this.container = parseHTML(`<div class=\"${container.firstElementChild.className}\"></div>`).firstElementChild;\n" +
 "        this.watch();\n" +
 "    }\n" +
 "    async watch() {\n" +
-"        await waitPage('DMS');\n" +
+"        await waitPage('DMSDetail');\n" +
 "        const rightList = findElem('div', 'Nom du Fichier').closest('div.w-100');\n" +
 "        const ref = getReactProps(rightList, 7).item;\n" +
 "        rightList.insertBefore(this.container, rightList.firstChild);\n" +
@@ -13334,6 +14301,15 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            const input = $('input[name=\"name\"]');\n" +
 "            input?.focus();\n" +
 "            input?.select();\n" +
+"            const indexes = await item.partialMatch(input.value);\n" +
+"            this.log('partialMatch indexes', indexes, [\n" +
+"                input.value,\n" +
+"                input.value.slice(0, indexes[0]),\n" +
+"                input.value.slice(indexes[0], indexes[1]),\n" +
+"                input.value.slice(indexes[1]),\n" +
+"            ]);\n" +
+"            input.selectionStart = indexes[0];\n" +
+"            input.selectionEnd = indexes[1];\n" +
 "        }\n" +
 "        await waitFunc(() => getReactProps(rightList, 7)?.item !== ref);\n" +
 "        this.emit('reload');\n" +
@@ -13383,7 +14359,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    async watch() {\n" +
 "        const refEl = await waitPage(\"invoiceDetail\");\n" +
 "        const invoiceNumber = findElem('input[name=\"invoice_number\"]');\n" +
-"        invoiceNumber.closest('.form-group').querySelector('label').appendChild(this.container);\n" +
+"        invoiceNumber.closest('.ui-form-group').querySelector('label').appendChild(this.container);\n" +
 "        await waitFunc(async () => await waitPage('invoiceDetail') !== refEl);\n" +
 "        this.init();\n" +
 "    }\n" +
@@ -13463,12 +14439,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "     * @inheritDoc\n" +
 "     */\n" +
 "    async init() {\n" +
-"        await waitPage('DMS');\n" +
+"        await waitPage('DMSDetail');\n" +
 "        this.createButton();\n" +
 "        this.watch();\n" +
 "    }\n" +
 "    async watch() {\n" +
-"        await waitPage('DMS');\n" +
+"        await waitPage('DMSDetail');\n" +
 "        const div = await waitElem('div', 'Liens avec la comptabilité');\n" +
 "        const buttonRef = $('button', div.nextElementSibling);\n" +
 "        buttonRef.parentElement.insertBefore(this.toInvoiceButton, buttonRef);\n" +
@@ -13549,6 +14525,184 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "}\n" +
 "\n" +
+"class DMSListHasLinks extends Service {\n" +
+"    async init() {\n" +
+"        await waitPage('DMS');\n" +
+"        this.watch();\n" +
+"    }\n" +
+"    async watch() {\n" +
+"        await waitPage('DMS');\n" +
+"        const cell = await waitElem('tr:not(.GM-has-links) td[role=cell]:nth-child(2) svg');\n" +
+"        await this.manageRow(cell);\n" +
+"        this.watch();\n" +
+"    }\n" +
+"    async manageRow(cell) {\n" +
+"        const row = cell.closest('tr');\n" +
+"        row.classList.add('GM-has-links');\n" +
+"        const data = getReactProps(cell, findReactProp(cell, 'data'));\n" +
+"        const dmsItem = new DMSItem(data.row.original);\n" +
+"        const links = await dmsItem.getLinks();\n" +
+"        if (!links.length)\n" +
+"            cell.parentElement.appendChild(document.createTextNode('x'));\n" +
+"    }\n" +
+"}\n" +
+"\n" +
+"/**\n" +
+" * @unreleased\n" +
+" */\n" +
+"class PreviewDMSFiles extends Service {\n" +
+"    async init() {\n" +
+"        await waitPage('transactionDetail');\n" +
+"        this.watch();\n" +
+"    }\n" +
+"    async watch() {\n" +
+"        while (await waitPage('transactionDetail')) {\n" +
+"            const unmanagedDMSItems = $$('.ui-card:not(.GM-preview-dms) span.tiny-caption').filter(span => (span.innerText.startsWith('ajouté dans la GED le ')));\n" +
+"            if (!unmanagedDMSItems.length) {\n" +
+"                await sleep(2000);\n" +
+"                continue;\n" +
+"            }\n" +
+"            for (const span of unmanagedDMSItems) {\n" +
+"                this.debug({ span });\n" +
+"                const files = getReactProps(span, 11).files;\n" +
+"                for (const file of files)\n" +
+"                    await this.manageFile(file);\n" +
+"            }\n" +
+"        }\n" +
+"    }\n" +
+"    async manageFile(file) {\n" +
+"        this.log('manageFile', { file });\n" +
+"        const dmsItem = new DMSItem({ id: file.item_id });\n" +
+"        const card = $(`a[href$=\"${file.item_id}\"]`)?.closest('.ui-card');\n" +
+"        const img = $('img', card);\n" +
+"        if (card.classList.contains('GM-preview-dms'))\n" +
+"            return;\n" +
+"        if (!card || !img) {\n" +
+"            this.log('unable to find this file card', { file, dmsItem, card, img });\n" +
+"            return;\n" +
+"        }\n" +
+"        card.classList.add('GM-preview-dms');\n" +
+"        this.debug({ file, dmsItem, card, img });\n" +
+"        img.addEventListener('click', () => this.showDMS(dmsItem));\n" +
+"    }\n" +
+"    async showDMS(dmsItem) {\n" +
+"        const item = await dmsItem.getItem();\n" +
+"        const finalUrl = await followRedirections(item.file_url);\n" +
+"        const modal = parseHTML(`\n" +
+"      <div data-state=\"open\" class=\"ui-modal-overlay\" style=\"pointer-events: auto;\">\n" +
+"        <div role=\"dialog\" id=\"radix-:rqs:\" aria-labelledby=\"radix-:rqt:\"\n" +
+"          data-state=\"open\" tabindex=\"false\" class=\"ui-modal ui-modal-md\"\n" +
+"          style=\"grid-template-rows: auto 1fr auto; pointer-events: auto; right: 1em; top: 50%; transform: translate(0px, -50%); position: absolute;\"\n" +
+"        >\n" +
+"        <header class=\"ui-modal-header\">\n" +
+"            <h2 id=\"radix-:rqt:\" class=\"heading-section-1 mr-3\">${item.name}</h2>\n" +
+"            <button\n" +
+"                class=\"ui-modal-header-close-button ui-button ui-button-md ui-button-tertiary ui-button-tertiary-primary ui-button-md-icon-only\"\n" +
+"                type=\"button\"\n" +
+"            >\n" +
+"                <svg class=\"MuiSvgIcon-root MuiSvgIcon-fontSizeMedium mr-0 css-q7mezt\"\n" +
+"                    focusable=\"false\" aria-hidden=\"true\" viewBox=\"0 0 24 24\"\n" +
+"                    data-testid=\"CloseIcon\" style=\"font-size: 1rem;\"\n" +
+"                >\n" +
+"                    <path d=\"M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z\"></path>\n" +
+"                </svg>\n" +
+"            </button>\n" +
+"        </header>\n" +
+"        <div class=\"ui-modal-body\">\n" +
+"            <div class=\"sc-hvigdm hXZdYQ d-block overflow-auto\">\n" +
+"                <div style=\"height: 60vh; user-select: none; cursor: crosshair;\">\n" +
+"                    <div style=\"position: relative; cursor: zoom-in;\">\n" +
+"                        <img src=\"${finalUrl}\" alt=\"${item.name}\" style=\"display: block; visibility: visible; width: 100%;\">\n" +
+"                        <div style=\"position: absolute; box-sizing: border-box; pointer-events: none; width: 760px; height: 551.4px; top: 0px; overflow: hidden; left: 0px;\">\n" +
+"                            <img src=\"${finalUrl}\" alt=\"${item.name}\" style=\"position: absolute; box-sizing: border-box; display: block; top: 0px; left: 0px; transform: translate(0px); z-index: 1; visibility: hidden; width: auto;\">\n" +
+"                        </div>\n" +
+"                    </div>\n" +
+"                </div>\n" +
+"            </div>\n" +
+"        </div>\n" +
+"      </div>\n" +
+"    `).firstElementChild;\n" +
+"        modal.querySelector('.ui-modal-header-close-button')?.addEventListener('click', () => modal.remove());\n" +
+"        document.body.appendChild(modal);\n" +
+"    }\n" +
+"}\n" +
+"/**\n" +
+" * Fetch given URL and follow all redirections. Finally returns the last URL\n" +
+" * @param url URL to fetch\n" +
+" */\n" +
+"async function followRedirections(url) {\n" +
+"    const response = await fetch(url);\n" +
+"    if (response.url !== url)\n" +
+"        return followRedirections(response.url);\n" +
+"    return url;\n" +
+"}\n" +
+"\n" +
+"class NextInvalidDMS extends OpenNextInvalid {\n" +
+"    constructor() {\n" +
+"        super(...arguments);\n" +
+"        this.id = 'next-invalid-dms';\n" +
+"        this.storageKey = 'DMSValidation';\n" +
+"        /** The location search param name of the currently showed item id. */\n" +
+"        this.idParamName = 'item_id';\n" +
+"    }\n" +
+"    async init() {\n" +
+"        // Wait for appending button in the matched page before init auto open service\n" +
+"        await this.appendContainer();\n" +
+"        this.cache = CacheListRecord.getInstance(this.storageKey);\n" +
+"        await super.init();\n" +
+"    }\n" +
+"    async *walk() {\n" +
+"        // Load new added items\n" +
+"        for await (const status of this.walkItems('+'))\n" +
+"            yield status;\n" +
+"        // Load old unloaded items\n" +
+"        for await (const status of this.walkItems('-'))\n" +
+"            yield status;\n" +
+"    }\n" +
+"    async *walkItems(sort) {\n" +
+"        const startFrom = sort === '+' ? 0 : Date.now();\n" +
+"        const limit = this.cache\n" +
+"            .reduce((acc, status) => Math[sort === '+' ? 'max' : 'min'](status.createdAt, acc), startFrom);\n" +
+"        if (limit || sort === '-') {\n" +
+"            this.log(`Recherche vers le ${sort === '+' ? 'futur' : 'passé'} depuis`, this.cache.find({ createdAt: limit }), { cache: this.cache });\n" +
+"            const operator = sort === '+' ? 'gteq' : 'lteq';\n" +
+"            const value = new Date(limit).toISOString();\n" +
+"            const params = {\n" +
+"                filter: JSON.stringify([{ field: 'created_at', operator, value }]),\n" +
+"                sort: `${sort}created_at`,\n" +
+"            };\n" +
+"            for await (const dmsItem of getDMSItemGenerator(params)) {\n" +
+"                const status = await new DMSItem(dmsItem).getStatus();\n" +
+"                yield { ...status };\n" +
+"            }\n" +
+"        }\n" +
+"    }\n" +
+"    async getStatus(id) {\n" +
+"        const item = new DMSItem({ id });\n" +
+"        if (!item) {\n" +
+"            this.error('getStatus', 'item not found', { id });\n" +
+"            return null;\n" +
+"        }\n" +
+"        const status = await item.getStatus();\n" +
+"        return status;\n" +
+"    }\n" +
+"    /** Add \"next invalid invoice\" button on invoices list */\n" +
+"    async appendContainer() {\n" +
+"        const ref = await waitPage('DMSDetail');\n" +
+"        const rightList = findElem('div', 'Nom du Fichier').closest('div.w-100');\n" +
+"        if (!this.containerWrapper) {\n" +
+"            this.containerWrapper = parseHTML(`<div class=\"${rightList.firstElementChild.className}\"></div>`).firstElementChild;\n" +
+"            this.containerWrapper.appendChild(this.container);\n" +
+"        }\n" +
+"        rightList.insertBefore(this.containerWrapper, rightList.firstChild);\n" +
+"        waitFunc(() => isPage('DMSDetail') !== ref).then(() => this.appendContainer());\n" +
+"    }\n" +
+"    open(id) {\n" +
+"        const url = new URL(location.href.replace(/item_id=\\d+/, `item_id=${id}`));\n" +
+"        openInTab(url.toString(), { insert: false });\n" +
+"    }\n" +
+"}\n" +
+"\n" +
 "last7DaysFilter();\n" +
 "AddInvoiceIdColumn.start();\n" +
 "AllowChangeArchivedInvoiceNumber.start();\n" +
@@ -13563,14 +14717,17 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "ImproveMatchSuggestions.start();\n" +
 "InvoiceDisplayInfos.start();\n" +
 "MoveDMSToInvoice.start();\n" +
+"NextInvalidDMS.start();\n" +
 "NextInvalidInvoice.start();\n" +
 "NextInvalidTransaction.start();\n" +
 "OpenRefTransaction.start();\n" +
+"PreviewDMSFiles.start();\n" +
 "RotateImg.start();\n" +
 "TransactionAddByIdButton.start();\n" +
 "TransactionPanelHotkeys.start();\n" +
 "TransactionPannelStyle.start();\n" +
 "ValidMessage.start();\n" +
+"DMSListHasLinks.start();\n" +
 "/*\n" +
 "async function mergeInvoices () {\n" +
 "  const button = Array.from(document.getElementsByTagName('button'))\n" +
@@ -13589,6 +14746,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    GM_Pennylane_Version: /** version **/ '0.1.34',\n" +
 "    GM: {\n" +
 "        API: {\n" +
+"            documentMatching,\n" +
 "            getDocument,\n" +
 "            getGroupedDocuments,\n" +
 "            getInvoice,\n" +
@@ -13596,6 +14754,11 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            getLedgerEvents,\n" +
 "            getThirdparty,\n" +
 "            getTransactionsList,\n" +
+"            getDMSItem,\n" +
+"            getDMSLinks,\n" +
+"            getDMSItemLinks,\n" +
+"            getDMSItemList,\n" +
+"            getDMSItemSettings,\n" +
 "        },\n" +
 "        $$,\n" +
 "        $,\n" +
