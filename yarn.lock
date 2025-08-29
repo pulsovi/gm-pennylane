@@ -1004,14 +1004,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"generate-ts-types@portal:../makeTypes::locator=pennylane%40workspace%3A.":
-  version: 0.0.0-use.local
-  resolution: "generate-ts-types@portal:../makeTypes::locator=pennylane%40workspace%3A."
+"generate-ts-types@https://github.com/pulsovi/MakeTypes.git#main":
+  version: 1.1.7
+  resolution: "generate-ts-types@https://github.com/pulsovi/MakeTypes.git#commit=ebdde6af26b428a7b9e90fedaa8585b6acfb7561"
   dependencies:
     typescript: "npm:^5.6.3"
     yargs: "npm:^17.7.2"
+  checksum: 10c0/b97c6fb8cf1c95b85cf5dd83769a46eb8533841560c3b0bdcb5fe61e18aeb7d64b12e5e75815fe864b15803c05090309cb537098c1ce4fba3a831077ff36ad66
   languageName: node
-  linkType: soft
+  linkType: hard
 
 "get-caller-file@npm:^2.0.5":
   version: 2.0.5

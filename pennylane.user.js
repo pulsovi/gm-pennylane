@@ -4208,7 +4208,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            checkArray$c(d.children, field + \".children\");\n" +
 "            if (d.children) {\n" +
 "                for (let i = 0; i < d.children.length; i++) {\n" +
-"                    d.children[i] = ChildrenEntity.Create(d.children[i], field + \".children\" + \"[\" + i + \"]\");\n" +
+"                    d.children[i] = ChildrenEntityOrItemsEntity.Create(d.children[i], field + \".children\" + \"[\" + i + \"]\");\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -4254,7 +4254,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            checkArray$c(d.items, field + \".items\");\n" +
 "            if (d.items) {\n" +
 "                for (let i = 0; i < d.items.length; i++) {\n" +
-"                    d.items[i] = ItemsEntity$1.Create(d.items[i], field + \".items\" + \"[\" + i + \"]\");\n" +
+"                    d.items[i] = ItemsEntityOrChildrenEntity.Create(d.items[i], field + \".items\" + \"[\" + i + \"]\");\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -4349,9 +4349,9 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            this.visible = d.visible;\n" +
 "    }\n" +
 "}\n" +
-"class ChildrenEntity {\n" +
+"class ChildrenEntityOrItemsEntity {\n" +
 "    static Parse(d) {\n" +
-"        return ChildrenEntity.Create(JSON.parse(d));\n" +
+"        return ChildrenEntityOrItemsEntity.Create(JSON.parse(d));\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
@@ -4439,7 +4439,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
 "            errorHelper$k(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
-"        return new ChildrenEntity(d);\n" +
+"        return new ChildrenEntityOrItemsEntity(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
 "        this.archived_at = d.archived_at;\n" +
@@ -4557,9 +4557,9 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        this.role = d.role;\n" +
 "    }\n" +
 "};\n" +
-"let ItemsEntity$1 = class ItemsEntity {\n" +
+"class ItemsEntityOrChildrenEntity {\n" +
 "    static Parse(d) {\n" +
-"        return ItemsEntity.Create(JSON.parse(d));\n" +
+"        return ItemsEntityOrChildrenEntity.Create(JSON.parse(d));\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
@@ -4576,63 +4576,155 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            throwIsArray$k(field, d);\n" +
 "        }\n" +
 "        checkNull$f(d.archived_at, field + \".archived_at\");\n" +
-"        checkNumber$h(d.comments_count, field + \".comments_count\");\n" +
+"        if (\"comments_count\" in d) {\n" +
+"            checkNumber$h(d.comments_count, field + \".comments_count\");\n" +
+"        }\n" +
 "        checkString$j(d.created_at, field + \".created_at\");\n" +
-"        checkNull$f(d.creator, field + \".creator\");\n" +
-"        checkBoolean$c(d.favorite, field + \".favorite\");\n" +
-"        checkString$j(d.file_extension, field + \".file_extension\");\n" +
-"        checkNumber$h(d.file_size, field + \".file_size\");\n" +
-"        checkString$j(d.file_url, field + \".file_url\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$f(d.creator, field + \".creator\", \"null | Creator2\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                d.creator = Creator2.Create(d.creator, field + \".creator\", \"null | Creator2\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"favorite\" in d) {\n" +
+"            checkBoolean$c(d.favorite, field + \".favorite\");\n" +
+"        }\n" +
+"        if (\"file_extension\" in d) {\n" +
+"            checkString$j(d.file_extension, field + \".file_extension\");\n" +
+"        }\n" +
+"        if (\"file_size\" in d) {\n" +
+"            checkNumber$h(d.file_size, field + \".file_size\");\n" +
+"        }\n" +
+"        if (\"file_url\" in d) {\n" +
+"            checkString$j(d.file_url, field + \".file_url\");\n" +
+"        }\n" +
+"        if (\"files_count\" in d) {\n" +
+"            checkNumber$h(d.files_count, field + \".files_count\");\n" +
+"        }\n" +
+"        if (\"fixed\" in d) {\n" +
+"            checkBoolean$c(d.fixed, field + \".fixed\");\n" +
+"        }\n" +
 "        checkNumber$h(d.id, field + \".id\");\n" +
 "        checkBoolean$c(d.imports_allowed, field + \".imports_allowed\");\n" +
 "        checkNumber$h(d.itemable_id, field + \".itemable_id\");\n" +
 "        checkString$j(d.method, field + \".method\");\n" +
 "        checkString$j(d.name, field + \".name\");\n" +
 "        checkNumber$h(d.parent_id, field + \".parent_id\");\n" +
-"        checkString$j(d.pusher_channel, field + \".pusher_channel\");\n" +
-"        checkBoolean$c(d.readonly, field + \".readonly\");\n" +
-"        checkNull$f(d.reference_link, field + \".reference_link\");\n" +
+"        if (\"pusher_channel\" in d) {\n" +
+"            checkString$j(d.pusher_channel, field + \".pusher_channel\");\n" +
+"        }\n" +
+"        if (\"readonly\" in d) {\n" +
+"            checkBoolean$c(d.readonly, field + \".readonly\");\n" +
+"        }\n" +
+"        if (\"reference_link\" in d) {\n" +
+"            checkNull$f(d.reference_link, field + \".reference_link\");\n" +
+"        }\n" +
 "        checkBoolean$c(d.shared, field + \".shared\");\n" +
-"        checkString$j(d.signed_id, field + \".signed_id\");\n" +
-"        checkArray$c(d.suggested_folders, field + \".suggested_folders\");\n" +
-"        if (d.suggested_folders) {\n" +
-"            for (let i = 0; i < d.suggested_folders.length; i++) {\n" +
-"                checkNever$4(d.suggested_folders[i], field + \".suggested_folders\" + \"[\" + i + \"]\");\n" +
+"        if (\"signed_id\" in d) {\n" +
+"            checkString$j(d.signed_id, field + \".signed_id\");\n" +
+"        }\n" +
+"        if (\"suggested_folders\" in d) {\n" +
+"            checkArray$c(d.suggested_folders, field + \".suggested_folders\");\n" +
+"            if (d.suggested_folders) {\n" +
+"                for (let i = 0; i < d.suggested_folders.length; i++) {\n" +
+"                    checkNever$4(d.suggested_folders[i], field + \".suggested_folders\" + \"[\" + i + \"]\");\n" +
+"                }\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$j(d.type, field + \".type\");\n" +
 "        checkString$j(d.updated_at, field + \".updated_at\");\n" +
-"        const knownProperties = [\"archived_at\", \"comments_count\", \"created_at\", \"creator\", \"favorite\", \"file_extension\", \"file_size\", \"file_url\", \"id\", \"imports_allowed\", \"itemable_id\", \"method\", \"name\", \"parent_id\", \"pusher_channel\", \"readonly\", \"reference_link\", \"shared\", \"signed_id\", \"suggested_folders\", \"type\", \"updated_at\"];\n" +
+"        if (\"visible\" in d) {\n" +
+"            checkBoolean$c(d.visible, field + \".visible\");\n" +
+"        }\n" +
+"        const knownProperties = [\"archived_at\", \"comments_count\", \"created_at\", \"creator\", \"favorite\", \"file_extension\", \"file_size\", \"file_url\", \"files_count\", \"fixed\", \"id\", \"imports_allowed\", \"itemable_id\", \"method\", \"name\", \"parent_id\", \"pusher_channel\", \"readonly\", \"reference_link\", \"shared\", \"signed_id\", \"suggested_folders\", \"type\", \"updated_at\", \"visible\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
 "            errorHelper$k(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
-"        return new ItemsEntity(d);\n" +
+"        return new ItemsEntityOrChildrenEntity(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
 "        this.archived_at = d.archived_at;\n" +
-"        this.comments_count = d.comments_count;\n" +
+"        if (\"comments_count\" in d)\n" +
+"            this.comments_count = d.comments_count;\n" +
 "        this.created_at = d.created_at;\n" +
 "        this.creator = d.creator;\n" +
-"        this.favorite = d.favorite;\n" +
-"        this.file_extension = d.file_extension;\n" +
-"        this.file_size = d.file_size;\n" +
-"        this.file_url = d.file_url;\n" +
+"        if (\"favorite\" in d)\n" +
+"            this.favorite = d.favorite;\n" +
+"        if (\"file_extension\" in d)\n" +
+"            this.file_extension = d.file_extension;\n" +
+"        if (\"file_size\" in d)\n" +
+"            this.file_size = d.file_size;\n" +
+"        if (\"file_url\" in d)\n" +
+"            this.file_url = d.file_url;\n" +
+"        if (\"files_count\" in d)\n" +
+"            this.files_count = d.files_count;\n" +
+"        if (\"fixed\" in d)\n" +
+"            this.fixed = d.fixed;\n" +
 "        this.id = d.id;\n" +
 "        this.imports_allowed = d.imports_allowed;\n" +
 "        this.itemable_id = d.itemable_id;\n" +
 "        this.method = d.method;\n" +
 "        this.name = d.name;\n" +
 "        this.parent_id = d.parent_id;\n" +
-"        this.pusher_channel = d.pusher_channel;\n" +
-"        this.readonly = d.readonly;\n" +
-"        this.reference_link = d.reference_link;\n" +
+"        if (\"pusher_channel\" in d)\n" +
+"            this.pusher_channel = d.pusher_channel;\n" +
+"        if (\"readonly\" in d)\n" +
+"            this.readonly = d.readonly;\n" +
+"        if (\"reference_link\" in d)\n" +
+"            this.reference_link = d.reference_link;\n" +
 "        this.shared = d.shared;\n" +
-"        this.signed_id = d.signed_id;\n" +
-"        this.suggested_folders = d.suggested_folders;\n" +
+"        if (\"signed_id\" in d)\n" +
+"            this.signed_id = d.signed_id;\n" +
+"        if (\"suggested_folders\" in d)\n" +
+"            this.suggested_folders = d.suggested_folders;\n" +
 "        this.type = d.type;\n" +
 "        this.updated_at = d.updated_at;\n" +
+"        if (\"visible\" in d)\n" +
+"            this.visible = d.visible;\n" +
 "    }\n" +
-"};\n" +
+"}\n" +
+"class Creator2 {\n" +
+"    static Parse(d) {\n" +
+"        return Creator2.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$k = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$k(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$k(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$k(field, d);\n" +
+"        }\n" +
+"        checkString$j(d.email, field + \".email\");\n" +
+"        checkString$j(d.first_name, field + \".first_name\");\n" +
+"        checkString$j(d.full_name, field + \".full_name\");\n" +
+"        checkString$j(d.last_name, field + \".last_name\");\n" +
+"        checkString$j(d.role, field + \".role\");\n" +
+"        const knownProperties = [\"email\", \"first_name\", \"full_name\", \"last_name\", \"role\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$k(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
+"        return new Creator2(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.email = d.email;\n" +
+"        this.first_name = d.first_name;\n" +
+"        this.full_name = d.full_name;\n" +
+"        this.last_name = d.last_name;\n" +
+"        this.role = d.role;\n" +
+"    }\n" +
+"}\n" +
 "let Pagination$3 = class Pagination {\n" +
 "    static Parse(d) {\n" +
 "        return Pagination.Create(JSON.parse(d));\n" +
