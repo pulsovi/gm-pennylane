@@ -1,4 +1,4 @@
-import { $, $$, getReactProps, parseHTML, upElement, waitElem, waitFunc } from '../../_/index.js';
+import { $, $$, getReactProps, getReactPropValue, parseHTML, upElement, waitElem, waitFunc } from '../../_/index.js';
 import Service from '../../framework/Service.js';
 import Tooltip from '../../framework/Tooltip.js';
 import Invoice from '../../models/Invoice.js';
@@ -30,12 +30,13 @@ export default class ArchiveGroupedDocument extends Service {
 
   addGroupedActions(item: Element) {
     const card = item.closest('.ui-card');
-    if (!card) {
-      this.error('addGroupedActions : no invoice found', item);
+    card?.classList.add('GM-archive-grouped-document');
+    const id = getReactPropValue(card, 'invoice')?.id;
+    if (!card || !id) {
+      if (card?.textContent?.includes("ajouté dans la GED le")) return;
+      this.error('addGroupedActions : no invoice found', {item, card, id});
       return;
     }
-    card.classList.add('GM-archive-grouped-document');
-    const id = getReactProps(card, 2).invoice.id;
 
     const buttonsBlock = $(`a[href$="${id}.html"]`, card)?.closest('div');
     if (!buttonsBlock) {
