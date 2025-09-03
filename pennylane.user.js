@@ -858,7 +858,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            checkArray$d(d.converted_invoice_urls, field + \".converted_invoice_urls\");\n" +
 "            if (d.converted_invoice_urls) {\n" +
 "                for (let i = 0; i < d.converted_invoice_urls.length; i++) {\n" +
-"                    checkNever$5(d.converted_invoice_urls[i], field + \".converted_invoice_urls\" + \"[\" + i + \"]\");\n" +
+"                    checkNever$6(d.converted_invoice_urls[i], field + \".converted_invoice_urls\" + \"[\" + i + \"]\");\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1132,7 +1132,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            checkArray$d(d.recipients, field + \".recipients\");\n" +
 "            if (d.recipients) {\n" +
 "                for (let i = 0; i < d.recipients.length; i++) {\n" +
-"                    checkNever$5(d.recipients[i], field + \".recipients\" + \"[\" + i + \"]\");\n" +
+"                    checkNever$6(d.recipients[i], field + \".recipients\" + \"[\" + i + \"]\");\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1155,7 +1155,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            checkArray$d(d.scored_transactions, field + \".scored_transactions\");\n" +
 "            if (d.scored_transactions) {\n" +
 "                for (let i = 0; i < d.scored_transactions.length; i++) {\n" +
-"                    checkNever$5(d.scored_transactions[i], field + \".scored_transactions\" + \"[\" + i + \"]\");\n" +
+"                    checkNever$6(d.scored_transactions[i], field + \".scored_transactions\" + \"[\" + i + \"]\");\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1525,7 +1525,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            checkArray$d(d.converted_invoice_urls, field + \".converted_invoice_urls\");\n" +
 "            if (d.converted_invoice_urls) {\n" +
 "                for (let i = 0; i < d.converted_invoice_urls.length; i++) {\n" +
-"                    checkNever$5(d.converted_invoice_urls[i], field + \".converted_invoice_urls\" + \"[\" + i + \"]\");\n" +
+"                    checkNever$6(d.converted_invoice_urls[i], field + \".converted_invoice_urls\" + \"[\" + i + \"]\");\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -2268,7 +2268,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkArray$d(d.recipients, field + \".recipients\", \"never[] | null\");\n" +
 "                if (d.recipients) {\n" +
 "                    for (let i = 0; i < d.recipients.length; i++) {\n" +
-"                        checkNever$5(d.recipients[i], field + \".recipients\" + \"[\" + i + \"]\");\n" +
+"                        checkNever$6(d.recipients[i], field + \".recipients\" + \"[\" + i + \"]\");\n" +
 "                    }\n" +
 "                }\n" +
 "            }\n" +
@@ -2302,7 +2302,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                checkArray$d(d.scored_transactions, field + \".scored_transactions\", \"never[] | null\");\n" +
 "                if (d.scored_transactions) {\n" +
 "                    for (let i = 0; i < d.scored_transactions.length; i++) {\n" +
-"                        checkNever$5(d.scored_transactions[i], field + \".scored_transactions\" + \"[\" + i + \"]\");\n" +
+"                        checkNever$6(d.scored_transactions[i], field + \".scored_transactions\" + \"[\" + i + \"]\");\n" +
 "                    }\n" +
 "                }\n" +
 "            }\n" +
@@ -3702,7 +3702,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkArray$d(d.emails, field + \".emails\");\n" +
 "        if (d.emails) {\n" +
 "            for (let i = 0; i < d.emails.length; i++) {\n" +
-"                checkNever$5(d.emails[i], field + \".emails\" + \"[\" + i + \"]\");\n" +
+"                checkNever$6(d.emails[i], field + \".emails\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
@@ -3794,7 +3794,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkArray$d(d.tags, field + \".tags\");\n" +
 "        if (d.tags) {\n" +
 "            for (let i = 0; i < d.tags.length; i++) {\n" +
-"                checkNever$5(d.tags[i], field + \".tags\" + \"[\" + i + \"]\");\n" +
+"                checkNever$6(d.tags[i], field + \".tags\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
 "        checkNull$h(d.turnover, field + \".turnover\");\n" +
@@ -3952,7 +3952,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    if (value !== null)\n" +
 "        errorHelper$n(field, value, multiple ?? \"null\");\n" +
 "}\n" +
-"function checkNever$5(value, field, multiple) {\n" +
+"function checkNever$6(value, field, multiple) {\n" +
 "    return errorHelper$n(field, value, \"never\");\n" +
 "}\n" +
 "function errorHelper$n(field, d, type) {\n" +
@@ -4426,7 +4426,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            checkArray$c(d.suggested_folders, field + \".suggested_folders\");\n" +
 "            if (d.suggested_folders) {\n" +
 "                for (let i = 0; i < d.suggested_folders.length; i++) {\n" +
-"                    checkNever$4(d.suggested_folders[i], field + \".suggested_folders\" + \"[\" + i + \"]\");\n" +
+"                    checkNever$5(d.suggested_folders[i], field + \".suggested_folders\" + \"[\" + i + \"]\");\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -4632,7 +4632,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            checkArray$c(d.suggested_folders, field + \".suggested_folders\");\n" +
 "            if (d.suggested_folders) {\n" +
 "                for (let i = 0; i < d.suggested_folders.length; i++) {\n" +
-"                    checkNever$4(d.suggested_folders[i], field + \".suggested_folders\" + \"[\" + i + \"]\");\n" +
+"                    checkNever$5(d.suggested_folders[i], field + \".suggested_folders\" + \"[\" + i + \"]\");\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -4795,7 +4795,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    if (value !== null)\n" +
 "        errorHelper$k(field, value, multiple ?? \"null\");\n" +
 "}\n" +
-"function checkNever$4(value, field, multiple) {\n" +
+"function checkNever$5(value, field, multiple) {\n" +
 "    return errorHelper$k(field, value, \"never\");\n" +
 "}\n" +
 "function errorHelper$k(field, d, type) {\n" +
@@ -5028,12 +5028,20 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"signed_id\" in d) {\n" +
 "            checkString$h(d.signed_id, field + \".signed_id\");\n" +
 "        }\n" +
+"        if (\"suggested_folders\" in d) {\n" +
+"            checkArray$b(d.suggested_folders, field + \".suggested_folders\");\n" +
+"            if (d.suggested_folders) {\n" +
+"                for (let i = 0; i < d.suggested_folders.length; i++) {\n" +
+"                    checkNever$4(d.suggested_folders[i], field + \".suggested_folders\" + \"[\" + i + \"]\");\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
 "        checkString$h(d.type, field + \".type\");\n" +
 "        checkString$h(d.updated_at, field + \".updated_at\");\n" +
 "        if (\"visible\" in d) {\n" +
 "            checkBoolean$b(d.visible, field + \".visible\");\n" +
 "        }\n" +
-"        const knownProperties = [\"archived_at\", \"comments_count\", \"created_at\", \"creator\", \"favorite\", \"file_extension\", \"file_size\", \"file_url\", \"fixed\", \"id\", \"imports_allowed\", \"itemable_id\", \"method\", \"name\", \"parent_id\", \"pusher_channel\", \"readonly\", \"reference_link\", \"shared\", \"signed_id\", \"type\", \"updated_at\", \"visible\"];\n" +
+"        const knownProperties = [\"archived_at\", \"comments_count\", \"created_at\", \"creator\", \"favorite\", \"file_extension\", \"file_size\", \"file_url\", \"fixed\", \"id\", \"imports_allowed\", \"itemable_id\", \"method\", \"name\", \"parent_id\", \"pusher_channel\", \"readonly\", \"reference_link\", \"shared\", \"signed_id\", \"suggested_folders\", \"type\", \"updated_at\", \"visible\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
 "            errorHelper$i(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
@@ -5071,6 +5079,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        this.shared = d.shared;\n" +
 "        if (\"signed_id\" in d)\n" +
 "            this.signed_id = d.signed_id;\n" +
+"        if (\"suggested_folders\" in d)\n" +
+"            this.suggested_folders = d.suggested_folders;\n" +
 "        this.type = d.type;\n" +
 "        this.updated_at = d.updated_at;\n" +
 "        if (\"visible\" in d)\n" +
@@ -5183,6 +5193,9 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "function checkNull$e(value, field, multiple) {\n" +
 "    if (value !== null)\n" +
 "        errorHelper$i(field, value, multiple ?? \"null\");\n" +
+"}\n" +
+"function checkNever$4(value, field, multiple) {\n" +
+"    return errorHelper$i(field, value, \"never\");\n" +
 "}\n" +
 "function errorHelper$i(field, d, type) {\n" +
 "    if (type.includes(' | ')) {\n" +
@@ -11702,6 +11715,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                    this.log('hasUnbalancedCHQ(): somme des chèques incorrecte');\n" +
 "                return 'La somme des chèques doit valoir le montant de la transaction';\n" +
 "            }\n" +
+"            if (Math.abs(balance.CHQ - balance.reçu) > 0.001) {\n" +
+"                if (this.isCurrent())\n" +
+"                    this.log('hasUnbalancedCHQ(): somme des reçus incorrecte');\n" +
+"                // sample: 1798997950\n" +
+"                return 'La somme des reçus doit valoir celles des chèques';\n" +
+"            }\n" +
 "            if (this.isCurrent())\n" +
 "                this.log('balance avec chèques équilibrée', balance);\n" +
 "            return '';\n" +
@@ -13653,12 +13672,14 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    addGroupedActions(item) {\n" +
 "        const card = item.closest('.ui-card');\n" +
-"        if (!card) {\n" +
-"            this.error('addGroupedActions : no invoice found', item);\n" +
+"        card?.classList.add('GM-archive-grouped-document');\n" +
+"        const id = getReactPropValue(card, 'invoice')?.id;\n" +
+"        if (!card || !id) {\n" +
+"            if (card?.textContent?.includes(\"ajouté dans la GED le\"))\n" +
+"                return;\n" +
+"            this.error('addGroupedActions : no invoice found', { item, card, id });\n" +
 "            return;\n" +
 "        }\n" +
-"        card.classList.add('GM-archive-grouped-document');\n" +
-"        const id = getReactProps(card, 2).invoice.id;\n" +
 "        const buttonsBlock = $(`a[href$=\"${id}.html\"]`, card)?.closest('div');\n" +
 "        if (!buttonsBlock) {\n" +
 "            this.error('addGroupedActions : no buttons block found', card);\n" +
@@ -14795,6 +14816,42 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "}\n" +
 "\n" +
+"class FullPeriod extends Service {\n" +
+"    async init() {\n" +
+"        this.watch();\n" +
+"    }\n" +
+"    async watch() {\n" +
+"        const block = await this.getPeriodBlock();\n" +
+"        if (!$(\".GM-full-period\", block))\n" +
+"            this.addButton(block);\n" +
+"        await sleep(100);\n" +
+"        this.watch();\n" +
+"    }\n" +
+"    async getPeriodBlock() {\n" +
+"        const button = $$(\"button\").find((button) => Boolean(getReactPropValue(button, \"periodStart\")));\n" +
+"        if (!button) {\n" +
+"            await sleep(100);\n" +
+"            return this.getPeriodBlock();\n" +
+"        }\n" +
+"        return button.closest(\"div\");\n" +
+"    }\n" +
+"    addButton(block) {\n" +
+"        const periodEnd = new Date().getFullYear() + \"-12-31\";\n" +
+"        const buttonRef = $$(\"button\", block).find((button) => button.getAttribute(\"aria-label\")?.includes(\"exercice\"));\n" +
+"        const button = parseHTML(`\n" +
+"      <button class=\"${buttonRef?.className ?? \"\"} GM-full-period\">&nbsp;x&nbsp;</button>\n" +
+"    `).firstElementChild;\n" +
+"        Tooltip.make({ target: button, text: \"Tous les exercices\" });\n" +
+"        block.insertBefore(button, block.firstChild);\n" +
+"        button.addEventListener(\"click\", () => {\n" +
+"            const url = new URL(location.href);\n" +
+"            url.searchParams.set(\"period_start\", \"2022-01-01\");\n" +
+"            url.searchParams.set(\"period_end\", periodEnd);\n" +
+"            location.replace(url.toString());\n" +
+"        });\n" +
+"    }\n" +
+"}\n" +
+"\n" +
 "last7DaysFilter();\n" +
 "AddInvoiceIdColumn.start();\n" +
 "AllowChangeArchivedInvoiceNumber.start();\n" +
@@ -14805,6 +14862,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "DMSToInvoiceButton.start();\n" +
 "EntryBlocInfos.start();\n" +
 "FixTab.start();\n" +
+"FullPeriod.start();\n" +
 "HighlightWrongDMSFilenames.start();\n" +
 "ImproveMatchSuggestions.start();\n" +
 "InvoiceDisplayInfos.start();\n" +

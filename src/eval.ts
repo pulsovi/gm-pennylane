@@ -39,6 +39,7 @@ import MoveDMSToInvoice from './pages/transactionPanel/MoveDMSToInvoice.js';
 import { DMSListHasLinks } from './pages/DMS/hasLinks.js';
 import PreviewDMSFiles from './pages/transactionPanel/PreviewDMSFiles.js';
 import NextInvalidDMS from './pages/DMS/NextInvalidDMS.js';
+import FullPeriod from "./pages/FullPeriod.js";
 
 last7DaysFilter();
 AddInvoiceIdColumn.start();
@@ -50,6 +51,7 @@ DMSRotateImg.start();
 DMSToInvoiceButton.start();
 EntryBlocInfos.start();
 FixTab.start();
+FullPeriod.start();
 HighlightWrongDMSFilenames.start();
 ImproveMatchSuggestions.start();
 InvoiceDisplayInfos.start();
