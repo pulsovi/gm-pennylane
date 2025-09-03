@@ -285,6 +285,11 @@ export default class Transaction extends ValidableDocument {
         if (this.isCurrent()) this.log('hasUnbalancedCHQ(): somme des chèques incorrecte');
         return 'La somme des chèques doit valoir le montant de la transaction';
       }
+      if (Math.abs(balance.CHQ - balance.reçu) > 0.001) {
+        if (this.isCurrent()) this.log('hasUnbalancedCHQ(): somme des reçus incorrecte');
+        // sample: 1798997950
+        return 'La somme des reçus doit valoir celles des chèques';
+      }
       if (this.isCurrent()) this.log('balance avec chèques équilibrée', balance);
       return '';
     }
