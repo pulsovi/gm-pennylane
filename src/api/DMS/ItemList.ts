@@ -72,6 +72,7 @@ export class ItemsEntity {
   public readonly reference_link?: null;
   public readonly shared: boolean;
   public readonly signed_id?: string;
+  public readonly suggested_folders?: never[];
   public readonly type: string;
   public readonly updated_at: string;
   public readonly visible?: boolean;
@@ -148,12 +149,20 @@ export class ItemsEntity {
     if ("signed_id" in d) {
       checkString(d.signed_id, field + ".signed_id");
     }
+    if ("suggested_folders" in d) {
+      checkArray(d.suggested_folders, field + ".suggested_folders");
+      if (d.suggested_folders) {
+        for (let i = 0; i < d.suggested_folders.length; i++) {
+          checkNever(d.suggested_folders[i], field + ".suggested_folders" + "[" + i + "]");
+        }
+      }
+    }
     checkString(d.type, field + ".type");
     checkString(d.updated_at, field + ".updated_at");
     if ("visible" in d) {
       checkBoolean(d.visible, field + ".visible");
     }
-    const knownProperties = ["archived_at","comments_count","created_at","creator","favorite","file_extension","file_size","file_url","fixed","id","imports_allowed","itemable_id","method","name","parent_id","pusher_channel","readonly","reference_link","shared","signed_id","type","updated_at","visible"];
+    const knownProperties = ["archived_at","comments_count","created_at","creator","favorite","file_extension","file_size","file_url","fixed","id","imports_allowed","itemable_id","method","name","parent_id","pusher_channel","readonly","reference_link","shared","signed_id","suggested_folders","type","updated_at","visible"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
     if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new ItemsEntity(d);
@@ -179,6 +188,7 @@ export class ItemsEntity {
     if ("reference_link" in d) this.reference_link = d.reference_link;
     this.shared = d.shared;
     if ("signed_id" in d) this.signed_id = d.signed_id;
+    if ("suggested_folders" in d) this.suggested_folders = d.suggested_folders;
     this.type = d.type;
     this.updated_at = d.updated_at;
     if ("visible" in d) this.visible = d.visible;
@@ -294,6 +304,9 @@ function checkString(value: any, field: string, multiple?: string): void {
 }
 function checkNull(value: any, field: string, multiple?: string): void {
   if (value !== null) errorHelper(field, value, multiple ?? "null");
+}
+function checkNever(value: any, field: string, multiple?: string): void {
+  return errorHelper(field, value, multiple ?? "never");
 }
 function errorHelper(field: string, d: any, type: string): void {
   if (type.includes(' | ')) {
