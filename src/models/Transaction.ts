@@ -49,17 +49,18 @@ export default class Transaction extends ValidableDocument {
         const ledgerEvents = await this.getLedgerEvents();
         const groupedDocuments = await this.getGroupedDocuments();
         const dmsLinks = await this.getDMSLinks();
+        const journal = await this.getJournal();
 
         // balance déséquilibrée - version exigeante
         const balance: Balance = new Balance();
 
-        groupedDocuments
-          .sort((a, b) => Number(b.type === 'Transaction') - Number(a.type === 'Transaction'))
-          .forEach(gdoc => {
-            if (this.isCurrent()) this.debug('balance counting', jsonClone({ gdoc, balance }));
-            const coeff = (gdoc.type === 'Invoice' && gdoc.journal.code === 'HA') ? -1 : 1;
+        (await Promise.all(groupedDocuments.map((doc) => doc.getGdoc())))
+          .sort((a, b) => Number(b.type === "Transaction") - Number(a.type === "Transaction"))
+          .forEach((gdoc) => {
+            if (this.isCurrent()) this.debug("balance counting", jsonClone({ gdoc, balance }));
+            const coeff = gdoc.type === "Invoice" && journal.code === "HA" ? -1 : 1;
             const value = parseFloat(gdoc.amount) * coeff;
-            if (gdoc.type === 'Transaction') balance.addTransaction(value);
+            if (gdoc.type === "Transaction") balance.addTransaction(value);
             else if (/ CERFA | AIDES - /u.test(gdoc.label)) balance.addReçu(value);
             else if (/ CHQ(?:\d|\s)/u.test(gdoc.label)) balance.addCHQ(value);
             else balance.addAutre(value);
@@ -184,19 +185,24 @@ export default class Transaction extends ValidableDocument {
   private async isMissingBanking() {
     // Pas de rapprochement bancaire
     const doc = await this.getDocument();
-    const groupedDocuments = await this.getGroupedDocuments();
-    const groupedDoc = groupedDocuments.find(gdoc => gdoc.id === doc.id) as GroupedDocumentsEntity;
+    const groupedDoc = await this.getGdoc();
 
-    const recent = (Date.now() - new Date(doc.date).getTime()) < 86_400_000 * 30;
+    const recent = Date.now() - new Date(doc.date).getTime() < 86_400_000 * 30;
+    if (!("reconciled" in groupedDoc)) {
+      this.error('isMissingBanking need to find the "reconciled" property', {
+        document: this,
+      });
+      return "Error: see console";
+    }
     if (!recent && !groupedDoc.reconciled) {
       return `<a
         title="Cliquer ici pour plus d'informations."
         href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FRapprochements%20bancaires"
-      >Cette transaction n\'est pas rattachée à un rapprochement bancaire ⓘ</a>`
+      >Cette transaction n\'est pas rattachée à un rapprochement bancaire ⓘ</a>`;
     }
-    this.debug('loadValidMessage > rapprochement bancaire', {
+    this.debug("loadValidMessage > rapprochement bancaire", {
       recent,
-      reconciled: groupedDocuments.find(gdoc => gdoc.id === doc.id),
+      reconciled: this,
     });
   }
 
@@ -384,7 +390,7 @@ export default class Transaction extends ValidableDocument {
 
   private async isWrongDonationCounterpart() {
     const ledgerEvents = await this.getLedgerEvents();
-    const groupedDocuments = await this.getGroupedDocuments();
+    const groupedDocuments = await Promise.all((await this.getGroupedDocuments()).map((doc) => doc.getGdoc()));
     const dmsLinks = await this.getDMSLinks();
 
     const isDonation = groupedDocuments.some(gdoc => / CERFA | AIDES - /u.test(gdoc.label))
@@ -616,16 +622,17 @@ export default class Transaction extends ValidableDocument {
 
   private async isNormalDonation() {
     const groupedDocuments = await this.getGroupedDocuments();
+    const gdocs = await Promise.all(groupedDocuments.map((doc) => doc.getGdoc()));
 
-    if (groupedDocuments.length < 2) {
+    if (gdocs.length < 2) {
       return `<a
         title="Ajouter le CERFA dans les pièces de réconciliation. Cliquer ici pour plus d'informations."
         href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Transaction%20-%20Virement%20re%C3%A7u%20sans%20justificatif"
       >Virement reçu sans justificatif ⓘ</a>`;
     }
 
-    if (!groupedDocuments.find(gdoc => gdoc.label.includes('CERFA'))) {
-      return 'Les virements reçus doivent être justifiés par un CERFA';
+    if (!gdocs.find((gdoc) => gdoc.label.includes("CERFA"))) {
+      return "Les virements reçus doivent être justifiés par un CERFA";
     }
   }
 
@@ -697,11 +704,12 @@ export default class Transaction extends ValidableDocument {
     const doc = await this.getDocument();
     const ledgerEvents = await this.getLedgerEvents();
     const groupedDocuments = await this.getGroupedDocuments();
+    const gdocs = await Promise.all(groupedDocuments.map((doc) => doc.getGdoc()));
     const aidLedgerEvent = ledgerEvents.find(line => line.planItem.number.startsWith('6571'));
 
     if (!aidLedgerEvent && parseFloat(doc.amount) < 0) {
-      for (const gdoc of groupedDocuments) {
-        if (gdoc.type !== 'Invoice') continue;
+      for (const gdoc of gdocs) {
+        if (gdoc.type !== "Invoice") continue;
         const { thirdparty_id } = await new Document(gdoc).getDocument();
         // Aides octroyées à une asso ou un particulier
         if ([106438171, 114270419].includes(thirdparty_id)) {
@@ -725,7 +733,8 @@ export default class Transaction extends ValidableDocument {
       )
     ) {
       const groupedDocuments = await this.getGroupedDocuments();
-      const chqs = groupedDocuments.filter(gdoc => gdoc.label.includes(' - CHQ'));
+      const gdocs = await Promise.all(groupedDocuments.map((doc) => doc.getGdoc()));
+      const chqs = gdocs.filter((gdoc) => gdoc.label.includes(" - CHQ"));
       this.log('hasToSendToDMS', {groupedDocuments, chqs, balance});
       if (!chqs.length) {
         if (this.isCurrent()) this.log('hasToSendToDMS', 'tous les chq sont en GED', {groupedDocuments, balance});
