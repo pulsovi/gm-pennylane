@@ -1,5 +1,9 @@
 import Cache from './Cache.js';
 
+/**
+ * CacheRecord is a cache that stores a record of data.
+ * It extends Cache and provides a simple interface to get, set and has.
+ */
 export default class CacheRecord<T extends object> extends Cache<T> {
   protected parse (data: string | null): T {
     const value = JSON.parse(data!);

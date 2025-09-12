@@ -1,6 +1,9 @@
-import { TypePredicate } from 'typescript';
-import Cache from './Cache.js';
+import Cache from "./Cache.js";
 
+/**
+ * CacheList is a cache that stores a list of data.
+ * It extends Cache and provides a simple interface to filter and find.
+ */
 export default class CacheList<T> extends Cache<T[]> {
   private static instances: Record<string, CacheList<unknown>> = {};
 
@@ -17,7 +20,8 @@ export default class CacheList<T> extends Cache<T[]> {
 
   protected parse(data: string | null): T[] {
     const value = JSON.parse(data!);
-    if (!Array.isArray(value)) throw new Error('The given value does not parse as an Array.');
+    if (!Array.isArray(value))
+      throw new Error("The given value does not parse as an Array.");
     return value;
   }
 
@@ -28,11 +32,11 @@ export default class CacheList<T> extends Cache<T[]> {
   public filter(match: Partial<T>): T[];
   public filter(matchOrPredicate: ((item: T) => boolean) | Partial<T>): T[] {
     this.load();
-    if (typeof matchOrPredicate === 'function')
+    if (typeof matchOrPredicate === "function")
       return this.data.filter(matchOrPredicate);
 
-    return this.data.filter(
-      item => Object.entries(matchOrPredicate).every(
+    return this.data.filter((item) =>
+      Object.entries(matchOrPredicate).every(
         ([key, value]) => item[key] === value
       )
     );
@@ -43,15 +47,19 @@ export default class CacheList<T> extends Cache<T[]> {
    * otherwise.
    */
   public find(match: Partial<T>): T | undefined;
-  public find<S extends T>(match: (value?: T, index?: number, obj?: T[]) => value is S): S | undefined;
-  public find(match: (value?: T, index?: number, obj?: T[]) => boolean): T | undefined;
-  public find(match: Partial<T> | ((value?: T, index?: number, obj?: T[]) => boolean)): T | undefined {
+  public find<S extends T>(
+    match: (value?: T, index?: number, obj?: T[]) => value is S
+  ): S | undefined;
+  public find(
+    match: (value?: T, index?: number, obj?: T[]) => boolean
+  ): T | undefined;
+  public find(
+    match: Partial<T> | ((value?: T, index?: number, obj?: T[]) => boolean)
+  ): T | undefined {
     this.load();
-    if (typeof match === 'function') return this.data.find(match);
-    return this.data.find(
-      item => Object.entries(match).every(
-        ([key, value]) => item[key] === value
-      )
+    if (typeof match === "function") return this.data.find(match);
+    return this.data.find((item) =>
+      Object.entries(match).every(([key, value]) => item[key] === value)
     );
   }
 
@@ -65,9 +73,9 @@ export default class CacheList<T> extends Cache<T[]> {
     const found = this.find(match);
     if (!found) return null;
     this.data.splice(this.data.indexOf(found), 1);
-    this.emit('delete', { old: found });
+    this.emit("delete", { old: found });
     this.save();
-    this.emit('change', this);
+    this.emit("change", this);
     return found;
   }
 
@@ -76,9 +84,9 @@ export default class CacheList<T> extends Cache<T[]> {
    */
   public clear(): this {
     this.data.length = 0;
-    this.emit('clear', this);
+    this.emit("clear", this);
     this.save();
-    this.emit('change', this);
+    this.emit("change", this);
     return this;
   }
 
@@ -89,18 +97,25 @@ export default class CacheList<T> extends Cache<T[]> {
    * @return Old value
    */
   public updateItem(value: T, create?: boolean): T | undefined;
-  public updateItem(match: Partial<T>, value: T, create?: boolean): T | undefined;
+  public updateItem(
+    match: Partial<T>,
+    value: T,
+    create?: boolean
+  ): T | undefined;
   public updateItem(
     matchOrValue: Partial<T> | (T & { id: number }),
     valueOrCreate?: T | boolean,
     create?: boolean
   ): T | undefined {
-
     let match: Partial<T> | { id: number };
     let value: T;
 
-    if (typeof valueOrCreate === 'boolean' || typeof valueOrCreate === 'undefined') {
-      if (!('id' in matchOrValue)) throw new Error('`matchOrValue` MUST have an `id` property');
+    if (
+      typeof valueOrCreate === "boolean" ||
+      typeof valueOrCreate === "undefined"
+    ) {
+      if (!("id" in matchOrValue))
+        throw new Error("`matchOrValue` MUST have an `id` property");
       create = valueOrCreate ?? true;
       value = matchOrValue as T;
       match = { id: matchOrValue.id };
@@ -114,15 +129,15 @@ export default class CacheList<T> extends Cache<T[]> {
 
     if (item) {
       this.data.splice(this.data.indexOf(item), 1, value);
-      this.emit('update', { old: item, new: value });
+      this.emit("update", { old: item, new: value });
     } else {
       if (!create) return;
       this.data.push(value);
-      this.emit('add', { new: value });
+      this.emit("add", { new: value });
     }
 
     this.save();
-    this.emit('change', this);
+    this.emit("change", this);
     return item;
   }
 
@@ -131,7 +146,10 @@ export default class CacheList<T> extends Cache<T[]> {
    * The return value of the callback function is the accumulated result,
    * and is provided as an argument in the next call to the callback function.
    */
-  public reduce<R extends unknown>(cb: (acc: R, item: T) => R, startingValue: R): R {
+  public reduce<R extends unknown>(
+    cb: (acc: R, item: T) => R,
+    startingValue: R
+  ): R {
     this.load();
     return this.data.reduce(cb, startingValue);
   }

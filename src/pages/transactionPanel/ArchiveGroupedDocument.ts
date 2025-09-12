@@ -90,7 +90,10 @@ export default class ArchiveGroupedDocument extends Service {
 
     const invoiceDoc = await invoice?.getInvoice();
     const docs = await invoice.getGroupedDocuments();
-    const transactions = docs.filter(doc => doc.type === 'Transaction').map(doc => `#${doc.id}`);
+    const gdocs = await Promise.all(docs.map((doc) => doc.getGdoc()));
+    const transactions = gdocs
+      .filter((doc) => doc.type === "Transaction")
+      .map((doc) => `#${doc.id}`);
     await invoice.update({
       invoice_number: `§ ${transactions.join(' - ')} - ${invoiceDoc.invoice_number}`
     });

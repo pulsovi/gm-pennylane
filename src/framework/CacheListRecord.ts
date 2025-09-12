@@ -1,6 +1,10 @@
 import { getParam } from '../_/url.js';
 import CacheList from './CacheList.js';
 
+/**
+ * CacheListRecord is a cache that stores a list of records.
+ * It extends CacheList and provides a simple interface to update one item.
+ */
 export default class CacheListRecord<T extends object> extends CacheList<T> {
   /**
    * Update one item

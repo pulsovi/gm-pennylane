@@ -3,12 +3,14 @@ import { getDMSLinks } from '../api/dms.js';
 import { APIDMSLink } from '../api/DMS/Link.js';
 import { archiveDocument, getDocument, reloadLedgerEvents } from '../api/document.js';
 import { APIDocument } from '../api/Document/index.js';
-import { APILedgerEvent } from '../api/LedgerEvent/index.js';
-import { getGroupedDocuments, getLedgerEvents } from '../api/operation.js';
-import { getThirdparty, type Thirdparty } from '../api/thirdparties.js';
-import { GroupedDocument } from '../api/types.js';
-import CacheList from '../framework/CacheList.js';
-import { Logger } from '../framework/Logger.js';
+import { APIGroupedDocument } from "../api/GroupedDocument/index.js";
+import { getJournal } from "../api/journal.js";
+import { APIJournal } from "../api/Journal/index.js";
+import { APILedgerEvent } from "../api/LedgerEvent/index.js";
+import { getGroupedDocuments, getLedgerEvents } from "../api/operation.js";
+import { getThirdparty, type Thirdparty } from "../api/thirdparties.js";
+import CacheList from "../framework/CacheList.js";
+import { Logger } from "../framework/Logger.js";
 
 interface ClosedStatus {
   id: number;
@@ -17,24 +19,46 @@ interface ClosedStatus {
 }
 
 export default class Document extends Logger {
-  public readonly type: 'transaction' | 'invoice';
+  private static DocumentCache: Map<number, Document> = new Map();
+  public readonly type: "transaction" | "invoice";
   public readonly id: number;
-  protected document: APIDocument | Promise<APIDocument>;
-  protected groupedDocuments: SyncOrPromise<GroupedDocument[]>;
+  protected document?: APIDocument | Promise<APIDocument>;
+  protected gDocument?: SyncOrPromise<APIGroupedDocument>;
+  protected journal?: SyncOrPromise<APIGroupedDocument["journal"]>;
+  protected groupedDocuments: SyncOrPromise<Document[]>;
   protected ledgerEvents?: APILedgerEvent[] | Promise<APILedgerEvent[]>;
   protected thirdparty?: Promise<Thirdparty>;
-  private static closedCache = new CacheList<ClosedStatus>('closedDocumentsCache', []);
+  private static closedCache = new CacheList<ClosedStatus>("closedDocumentsCache", []);
 
-  constructor ({ id }: { id: number }) {
+  constructor({ id }: { id: number }) {
     super();
     if (!Number.isSafeInteger(id)) {
-      this.log('constructor', {id, args: arguments});
-      throw new Error('`id` MUST be an integer');
+      this.log("constructor", { id, args: arguments });
+      throw new Error("`id` MUST be an integer");
     }
     this.id = id;
   }
 
-  async getDocument () {
+  /**
+   * Get a document by id, all documents are cached for performance
+   */
+  public static get(id: number): Document {
+    if (!Document.DocumentCache.has(id)) {
+      Document.DocumentCache.set(id, new Document({ id }));
+    }
+    return Document.DocumentCache.get(id)!;
+  }
+
+  /**
+   * Update a document from an APIGroupedDocument
+   */
+  public static fromAPIGroupedDocument(apigdoc: APIGroupedDocument): Document {
+    const doc = Document.get(apigdoc.id);
+    doc.gDocument = apigdoc;
+    return doc;
+  }
+
+  async getDocument(): Promise<APIDocument> {
     if (!this.document) {
       this.document = getDocument(this.id);
       this.document = await this.document;
@@ -42,23 +66,39 @@ export default class Document extends Logger {
     return await this.document;
   }
 
-  async getLedgerEvents () {
+  async getGdoc(): Promise<APIGroupedDocument | APIDocument> {
+    if (this.gDocument) return this.gDocument;
+    return this.getDocument();
+  }
+
+  async getJournal(): Promise<APIGroupedDocument["journal"]> {
+    if (!this.journal) {
+      this.journal = this._loadJournal();
+    }
+    return await this.journal;
+  }
+
+  private async _loadJournal(): Promise<APIGroupedDocument["journal"]> {
+    const gdoc = await this.getGdoc();
+    if ("journal" in gdoc) return gdoc.journal;
+    return getJournal(gdoc.journal_id);
+  }
+
+  async getLedgerEvents() {
     if (!this.ledgerEvents) {
       this.ledgerEvents = this._loadLedgerEvents();
     }
     return await this.ledgerEvents;
   }
 
-  private async _loadLedgerEvents () {
+  private async _loadLedgerEvents() {
     const groupedDocuments = await this.getGroupedDocuments();
-    const events = await Promise.all(groupedDocuments.map(
-      doc => getLedgerEvents(doc.id)
-    ));
+    const events = await Promise.all(groupedDocuments.map((doc) => getLedgerEvents(doc.id)));
     this.ledgerEvents = ([] as APILedgerEvent[]).concat(...events);
     return this.ledgerEvents;
   }
 
-  async reloadLedgerEvents () {
+  async reloadLedgerEvents() {
     delete this.ledgerEvents;
     this.document = reloadLedgerEvents(this.id);
     this.document = await this.document;
@@ -67,44 +107,39 @@ export default class Document extends Logger {
 
   public async isClosed() {
     const ledgerEvents = await this.getLedgerEvents();
-    return ledgerEvents.some(event => event.closed);
+    return ledgerEvents.some((event) => event.closed);
   }
 
-  async archive (unarchive = false) {
+  async archive(unarchive = false) {
     return await archiveDocument(this.id, unarchive);
   }
 
-  async unarchive () {
+  async unarchive() {
     return await this.archive(true);
   }
 
-  async getGroupedDocuments () {
-    if (!this.groupedDocuments)
-      this.groupedDocuments = this._loadGroupedDocuments();
+  async getGroupedDocuments() {
+    if (!this.groupedDocuments) this.groupedDocuments = this._loadGroupedDocuments();
     return await this.groupedDocuments;
   }
 
-  async _loadGroupedDocuments (): Promise<GroupedDocument[]> {
+  async _loadGroupedDocuments(): Promise<Document[]> {
     const mainDocument = await this.getDocument();
     if (!mainDocument) {
       this.error(`Document introuvable ${this.id}`);
       return [];
     }
-    const otherDocuments = await getGroupedDocuments(this.id);
-    this.groupedDocuments = [
-      ...otherDocuments,
-      mainDocument.grouped_documents.find(doc => doc.id === this.id)!
-    ];
+    const otherDocuments = (await getGroupedDocuments(this.id)).map((doc) => Document.fromAPIGroupedDocument(doc));
+    this.groupedDocuments = [...otherDocuments, this];
     return this.groupedDocuments;
   }
 
-  async getThirdparty (): Promise<Thirdparty['thirdparty']|null> {
-    if (!this.thirdparty)
-      this.thirdparty = this._getThirdparty();
+  async getThirdparty(): Promise<Thirdparty["thirdparty"] | null> {
+    if (!this.thirdparty) this.thirdparty = this._getThirdparty();
     return (await this.thirdparty)?.thirdparty;
   }
 
-  private async _getThirdparty () {
+  private async _getThirdparty() {
     const doc = await this.getDocument();
     return await getThirdparty(doc.thirdparty_id);
   }
@@ -113,12 +148,16 @@ export default class Document extends Logger {
     return await getDMSLinks(this.id, recordType);
   }
 
-  public static async isClosed (id: number): Promise<boolean> {
+  public static async isClosed(id: number): Promise<boolean> {
     const cached = this.closedCache.find({ id });
     if (cached && new Date(cached.updatedAt) > new Date(Date.now() - WEEK_IN_MS)) return cached.closed;
     const doc = new Document({ id });
     const closed = await doc.isClosed();
-    this.closedCache.updateItem({ id, closed, updatedAt: new Date().toISOString() });
+    this.closedCache.updateItem({
+      id,
+      closed,
+      updatedAt: new Date().toISOString(),
+    });
     return closed;
   }
 }
