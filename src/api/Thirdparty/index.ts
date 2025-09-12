@@ -329,6 +329,7 @@ export class Supplier {
   public readonly activity_nomenclature: string;
   public readonly address: string;
   public readonly admin_city_code: null | string;
+  public readonly auto_process_invoices?: boolean;
   public readonly city: string;
   public readonly company_id: number;
   public readonly "country_alpha2": string;
@@ -382,6 +383,9 @@ export class Supplier {
         checkString(d.admin_city_code, field + ".admin_city_code", "null | string");
       } catch (e) {
       }
+    }
+    if ("auto_process_invoices" in d) {
+      checkBoolean(d.auto_process_invoices, field + ".auto_process_invoices");
     }
     checkString(d.city, field + ".city");
     checkNumber(d.company_id, field + ".company_id");
@@ -461,7 +465,7 @@ export class Supplier {
       checkString(d.validation_status, field + ".validation_status");
     }
     checkString(d.vat_number, field + ".vat_number");
-    const knownProperties = ["activity_nomenclature","address","admin_city_code","city","company_id","country_alpha2","disable_pending_vat","emails","establishment_no","force_pending_vat","iban","iban_last_update","iban_proof","id","invoices_auto_generated","invoices_auto_validated","name","notes","notes_comment","plan_item","postal_code","search_terms","supplier_due_date_delay","supplier_due_date_rule","supplier_payment_method","tags","thirdparties_tags","thirdparty_invoice_line_rules","thirdparty_visibility_rules","validation_status","vat_number"];
+    const knownProperties = ["activity_nomenclature","address","admin_city_code","auto_process_invoices","city","company_id","country_alpha2","disable_pending_vat","emails","establishment_no","force_pending_vat","iban","iban_last_update","iban_proof","id","invoices_auto_generated","invoices_auto_validated","name","notes","notes_comment","plan_item","postal_code","search_terms","supplier_due_date_delay","supplier_due_date_rule","supplier_payment_method","tags","thirdparties_tags","thirdparty_invoice_line_rules","thirdparty_visibility_rules","validation_status","vat_number"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
     if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new Supplier(d);
@@ -470,6 +474,7 @@ export class Supplier {
     this.activity_nomenclature = d.activity_nomenclature;
     this.address = d.address;
     this.admin_city_code = d.admin_city_code;
+    if ("auto_process_invoices" in d) this.auto_process_invoices = d.auto_process_invoices;
     this.city = d.city;
     this.company_id = d.company_id;
     this["country_alpha2"] = d["country_alpha2"];

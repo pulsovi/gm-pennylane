@@ -27,6 +27,7 @@ export class APIDMSItem {
   public readonly shared: boolean;
   public readonly signed_id?: string;
   public readonly sort?: string;
+  public readonly summary_text?: null;
   public readonly type: string;
   public readonly updated_at: string;
   public readonly visible?: boolean;
@@ -136,12 +137,15 @@ export class APIDMSItem {
     if ("sort" in d) {
       checkString(d.sort, field + ".sort");
     }
+    if ("summary_text" in d) {
+      checkNull(d.summary_text, field + ".summary_text");
+    }
     checkString(d.type, field + ".type");
     checkString(d.updated_at, field + ".updated_at");
     if ("visible" in d) {
       checkBoolean(d.visible, field + ".visible");
     }
-    const knownProperties = ["archived_at","children","comments_count","created_at","creator","favorite","file_extension","file_size","file_url","filters","fixed","id","imports_allowed","itemable_id","items","method","name","pagination","parent_id","pusher_channel","readonly","reference_link","shared","signed_id","sort","type","updated_at","visible"];
+    const knownProperties = ["archived_at","children","comments_count","created_at","creator","favorite","file_extension","file_size","file_url","filters","fixed","id","imports_allowed","itemable_id","items","method","name","pagination","parent_id","pusher_channel","readonly","reference_link","shared","signed_id","sort","summary_text","type","updated_at","visible"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
     if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new APIDMSItem(d);
@@ -172,6 +176,7 @@ export class APIDMSItem {
     this.shared = d.shared;
     if ("signed_id" in d) this.signed_id = d.signed_id;
     if ("sort" in d) this.sort = d.sort;
+    if ("summary_text" in d) this.summary_text = d.summary_text;
     this.type = d.type;
     this.updated_at = d.updated_at;
     if ("visible" in d) this.visible = d.visible;
