@@ -92,7 +92,7 @@ export default class InvoiceDisplayInfos extends Service {
 
     let reload = false;
 
-    if (this.state.reactInvoice !== invoice) {
+    if (this.state.reactInvoice !== invoice || this.state.invoice?.id !== invoice.id) {
       this.state.reactInvoice = invoice;
       this.state.invoice = await Invoice.load(invoice.id);
       reload = true;
