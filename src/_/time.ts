@@ -1,7 +1,10 @@
-export const WEEK_IN_MS = 7 * 24 * 60 * 60 * 1000;
+export const MINUTE_IN_MS = 60 * 1000;
+export const HOUR_IN_MS = 60 * MINUTE_IN_MS;
+export const DAY_IN_MS = 24 * HOUR_IN_MS;
+export const WEEK_IN_MS = 7 * DAY_IN_MS;
 
-export async function sleep (ms: number) {
-  await new Promise(rs => setTimeout(rs, ms));
+export async function sleep(ms: number) {
+  await new Promise((rs) => setTimeout(rs, ms));
 }
 
 /**
@@ -11,11 +14,11 @@ export async function sleep (ms: number) {
  * if cb return value is a Promise, the Promise fulfill value will be awaited
  * and tested for non null value.
  */
-export function waitFunc <T extends unknown>(cb: () => Promise<T>): Promise<Exclude<T, false>>;
-export function waitFunc <T extends unknown>(cb: () => Promise<T>, timeout: number): Promise<T | false>;
-export function waitFunc <T extends unknown>(cb: () => T): Promise<Exclude<T, false>>;
-export function waitFunc <T extends unknown>(cb: () => T, timeout: number): Promise<T | false>;
-export async function waitFunc (cb: () => unknown, timeout = 0) {
+export function waitFunc<T extends unknown>(cb: () => Promise<T>): Promise<Exclude<T, false>>;
+export function waitFunc<T extends unknown>(cb: () => Promise<T>, timeout: number): Promise<T | false>;
+export function waitFunc<T extends unknown>(cb: () => T): Promise<Exclude<T, false>>;
+export function waitFunc<T extends unknown>(cb: () => T, timeout: number): Promise<T | false>;
+export async function waitFunc(cb: () => unknown, timeout = 0) {
   const out = timeout ? Date.now() + timeout : 0;
   let result = cb();
   if (result instanceof Promise) result = await result;
