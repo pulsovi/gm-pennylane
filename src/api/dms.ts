@@ -169,32 +169,40 @@ export async function dmsToInvoice(dmsId: string | string[], direction: 'custome
 }
 
 
-export async function getDMSDestId(ref: APIInvoice | GroupedDocument | APIDocument) {
+export async function getDMSDestId(
+  ref: APIInvoice | GroupedDocument | APIDocument
+): Promise<{ parent_id: number; direction: string } | null> {
   let direction: string;
   let year = ref.date.slice(0, 4);
-  if (ref.type === 'Transaction') {
-    direction = parseFloat(ref.amount) > 0 ? 'customer' : 'supplier';
+  if (ref.type === "Transaction") {
+    direction = parseFloat(ref.amount) > 0 ? "customer" : "supplier";
   }
 
-  if (ref.type === 'Invoice' && 'direction' in ref) {
+  if (ref.type === "Invoice" && "direction" in ref) {
     direction = ref.direction;
-
   }
 
-  logger.log('getDMSDestId', { ref, direction, year });
+  logger.log("getDMSDestId", { ref, direction, year });
   switch (direction) {
-    case 'customer': switch (year) {
-      case '2023': return 57983092; // 2023 - Compta - Clients
-      case '2024': return 21994051; // 2024 - Compta - Clients
-      case '2025': return 21994066; // 2025 - Compta - Clients Ventes
-    }
+    case "customer":
+      switch (year) {
+        case "2023":
+          return { parent_id: 57983092, direction }; // 2023 - Compta - Clients
+        case "2024":
+          return { parent_id: 21994051, direction }; // 2024 - Compta - Clients
+        case "2025":
+          return { parent_id: 21994066, direction }; // 2025 - Compta - Clients Ventes
+      }
       break;
-    case 'supplier': switch (year) {
-      case '2024': return 21994050; // 2024 - Compta - Fournisseurs
-      case '2025': return 21994065; // 2025 - Compta - Achats
-    }
+    case "supplier":
+      switch (year) {
+        case "2024":
+          return { parent_id: 21994050, direction }; // 2024 - Compta - Fournisseurs
+        case "2025":
+          return { parent_id: 21994065, direction }; // 2025 - Compta - Achats
+      }
       break;
   }
-  logger.log('getDMSDestId', { ref })
-  return 0;
+  logger.log("getDMSDestId", { ref });
+  return null;
 }

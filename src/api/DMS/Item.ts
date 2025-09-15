@@ -2,11 +2,10 @@
 const proxyName = 'APIDMSItem';
 let obj: any = null;
 export class APIDMSItem {
-  public readonly archived_at: null | string;
+  public readonly archived_at: string | null;
   public readonly children?: ChildrenEntityOrItemsEntity[];
-  public readonly comments_count?: number;
   public readonly created_at: string;
-  public readonly creator?: Creator | null;
+  public readonly creator: null | Creator;
   public readonly favorite?: boolean;
   public readonly file_extension?: string;
   public readonly file_size?: number;
@@ -48,10 +47,10 @@ export class APIDMSItem {
     }
     // This will be refactored in the next release.
     try {
-      checkNull(d.archived_at, field + ".archived_at", "null | string");
+      checkString(d.archived_at, field + ".archived_at", "string | null");
     } catch (e) {
       try {
-        checkString(d.archived_at, field + ".archived_at", "null | string");
+        checkNull(d.archived_at, field + ".archived_at", "string | null");
       } catch (e) {
       }
     }
@@ -63,19 +62,14 @@ export class APIDMSItem {
         }
       }
     }
-    if ("comments_count" in d) {
-      checkNumber(d.comments_count, field + ".comments_count");
-    }
     checkString(d.created_at, field + ".created_at");
-    if ("creator" in d) {
-      // This will be refactored in the next release.
+    // This will be refactored in the next release.
+    try {
+      checkNull(d.creator, field + ".creator", "null | Creator");
+    } catch (e) {
       try {
-        d.creator = Creator.Create(d.creator, field + ".creator", "Creator | null");
+        d.creator = Creator.Create(d.creator, field + ".creator", "null | Creator");
       } catch (e) {
-        try {
-          checkNull(d.creator, field + ".creator", "Creator | null");
-        } catch (e) {
-        }
       }
     }
     if ("favorite" in d) {
@@ -145,7 +139,7 @@ export class APIDMSItem {
     if ("visible" in d) {
       checkBoolean(d.visible, field + ".visible");
     }
-    const knownProperties = ["archived_at","children","comments_count","created_at","creator","favorite","file_extension","file_size","file_url","filters","fixed","id","imports_allowed","itemable_id","items","method","name","pagination","parent_id","pusher_channel","readonly","reference_link","shared","signed_id","sort","summary_text","type","updated_at","visible"];
+    const knownProperties = ["archived_at","children","created_at","creator","favorite","file_extension","file_size","file_url","filters","fixed","id","imports_allowed","itemable_id","items","method","name","pagination","parent_id","pusher_channel","readonly","reference_link","shared","signed_id","sort","summary_text","type","updated_at","visible"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
     if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new APIDMSItem(d);
@@ -153,9 +147,8 @@ export class APIDMSItem {
   private constructor(d: any) {
     this.archived_at = d.archived_at;
     if ("children" in d) this.children = d.children;
-    if ("comments_count" in d) this.comments_count = d.comments_count;
     this.created_at = d.created_at;
-    if ("creator" in d) this.creator = d.creator;
+    this.creator = d.creator;
     if ("favorite" in d) this.favorite = d.favorite;
     if ("file_extension" in d) this.file_extension = d.file_extension;
     if ("file_size" in d) this.file_size = d.file_size;
@@ -184,7 +177,7 @@ export class APIDMSItem {
 }
 
 export class ChildrenEntityOrItemsEntity {
-  public readonly archived_at: null | string;
+  public readonly archived_at: null;
   public readonly comments_count?: number;
   public readonly created_at: string;
   public readonly creator?: Creator1;
@@ -206,6 +199,7 @@ export class ChildrenEntityOrItemsEntity {
   public readonly shared: boolean;
   public readonly signed_id?: string;
   public readonly suggested_folders?: never[];
+  public readonly summary_text?: null;
   public readonly type: string;
   public readonly updated_at: string;
   public readonly visible?: boolean;
@@ -224,15 +218,7 @@ export class ChildrenEntityOrItemsEntity {
     } else if (Array.isArray(d)) {
       throwIsArray(field, d);
     }
-    // This will be refactored in the next release.
-    try {
-      checkNull(d.archived_at, field + ".archived_at", "null | string");
-    } catch (e) {
-      try {
-        checkString(d.archived_at, field + ".archived_at", "null | string");
-      } catch (e) {
-      }
-    }
+    checkNull(d.archived_at, field + ".archived_at");
     if ("comments_count" in d) {
       checkNumber(d.comments_count, field + ".comments_count");
     }
@@ -285,12 +271,15 @@ export class ChildrenEntityOrItemsEntity {
         }
       }
     }
+    if ("summary_text" in d) {
+      checkNull(d.summary_text, field + ".summary_text");
+    }
     checkString(d.type, field + ".type");
     checkString(d.updated_at, field + ".updated_at");
     if ("visible" in d) {
       checkBoolean(d.visible, field + ".visible");
     }
-    const knownProperties = ["archived_at","comments_count","created_at","creator","favorite","file_extension","file_size","file_url","files_count","fixed","id","imports_allowed","itemable_id","method","name","parent_id","pusher_channel","readonly","reference_link","shared","signed_id","suggested_folders","type","updated_at","visible"];
+    const knownProperties = ["archived_at","comments_count","created_at","creator","favorite","file_extension","file_size","file_url","files_count","fixed","id","imports_allowed","itemable_id","method","name","parent_id","pusher_channel","readonly","reference_link","shared","signed_id","suggested_folders","summary_text","type","updated_at","visible"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
     if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new ChildrenEntityOrItemsEntity(d);
@@ -318,6 +307,7 @@ export class ChildrenEntityOrItemsEntity {
     this.shared = d.shared;
     if ("signed_id" in d) this.signed_id = d.signed_id;
     if ("suggested_folders" in d) this.suggested_folders = d.suggested_folders;
+    if ("summary_text" in d) this.summary_text = d.summary_text;
     this.type = d.type;
     this.updated_at = d.updated_at;
     if ("visible" in d) this.visible = d.visible;
@@ -427,6 +417,7 @@ export class ItemsEntityOrChildrenEntity {
   public readonly shared: boolean;
   public readonly signed_id?: string;
   public readonly suggested_folders?: never[];
+  public readonly summary_text?: null;
   public readonly type: string;
   public readonly updated_at: string;
   public readonly visible?: boolean;
@@ -504,12 +495,15 @@ export class ItemsEntityOrChildrenEntity {
         }
       }
     }
+    if ("summary_text" in d) {
+      checkNull(d.summary_text, field + ".summary_text");
+    }
     checkString(d.type, field + ".type");
     checkString(d.updated_at, field + ".updated_at");
     if ("visible" in d) {
       checkBoolean(d.visible, field + ".visible");
     }
-    const knownProperties = ["archived_at","comments_count","created_at","creator","favorite","file_extension","file_size","file_url","files_count","fixed","id","imports_allowed","itemable_id","method","name","parent_id","pusher_channel","readonly","reference_link","shared","signed_id","suggested_folders","type","updated_at","visible"];
+    const knownProperties = ["archived_at","comments_count","created_at","creator","favorite","file_extension","file_size","file_url","files_count","fixed","id","imports_allowed","itemable_id","method","name","parent_id","pusher_channel","readonly","reference_link","shared","signed_id","suggested_folders","summary_text","type","updated_at","visible"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
     if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new ItemsEntityOrChildrenEntity(d);
@@ -537,6 +531,7 @@ export class ItemsEntityOrChildrenEntity {
     this.shared = d.shared;
     if ("signed_id" in d) this.signed_id = d.signed_id;
     if ("suggested_folders" in d) this.suggested_folders = d.suggested_folders;
+    if ("summary_text" in d) this.summary_text = d.summary_text;
     this.type = d.type;
     this.updated_at = d.updated_at;
     if ("visible" in d) this.visible = d.visible;

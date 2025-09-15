@@ -1,5 +1,5 @@
 import { Logger } from '../framework/Logger.js';
-import apiCache, { cachedRequest } from "./cache.js";
+import { cachedRequest, updateAPICacheItem } from "./cache.js";
 import { apiRequest } from "./core.js";
 import { APIGroupedDocument } from "./GroupedDocument/index.js";
 import { APILedgerEvent } from "./LedgerEvent/index.js";
@@ -16,16 +16,16 @@ export async function getLedgerEvents(id): Promise<APILedgerEvent[] | null> {
   return data.map((item) => APILedgerEvent.Create(item));
 }
 
-export async function getGroupedDocuments(id): Promise<APIGroupedDocument[] | null> {
+export async function getGroupedDocuments(id, maxAge?: number): Promise<APIGroupedDocument[] | null> {
   if (!Number.isSafeInteger(id) || !id) {
     logger.error("getGroupedDocuments: `id` MUST be an integer", { id });
     throw new Error("`id` MUST be an integer");
   }
-  const documents = await cachedRequest("operation:getGroupedDocuments", { id }, fetchGroupedDocuments);
+  const documents = await cachedRequest("operation:getGroupedDocuments", { id }, fetchGroupedDocuments, maxAge);
   documents.forEach((doc) => {
     const ref = "operation:getGroupedDocuments";
-    const args = JSON.stringify({ id: doc.id });
-    apiCache.updateItem({ ref, args }, { ref, args, value: documents, fetchedAt: Date.now() });
+    const args = { id: doc.id };
+    updateAPICacheItem({ ref, args, value: documents });
   });
   return documents;
 }
