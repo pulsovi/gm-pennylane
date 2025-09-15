@@ -1,29 +1,31 @@
-import { getParam } from '../_/url.js';
-import { getDMSDestId, getDMSItemList, updateDMSItem } from '../api/dms.js';
-import { APIDMSItem } from '../api/DMS/Item.js';
-import { getDocument } from '../api/document.js';
-import { getInvoice, moveToDms, updateInvoice } from '../api/invoice.js';
-import { APIInvoice } from '../api/Invoice/index.js';
-import Logger from '../framework/Logger.js';
-import DMSItem from './DMSItem.js';
+import { getParam } from "../_/url.js";
+import { getDMSDestId, getDMSItemList, updateDMSItem } from "../api/dms.js";
+import { APIDMSItem } from "../api/DMS/Item.js";
+import { getDocument } from "../api/document.js";
+import { getInvoice, moveToDms, updateInvoice } from "../api/invoice.js";
+import { APIInvoice } from "../api/Invoice/index.js";
+import Logger from "../framework/Logger.js";
 
-import ValidableDocument from './ValidableDocument.js';
+import DMSItem from "./DMSItem.js";
+import Document from "./Document.js";
 
-const staticLogger = new Logger('Invoice');
+import ValidableDocument from "./ValidableDocument.js";
+
+const staticLogger = new Logger("Invoice");
 
 export default abstract class Invoice extends ValidableDocument {
-  public readonly type = 'invoice';
+  public readonly type = "invoice";
   private invoice: APIInvoice | Promise<APIInvoice>;
 
   public static from(invoice: { direction: string; id: number }) {
-    if (invoice.direction === 'supplier') return new SupplierInvoice(invoice);
+    if (invoice.direction === "supplier") return new SupplierInvoice(invoice);
     return new CustomerInvoice(invoice);
   }
 
   static async load(id: number) {
     const invoice = await getInvoice(id);
     if (!invoice?.id) {
-      staticLogger.log('Invoice.load: cannot load this invoice', { id, invoice, _this: this });
+      staticLogger.log("Invoice.load: cannot load this invoice", { id, invoice, _this: this });
       return new NotFoundInvoice({ id });
     }
     return this.from(invoice);
@@ -34,50 +36,53 @@ export default abstract class Invoice extends ValidableDocument {
   }
 
   async getInvoice() {
+    const maxAge = this.isCurrent() ? 0 : void 0;
     if (!this.invoice) {
-      this.invoice = getInvoice(this.id).then(response => {
-        if (!response) throw new Error('Impossible de charger la facture');
+      this.invoice = getInvoice(this.id, maxAge).then((response) => {
+        if (!response) throw new Error("Impossible de charger la facture");
         return response;
       });
     }
     return this.invoice;
   }
 
-  async moveToDms(destId?: number) {
-    this.debug('moveToDms before auto destId', { destId });
-    destId = destId ?? await this.getDMSDestId();
+  async getGroupedDocuments(): Promise<Document[]> {
+    const maxAge = this.isCurrent() ? 0 : void 0;
+    return await super.getGroupedDocuments(maxAge);
+  }
+
+  async moveToDms(destId?: { parent_id: number; direction: string }) {
+    this.debug("moveToDms before auto destId", { destId });
+    destId = destId ?? (await this.getDMSDestId());
     if (!destId) {
-      this.error('Unable to choose DMS folder', this);
+      this.error("Unable to choose DMS folder", this);
       return;
     }
-    this.debug('moveToDms', { destId });
+    this.debug("moveToDms", { destId });
     const invoice = await this.getInvoice();
     const filename = invoice.filename;
     const fileId = invoice.file_signed_id;
     const invoiceName = [
       invoice.invoice_number,
-      invoice.thirdparty?.name ?? '',
-      invoice.date ? new Date(invoice.date).toLocaleDateString().replace(/\//g, '-') : '',
-      `${invoice.amount.replace(/.0+$/, '')}€`
-    ].join(' - ');
+      invoice.thirdparty?.name ?? "",
+      invoice.date ? new Date(invoice.date).toLocaleDateString().replace(/\//g, "-") : "",
+      `${invoice.amount.replace(/.0+$/, "")}€`,
+    ].join(" - ");
     const response = await moveToDms(this.id, destId);
-    this.debug('moveToDms response');
+    this.debug("moveToDms response");
     const files = await getDMSItemList({
-      filter: [{ field: 'name', operator: 'search_all', value: filename }]
+      filter: [{ field: "name", operator: "search_all", value: filename }],
     });
-    const item: APIDMSItem = files.items.find(fileItem => fileItem.signed_id === fileId);
+    const item: APIDMSItem = files.items.find((fileItem) => fileItem.signed_id === fileId);
     await updateDMSItem({ id: item.id, name: invoiceName });
     return new DMSItem({ id: item.id });
   }
 
-  public async getDMSDestId() {
+  public async getDMSDestId(): Promise<{ parent_id: number; direction: string } | null> {
     const groupedDocuments = await this.getGroupedDocuments();
-    const gdocs = await Promise.all(
-      groupedDocuments.map((doc) => doc.getGdoc())
-    );
+    const gdocs = await Promise.all(groupedDocuments.map((doc) => doc.getGdoc()));
     const transaction = gdocs.find(
-      (gdoc): gdoc is typeof gdoc & { type: "Transaction" } =>
-        gdoc.type === "Transaction"
+      (gdoc): gdoc is typeof gdoc & { type: "Transaction" } => gdoc.type === "Transaction"
     );
     if (transaction) return await getDMSDestId(transaction);
 
@@ -85,22 +90,22 @@ export default abstract class Invoice extends ValidableDocument {
     if (ref) return await getDMSDestId(ref);
   }
 
-  private async getRef () {
+  private async getRef() {
     const invoice = await this.getInvoice();
     const refId = invoice.invoice_number.match(/^§ #(?<id>\d+)[^\d]/u)?.groups?.id;
-    return refId && await getDocument(Number(refId));
+    return refId && (await getDocument(Number(refId)));
   }
 
   isCurrent() {
-    return getParam(location.href, 'id') === String(this.id);
+    return getParam(location.href, "id") === String(this.id);
   }
 }
 
 export class NotFoundInvoice extends Invoice {
-  public readonly direction = 'unknown';
+  public readonly direction = "unknown";
 
   loadValidMessage() {
-    return Promise.resolve('Facture introuvable');
+    return Promise.resolve("Facture introuvable");
   }
 }
 
@@ -125,8 +130,7 @@ class SupplierInvoice extends Invoice {
       (await this.isMissingLettering()) ??
       //?? await this.hasToSendToDMS()
       (await this.isMissingDate()) ??
-      (this.isCurrent() && this.log("loadValidMessage", "fin des contrôles"),
-      "OK")
+      (this.isCurrent() && this.log("loadValidMessage", "fin des contrôles"), "OK")
     );
   }
 
@@ -134,8 +138,7 @@ class SupplierInvoice extends Invoice {
     const invoice = await this.getInvoice().catch((error: Error) => error);
 
     if (!(invoice instanceof APIInvoice)) {
-      this.log("loadValidMessage", invoice);
-      alert(invoice.message);
+      this.error("loadValidMessage", invoice);
       return `Impossible de valider : ${invoice.message}`;
     }
   }
@@ -169,16 +172,8 @@ class SupplierInvoice extends Invoice {
 
     // Archived
     if (invoice.archived) {
-      if (
-        archivedAllowed.some((allowedItem) =>
-          invoice.invoice_number.startsWith(allowedItem)
-        )
-      ) {
-        if (this.isCurrent())
-          this.log(
-            "loadValidMessage",
-            "archivé avec numéro de facture correct"
-          );
+      if (archivedAllowed.some((allowedItem) => invoice.invoice_number.startsWith(allowedItem))) {
+        if (this.isCurrent()) this.log("loadValidMessage", "archivé avec numéro de facture correct");
         return "OK";
       }
       return `<a
@@ -187,11 +182,7 @@ class SupplierInvoice extends Invoice {
       >Facture archivée sans référence ⓘ</a><ul style="margin:0;padding:0.8em;">${archivedAllowed
         .map((it) => `<li>${it}</li>`)
         .join("")}</ul>`;
-    } else if (
-      archivedAllowed.some((allowedItem) =>
-        invoice.invoice_number.startsWith(allowedItem)
-      )
-    ) {
+    } else if (archivedAllowed.some((allowedItem) => invoice.invoice_number.startsWith(allowedItem))) {
       return `<a
         title="Archiver la facture : ⁝ &gt; Archiver la facture.\nCliquer ici pour plus d'informations"
         href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Fournisseur%20inconnu"
@@ -212,9 +203,7 @@ class SupplierInvoice extends Invoice {
       },
     ];
 
-    const match = templates.some((template) =>
-      template.regex.test(invoice.invoice_number)
-    );
+    const match = templates.some((template) => template.regex.test(invoice.invoice_number));
     if (!match) {
       return `<a
         title="Le champ \"Numéro de facture\" doit correspondre à un de ces modèles. Cliquer ici pour plus d'informations."
@@ -228,19 +217,10 @@ class SupplierInvoice extends Invoice {
   private async is2025() {
     const doc = await this.getDocument();
     const groupedDocuments = await this.getGroupedDocuments();
-    const gdocs = await Promise.all(
-      groupedDocuments.map((doc) => doc.getGdoc())
-    );
+    const gdocs = await Promise.all(groupedDocuments.map((doc) => doc.getGdoc()));
 
-    if (
-      doc.date?.startsWith("2025") ||
-      gdocs.some((gdoc) => gdoc.date?.startsWith("2025"))
-    ) {
-      return (
-        (await this.isMissingLettering()) ??
-        (await this.isZero()) ??
-        (this.isCurrent() && this.log("2025"), "OK")
-      );
+    if (doc.date?.startsWith("2025") || gdocs.some((gdoc) => gdoc.date?.startsWith("2025"))) {
+      return (await this.isMissingLettering()) ?? (await this.isZero()) ?? (this.isCurrent() && this.log("2025"), "OK");
     }
   }
 
@@ -282,12 +262,7 @@ class SupplierInvoice extends Invoice {
     const invoice = await this.getInvoice();
 
     // exclude 6288
-    if (
-      invoice.invoice_lines?.some(
-        (line) => line.pnl_plan_item?.number == "6288"
-      )
-    )
-      return "compte tiers 6288";
+    if (invoice.invoice_lines?.some((line) => line.pnl_plan_item?.number == "6288")) return "compte tiers 6288";
   }
 
   private async isAid() {
@@ -296,9 +271,7 @@ class SupplierInvoice extends Invoice {
     // Aides octroyées sans numéro de facture
     if (
       106438171 === invoice.thirdparty_id && // AIDES OCTROYÉES
-      !["AIDES - ", "CHQ", "CERFA - "].some((label) =>
-        invoice.invoice_number.startsWith(label)
-      )
+      !["AIDES - ", "CHQ", "CERFA - "].some((label) => invoice.invoice_number.startsWith(label))
     ) {
       if (invoice.invoice_number.startsWith("§ #")) return "Archiver le reçu.";
       return `<a
@@ -313,24 +286,15 @@ class SupplierInvoice extends Invoice {
     }
 
     // Aides octroyées avec mauvais ID
-    if (
-      invoice.thirdparty?.name === "AIDES OCTROYÉES" &&
-      invoice.thirdparty.id !== 106438171
-    )
+    if (invoice.thirdparty?.name === "AIDES OCTROYÉES" && invoice.thirdparty.id !== 106438171)
       return "Il ne doit y avoir qu'un seul compte \"AIDES OCTROYÉES\", et ce n'est pas le bon...";
 
     // Piece d'identité avec mauvais ID
-    if (
-      invoice.thirdparty?.name === "PIECE ID" &&
-      invoice.thirdparty.id !== 106519227
-    )
+    if (invoice.thirdparty?.name === "PIECE ID" && invoice.thirdparty.id !== 106519227)
       return "Il ne doit y avoir qu'un seul compte \"PIECE ID\", et ce n'est pas le bon...";
 
     // ID card
-    if (
-      invoice.thirdparty?.id === 106519227 &&
-      !invoice.invoice_number?.startsWith("ID ")
-    ) {
+    if (invoice.thirdparty?.id === 106519227 && !invoice.invoice_number?.startsWith("ID ")) {
       return 'Le "Numéro de facture" des pièces d\'identité commence obligatoirement par "ID "';
     }
   }
@@ -341,9 +305,7 @@ class SupplierInvoice extends Invoice {
 
     // Ecarts de conversion de devise
     if (invoice.currency !== "EUR") {
-      const diffLine = ledgerEvents.find(
-        (line) => line.planItem.number === "4716001"
-      );
+      const diffLine = ledgerEvents.find((line) => line.planItem.number === "4716001");
       if (diffLine) {
         this.log("loadValidMessage > Ecarts de conversion de devise", {
           ledgerEvents,
@@ -365,9 +327,7 @@ class SupplierInvoice extends Invoice {
     const invoice = await this.getInvoice();
     const doc = await this.getDocument();
     const groupedDocuments = await this.getGroupedDocuments();
-    const gdocs = await Promise.all(
-      groupedDocuments.map((doc) => doc.getGdoc())
-    );
+    const gdocs = await Promise.all(groupedDocuments.map((doc) => doc.getGdoc()));
     const transactions = gdocs.filter((gdoc) => gdoc.type === "Transaction");
 
     // Has transaction attached
@@ -379,19 +339,10 @@ class SupplierInvoice extends Invoice {
         115640202, // Stripe - facture de frais bancaires réparties sur toutes les transactions de don
       ];
       const orphanAllowedNumbers = ["¤ TRANSACTION INTROUVABLE"];
-      const archivedAllowedNumbers = [
-        "§ #",
-        "¤ CARTE ETRANGERE",
-        "¤ PIECE ETRANGERE",
-        "CHQ DÉCHIRÉ",
-      ];
+      const archivedAllowedNumbers = ["§ #", "¤ CARTE ETRANGERE", "¤ PIECE ETRANGERE", "CHQ DÉCHIRÉ"];
       if (
-        !orphanAllowedNumbers.some((label) =>
-          invoice.invoice_number.startsWith(label)
-        ) &&
-        !orphanAllowedThirdparties.some(
-          (tpid) => invoice.thirdparty_id === tpid
-        )
+        !orphanAllowedNumbers.some((label) => invoice.invoice_number.startsWith(label)) &&
+        !orphanAllowedThirdparties.some((tpid) => invoice.thirdparty_id === tpid)
       ) {
         return `<a
           title="Cliquer ici pour plus d'informations"
@@ -407,9 +358,7 @@ class SupplierInvoice extends Invoice {
   private async hasToSendToDMS() {
     const invoice = await this.getInvoice();
     const groupedDocuments = await this.getGroupedDocuments();
-    const gdocs = await Promise.all(
-      groupedDocuments.map((doc) => doc.getGdoc())
-    );
+    const gdocs = await Promise.all(groupedDocuments.map((doc) => doc.getGdoc()));
     const transactions = gdocs.filter((gdoc) => gdoc.type === "Transaction");
 
     // Justificatif ne donnant pas lieu à une écriture
@@ -444,26 +393,18 @@ class SupplierInvoice extends Invoice {
     const invoice = await this.getInvoice();
     const ledgerEvents = await this.getLedgerEvents();
     const groupedDocuments = await this.getGroupedDocuments();
-    const gdocs = await Promise.all(
-      groupedDocuments.map((doc) => doc.getGdoc())
-    );
+    const gdocs = await Promise.all(groupedDocuments.map((doc) => doc.getGdoc()));
     const transactions = gdocs.filter((gdoc) => gdoc.type === "Transaction");
 
     // Date manquante
     if (!invoice.date) {
-      if (
-        invoice.has_closed_ledger_events ||
-        ledgerEvents.some((levent) => levent.closed)
-      ) {
+      if (invoice.has_closed_ledger_events || ledgerEvents.some((levent) => levent.closed)) {
         this.log("exercice clos, on ne peut plus remplir la date");
-        if (
-          transactions.find((transaction) =>
-            transaction.date.startsWith("2023")
-          )
-        ) {
-          const dmsItem = await this.moveToDms(
-            57983091 /*2023 - Compta - Fournisseurs*/
-          );
+        if (transactions.find((transaction) => transaction.date.startsWith("2023"))) {
+          const dmsItem = await this.moveToDms({
+            parent_id: 57983091 /*2023 - Compta - Fournisseurs*/,
+            direction: "supplier",
+          });
           this.log({ dmsItem });
           if (this.isCurrent()) this.log("moved to DMS", { invoice: this });
           return (await Invoice.load(this.id)).loadValidMessage();
@@ -496,9 +437,7 @@ class CustomerInvoice extends Invoice {
       if (
         //legacy
         !invoice.invoice_number.startsWith("§ ESPECES") &&
-        !archivedAllowed.some((allowedItem) =>
-          invoice.invoice_number.startsWith(allowedItem)
-        )
+        !archivedAllowed.some((allowedItem) => invoice.invoice_number.startsWith(allowedItem))
       )
         return `<a
           title="Le numéro de facture d'une facture archivée doit commencer par une de ces possibilités. Cliquer ici pour plus d'informations."
@@ -525,12 +464,7 @@ class CustomerInvoice extends Invoice {
     // Montant
     if (
       invoice.amount === "0.0" &&
-      !(
-        (
-          invoice.invoice_number.includes("|ZERO|") ||
-          invoice.thirdparty.id === 113420582
-        ) /* PIECE ID */
-      )
+      !((invoice.invoice_number.includes("|ZERO|") || invoice.thirdparty.id === 113420582) /* PIECE ID */)
     )
       return `<a
       title="Cliquer ici pour plus d'informations."
@@ -553,23 +487,8 @@ class CustomerInvoice extends Invoice {
         .join("")}</ul>`;
     }
 
-    // Has transaction attached
-    const invoiceDocument = await this.getDocument();
-    const groupedOptional = ["¤ TRANSACTION INTROUVABLE"];
-    const groupedDocuments = invoiceDocument.grouped_documents;
-
-    if (
-      !groupedDocuments?.some((doc) => doc.type === "Transaction") &&
-      !groupedOptional.some((label) => invoice.invoice_number.startsWith(label))
-    )
-      return `<a
-          title="Si la transaction est introuvable, mettre un des textes proposés au début du numéro de facture. Cliquer ici pour plus d'informations."
-          href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Pas%20de%20transaction%20attach%C3%A9e"
-        >Pas de transaction attachée ⓘ</a><ul style="margin:0;padding:0.8em;">${groupedOptional
-          .map((it) => `<li>${it}</li>`)
-          .join("")}</ul>`;
-
     return (
+      (await this.checkHasTransactionAttached()) ??
       //this.hasToSendToDMS() ??
       "OK"
     );
@@ -577,9 +496,7 @@ class CustomerInvoice extends Invoice {
 
   private async hasToSendToDMS() {
     const groupedDocuments = await this.getGroupedDocuments();
-    const gdocs = await Promise.all(
-      groupedDocuments.map((doc) => doc.getGdoc())
-    );
+    const gdocs = await Promise.all(groupedDocuments.map((doc) => doc.getGdoc()));
     const transactions = gdocs.filter((gdoc) => gdoc.type === "Transaction");
     const invoice = await this.getInvoice();
 
@@ -601,9 +518,7 @@ class CustomerInvoice extends Invoice {
 
     // Date manquante
     if (!invoice.date) {
-      const archiveLabel = archivedAllowed.find((label) =>
-        invoice.invoice_number.startsWith(label)
-      );
+      const archiveLabel = archivedAllowed.find((label) => invoice.invoice_number.startsWith(label));
       if (archiveLabel) {
         return `<a
           title="Archiver la facture : ⁝ > Archiver la facture.\nCliquer ici pour plus d'informations"
@@ -612,10 +527,7 @@ class CustomerInvoice extends Invoice {
       }
 
       const ledgerEvents = await this.getLedgerEvents();
-      if (
-        invoice.has_closed_ledger_events ||
-        ledgerEvents.some((levent) => levent.closed)
-      ) {
+      if (invoice.has_closed_ledger_events || ledgerEvents.some((levent) => levent.closed)) {
         this.log("exercice clos, on ne peut plus remplir la date");
       } else {
         return `<a
@@ -625,14 +537,30 @@ class CustomerInvoice extends Invoice {
       }
     }
 
-    if (
-      !transactions.find((transaction) => transaction.date.startsWith("2025"))
-    ) {
+    if (!transactions.find((transaction) => transaction.date.startsWith("2025"))) {
       this.log("Envoyer en GED", transactions);
       return `<a
         title="Cliquer ici pour plus d'informations"
         href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Envoi%20en%20GED"
       >Envoyer en GED ⓘ</a>`;
     }
+  }
+
+  private async checkHasTransactionAttached(): Promise<string | null> {
+    // Has transaction attached
+    const groupedOptional = ["¤ TRANSACTION INTROUVABLE"];
+    const invoice = await this.getInvoice();
+
+    if (groupedOptional.some((label) => invoice.invoice_number.startsWith(label))) return null;
+
+    const groupedDocuments = await this.getGroupedDocuments();
+
+    if (groupedDocuments?.some((doc) => doc.type === "transaction")) return null;
+    return `<a
+        title="Si la transaction est introuvable, mettre un des textes proposés au début du numéro de facture. Cliquer ici pour plus d'informations."
+        href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FPennylane%20-%20Pas%20de%20transaction%20attach%C3%A9e"
+      >Pas de transaction attachée ⓘ</a><ul style="margin:0;padding:0.8em;">${groupedOptional
+        .map((it) => `<li>${it}</li>`)
+        .join("")}</ul>`;
   }
 }

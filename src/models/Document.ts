@@ -81,7 +81,7 @@ export default class Document extends Logger {
   private async _loadJournal(): Promise<APIGroupedDocument["journal"]> {
     const gdoc = await this.getGdoc();
     if ("journal" in gdoc) return gdoc.journal;
-    return getJournal(gdoc.journal_id);
+    return await getJournal(gdoc.journal_id);
   }
 
   async getLedgerEvents() {
@@ -118,18 +118,20 @@ export default class Document extends Logger {
     return await this.archive(true);
   }
 
-  async getGroupedDocuments() {
-    if (!this.groupedDocuments) this.groupedDocuments = this._loadGroupedDocuments();
+  async getGroupedDocuments(maxAge?: number) {
+    if (!this.groupedDocuments) this.groupedDocuments = this._loadGroupedDocuments(maxAge);
     return await this.groupedDocuments;
   }
 
-  async _loadGroupedDocuments(): Promise<Document[]> {
+  async _loadGroupedDocuments(maxAge?: number): Promise<Document[]> {
     const mainDocument = await this.getDocument();
     if (!mainDocument) {
       this.error(`Document introuvable ${this.id}`);
       return [];
     }
-    const otherDocuments = (await getGroupedDocuments(this.id)).map((doc) => Document.fromAPIGroupedDocument(doc));
+    const otherDocuments = (await getGroupedDocuments(this.id, maxAge)).map((doc) =>
+      Document.fromAPIGroupedDocument(doc)
+    );
     this.groupedDocuments = [...otherDocuments, this];
     return this.groupedDocuments;
   }
