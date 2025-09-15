@@ -161,7 +161,7 @@ export default class DMSItem extends Logger {
     if (!item) return null;
 
     if (item.type === 'dms_folder') return 'OK';
-    if (this.isPermanent()) return 'OK';
+    if (await this.isPermanent()) return "OK";
 
     const rules = await this.getRules();
 
