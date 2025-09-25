@@ -73,7 +73,7 @@ export default abstract class Invoice extends ValidableDocument {
     const files = await getDMSItemList({
       filter: [{ field: "name", operator: "search_all", value: filename }],
     });
-    const item: APIDMSItem = files.items.find((fileItem) => fileItem.signed_id === fileId);
+    const item = files.items.find((fileItem) => fileItem.signed_id === fileId);
     await updateDMSItem({ id: item.id, name: invoiceName });
     return new DMSItem({ id: item.id });
   }

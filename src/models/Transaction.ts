@@ -60,10 +60,19 @@ export default class Transaction extends ValidableDocument {
           const journal = await gDocument.getJournal();
           const coeff = gdoc.type === "Invoice" && journal.code === "HA" ? -1 : 1;
           const value = parseFloat(gdoc.amount) * coeff;
-          if (gDocument.type === "transaction") balance.addTransaction(value);
-          else if (/ CERFA | AIDES - /u.test(gdoc.label)) balance.addReçu(value);
-          else if (/ CHQ(?:\d|\s)/u.test(gdoc.label)) balance.addCHQ(value);
-          else balance.addAutre(value);
+          if (gDocument.type === "transaction") {
+            if (this.isCurrent()) this.log("Balance: Transaction", { balance, gdoc, value });
+            balance.addTransaction(value);
+          } else if (/ CERFA | AIDES - /u.test(gdoc.label)) {
+            if (this.isCurrent()) this.log("Balance: Reçu", { balance, gdoc, value });
+            balance.addReçu(value);
+          } else if (/ CHQ(?:\d|\s)/u.test(gdoc.label)) {
+            if (this.isCurrent()) this.log("Balance: CHQ", { balance, gdoc, value });
+            balance.addCHQ(value);
+          } else {
+            if (this.isCurrent()) this.log("Balance: Autre", { balance, gdoc, value });
+            balance.addAutre(value);
+          }
         }
 
         const dmsLinks = await this.getDMSLinks();
@@ -175,16 +184,10 @@ export default class Transaction extends ValidableDocument {
   private async isMissingBanking() {
     // Pas de rapprochement bancaire
     const doc = await this.getDocument();
-    const groupedDoc = await this.getGdoc();
 
     const recent = Date.now() - new Date(doc.date).getTime() < 86_400_000 * 30;
-    if (!("reconciled" in groupedDoc)) {
-      this.error('isMissingBanking need to find the "reconciled" property', {
-        document: this,
-      });
-      return "Error: see console";
-    }
-    if (!recent && !groupedDoc.reconciled) {
+    const isReconciled = await this.isReconciled();
+    if (!recent && !isReconciled) {
       return `<a
         title="Cliquer ici pour plus d'informations."
         href="obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FRapprochements%20bancaires"

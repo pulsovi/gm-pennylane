@@ -37,6 +37,7 @@ export default class Document extends Logger {
       throw new Error("`id` MUST be an integer");
     }
     this.id = id;
+    Document.DocumentCache.set(id, this);
   }
 
   /**
@@ -44,7 +45,7 @@ export default class Document extends Logger {
    */
   public static get(id: number): Document {
     if (!Document.DocumentCache.has(id)) {
-      Document.DocumentCache.set(id, new Document({ id }));
+      return new Document({ id });
     }
     return Document.DocumentCache.get(id)!;
   }
@@ -108,6 +109,17 @@ export default class Document extends Logger {
   public async isClosed() {
     const ledgerEvents = await this.getLedgerEvents();
     return ledgerEvents.some((event) => event.closed);
+  }
+
+  public async isReconciled() {
+    const groupedDocuments = await this.getGroupedDocuments();
+    for (const doc of groupedDocuments) {
+      const gDocument = await doc.getDocument();
+      const meAsGdoc = gDocument.grouped_documents.find((d) => d.id === this.id);
+      if (meAsGdoc) return meAsGdoc.reconciled;
+    }
+    const ledgerEvents = await getLedgerEvents(this.id);
+    return ledgerEvents.some((event) => event.reconciliation_id);
   }
 
   async archive(unarchive = false) {
