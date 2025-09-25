@@ -62,7 +62,7 @@ export default class NextInvalidInvoice extends OpenNextInvalid {
     if (!invoice || invoice instanceof NotFoundInvoice) return null; // probablement une facture supprimée
 
     const status = await invoice.getStatus();
-    if (status.message === 'Facture introuvable') return null;
+    if (!status) return null;
 
     return status;
   }

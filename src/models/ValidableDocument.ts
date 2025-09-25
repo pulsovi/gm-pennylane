@@ -14,31 +14,33 @@ export default abstract class ValidableDocument extends Document {
   public valid: boolean | null = null;
   public validMessage: string | null = null;
 
-  protected abstract loadValidMessage (): Promise<string>;
+  protected abstract loadValidMessage(): Promise<string>;
 
-  async getValidMessage () {
-    if (this.validMessage === null)
-      await this.loadValidation();
+  async getValidMessage() {
+    if (this.validMessage === null) await this.loadValidation();
     return this.validMessage!;
   }
 
-  private async loadValidation () {
-    if (this.validMessage === null)
-      this.validMessage = await this.loadValidMessage();
-    this.valid = this.validMessage === 'OK';
+  private async loadValidation() {
+    if (this.validMessage === null) this.validMessage = await this.loadValidMessage();
+    this.valid = this.validMessage === "OK";
   }
 
-  async isValid () {
-    if (this.valid === null)
-      await this.loadValidation();
+  async isValid() {
+    if (this.valid === null) await this.loadValidation();
     return this.valid!;
   }
 
-  async getStatus (): Promise<Status> {
+  /**
+   * Get validation status of the document.
+   * @returns The status of the document or null if the document is not found.
+   */
+  async getStatus(): Promise<Status | null> {
     const id = this.id;
     const valid = await this.isValid();
     const message = await this.getValidMessage();
     const doc = await this.getDocument();
+    if (!doc) return null;
     const createdAt = doc && new Date(doc.created_at).getTime();
     const date = doc && new Date(doc.date).getTime();
     return { id, valid, message, createdAt, date };
