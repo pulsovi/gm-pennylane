@@ -1,29 +1,38 @@
 import { documentMatching } from '../api/document.js';
 import ValidableDocument from './ValidableDocument.js';
-import Document from './Document.js';
-import { getTransaction } from '../api/transaction.js';
-import { GroupedDocumentsEntity } from '../api/Document/index.js';
-import { getParam } from '../_/url.js';
-import { APIDMSLink } from '../api/DMS/Link.js';
-import DMSItem from './DMSItem.js';
-import { createDMSLink } from '../api/dms.js';
-import { jsonClone } from '../_/json.js';
-import Balance from './Balance.js';
-import { APITransactionLite } from '../api/Transaction/Lite.js';
-import CacheStatus, { Status } from '../framework/CacheStatus.js';
+import Document, { DocumentCache, isTypedDocument } from "./Document.js";
+import { getTransaction, getTransactionReconciliationId } from "../api/transaction.js";
+import { GroupedDocumentsEntity } from "../api/Document/index.js";
+import { getParam } from "../_/url.js";
+import { APIDMSLink } from "../api/DMS/Link.js";
+import DMSItem from "./DMSItem.js";
+import { createDMSLink } from "../api/dms.js";
+import { jsonClone } from "../_/json.js";
+import Balance from "./Balance.js";
+import { APITransactionLite } from "../api/Transaction/Lite.js";
+import CacheStatus, { Status } from "../framework/CacheStatus.js";
 
-const user = localStorage.getItem('user') ?? 'assistant';
+const user = localStorage.getItem("user") ?? "assistant";
 
 export default class Transaction extends ValidableDocument {
   protected _raw: { id: number };
   protected _transaction: Promise<APITransactionLite> | APITransactionLite;
   protected _balance: SyncOrPromise<Balance>;
+  protected _isReconciled: SyncOrPromise<boolean>;
   public readonly cacheStatus: CacheStatus;
 
   constructor(raw: { id: number }) {
     super(raw);
     this._raw = raw;
     this.cacheStatus = CacheStatus.getInstance<Status>("transactionValidation");
+  }
+
+  public static get(raw: { id: number }): Transaction {
+    if (!isTypedDocument(raw) || raw.type.toLowerCase() !== "transaction")
+      throw new Error("`raw.type` MUST be 'transaction'");
+    const old = DocumentCache.get(raw.id);
+    if (old instanceof Transaction) return old;
+    return new Transaction(raw);
   }
 
   public async getTransaction(): Promise<APITransactionLite> {
@@ -47,6 +56,23 @@ export default class Transaction extends ValidableDocument {
     return String(this.id) === getParam(location.href, "transaction_id");
   }
 
+  public async isReconciled() {
+    if (typeof this._isReconciled !== "boolean") {
+      this._isReconciled = new Promise<boolean>(async (rs) => {
+        if (this.groupedDocuments) {
+          const groupedDocuments = await this.groupedDocuments;
+          for (const doc of groupedDocuments) {
+            const gDocument = await doc.getDocument();
+            const meAsGdoc = gDocument.grouped_documents.find((d) => d.id === this.id);
+            if (meAsGdoc) return rs(meAsGdoc.reconciled);
+          }
+        }
+        rs(Boolean(await getTransactionReconciliationId(this.id)));
+      });
+    }
+    return await this._isReconciled;
+  }
+
   public async getBalance(): Promise<Balance> {
     if (!this._balance) {
       this._balance = new Promise(async (rs) => {
@@ -55,12 +81,12 @@ export default class Transaction extends ValidableDocument {
 
         const groupedDocuments = await this.getGroupedDocuments();
         for (const gDocument of groupedDocuments) {
-          if (this.isCurrent()) this.debug("balance counting", jsonClone({ gdoc: gDocument, balance }));
+          if (this.isCurrent()) this.debug("balance counting", gDocument, jsonClone(balance));
           const gdoc = await gDocument.getGdoc();
           const journal = await gDocument.getJournal();
           const coeff = gdoc.type === "Invoice" && journal.code === "HA" ? -1 : 1;
           const value = parseFloat(gdoc.amount) * coeff;
-          if (gDocument.type === "transaction") {
+          if (gdoc.type === "Transaction") {
             if (this.isCurrent()) this.log("Balance: Transaction", { balance, gdoc, value });
             balance.addTransaction(value);
           } else if (/ CERFA | AIDES - /u.test(gdoc.label)) {
@@ -77,7 +103,7 @@ export default class Transaction extends ValidableDocument {
 
         const dmsLinks = await this.getDMSLinks();
         dmsLinks.forEach((dmsLink) => {
-          if (this.isCurrent()) this.debug("balance counting", jsonClone({ dmsLink, balance }));
+          if (this.isCurrent()) this.debug("balance counting", dmsLink, jsonClone(balance));
           if (dmsLink.name.startsWith("CHQ")) {
             const amount = dmsLink.name.match(/- (?<amount>[\d \.]*) ?€$/u)?.groups.amount;
             balance.addCHQ(parseFloat(amount ?? "0") * Math.sign(balance.transaction));
@@ -212,7 +238,7 @@ export default class Transaction extends ValidableDocument {
     const [unbalanced, events] =
       Object.entries(thirdparties).find(([key, val]) => Math.abs(val.reduce((a, b) => a + b, 0)) > 0.001) ?? [];
     if (unbalanced) {
-      this.log("hasUnbalancedThirdparty", { ledgerEvents, thirdparties, unbalanced, events });
+      if (this.isCurrent()) this.log("hasUnbalancedThirdparty", { ledgerEvents, thirdparties, unbalanced, events });
       return `Le compte tiers "${unbalanced}" n'est pas équilibré.`;
     }
   }
@@ -321,6 +347,7 @@ export default class Transaction extends ValidableDocument {
       "754110001", // Dons Manuels - Allodons
       "6270005", // Frais Bancaires Société Générale
       "6270001", // Frais Stripe
+      "768", // Autres produits financiers (Interets créditeurs)
     ];
     if (ledgerEvents.some((line) => optionalProof.some((number) => line.planItem.number === number))) {
       if (this.isCurrent()) this.debug("isOtherUnbalanced: justificatif facultatif");
@@ -726,7 +753,7 @@ export default class Transaction extends ValidableDocument {
       const groupedDocuments = await this.getGroupedDocuments();
       const gdocs = await Promise.all(groupedDocuments.map((doc) => doc.getGdoc()));
       const chqs = gdocs.filter((gdoc) => gdoc.label.includes(" - CHQ"));
-      this.log("hasToSendToDMS", { groupedDocuments, chqs, balance });
+      if (this.isCurrent()) this.log("hasToSendToDMS", { groupedDocuments, chqs, balance });
       if (!chqs.length) {
         if (this.isCurrent()) this.log("hasToSendToDMS", "tous les chq sont en GED", { groupedDocuments, balance });
         return;
@@ -740,7 +767,7 @@ export default class Transaction extends ValidableDocument {
     if (balance.reçu) {
       const dmsLinks = await this.getDMSLinks();
       const receipts = dmsLinks.filter((link) => ["CERFA", "AIDES"].some((key) => link.name.startsWith(key)));
-      this.log("hasToSendToInvoice", { dmsLinks, receipts, balance });
+      if (this.isCurrent()) this.log("hasToSendToInvoice", { dmsLinks, receipts, balance });
       if (!receipts.length) {
         if (this.isCurrent())
           this.log("hasToSendToInvoice", "tous les reçus sont en facturation", {

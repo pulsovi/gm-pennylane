@@ -47,9 +47,11 @@ import { DMSListHasLinks } from "./pages/DMS/hasLinks.js";
 import PreviewDMSFiles from "./pages/transactionPanel/PreviewDMSFiles.js";
 import NextInvalidDMS from "./pages/DMS/NextInvalidDMS.js";
 import FullPeriod from "./pages/FullPeriod.js";
+import AddIsValidTransactionListIndicator from "./pages/transactionPanel/AddIsValidListIndicator.js";
 
 last7DaysFilter();
 AddInvoiceIdColumn.start();
+AddIsValidTransactionListIndicator.start();
 AllowChangeArchivedInvoiceNumber.start();
 ArchiveGroupedDocument.start();
 AutoSearchTransaction.start();

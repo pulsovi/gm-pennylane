@@ -7,7 +7,7 @@ import { APIInvoice } from "../api/Invoice/index.js";
 import Logger from "../framework/Logger.js";
 
 import DMSItem from "./DMSItem.js";
-import Document from "./Document.js";
+import Document, { DocumentCache, isTypedDocument } from "./Document.js";
 
 import ValidableDocument from "./ValidableDocument.js";
 
@@ -16,6 +16,18 @@ const staticLogger = new Logger("Invoice");
 export default abstract class Invoice extends ValidableDocument {
   public readonly type = "invoice";
   private invoice: APIInvoice | Promise<APIInvoice>;
+
+  public static get(raw: { id: number }) {
+    const old = DocumentCache.get(raw.id);
+    if (old instanceof Invoice) return old;
+
+    if (!isTypedDocument(raw) || raw.type.toLowerCase() !== "invoice") throw new Error("`raw.type` MUST be 'invoice'");
+
+    if ("direction" in raw && typeof raw.direction === "string" && ["supplier", "customer"].includes(raw.direction))
+      return Invoice.from(raw as { direction: string; id: number });
+
+    throw new Error("`raw.direction` MUST be 'supplier' or 'customer'");
+  }
 
   public static from(invoice: { direction: string; id: number }) {
     if (invoice.direction === "supplier") return new SupplierInvoice(invoice);

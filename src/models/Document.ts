@@ -5,7 +5,6 @@ import { archiveDocument, getDocument, reloadLedgerEvents } from '../api/documen
 import { APIDocument } from '../api/Document/index.js';
 import { APIGroupedDocument } from "../api/GroupedDocument/index.js";
 import { getJournal } from "../api/journal.js";
-import { APIJournal } from "../api/Journal/index.js";
 import { APILedgerEvent } from "../api/LedgerEvent/index.js";
 import { getGroupedDocuments, getLedgerEvents } from "../api/operation.js";
 import { getThirdparty, type Thirdparty } from "../api/thirdparties.js";
@@ -18,9 +17,26 @@ interface ClosedStatus {
   updatedAt: string;
 }
 
+type DocumentType = "transaction" | "invoice";
+
+export function isDocumentType(value: string): value is DocumentType {
+  return ["transaction", "invoice"].includes(value);
+}
+
+export function isTypedDocument(value: unknown): value is { type: DocumentType } {
+  return (
+    value &&
+    "object" === typeof value &&
+    "type" in value &&
+    "string" === typeof value.type &&
+    isDocumentType(value.type.toLowerCase())
+  );
+}
+
+export const DocumentCache: Map<number, Document> = new Map();
+
 export default class Document extends Logger {
-  private static DocumentCache: Map<number, Document> = new Map();
-  public readonly type: "transaction" | "invoice";
+  public type: DocumentType;
   public readonly id: number;
   protected document?: APIDocument | Promise<APIDocument>;
   protected gDocument?: SyncOrPromise<APIGroupedDocument>;
@@ -30,32 +46,34 @@ export default class Document extends Logger {
   protected thirdparty?: Promise<Thirdparty>;
   private static closedCache = new CacheList<ClosedStatus>("closedDocumentsCache", []);
 
-  constructor({ id }: { id: number }) {
+  constructor({ id, ...raw }: { id: number }) {
     super();
     if (!Number.isSafeInteger(id)) {
       this.log("constructor", { id, args: arguments });
       throw new Error("`id` MUST be an integer");
     }
     this.id = id;
-    Document.DocumentCache.set(id, this);
+    if (isTypedDocument(raw)) this.type = raw.type.toLowerCase() as DocumentType;
+    DocumentCache.set(id, this);
   }
 
   /**
    * Get a document by id, all documents are cached for performance
    */
-  public static get(id: number): Document {
-    if (!Document.DocumentCache.has(id)) {
-      return new Document({ id });
+  public static get(raw: { id: number }): Document {
+    if (!DocumentCache.has(raw.id)) {
+      return new Document(raw);
     }
-    return Document.DocumentCache.get(id)!;
+    return DocumentCache.get(raw.id)!;
   }
 
   /**
    * Update a document from an APIGroupedDocument
    */
   public static fromAPIGroupedDocument(apigdoc: APIGroupedDocument): Document {
-    const doc = Document.get(apigdoc.id);
+    const doc = Document.get({ id: apigdoc.id });
     doc.gDocument = apigdoc;
+    doc.type = apigdoc.type === "Invoice" ? "invoice" : "transaction";
     return doc;
   }
 
@@ -109,17 +127,6 @@ export default class Document extends Logger {
   public async isClosed() {
     const ledgerEvents = await this.getLedgerEvents();
     return ledgerEvents.some((event) => event.closed);
-  }
-
-  public async isReconciled() {
-    const groupedDocuments = await this.getGroupedDocuments();
-    for (const doc of groupedDocuments) {
-      const gDocument = await doc.getDocument();
-      const meAsGdoc = gDocument.grouped_documents.find((d) => d.id === this.id);
-      if (meAsGdoc) return meAsGdoc.reconciled;
-    }
-    const ledgerEvents = await getLedgerEvents(this.id);
-    return ledgerEvents.some((event) => event.reconciliation_id);
   }
 
   async archive(unarchive = false) {
