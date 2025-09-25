@@ -253,9 +253,9 @@ export default class DMSItem extends Logger {
     if (isReceivedTransfer) {
       const templates = [
         {
-          title: 'Reçu de don',
-          text: 'CERFA n°&lt;n° de cerfa&gt; - &lt;nom donateur&gt; - jj-mm-aaaa - &lt;montant&gt;€',
-          regex: /^CERFA n° ?[\d-]* - .* - [0123]\d-[01]\d-\d{4} - [\d .]*(?:,\d\d)? ?€(?:\.[a-zA-Z]{3,4})?$/u,
+          title: "Reçu de don",
+          text: "CERFA n°&lt;n° de cerfa&gt; - &lt;nom donateur&gt; - jj-mm-aaaa - &lt;montant&gt;€",
+          regex: /^CERFA n° ?[\d\w\/-]* - .* - [0123]\d-[01]\d-\d{4} - [\d .]*(?:,\d\d)? ?€(?:\.[a-zA-Z]{3,4})?$/u,
         },
       ];
       const message = `<a

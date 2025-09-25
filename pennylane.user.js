@@ -332,8 +332,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        return JSON.parse(JSON.stringify(obj));\n" +
 "    }\n" +
 "    catch (error) {\n" +
-"        console.log('unable to jsonClone this object', obj);\n" +
-"        console.log(error);\n" +
+"        console.error(\"unable to jsonClone this object\", obj, error);\n" +
 "        return obj;\n" +
 "    }\n" +
 "}\n" +
@@ -431,6 +430,275 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    const className = buttonModel?.className ?? '';\n" +
 "    cachedClassName = className;\n" +
 "    return className;\n" +
+"}\n" +
+"\n" +
+"// Stores the currently-being-typechecked object for error messages.\n" +
+"let obj$q = null;\n" +
+"class APITransaction {\n" +
+"    static Parse(d) {\n" +
+"        return APITransaction.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$q = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$q(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$q(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$q(field, d);\n" +
+"        }\n" +
+"        checkNumber$m(d.account_id, field + \".account_id\");\n" +
+"        d.account_synchronization = AccountSynchronization$1.Create(d.account_synchronization, field + \".account_synchronization\");\n" +
+"        checkString$n(d.amount, field + \".amount\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$i(d.archived_at, field + \".archived_at\", \"null | string\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkString$n(d.archived_at, field + \".archived_at\", \"null | string\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"            }\n" +
+"        }\n" +
+"        checkBoolean$e(d.attachment_lost, field + \".attachment_lost\");\n" +
+"        checkBoolean$e(d.attachment_required, field + \".attachment_required\");\n" +
+"        checkNumber$m(d.company_id, field + \".company_id\");\n" +
+"        checkString$n(d.currency, field + \".currency\");\n" +
+"        checkString$n(d.currency_amount, field + \".currency_amount\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkString$n(d.currency_fee, field + \".currency_fee\", \"string | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$i(d.currency_fee, field + \".currency_fee\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"            }\n" +
+"        }\n" +
+"        checkString$n(d.date, field + \".date\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$i(d.dump, field + \".dump\", \"null | Dump\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                d.dump = Dump$1.Create(d.dump, field + \".dump\", \"null | Dump\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"            }\n" +
+"        }\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$i(d.dump_id, field + \".dump_id\", \"null | number\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNumber$m(d.dump_id, field + \".dump_id\", \"null | number\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"            }\n" +
+"        }\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkString$n(d.fee, field + \".fee\", \"string | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$i(d.fee, field + \".fee\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"            }\n" +
+"        }\n" +
+"        checkNumber$m(d.files_count, field + \".files_count\");\n" +
+"        checkString$n(d.gross_amount, field + \".gross_amount\");\n" +
+"        checkString$n(d.group_uuid, field + \".group_uuid\");\n" +
+"        checkNumber$m(d.id, field + \".id\");\n" +
+"        checkBoolean$e(d.is_potential_duplicate, field + \".is_potential_duplicate\");\n" +
+"        checkBoolean$e(d.is_waiting_details, field + \".is_waiting_details\");\n" +
+"        checkString$n(d.label, field + \".label\");\n" +
+"        checkBoolean$e(d.pending, field + \".pending\");\n" +
+"        checkNull$i(d.reconciliation_id, field + \".reconciliation_id\");\n" +
+"        checkString$n(d.source, field + \".source\");\n" +
+"        checkString$n(d.source_logo, field + \".source_logo\");\n" +
+"        checkString$n(d.status, field + \".status\");\n" +
+"        checkString$n(d.type, field + \".type\");\n" +
+"        checkString$n(d.updated_at, field + \".updated_at\");\n" +
+"        checkBoolean$e(d.validation_needed, field + \".validation_needed\");\n" +
+"        const knownProperties = [\"account_id\", \"account_synchronization\", \"amount\", \"archived_at\", \"attachment_lost\", \"attachment_required\", \"company_id\", \"currency\", \"currency_amount\", \"currency_fee\", \"date\", \"dump\", \"dump_id\", \"fee\", \"files_count\", \"gross_amount\", \"group_uuid\", \"id\", \"is_potential_duplicate\", \"is_waiting_details\", \"label\", \"pending\", \"reconciliation_id\", \"source\", \"source_logo\", \"status\", \"type\", \"updated_at\", \"validation_needed\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$q(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
+"        return new APITransaction(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.account_id = d.account_id;\n" +
+"        this.account_synchronization = d.account_synchronization;\n" +
+"        this.amount = d.amount;\n" +
+"        this.archived_at = d.archived_at;\n" +
+"        this.attachment_lost = d.attachment_lost;\n" +
+"        this.attachment_required = d.attachment_required;\n" +
+"        this.company_id = d.company_id;\n" +
+"        this.currency = d.currency;\n" +
+"        this.currency_amount = d.currency_amount;\n" +
+"        this.currency_fee = d.currency_fee;\n" +
+"        this.date = d.date;\n" +
+"        this.dump = d.dump;\n" +
+"        this.dump_id = d.dump_id;\n" +
+"        this.fee = d.fee;\n" +
+"        this.files_count = d.files_count;\n" +
+"        this.gross_amount = d.gross_amount;\n" +
+"        this.group_uuid = d.group_uuid;\n" +
+"        this.id = d.id;\n" +
+"        this.is_potential_duplicate = d.is_potential_duplicate;\n" +
+"        this.is_waiting_details = d.is_waiting_details;\n" +
+"        this.label = d.label;\n" +
+"        this.pending = d.pending;\n" +
+"        this.reconciliation_id = d.reconciliation_id;\n" +
+"        this.source = d.source;\n" +
+"        this.source_logo = d.source_logo;\n" +
+"        this.status = d.status;\n" +
+"        this.type = d.type;\n" +
+"        this.updated_at = d.updated_at;\n" +
+"        this.validation_needed = d.validation_needed;\n" +
+"    }\n" +
+"}\n" +
+"let AccountSynchronization$1 = class AccountSynchronization {\n" +
+"    static Parse(d) {\n" +
+"        return AccountSynchronization.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$q = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$q(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$q(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$q(field, d);\n" +
+"        }\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkString$n(d.created_at, field + \".created_at\", \"string | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$i(d.created_at, field + \".created_at\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"            }\n" +
+"        }\n" +
+"        checkNull$i(d.error_message, field + \".error_message\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkBoolean$e(d.triggered_manually, field + \".triggered_manually\", \"boolean | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$i(d.triggered_manually, field + \".triggered_manually\", \"boolean | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"            }\n" +
+"        }\n" +
+"        const knownProperties = [\"created_at\", \"error_message\", \"triggered_manually\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$q(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
+"        return new AccountSynchronization(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.created_at = d.created_at;\n" +
+"        this.error_message = d.error_message;\n" +
+"        this.triggered_manually = d.triggered_manually;\n" +
+"    }\n" +
+"};\n" +
+"let Dump$1 = class Dump {\n" +
+"    static Parse(d) {\n" +
+"        return Dump.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$q = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$q(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$q(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$q(field, d);\n" +
+"        }\n" +
+"        checkString$n(d.created_at, field + \".created_at\");\n" +
+"        checkString$n(d.creator, field + \".creator\");\n" +
+"        checkString$n(d.type, field + \".type\");\n" +
+"        const knownProperties = [\"created_at\", \"creator\", \"type\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$q(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
+"        return new Dump(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.created_at = d.created_at;\n" +
+"        this.creator = d.creator;\n" +
+"        this.type = d.type;\n" +
+"    }\n" +
+"};\n" +
+"function throwNull2NonNull$q(field, value, multiple) {\n" +
+"    return errorHelper$q(field, value, multiple ?? \"non-nullable object\");\n" +
+"}\n" +
+"function throwNotObject$q(field, value, multiple) {\n" +
+"    return errorHelper$q(field, value, \"object\");\n" +
+"}\n" +
+"function throwIsArray$q(field, value, multiple) {\n" +
+"    return errorHelper$q(field, value, \"object\");\n" +
+"}\n" +
+"function checkNumber$m(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'number')\n" +
+"        errorHelper$q(field, value, multiple ?? \"number\");\n" +
+"}\n" +
+"function checkBoolean$e(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'boolean')\n" +
+"        errorHelper$q(field, value, multiple ?? \"boolean\");\n" +
+"}\n" +
+"function checkString$n(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'string')\n" +
+"        errorHelper$q(field, value, multiple ?? \"string\");\n" +
+"}\n" +
+"function checkNull$i(value, field, multiple) {\n" +
+"    if (value !== null)\n" +
+"        errorHelper$q(field, value, multiple ?? \"null\");\n" +
+"}\n" +
+"function errorHelper$q(field, d, type) {\n" +
+"    if (type.includes(' | ')) {\n" +
+"        throw new TypeError('Expected ' + type + \" at \" + field + \" but found:\\n" +
+"\" + JSON.stringify(d) + \"\\n" +
+"\\n" +
+"Full object:\\n" +
+"\" + JSON.stringify(obj$q));\n" +
+"    }\n" +
+"    else {\n" +
+"        let jsonClone = obj$q;\n" +
+"        try {\n" +
+"            jsonClone = JSON.parse(JSON.stringify(obj$q));\n" +
+"        }\n" +
+"        catch (error) {\n" +
+"            console.log(error);\n" +
+"        }\n" +
+"        console.error('Expected \"' + type + '\" at ' + field + ' but found:\\n" +
+"' + JSON.stringify(d), jsonClone);\n" +
+"    }\n" +
 "}\n" +
 "\n" +
 "/**\n" +
@@ -612,6 +880,201 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "}\n" +
 "\n" +
+"class Cache extends Logger {\n" +
+"    constructor(key, initialValue) {\n" +
+"        super();\n" +
+"        this.storageKey = key;\n" +
+"        this.data = initialValue;\n" +
+"        this.load();\n" +
+"        this.debug('new Cache', this);\n" +
+"        this.follow();\n" +
+"    }\n" +
+"    /**\n" +
+"     * stringify data for storage\n" +
+"     */\n" +
+"    stringify(value) {\n" +
+"        return JSON.stringify(value);\n" +
+"    }\n" +
+"    /**\n" +
+"     * Load data from localStorage\n" +
+"     */\n" +
+"    load() {\n" +
+"        try {\n" +
+"            this.data = this.parse(localStorage.getItem(this.storageKey));\n" +
+"            this.emit('loadend', this);\n" +
+"        }\n" +
+"        catch (_error) { /* Reject data and overrid it at next save() */ }\n" +
+"    }\n" +
+"    /**\n" +
+"     * Save data to localStorage\n" +
+"     */\n" +
+"    save(data) {\n" +
+"        if (data) {\n" +
+"            this.parse(this.stringify(data)); // validate value: throws if invalid\n" +
+"            this.data = data;\n" +
+"        }\n" +
+"        localStorage.setItem(this.storageKey, this.stringify(this.data));\n" +
+"        this.emit('saved', this);\n" +
+"    }\n" +
+"    /**\n" +
+"     * Follow storage change from other Browser pages\n" +
+"     */\n" +
+"    follow() {\n" +
+"        window.addEventListener('storage', event => {\n" +
+"            if (event.storageArea !== localStorage || event.key !== this.storageKey)\n" +
+"                return;\n" +
+"            try {\n" +
+"                this.data = this.parse(event.newValue);\n" +
+"                this.emit('change', this);\n" +
+"            }\n" +
+"            catch (error) {\n" +
+"                this.log('storage event error', { error, value: event.newValue });\n" +
+"                /* Reject data and overrid it at next save() */\n" +
+"            }\n" +
+"        });\n" +
+"    }\n" +
+"}\n" +
+"\n" +
+"/**\n" +
+" * CacheList is a cache that stores a list of data.\n" +
+" * It extends Cache and provides a simple interface to filter and find.\n" +
+" */\n" +
+"class CacheList extends Cache {\n" +
+"    static getInstance(storageKey) {\n" +
+"        if (!this.instances[storageKey]) {\n" +
+"            this.instances[storageKey] = new this(storageKey);\n" +
+"        }\n" +
+"        return this.instances[storageKey];\n" +
+"    }\n" +
+"    constructor(key, initialValue = []) {\n" +
+"        super(key, initialValue);\n" +
+"    }\n" +
+"    parse(data) {\n" +
+"        const value = JSON.parse(data);\n" +
+"        if (!Array.isArray(value))\n" +
+"            throw new Error(\"The given value does not parse as an Array.\");\n" +
+"        return value;\n" +
+"    }\n" +
+"    filter(matchOrPredicate) {\n" +
+"        this.load();\n" +
+"        if (typeof matchOrPredicate === \"function\")\n" +
+"            return this.data.filter(matchOrPredicate);\n" +
+"        return this.data.filter((item) => Object.entries(matchOrPredicate).every(([key, value]) => item[key] === value));\n" +
+"    }\n" +
+"    find(match) {\n" +
+"        this.load();\n" +
+"        if (typeof match === \"function\")\n" +
+"            return this.data.find(match);\n" +
+"        return this.data.find((item) => Object.entries(match).every(([key, value]) => item[key] === value));\n" +
+"    }\n" +
+"    /**\n" +
+"     * delete one item\n" +
+"     *\n" +
+"     * @return Deleted item if found\n" +
+"     */\n" +
+"    delete(match) {\n" +
+"        this.load();\n" +
+"        const found = this.find(match);\n" +
+"        if (!found)\n" +
+"            return null;\n" +
+"        this.data.splice(this.data.indexOf(found), 1);\n" +
+"        this.emit(\"delete\", { old: found });\n" +
+"        this.save();\n" +
+"        this.emit(\"change\", this);\n" +
+"        return found;\n" +
+"    }\n" +
+"    /**\n" +
+"     * clear all data\n" +
+"     */\n" +
+"    clear() {\n" +
+"        this.data.length = 0;\n" +
+"        this.emit(\"clear\", this);\n" +
+"        this.save();\n" +
+"        this.emit(\"change\", this);\n" +
+"        return this;\n" +
+"    }\n" +
+"    updateItem(matchOrValue, valueOrCreate, create) {\n" +
+"        let match;\n" +
+"        let value;\n" +
+"        if (typeof valueOrCreate === \"boolean\" || typeof valueOrCreate === \"undefined\") {\n" +
+"            if (!(\"id\" in matchOrValue))\n" +
+"                throw new Error(\"`matchOrValue` MUST have an `id` property\");\n" +
+"            create = valueOrCreate ?? true;\n" +
+"            value = matchOrValue;\n" +
+"            match = { id: matchOrValue.id };\n" +
+"        }\n" +
+"        else {\n" +
+"            value = valueOrCreate;\n" +
+"            match = matchOrValue;\n" +
+"        }\n" +
+"        this.load();\n" +
+"        const item = this.find(match);\n" +
+"        if (item) {\n" +
+"            this.data.splice(this.data.indexOf(item), 1, value);\n" +
+"            this.emit(\"update\", { old: item, new: value });\n" +
+"        }\n" +
+"        else {\n" +
+"            if (!create)\n" +
+"                return;\n" +
+"            this.data.push(value);\n" +
+"            this.emit(\"add\", { new: value });\n" +
+"        }\n" +
+"        this.save();\n" +
+"        this.emit(\"change\", this);\n" +
+"        return item;\n" +
+"    }\n" +
+"    /**\n" +
+"     * Calls the specified callback function for all the elements in an array.\n" +
+"     * The return value of the callback function is the accumulated result,\n" +
+"     * and is provided as an argument in the next call to the callback function.\n" +
+"     */\n" +
+"    reduce(cb, startingValue) {\n" +
+"        this.load();\n" +
+"        return this.data.reduce(cb, startingValue);\n" +
+"    }\n" +
+"}\n" +
+"CacheList.instances = {};\n" +
+"\n" +
+"/**\n" +
+" * CacheListRecord is a cache that stores a list of records.\n" +
+" * It extends CacheList and provides a simple interface to update one item.\n" +
+" */\n" +
+"class CacheListRecord extends CacheList {\n" +
+"    updateItem(match, newValueOrCreate, create = true) {\n" +
+"        let newValue;\n" +
+"        if (typeof newValueOrCreate === 'object') {\n" +
+"            newValue = newValueOrCreate;\n" +
+"        }\n" +
+"        else {\n" +
+"            if (!('id' in match))\n" +
+"                throw new ReferenceError('updating without match/newValue pair requires id property');\n" +
+"            create = newValueOrCreate ?? true;\n" +
+"            newValue = match;\n" +
+"        }\n" +
+"        this.load();\n" +
+"        const oldValue = this.find(match);\n" +
+"        if (oldValue) {\n" +
+"            newValue = { ...oldValue, ...newValue };\n" +
+"            this.data.splice(this.data.indexOf(oldValue), 1, newValue);\n" +
+"            if (('id' in newValue) && newValue.id == getParam(location.href, 'id'))\n" +
+"                this.debug('updateItem', { match, create, oldValue, newValue, stack: new Error('').stack });\n" +
+"            this.emit('update', { oldValue, newValue });\n" +
+"        }\n" +
+"        else {\n" +
+"            if (!create)\n" +
+"                return;\n" +
+"            this.data.push(newValue);\n" +
+"            this.emit('add', { newValue });\n" +
+"        }\n" +
+"        this.save();\n" +
+"        this.emit('change', this);\n" +
+"        return oldValue;\n" +
+"    }\n" +
+"}\n" +
+"\n" +
+"class CacheStatus extends CacheListRecord {\n" +
+"}\n" +
+"\n" +
 "class Service extends Logger {\n" +
 "    constructor() {\n" +
 "        super();\n" +
@@ -630,6 +1093,189 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    init() { }\n" +
 "    ;\n" +
+"}\n" +
+"\n" +
+"const DB_NAME = \"GM_Pennylane\";\n" +
+"const DB_VERSION = 1;\n" +
+"let registeringTO = null;\n" +
+"const tables = [];\n" +
+"function registerTable(table) {\n" +
+"    if (tables.some((tableItem) => tableItem.name === table.name))\n" +
+"        throw new Error(`Table nammed \"${table.name}\" already exists`);\n" +
+"    tables.push(table);\n" +
+"    registeringTO = sleep(200);\n" +
+"}\n" +
+"let DBLoading;\n" +
+"async function getDB() {\n" +
+"    let end;\n" +
+"    do {\n" +
+"        end = registeringTO;\n" +
+"        await end;\n" +
+"    } while (end !== registeringTO);\n" +
+"    if (!DBLoading)\n" +
+"        DBLoading = loadDB();\n" +
+"    return DBLoading;\n" +
+"}\n" +
+"async function loadDB() {\n" +
+"    const db = await new Promise((rs, rj) => {\n" +
+"        const openRequest = indexedDB.open(DB_NAME, DB_VERSION);\n" +
+"        /**\n" +
+"         * Database upgrade needed : DB_VERSION is greather than the current db version\n" +
+"         */\n" +
+"        openRequest.onupgradeneeded = (event) => {\n" +
+"            const db = openRequest.result;\n" +
+"            switch (event.oldVersion) {\n" +
+"                case 0:\n" +
+"                    tables.forEach((table) => {\n" +
+"                        if (!db.objectStoreNames.contains(table.name))\n" +
+"                            db.createObjectStore(table.name, { keyPath: table.primary, autoIncrement: table.autoIncrement });\n" +
+"                    });\n" +
+"                    return;\n" +
+"                default:\n" +
+"                    console.log(\"IDB load error: upgrade needed\", { openRequest, event });\n" +
+"                    rj(new Error(\"IDB load error: upgrade needed\"));\n" +
+"            }\n" +
+"        };\n" +
+"        /**\n" +
+"         * Database open failed\n" +
+"         */\n" +
+"        openRequest.onerror = (event) => {\n" +
+"            console.error(\"IDB load error : error event\", { error: openRequest.error, event });\n" +
+"            rj(new Error(\"IDB load error : error event\"));\n" +
+"        };\n" +
+"        /**\n" +
+"         * Database successfully opened\n" +
+"         */\n" +
+"        openRequest.onsuccess = () => {\n" +
+"            rs(openRequest.result);\n" +
+"        };\n" +
+"        /**\n" +
+"         * There is outdated version of the database open in another tab\n" +
+"         */\n" +
+"        openRequest.onblocked = (event) => {\n" +
+"            console.error(\"database blocked\", { version: DB_VERSION });\n" +
+"            rj(event);\n" +
+"        };\n" +
+"    });\n" +
+"    if (db) {\n" +
+"        /**\n" +
+"         * Database version change : DB_VERSION becomes lower than the current db version\n" +
+"         */\n" +
+"        db.onversionchange = () => {\n" +
+"            console.error(\"database version change\", { version: DB_VERSION });\n" +
+"            db.close();\n" +
+"        };\n" +
+"    }\n" +
+"    return db;\n" +
+"}\n" +
+"class IDBCache extends Logger {\n" +
+"    constructor(tableName, primary) {\n" +
+"        super();\n" +
+"        this.tableName = tableName;\n" +
+"        this.primary = primary;\n" +
+"        registerTable({ name: tableName, primary });\n" +
+"        this.loading = this.load();\n" +
+"        this.debug(\"new Cache\", this);\n" +
+"    }\n" +
+"    static getInstance(tableName, primary) {\n" +
+"        if (!this.instances[tableName]) {\n" +
+"            this.instances[tableName] = new this(tableName, primary);\n" +
+"        }\n" +
+"        return this.instances[tableName];\n" +
+"    }\n" +
+"    /**\n" +
+"     * Load database\n" +
+"     */\n" +
+"    async load() {\n" +
+"        this.log(\"Loading database\", this.tableName);\n" +
+"        this.db = await getDB();\n" +
+"        this.log(\"Database loaded\", this.db);\n" +
+"        return this.db;\n" +
+"    }\n" +
+"    async find(match) {\n" +
+"        if (this.primary in match)\n" +
+"            return this.get(match[this.primary]);\n" +
+"        for await (const item of this.walk(\"readonly\")) {\n" +
+"            if (!item)\n" +
+"                return null;\n" +
+"            if (Object.entries(match).every(([key, value]) => item[key] === value))\n" +
+"                return item;\n" +
+"        }\n" +
+"        return null;\n" +
+"    }\n" +
+"    async update(match) {\n" +
+"        const oldValue = await this.get(match[this.primary]);\n" +
+"        const newValue = oldValue ? { ...oldValue, ...match } : match;\n" +
+"        const store = await this.getStore(\"readwrite\");\n" +
+"        store.put(newValue);\n" +
+"    }\n" +
+"    async get(id) {\n" +
+"        const store = await this.getStore(\"readonly\");\n" +
+"        const getRequest = store?.get(id);\n" +
+"        return await this.consumeRequest(Object.assign(getRequest, { request: `get(${id})` }));\n" +
+"    }\n" +
+"    async getStore(mode) {\n" +
+"        const db = await this.loading;\n" +
+"        if (!db)\n" +
+"            return null;\n" +
+"        const transaction = Object.assign(db.transaction(this.tableName, mode), { state: [\"pending\", null] });\n" +
+"        transaction.oncomplete = (event) => {\n" +
+"            transaction.state = [\"completed\", event];\n" +
+"        };\n" +
+"        transaction.onerror = (event) => {\n" +
+"            transaction.state = [\"error\", event];\n" +
+"        };\n" +
+"        transaction.onabort = (event) => {\n" +
+"            transaction.state = [\"aborted\", event];\n" +
+"        };\n" +
+"        const store = transaction.objectStore(this.tableName);\n" +
+"        return store;\n" +
+"    }\n" +
+"    async *walk(mode) {\n" +
+"        const store = await this.getStore(mode);\n" +
+"        const cursorRequest = store?.openCursor();\n" +
+"        if (!cursorRequest)\n" +
+"            return null;\n" +
+"        while (true) {\n" +
+"            const cursor = await this.consumeRequest(Object.assign(cursorRequest, { request: \"openCursor\" }));\n" +
+"            if (!cursor)\n" +
+"                return null;\n" +
+"            yield cursor.value;\n" +
+"            cursor.continue();\n" +
+"        }\n" +
+"    }\n" +
+"    consumeRequest(request) {\n" +
+"        if (!request)\n" +
+"            return null;\n" +
+"        if (!request.request)\n" +
+"            console.error(\"IDBRequest has no request property\", request);\n" +
+"        window.getIDBRequests = window.getIDBRequests ?? [];\n" +
+"        if (!window.getIDBRequests.includes(request))\n" +
+"            window.getIDBRequests.push(request);\n" +
+"        return new Promise((rs, rj) => {\n" +
+"            request.onsuccess = () => rs(request.result);\n" +
+"            request.onerror = () => rj(request.error);\n" +
+"        });\n" +
+"    }\n" +
+"}\n" +
+"IDBCache.instances = {};\n" +
+"\n" +
+"const storageKey = \"apiCache\";\n" +
+"const cache$1 = IDBCache.getInstance(storageKey, \"key\");\n" +
+"async function cachedRequest(ref, args, fetcher, maxAge = WEEK_IN_MS) {\n" +
+"    const argsString = JSON.stringify(args);\n" +
+"    const key = `${ref}(${argsString})`;\n" +
+"    const cached = await cache$1.find({ key });\n" +
+"    if (cached && Date.now() - cached.fetchedAt < maxAge)\n" +
+"        return cached.value;\n" +
+"    const value = await fetcher(args);\n" +
+"    if (value)\n" +
+"        cache$1.update({ ref, args, value, fetchedAt: Date.now(), key });\n" +
+"    return value;\n" +
+"}\n" +
+"async function updateAPICacheItem(item) {\n" +
+"    const key = `${item.ref}(${JSON.stringify(item.args)})`;\n" +
+"    cache$1.update({ fetchedAt: Date.now(), ...item, key });\n" +
 "}\n" +
 "\n" +
 "function isString(data) {\n" +
@@ -772,29 +1418,29 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "logger$2.log({ apiRequestQueue });\n" +
 "\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
-"let obj$o = null;\n" +
+"let obj$p = null;\n" +
 "class APIDocument {\n" +
 "    static Parse(d) {\n" +
 "        return APIDocument.Create(JSON.parse(d));\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$o = d;\n" +
+"            obj$p = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
 "        if (!d) {\n" +
-"            throwNull2NonNull$o(field, d, multiple ?? this.name);\n" +
+"            throwNull2NonNull$p(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$o(field, d);\n" +
+"            throwNotObject$p(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$o(field, d);\n" +
+"            throwIsArray$p(field, d);\n" +
 "        }\n" +
 "        if (\"account_id\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkNumber$k(d.account_id, field + \".account_id\", \"number | null\");\n" +
+"                checkNumber$l(d.account_id, field + \".account_id\", \"number | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
@@ -839,7 +1485,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkNumber$k(d.company_id, field + \".company_id\");\n" +
+"        checkNumber$l(d.company_id, field + \".company_id\");\n" +
 "        if (\"complete\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
@@ -856,7 +1502,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"completeness\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkNumber$k(d.completeness, field + \".completeness\", \"number | null\");\n" +
+"                checkNumber$l(d.completeness, field + \".completeness\", \"number | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
@@ -867,10 +1513,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"converted_invoice_urls\" in d) {\n" +
-"            checkArray$d(d.converted_invoice_urls, field + \".converted_invoice_urls\");\n" +
+"            checkArray$f(d.converted_invoice_urls, field + \".converted_invoice_urls\");\n" +
 "            if (d.converted_invoice_urls) {\n" +
 "                for (let i = 0; i < d.converted_invoice_urls.length; i++) {\n" +
-"                    checkNever$6(d.converted_invoice_urls[i], field + \".converted_invoice_urls\" + \"[\" + i + \"]\");\n" +
+"                    checkNever$7(d.converted_invoice_urls[i], field + \".converted_invoice_urls\" + \"[\" + i + \"]\");\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -948,7 +1594,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"future_in_days\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkNumber$k(d.future_in_days, field + \".future_in_days\", \"number | null\");\n" +
+"                checkNumber$l(d.future_in_days, field + \".future_in_days\", \"number | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
@@ -994,7 +1640,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            catch (e) {\n" +
 "            }\n" +
 "        }\n" +
-"        checkArray$d(d.grouped_documents, field + \".grouped_documents\");\n" +
+"        checkArray$f(d.grouped_documents, field + \".grouped_documents\");\n" +
 "        if (d.grouped_documents) {\n" +
 "            for (let i = 0; i < d.grouped_documents.length; i++) {\n" +
 "                d.grouped_documents[i] = GroupedDocumentsEntity$1.Create(d.grouped_documents[i], field + \".grouped_documents\" + \"[\" + i + \"]\");\n" +
@@ -1003,7 +1649,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"iban\" in d) {\n" +
 "            checkString$m(d.iban, field + \".iban\");\n" +
 "        }\n" +
-"        checkNumber$k(d.id, field + \".id\");\n" +
+"        checkNumber$l(d.id, field + \".id\");\n" +
 "        if (\"invoice_kind\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
@@ -1036,7 +1682,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"is_waiting_for_ocr\" in d) {\n" +
 "            checkBoolean$d(d.is_waiting_for_ocr, field + \".is_waiting_for_ocr\");\n" +
 "        }\n" +
-"        checkNumber$k(d.journal_id, field + \".journal_id\");\n" +
+"        checkNumber$l(d.journal_id, field + \".journal_id\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
 "            checkString$m(d.label, field + \".label\", \"string | null\");\n" +
@@ -1056,7 +1702,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        checkString$m(d.method, field + \".method\");\n" +
 "        if (\"multiplier\" in d) {\n" +
-"            checkNumber$k(d.multiplier, field + \".multiplier\");\n" +
+"            checkNumber$l(d.multiplier, field + \".multiplier\");\n" +
 "        }\n" +
 "        if (\"not_duplicate\" in d) {\n" +
 "            checkBoolean$d(d.not_duplicate, field + \".not_duplicate\");\n" +
@@ -1068,7 +1714,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNumber$k(d.ocr_thirdparty_id, field + \".ocr_thirdparty_id\", \"null | number\");\n" +
+"                    checkNumber$l(d.ocr_thirdparty_id, field + \".ocr_thirdparty_id\", \"null | number\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -1141,10 +1787,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkBoolean$d(d.quotes, field + \".quotes\");\n" +
 "        checkBoolean$d(d.readonly, field + \".readonly\");\n" +
 "        if (\"recipients\" in d) {\n" +
-"            checkArray$d(d.recipients, field + \".recipients\");\n" +
+"            checkArray$f(d.recipients, field + \".recipients\");\n" +
 "            if (d.recipients) {\n" +
 "                for (let i = 0; i < d.recipients.length; i++) {\n" +
-"                    checkNever$6(d.recipients[i], field + \".recipients\" + \"[\" + i + \"]\");\n" +
+"                    checkNever$7(d.recipients[i], field + \".recipients\" + \"[\" + i + \"]\");\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1164,10 +1810,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"scored_transactions\" in d) {\n" +
-"            checkArray$d(d.scored_transactions, field + \".scored_transactions\");\n" +
+"            checkArray$f(d.scored_transactions, field + \".scored_transactions\");\n" +
 "            if (d.scored_transactions) {\n" +
 "                for (let i = 0; i < d.scored_transactions.length; i++) {\n" +
-"                    checkNever$6(d.scored_transactions[i], field + \".scored_transactions\" + \"[\" + i + \"]\");\n" +
+"                    checkNever$7(d.scored_transactions[i], field + \".scored_transactions\" + \"[\" + i + \"]\");\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1198,7 +1844,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNumber$k(d.thirdparty_id, field + \".thirdparty_id\", \"null | number\");\n" +
+"                    checkNumber$l(d.thirdparty_id, field + \".thirdparty_id\", \"null | number\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -1213,7 +1859,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"account_id\", \"accounting_type\", \"amount\", \"archived\", \"archived_at\", \"attachment_lost\", \"attachment_required\", \"billing_subscription_id\", \"can_be_stamped_as_paid_in_pdf\", \"company\", \"company_id\", \"complete\", \"completeness\", \"converted_invoice_urls\", \"created_at\", \"credit_notes_amount\", \"currency\", \"currency_amount\", \"currency_amount_before_tax\", \"currency_price_before_tax\", \"currency_tax\", \"custom_payment_reference\", \"date\", \"deadline\", \"direction\", \"discount\", \"discount_type\", \"draft\", \"email_from\", \"estimate_status\", \"external_id\", \"factor_status\", \"fec_pieceref\", \"finalized_at\", \"from_estimate_id\", \"future_in_days\", \"gdrive_path\", \"gross_amount\", \"group_uuid\", \"grouped_at\", \"grouped_documents\", \"iban\", \"id\", \"invoice_kind\", \"invoice_number\", \"invoicing_detailed_source\", \"is_credit_note\", \"is_destroyable\", \"is_estimate\", \"is_waiting_details\", \"is_waiting_for_ocr\", \"journal_id\", \"label\", \"language\", \"manual_partial_invoices\", \"method\", \"multiplier\", \"not_duplicate\", \"ocr_thirdparty_id\", \"outstanding_balance\", \"paid\", \"payment_id\", \"payment_method\", \"payment_reference\", \"payment_reminder_enabled\", \"payment_status\", \"pdf_generation_status\", \"pdf_invoice_display_products_list\", \"pdf_invoice_free_text\", \"pdf_invoice_free_text_enabled\", \"pdf_invoice_subject\", \"pdf_invoice_subject_enabled\", \"pdf_invoice_title\", \"pdf_paid_stamp\", \"preview_status\", \"price_before_tax\", \"pusher_channel\", \"quote_group_uuid\", \"quote_uid\", \"quotes\", \"readonly\", \"recipients\", \"reversal_origin_id\", \"score\", \"scored_invoices\", \"scored_transactions\", \"source\", \"special_mention\", \"status\", \"tax\", \"thirdparty_id\", \"type\", \"updated_at\", \"url\", \"validation_needed\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$o(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
+"            errorHelper$p(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new APIDocument(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -1382,23 +2028,23 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$o = d;\n" +
+"            obj$p = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
 "        if (!d) {\n" +
-"            throwNull2NonNull$o(field, d, multiple ?? this.name);\n" +
+"            throwNull2NonNull$p(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$o(field, d);\n" +
+"            throwNotObject$p(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$o(field, d);\n" +
+"            throwIsArray$p(field, d);\n" +
 "        }\n" +
 "        checkString$m(d.name, field + \".name\");\n" +
 "        const knownProperties = [\"name\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$o(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
+"            errorHelper$p(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new Company(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -1411,17 +2057,17 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$o = d;\n" +
+"            obj$p = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
 "        if (!d) {\n" +
-"            throwNull2NonNull$o(field, d, multiple ?? this.name);\n" +
+"            throwNull2NonNull$p(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$o(field, d);\n" +
+"            throwNotObject$p(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$o(field, d);\n" +
+"            throwIsArray$p(field, d);\n" +
 "        }\n" +
 "        if (\"account\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
@@ -1443,7 +2089,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNumber$k(d.account_id, field + \".account_id\", \"null | number\");\n" +
+"                    checkNumber$l(d.account_id, field + \".account_id\", \"null | number\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -1507,7 +2153,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkArray$d(d.client_comments, field + \".client_comments\");\n" +
+"        checkArray$f(d.client_comments, field + \".client_comments\");\n" +
 "        if (d.client_comments) {\n" +
 "            for (let i = 0; i < d.client_comments.length; i++) {\n" +
 "                d.client_comments[i] = ClientCommentsEntityOrEstablishmentComment.Create(d.client_comments[i], field + \".client_comments\" + \"[\" + i + \"]\");\n" +
@@ -1526,18 +2172,18 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkNumber$k(d.company_id, field + \".company_id\");\n" +
+"        checkNumber$l(d.company_id, field + \".company_id\");\n" +
 "        if (\"complete\" in d) {\n" +
 "            checkBoolean$d(d.complete, field + \".complete\");\n" +
 "        }\n" +
 "        if (\"completeness\" in d) {\n" +
-"            checkNumber$k(d.completeness, field + \".completeness\");\n" +
+"            checkNumber$l(d.completeness, field + \".completeness\");\n" +
 "        }\n" +
 "        if (\"converted_invoice_urls\" in d) {\n" +
-"            checkArray$d(d.converted_invoice_urls, field + \".converted_invoice_urls\");\n" +
+"            checkArray$f(d.converted_invoice_urls, field + \".converted_invoice_urls\");\n" +
 "            if (d.converted_invoice_urls) {\n" +
 "                for (let i = 0; i < d.converted_invoice_urls.length; i++) {\n" +
-"                    checkNever$6(d.converted_invoice_urls[i], field + \".converted_invoice_urls\" + \"[\" + i + \"]\");\n" +
+"                    checkNever$7(d.converted_invoice_urls[i], field + \".converted_invoice_urls\" + \"[\" + i + \"]\");\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1768,7 +2414,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"future_in_days\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkNumber$k(d.future_in_days, field + \".future_in_days\", \"number | null\");\n" +
+"                checkNumber$l(d.future_in_days, field + \".future_in_days\", \"number | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
@@ -1842,7 +2488,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkNumber$k(d.id, field + \".id\");\n" +
+"        checkNumber$l(d.id, field + \".id\");\n" +
 "        if (\"incomplete\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
@@ -1872,7 +2518,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"invoice_lines\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkArray$d(d.invoice_lines, field + \".invoice_lines\", \"InvoiceLinesEntity[] | null\");\n" +
+"                checkArray$f(d.invoice_lines, field + \".invoice_lines\", \"InvoiceLinesEntity[] | null\");\n" +
 "                if (d.invoice_lines) {\n" +
 "                    for (let i = 0; i < d.invoice_lines.length; i++) {\n" +
 "                        d.invoice_lines[i] = InvoiceLinesEntity$2.Create(d.invoice_lines[i], field + \".invoice_lines\" + \"[\" + i + \"]\");\n" +
@@ -1973,7 +2619,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "        }\n" +
 "        d.journal = Journal$1.Create(d.journal, field + \".journal\");\n" +
-"        checkNumber$k(d.journal_id, field + \".journal_id\");\n" +
+"        checkNumber$l(d.journal_id, field + \".journal_id\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
 "            checkString$m(d.label, field + \".label\", \"string | null\");\n" +
@@ -1998,13 +2644,13 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkArray$d(d.ledgerEvents, field + \".ledgerEvents\");\n" +
+"        checkArray$f(d.ledgerEvents, field + \".ledgerEvents\");\n" +
 "        if (d.ledgerEvents) {\n" +
 "            for (let i = 0; i < d.ledgerEvents.length; i++) {\n" +
 "                d.ledgerEvents[i] = LedgerEventsEntity.Create(d.ledgerEvents[i], field + \".ledgerEvents\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
-"        checkNumber$k(d.ledgerEventsCount, field + \".ledgerEventsCount\");\n" +
+"        checkNumber$l(d.ledgerEventsCount, field + \".ledgerEventsCount\");\n" +
 "        if (\"manual_partial_invoices\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
@@ -2022,7 +2668,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"multiplier\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkNumber$k(d.multiplier, field + \".multiplier\", \"number | null\");\n" +
+"                checkNumber$l(d.multiplier, field + \".multiplier\", \"number | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
@@ -2052,7 +2698,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNumber$k(d.ocr_thirdparty_id, field + \".ocr_thirdparty_id\", \"null | number\");\n" +
+"                    checkNumber$l(d.ocr_thirdparty_id, field + \".ocr_thirdparty_id\", \"null | number\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -2064,7 +2710,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"pages_count\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkNumber$k(d.pages_count, field + \".pages_count\", \"number | null\");\n" +
+"                checkNumber$l(d.pages_count, field + \".pages_count\", \"number | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
@@ -2236,7 +2882,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            catch (e) {\n" +
 "            }\n" +
 "        }\n" +
-"        checkArray$d(d.preview_urls, field + \".preview_urls\");\n" +
+"        checkArray$f(d.preview_urls, field + \".preview_urls\");\n" +
 "        if (d.preview_urls) {\n" +
 "            for (let i = 0; i < d.preview_urls.length; i++) {\n" +
 "                checkString$m(d.preview_urls[i], field + \".preview_urls\" + \"[\" + i + \"]\");\n" +
@@ -2277,10 +2923,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"recipients\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkArray$d(d.recipients, field + \".recipients\", \"never[] | null\");\n" +
+"                checkArray$f(d.recipients, field + \".recipients\", \"never[] | null\");\n" +
 "                if (d.recipients) {\n" +
 "                    for (let i = 0; i < d.recipients.length; i++) {\n" +
-"                        checkNever$6(d.recipients[i], field + \".recipients\" + \"[\" + i + \"]\");\n" +
+"                        checkNever$7(d.recipients[i], field + \".recipients\" + \"[\" + i + \"]\");\n" +
 "                    }\n" +
 "                }\n" +
 "            }\n" +
@@ -2311,10 +2957,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"scored_transactions\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkArray$d(d.scored_transactions, field + \".scored_transactions\", \"never[] | null\");\n" +
+"                checkArray$f(d.scored_transactions, field + \".scored_transactions\", \"never[] | null\");\n" +
 "                if (d.scored_transactions) {\n" +
 "                    for (let i = 0; i < d.scored_transactions.length; i++) {\n" +
-"                        checkNever$6(d.scored_transactions[i], field + \".scored_transactions\" + \"[\" + i + \"]\");\n" +
+"                        checkNever$7(d.scored_transactions[i], field + \".scored_transactions\" + \"[\" + i + \"]\");\n" +
 "                    }\n" +
 "                }\n" +
 "            }\n" +
@@ -2415,7 +3061,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkNumber$k(d.thirdparty_id, field + \".thirdparty_id\", \"null | number\");\n" +
+"                    checkNumber$l(d.thirdparty_id, field + \".thirdparty_id\", \"null | number\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -2440,7 +3086,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"account\", \"account_id\", \"accounting_status\", \"accounting_type\", \"amount\", \"archived\", \"archived_at\", \"attachment_label\", \"attachment_lost\", \"attachment_required\", \"billing_subscription_id\", \"can_be_stamped_as_paid_in_pdf\", \"client_comments\", \"company\", \"company_id\", \"complete\", \"completeness\", \"converted_invoice_urls\", \"created_at\", \"credit_notes_amount\", \"currency\", \"currency_amount\", \"currency_amount_before_tax\", \"currency_price_before_tax\", \"currency_tax\", \"current_account_plan_item\", \"custom_payment_reference\", \"date\", \"deadline\", \"direction\", \"discount\", \"discount_type\", \"draft\", \"email_from\", \"embeddable_in_browser\", \"establishment_comment\", \"estimate_status\", \"external_id\", \"factor_status\", \"fec_pieceref\", \"file_signed_id\", \"filename\", \"finalized_at\", \"from_estimate_id\", \"future_in_days\", \"gdrive_path\", \"gross_amount\", \"group_uuid\", \"grouped_at\", \"has_file\", \"has_linked_quotes\", \"hasTooManyLedgerEvents\", \"iban\", \"id\", \"incomplete\", \"invoice_kind\", \"invoice_lines\", \"invoice_number\", \"invoicing_detailed_source\", \"is_accounting_needed\", \"is_credit_note\", \"is_destroyable\", \"is_estimate\", \"is_sendable\", \"is_waiting_details\", \"is_waiting_for_ocr\", \"journal\", \"journal_id\", \"label\", \"language\", \"ledgerEvents\", \"ledgerEventsCount\", \"manual_partial_invoices\", \"method\", \"multiplier\", \"not_duplicate\", \"ocr_thirdparty_id\", \"outstanding_balance\", \"pages_count\", \"paid\", \"payment_id\", \"payment_method\", \"payment_reference\", \"payment_reminder_enabled\", \"payment_status\", \"pdf_generation_status\", \"pdf_invoice_display_products_list\", \"pdf_invoice_free_text\", \"pdf_invoice_free_text_enabled\", \"pdf_invoice_subject\", \"pdf_invoice_subject_enabled\", \"pdf_invoice_title\", \"pdf_paid_stamp\", \"pending\", \"preview_status\", \"preview_urls\", \"price_before_tax\", \"pusher_channel\", \"quote_group_uuid\", \"quote_uid\", \"quotes\", \"readonly\", \"recipients\", \"reconciled\", \"reversal_origin_id\", \"score\", \"scored_invoices\", \"scored_transactions\", \"size\", \"source\", \"special_mention\", \"status\", \"subcomplete\", \"tagged_at_ledger_events_level\", \"tax\", \"thirdparty\", \"thirdparty_id\", \"type\", \"updated_at\", \"url\", \"validation_needed\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$o(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
+"            errorHelper$p(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new GroupedDocumentsEntity(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -2652,21 +3298,21 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$o = d;\n" +
+"            obj$p = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
 "        if (!d) {\n" +
-"            throwNull2NonNull$o(field, d, multiple ?? this.name);\n" +
+"            throwNull2NonNull$p(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$o(field, d);\n" +
+"            throwNotObject$p(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$o(field, d);\n" +
+"            throwIsArray$p(field, d);\n" +
 "        }\n" +
 "        checkString$m(d.balance, field + \".balance\");\n" +
 "        checkString$m(d.bic, field + \".bic\");\n" +
-"        checkNumber$k(d.company_id, field + \".company_id\");\n" +
+"        checkNumber$l(d.company_id, field + \".company_id\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
 "            checkString$m(d.connection, field + \".connection\", \"string | null\");\n" +
@@ -2681,7 +3327,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkString$m(d.currency, field + \".currency\");\n" +
 "        checkString$m(d.currency_balance, field + \".currency_balance\");\n" +
 "        d.establishment = Establishment.Create(d.establishment, field + \".establishment\");\n" +
-"        checkNumber$k(d.establishment_id, field + \".establishment_id\");\n" +
+"        checkNumber$l(d.establishment_id, field + \".establishment_id\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
 "            checkString$m(d.iban, field + \".iban\", \"string | null\");\n" +
@@ -2693,7 +3339,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            catch (e) {\n" +
 "            }\n" +
 "        }\n" +
-"        checkNumber$k(d.id, field + \".id\");\n" +
+"        checkNumber$l(d.id, field + \".id\");\n" +
 "        checkString$m(d.label, field + \".label\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
@@ -2718,7 +3364,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "        }\n" +
 "        checkNull$h(d.last_sync_error, field + \".last_sync_error\");\n" +
-"        checkNumber$k(d.last_sync_http_code, field + \".last_sync_http_code\");\n" +
+"        checkNumber$l(d.last_sync_http_code, field + \".last_sync_http_code\");\n" +
 "        checkNull$h(d.ledger_events_count, field + \".ledger_events_count\");\n" +
 "        checkNull$h(d.ledger_events_max_date, field + \".ledger_events_max_date\");\n" +
 "        checkNull$h(d.ledger_events_min_date, field + \".ledger_events_min_date\");\n" +
@@ -2740,7 +3386,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"balance\", \"bic\", \"company_id\", \"connection\", \"currency\", \"currency_balance\", \"establishment\", \"establishment_id\", \"iban\", \"id\", \"label\", \"last_successful_sync_at\", \"last_sync_at\", \"last_sync_error\", \"last_sync_http_code\", \"ledger_events_count\", \"ledger_events_max_date\", \"ledger_events_min_date\", \"merge_url\", \"method\", \"name\", \"pusher_channel\", \"swan\", \"swan_number\", \"sync_attachments\", \"sync_customers\", \"sync_since\", \"synchronized\", \"transactions_count\", \"updated_at\", \"url\", \"use_as_default_for_vat_return\", \"visible\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$o(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
+"            errorHelper$p(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new Account(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -2785,35 +3431,35 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$o = d;\n" +
+"            obj$p = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
 "        if (!d) {\n" +
-"            throwNull2NonNull$o(field, d, multiple ?? this.name);\n" +
+"            throwNull2NonNull$p(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$o(field, d);\n" +
+"            throwNotObject$p(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$o(field, d);\n" +
+"            throwIsArray$p(field, d);\n" +
 "        }\n" +
-"        checkNumber$k(d.accounts_count, field + \".accounts_count\");\n" +
-"        checkArray$d(d.bridge_ids, field + \".bridge_ids\");\n" +
+"        checkNumber$l(d.accounts_count, field + \".accounts_count\");\n" +
+"        checkArray$f(d.bridge_ids, field + \".bridge_ids\");\n" +
 "        if (d.bridge_ids) {\n" +
 "            for (let i = 0; i < d.bridge_ids.length; i++) {\n" +
-"                checkNumber$k(d.bridge_ids[i], field + \".bridge_ids\" + \"[\" + i + \"]\");\n" +
+"                checkNumber$l(d.bridge_ids[i], field + \".bridge_ids\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
 "        checkNull$h(d.budgetinsight_id, field + \".budgetinsight_id\");\n" +
 "        checkString$m(d.crm_url, field + \".crm_url\");\n" +
-"        checkNumber$k(d.id, field + \".id\");\n" +
+"        checkNumber$l(d.id, field + \".id\");\n" +
 "        checkString$m(d.logo_url, field + \".logo_url\");\n" +
 "        checkString$m(d.method, field + \".method\");\n" +
 "        checkString$m(d.name, field + \".name\");\n" +
 "        const knownProperties = [\"accounts_count\", \"bridge_ids\", \"budgetinsight_id\", \"crm_url\", \"id\", \"logo_url\", \"method\", \"name\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$o(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
+"            errorHelper$p(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new Establishment(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -2833,33 +3479,33 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$o = d;\n" +
+"            obj$p = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
 "        if (!d) {\n" +
-"            throwNull2NonNull$o(field, d, multiple ?? this.name);\n" +
+"            throwNull2NonNull$p(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$o(field, d);\n" +
+"            throwNotObject$p(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$o(field, d);\n" +
+"            throwIsArray$p(field, d);\n" +
 "        }\n" +
 "        checkString$m(d.content, field + \".content\");\n" +
 "        checkString$m(d.created_at, field + \".created_at\");\n" +
-"        checkNumber$k(d.id, field + \".id\");\n" +
+"        checkNumber$l(d.id, field + \".id\");\n" +
 "        checkString$m(d.name, field + \".name\");\n" +
-"        checkNumber$k(d.record_id, field + \".record_id\");\n" +
+"        checkNumber$l(d.record_id, field + \".record_id\");\n" +
 "        checkString$m(d.record_type, field + \".record_type\");\n" +
 "        checkNull$h(d.rich_content, field + \".rich_content\");\n" +
 "        checkBoolean$d(d.seen, field + \".seen\");\n" +
 "        checkString$m(d.updated_at, field + \".updated_at\");\n" +
 "        d.user = User.Create(d.user, field + \".user\");\n" +
-"        checkNumber$k(d.user_id, field + \".user_id\");\n" +
+"        checkNumber$l(d.user_id, field + \".user_id\");\n" +
 "        const knownProperties = [\"content\", \"created_at\", \"id\", \"name\", \"record_id\", \"record_type\", \"rich_content\", \"seen\", \"updated_at\", \"user\", \"user_id\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$o(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
+"            errorHelper$p(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new ClientCommentsEntityOrEstablishmentComment(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -2882,27 +3528,27 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$o = d;\n" +
+"            obj$p = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
 "        if (!d) {\n" +
-"            throwNull2NonNull$o(field, d, multiple ?? this.name);\n" +
+"            throwNull2NonNull$p(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$o(field, d);\n" +
+"            throwNotObject$p(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$o(field, d);\n" +
+"            throwIsArray$p(field, d);\n" +
 "        }\n" +
 "        checkString$m(d.first_name, field + \".first_name\");\n" +
 "        checkString$m(d.full_name, field + \".full_name\");\n" +
-"        checkNumber$k(d.id, field + \".id\");\n" +
+"        checkNumber$l(d.id, field + \".id\");\n" +
 "        checkString$m(d.last_name, field + \".last_name\");\n" +
 "        checkNull$h(d.profile_picture_url, field + \".profile_picture_url\");\n" +
 "        const knownProperties = [\"first_name\", \"full_name\", \"id\", \"last_name\", \"profile_picture_url\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$o(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
+"            errorHelper$p(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new User(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -2919,23 +3565,23 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$o = d;\n" +
+"            obj$p = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
 "        if (!d) {\n" +
-"            throwNull2NonNull$o(field, d, multiple ?? this.name);\n" +
+"            throwNull2NonNull$p(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$o(field, d);\n" +
+"            throwNotObject$p(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$o(field, d);\n" +
+"            throwIsArray$p(field, d);\n" +
 "        }\n" +
 "        checkString$m(d.name, field + \".name\");\n" +
 "        const knownProperties = [\"name\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$o(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
+"            errorHelper$p(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new Company1(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -2948,22 +3594,22 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$o = d;\n" +
+"            obj$p = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
 "        if (!d) {\n" +
-"            throwNull2NonNull$o(field, d, multiple ?? this.name);\n" +
+"            throwNull2NonNull$p(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$o(field, d);\n" +
+"            throwNotObject$p(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$o(field, d);\n" +
+"            throwIsArray$p(field, d);\n" +
 "        }\n" +
-"        checkNumber$k(d.company_id, field + \".company_id\");\n" +
+"        checkNumber$l(d.company_id, field + \".company_id\");\n" +
 "        checkString$m(d[\"country_alpha2\"], field + \".country_alpha2\");\n" +
 "        checkBoolean$d(d.enabled, field + \".enabled\");\n" +
-"        checkNumber$k(d.id, field + \".id\");\n" +
+"        checkNumber$l(d.id, field + \".id\");\n" +
 "        checkNull$h(d.internal_identifier, field + \".internal_identifier\");\n" +
 "        checkString$m(d.label, field + \".label\");\n" +
 "        checkBoolean$d(d.label_is_editable, field + \".label_is_editable\");\n" +
@@ -2972,7 +3618,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"company_id\", \"country_alpha2\", \"enabled\", \"id\", \"internal_identifier\", \"label\", \"label_is_editable\", \"number\", \"vat_rate\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$o(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
+"            errorHelper$p(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -2993,26 +3639,26 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$o = d;\n" +
+"            obj$p = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
 "        if (!d) {\n" +
-"            throwNull2NonNull$o(field, d, multiple ?? this.name);\n" +
+"            throwNull2NonNull$p(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$o(field, d);\n" +
+"            throwNotObject$p(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$o(field, d);\n" +
+"            throwIsArray$p(field, d);\n" +
 "        }\n" +
 "        if (\"author\" in d) {\n" +
 "            checkNull$h(d.author, field + \".author\");\n" +
 "        }\n" +
 "        checkString$m(d.content, field + \".content\");\n" +
 "        checkString$m(d.created_at, field + \".created_at\");\n" +
-"        checkNumber$k(d.id, field + \".id\");\n" +
+"        checkNumber$l(d.id, field + \".id\");\n" +
 "        checkString$m(d.name, field + \".name\");\n" +
-"        checkNumber$k(d.record_id, field + \".record_id\");\n" +
+"        checkNumber$l(d.record_id, field + \".record_id\");\n" +
 "        checkString$m(d.record_type, field + \".record_type\");\n" +
 "        checkNull$h(d.rich_content, field + \".rich_content\");\n" +
 "        checkBoolean$d(d.seen, field + \".seen\");\n" +
@@ -3034,7 +3680,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNumber$k(d.user_id, field + \".user_id\", \"null | number\");\n" +
+"                checkNumber$l(d.user_id, field + \".user_id\", \"null | number\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -3042,7 +3688,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"author\", \"content\", \"created_at\", \"id\", \"name\", \"record_id\", \"record_type\", \"rich_content\", \"seen\", \"updated_at\", \"user\", \"user_id\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$o(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
+"            errorHelper$p(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new EstablishmentCommentOrClientCommentsEntity(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -3067,17 +3713,17 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$o = d;\n" +
+"            obj$p = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
 "        if (!d) {\n" +
-"            throwNull2NonNull$o(field, d, multiple ?? this.name);\n" +
+"            throwNull2NonNull$p(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$o(field, d);\n" +
+"            throwNotObject$p(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$o(field, d);\n" +
+"            throwIsArray$p(field, d);\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
@@ -3085,7 +3731,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNumber$k(d.advance_id, field + \".advance_id\", \"null | number\");\n" +
+"                checkNumber$l(d.advance_id, field + \".advance_id\", \"null | number\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -3093,7 +3739,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkString$m(d.amount, field + \".amount\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNumber$k(d.asset_id, field + \".asset_id\", \"number | null\");\n" +
+"            checkNumber$l(d.asset_id, field + \".asset_id\", \"number | null\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -3102,7 +3748,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            catch (e) {\n" +
 "            }\n" +
 "        }\n" +
-"        checkNumber$k(d.company_id, field + \".company_id\");\n" +
+"        checkNumber$l(d.company_id, field + \".company_id\");\n" +
 "        checkString$m(d.created_at, field + \".created_at\");\n" +
 "        checkString$m(d.currency_amount, field + \".currency_amount\");\n" +
 "        checkString$m(d.currency_price_before_tax, field + \".currency_price_before_tax\");\n" +
@@ -3112,12 +3758,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkString$m(d.description, field + \".description\");\n" +
 "        checkString$m(d.discount, field + \".discount\");\n" +
 "        checkString$m(d.discount_type, field + \".discount_type\");\n" +
-"        checkNumber$k(d.document_id, field + \".document_id\");\n" +
+"        checkNumber$l(d.document_id, field + \".document_id\");\n" +
 "        checkBoolean$d(d.global_vat, field + \".global_vat\");\n" +
-"        checkNumber$k(d.id, field + \".id\");\n" +
+"        checkNumber$l(d.id, field + \".id\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNumber$k(d.invoice_line_section_id, field + \".invoice_line_section_id\", \"number | null\");\n" +
+"            checkNumber$l(d.invoice_line_section_id, field + \".invoice_line_section_id\", \"number | null\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -3140,14 +3786,14 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "        }\n" +
 "        d.pnl_plan_item = PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem1.Create(d.pnl_plan_item, field + \".pnl_plan_item\");\n" +
-"        checkNumber$k(d.pnl_plan_item_id, field + \".pnl_plan_item_id\");\n" +
+"        checkNumber$l(d.pnl_plan_item_id, field + \".pnl_plan_item_id\");\n" +
 "        checkBoolean$d(d.prepaid_pnl, field + \".prepaid_pnl\");\n" +
 "        checkString$m(d.price_before_tax, field + \".price_before_tax\");\n" +
 "        checkNull$h(d.product_id, field + \".product_id\");\n" +
 "        checkString$m(d.quantity, field + \".quantity\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNumber$k(d.rank, field + \".rank\", \"number | null\");\n" +
+"            checkNumber$l(d.rank, field + \".rank\", \"number | null\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -3174,7 +3820,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"advance_id\", \"amount\", \"asset_id\", \"company_id\", \"created_at\", \"currency_amount\", \"currency_price_before_tax\", \"currency_tax\", \"currency_unit_price_before_tax\", \"deferral_id\", \"description\", \"discount\", \"discount_type\", \"document_id\", \"global_vat\", \"id\", \"invoice_line_section_id\", \"label\", \"manual_vat_mode\", \"ocr_vat_rate\", \"pnl_plan_item\", \"pnl_plan_item_id\", \"prepaid_pnl\", \"price_before_tax\", \"product_id\", \"quantity\", \"rank\", \"raw_currency_unit_price\", \"tax\", \"undiscounted_currency_price_before_tax\", \"unit\", \"vat_rate\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$o(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
+"            errorHelper$p(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new InvoiceLinesEntity(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -3218,22 +3864,22 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$o = d;\n" +
+"            obj$p = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
 "        if (!d) {\n" +
-"            throwNull2NonNull$o(field, d, multiple ?? this.name);\n" +
+"            throwNull2NonNull$p(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$o(field, d);\n" +
+"            throwNotObject$p(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$o(field, d);\n" +
+"            throwIsArray$p(field, d);\n" +
 "        }\n" +
-"        checkNumber$k(d.company_id, field + \".company_id\");\n" +
+"        checkNumber$l(d.company_id, field + \".company_id\");\n" +
 "        checkString$m(d[\"country_alpha2\"], field + \".country_alpha2\");\n" +
 "        checkBoolean$d(d.enabled, field + \".enabled\");\n" +
-"        checkNumber$k(d.id, field + \".id\");\n" +
+"        checkNumber$l(d.id, field + \".id\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
 "            checkNull$h(d.internal_identifier, field + \".internal_identifier\", \"null | string\");\n" +
@@ -3252,7 +3898,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"company_id\", \"country_alpha2\", \"enabled\", \"id\", \"internal_identifier\", \"label\", \"label_is_editable\", \"number\", \"vat_rate\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$o(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
+"            errorHelper$p(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem1(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -3273,25 +3919,25 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$o = d;\n" +
+"            obj$p = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
 "        if (!d) {\n" +
-"            throwNull2NonNull$o(field, d, multiple ?? this.name);\n" +
+"            throwNull2NonNull$p(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$o(field, d);\n" +
+"            throwNotObject$p(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$o(field, d);\n" +
+"            throwIsArray$p(field, d);\n" +
 "        }\n" +
 "        checkString$m(d.code, field + \".code\");\n" +
-"        checkNumber$k(d.id, field + \".id\");\n" +
+"        checkNumber$l(d.id, field + \".id\");\n" +
 "        checkString$m(d.label, field + \".label\");\n" +
 "        const knownProperties = [\"code\", \"id\", \"label\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$o(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
+"            errorHelper$p(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new Journal(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -3306,29 +3952,29 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$o = d;\n" +
+"            obj$p = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
 "        if (!d) {\n" +
-"            throwNull2NonNull$o(field, d, multiple ?? this.name);\n" +
+"            throwNull2NonNull$p(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$o(field, d);\n" +
+"            throwNotObject$p(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$o(field, d);\n" +
+"            throwIsArray$p(field, d);\n" +
 "        }\n" +
 "        checkString$m(d.balance, field + \".balance\");\n" +
-"        checkNumber$k(d.company_id, field + \".company_id\");\n" +
+"        checkNumber$l(d.company_id, field + \".company_id\");\n" +
 "        checkString$m(d.created_at, field + \".created_at\");\n" +
 "        checkString$m(d.credit, field + \".credit\");\n" +
 "        checkString$m(d.date, field + \".date\");\n" +
 "        checkString$m(d.debit, field + \".debit\");\n" +
-"        checkNumber$k(d.document_id, field + \".document_id\");\n" +
+"        checkNumber$l(d.document_id, field + \".document_id\");\n" +
 "        if (\"document_label\" in d) {\n" +
 "            checkString$m(d.document_label, field + \".document_label\");\n" +
 "        }\n" +
-"        checkNumber$k(d.id, field + \".id\");\n" +
+"        checkNumber$l(d.id, field + \".id\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
 "            checkString$m(d.label, field + \".label\", \"string | null\");\n" +
@@ -3355,7 +4001,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNumber$k(d.lettering_id, field + \".lettering_id\", \"number | null\");\n" +
+"            checkNumber$l(d.lettering_id, field + \".lettering_id\", \"number | null\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -3364,7 +4010,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            catch (e) {\n" +
 "            }\n" +
 "        }\n" +
-"        checkNumber$k(d.plan_item_id, field + \".plan_item_id\");\n" +
+"        checkNumber$l(d.plan_item_id, field + \".plan_item_id\");\n" +
 "        d.planItem = PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem2.Create(d.planItem, field + \".planItem\");\n" +
 "        if (\"processed_label\" in d) {\n" +
 "            checkString$m(d.processed_label, field + \".processed_label\");\n" +
@@ -3390,14 +4036,14 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNumber$k(d.reallocation_id, field + \".reallocation_id\", \"null | number\");\n" +
+"                checkNumber$l(d.reallocation_id, field + \".reallocation_id\", \"null | number\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNumber$k(d.reconciliation_id, field + \".reconciliation_id\", \"number | null\");\n" +
+"            checkNumber$l(d.reconciliation_id, field + \".reconciliation_id\", \"number | null\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -3410,7 +4056,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"balance\", \"company_id\", \"created_at\", \"credit\", \"date\", \"debit\", \"document_id\", \"document_label\", \"id\", \"label\", \"lettering\", \"lettering_id\", \"plan_item_id\", \"planItem\", \"processed_label\", \"readonly\", \"readonlyAmounts\", \"reallocation\", \"reallocation_id\", \"reconciliation_id\", \"source\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$o(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
+"            errorHelper$p(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new LedgerEventsEntity(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -3447,25 +4093,25 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$o = d;\n" +
+"            obj$p = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
 "        if (!d) {\n" +
-"            throwNull2NonNull$o(field, d, multiple ?? this.name);\n" +
+"            throwNull2NonNull$p(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$o(field, d);\n" +
+"            throwNotObject$p(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$o(field, d);\n" +
+"            throwIsArray$p(field, d);\n" +
 "        }\n" +
 "        checkString$m(d.balance, field + \".balance\");\n" +
-"        checkNumber$k(d.id, field + \".id\");\n" +
+"        checkNumber$l(d.id, field + \".id\");\n" +
 "        checkString$m(d.plan_item_number, field + \".plan_item_number\");\n" +
 "        const knownProperties = [\"balance\", \"id\", \"plan_item_number\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$o(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
+"            errorHelper$p(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new Lettering(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -3480,22 +4126,22 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$o = d;\n" +
+"            obj$p = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
 "        if (!d) {\n" +
-"            throwNull2NonNull$o(field, d, multiple ?? this.name);\n" +
+"            throwNull2NonNull$p(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$o(field, d);\n" +
+"            throwNotObject$p(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$o(field, d);\n" +
+"            throwIsArray$p(field, d);\n" +
 "        }\n" +
-"        checkNumber$k(d.company_id, field + \".company_id\");\n" +
+"        checkNumber$l(d.company_id, field + \".company_id\");\n" +
 "        checkString$m(d[\"country_alpha2\"], field + \".country_alpha2\");\n" +
 "        checkBoolean$d(d.enabled, field + \".enabled\");\n" +
-"        checkNumber$k(d.id, field + \".id\");\n" +
+"        checkNumber$l(d.id, field + \".id\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
 "            checkNull$h(d.internal_identifier, field + \".internal_identifier\", \"null | string\");\n" +
@@ -3514,7 +4160,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"company_id\", \"country_alpha2\", \"enabled\", \"id\", \"internal_identifier\", \"label\", \"label_is_editable\", \"number\", \"vat_rate\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$o(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
+"            errorHelper$p(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem2(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -3535,25 +4181,25 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$o = d;\n" +
+"            obj$p = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
 "        if (!d) {\n" +
-"            throwNull2NonNull$o(field, d, multiple ?? this.name);\n" +
+"            throwNull2NonNull$p(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$o(field, d);\n" +
+"            throwNotObject$p(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$o(field, d);\n" +
+"            throwIsArray$p(field, d);\n" +
 "        }\n" +
 "        checkString$m(d.created_at, field + \".created_at\");\n" +
 "        d.fromPlanItem = PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem3.Create(d.fromPlanItem, field + \".fromPlanItem\");\n" +
-"        checkNumber$k(d.id, field + \".id\");\n" +
+"        checkNumber$l(d.id, field + \".id\");\n" +
 "        const knownProperties = [\"created_at\", \"fromPlanItem\", \"id\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$o(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
+"            errorHelper$p(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new Reallocation(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -3568,22 +4214,22 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$o = d;\n" +
+"            obj$p = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
 "        if (!d) {\n" +
-"            throwNull2NonNull$o(field, d, multiple ?? this.name);\n" +
+"            throwNull2NonNull$p(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$o(field, d);\n" +
+"            throwNotObject$p(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$o(field, d);\n" +
+"            throwIsArray$p(field, d);\n" +
 "        }\n" +
-"        checkNumber$k(d.company_id, field + \".company_id\");\n" +
+"        checkNumber$l(d.company_id, field + \".company_id\");\n" +
 "        checkString$m(d[\"country_alpha2\"], field + \".country_alpha2\");\n" +
 "        checkBoolean$d(d.enabled, field + \".enabled\");\n" +
-"        checkNumber$k(d.id, field + \".id\");\n" +
+"        checkNumber$l(d.id, field + \".id\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
 "            checkString$m(d.internal_identifier, field + \".internal_identifier\", \"string | null\");\n" +
@@ -3602,7 +4248,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"company_id\", \"country_alpha2\", \"enabled\", \"id\", \"internal_identifier\", \"label\", \"label_is_editable\", \"number\", \"vat_rate\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$o(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
+"            errorHelper$p(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new PlanItemOrPnlPlanItemOrFromPlanItemOrCurrentAccountPlanItem3(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -3623,22 +4269,22 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$o = d;\n" +
+"            obj$p = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
 "        if (!d) {\n" +
-"            throwNull2NonNull$o(field, d, multiple ?? this.name);\n" +
+"            throwNull2NonNull$p(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$o(field, d);\n" +
+"            throwNotObject$p(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$o(field, d);\n" +
+"            throwIsArray$p(field, d);\n" +
 "        }\n" +
 "        const knownProperties = [];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$o(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
+"            errorHelper$p(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new ScoredInvoices1(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -3650,17 +4296,17 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$o = d;\n" +
+"            obj$p = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
 "        if (!d) {\n" +
-"            throwNull2NonNull$o(field, d, multiple ?? this.name);\n" +
+"            throwNull2NonNull$p(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$o(field, d);\n" +
+"            throwNotObject$p(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$o(field, d);\n" +
+"            throwIsArray$p(field, d);\n" +
 "        }\n" +
 "        checkString$m(d.activity_code, field + \".activity_code\");\n" +
 "        checkString$m(d.activity_nomenclature, field + \".activity_nomenclature\");\n" +
@@ -3685,7 +4331,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkNull$h(d.billing_iban, field + \".billing_iban\");\n" +
 "        checkString$m(d.billing_language, field + \".billing_language\");\n" +
 "        checkString$m(d.city, field + \".city\");\n" +
-"        checkNumber$k(d.company_id, field + \".company_id\");\n" +
+"        checkNumber$l(d.company_id, field + \".company_id\");\n" +
 "        checkBoolean$d(d.complete, field + \".complete\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
@@ -3711,10 +4357,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkString$m(d.delivery_postal_code, field + \".delivery_postal_code\");\n" +
 "        checkBoolean$d(d.disable_pending_vat, field + \".disable_pending_vat\");\n" +
 "        checkNull$h(d.display_name, field + \".display_name\");\n" +
-"        checkArray$d(d.emails, field + \".emails\");\n" +
+"        checkArray$f(d.emails, field + \".emails\");\n" +
 "        if (d.emails) {\n" +
 "            for (let i = 0; i < d.emails.length; i++) {\n" +
-"                checkNever$6(d.emails[i], field + \".emails\" + \"[\" + i + \"]\");\n" +
+"                checkNever$7(d.emails[i], field + \".emails\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
@@ -3734,7 +4380,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkNull$h(d.gender, field + \".gender\");\n" +
 "        checkNull$h(d.gocardless_id, field + \".gocardless_id\");\n" +
 "        checkString$m(d.iban, field + \".iban\");\n" +
-"        checkNumber$k(d.id, field + \".id\");\n" +
+"        checkNumber$l(d.id, field + \".id\");\n" +
 "        checkNull$h(d.invoice_count, field + \".invoice_count\");\n" +
 "        checkNull$h(d.invoice_dump_id, field + \".invoice_dump_id\");\n" +
 "        checkBoolean$d(d.invoices_auto_generated, field + \".invoices_auto_generated\");\n" +
@@ -3745,7 +4391,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNumber$k(d.known_supplier_id, field + \".known_supplier_id\", \"null | number\");\n" +
+"                checkNumber$l(d.known_supplier_id, field + \".known_supplier_id\", \"null | number\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -3761,11 +4407,11 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkString$m(d.phone, field + \".phone\");\n" +
 "        checkNull$h(d.plan_item, field + \".plan_item\");\n" +
 "        checkNull$h(d.plan_item_attributes, field + \".plan_item_attributes\");\n" +
-"        checkNumber$k(d.plan_item_id, field + \".plan_item_id\");\n" +
+"        checkNumber$l(d.plan_item_id, field + \".plan_item_id\");\n" +
 "        checkNull$h(d.pnl_plan_item, field + \".pnl_plan_item\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkNumber$k(d.pnl_plan_item_id, field + \".pnl_plan_item_id\", \"number | null\");\n" +
+"            checkNumber$l(d.pnl_plan_item_id, field + \".pnl_plan_item_id\", \"number | null\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -3783,7 +4429,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkString$m(d.reg_no, field + \".reg_no\");\n" +
 "        checkString$m(d.role, field + \".role\");\n" +
 "        checkBoolean$d(d.rule_enabled, field + \".rule_enabled\");\n" +
-"        checkArray$d(d.search_terms, field + \".search_terms\");\n" +
+"        checkArray$f(d.search_terms, field + \".search_terms\");\n" +
 "        if (d.search_terms) {\n" +
 "            for (let i = 0; i < d.search_terms.length; i++) {\n" +
 "                checkString$m(d.search_terms[i], field + \".search_terms\" + \"[\" + i + \"]\");\n" +
@@ -3803,10 +4449,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            catch (e) {\n" +
 "            }\n" +
 "        }\n" +
-"        checkArray$d(d.tags, field + \".tags\");\n" +
+"        checkArray$f(d.tags, field + \".tags\");\n" +
 "        if (d.tags) {\n" +
 "            for (let i = 0; i < d.tags.length; i++) {\n" +
-"                checkNever$6(d.tags[i], field + \".tags\" + \"[\" + i + \"]\");\n" +
+"                checkNever$7(d.tags[i], field + \".tags\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
 "        checkNull$h(d.turnover, field + \".turnover\");\n" +
@@ -3826,7 +4472,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"activity_code\", \"activity_nomenclature\", \"address\", \"address_additional_info\", \"admin_city_code\", \"balance\", \"billing_bank\", \"billing_bic\", \"billing_footer_invoice_id\", \"billing_footer_invoice_label\", \"billing_iban\", \"billing_language\", \"city\", \"company_id\", \"complete\", \"country\", \"country_alpha2\", \"credits\", \"current_mandate\", \"customer_type\", \"debits\", \"delivery_address\", \"delivery_address_additional_info\", \"delivery_city\", \"delivery_country\", \"delivery_country_alpha2\", \"delivery_postal_code\", \"disable_pending_vat\", \"display_name\", \"emails\", \"establishment_no\", \"estimate_count\", \"first_name\", \"force_pending_vat\", \"gender\", \"gocardless_id\", \"iban\", \"id\", \"invoice_count\", \"invoice_dump_id\", \"invoices_auto_generated\", \"invoices_auto_validated\", \"known_supplier_id\", \"last_name\", \"ledger_events_count\", \"legal_form_code\", \"method\", \"name\", \"notes\", \"notes_comment\", \"payment_conditions\", \"phone\", \"plan_item\", \"plan_item_attributes\", \"plan_item_id\", \"pnl_plan_item\", \"pnl_plan_item_id\", \"postal_code\", \"purchase_request_count\", \"received_a_mandate_request\", \"recipient\", \"recurrent\", \"reference\", \"reg_no\", \"role\", \"rule_enabled\", \"search_terms\", \"source_id\", \"stripe_id\", \"supplier_payment_method\", \"supplier_payment_method_last_updated_at\", \"tags\", \"turnover\", \"url\", \"vat_number\", \"vat_rate\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$o(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
+"            errorHelper$p(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new Thirdparty(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -3914,6 +4560,88 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
+"            obj$p = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$p(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$p(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$p(field, d);\n" +
+"        }\n" +
+"        const knownProperties = [];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$p(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
+"        return new ScoredInvoices(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"    }\n" +
+"}\n" +
+"function throwNull2NonNull$p(field, value, multiple) {\n" +
+"    return errorHelper$p(field, value, multiple ?? \"non-nullable object\");\n" +
+"}\n" +
+"function throwNotObject$p(field, value, multiple) {\n" +
+"    return errorHelper$p(field, value, \"object\");\n" +
+"}\n" +
+"function throwIsArray$p(field, value, multiple) {\n" +
+"    return errorHelper$p(field, value, \"object\");\n" +
+"}\n" +
+"function checkArray$f(value, field, multiple) {\n" +
+"    if (!Array.isArray(value))\n" +
+"        errorHelper$p(field, value, multiple ?? \"array\");\n" +
+"}\n" +
+"function checkNumber$l(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'number')\n" +
+"        errorHelper$p(field, value, multiple ?? \"number\");\n" +
+"}\n" +
+"function checkBoolean$d(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'boolean')\n" +
+"        errorHelper$p(field, value, multiple ?? \"boolean\");\n" +
+"}\n" +
+"function checkString$m(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'string')\n" +
+"        errorHelper$p(field, value, multiple ?? \"string\");\n" +
+"}\n" +
+"function checkNull$h(value, field, multiple) {\n" +
+"    if (value !== null)\n" +
+"        errorHelper$p(field, value, multiple ?? \"null\");\n" +
+"}\n" +
+"function checkNever$7(value, field, multiple) {\n" +
+"    return errorHelper$p(field, value, \"never\");\n" +
+"}\n" +
+"function errorHelper$p(field, d, type) {\n" +
+"    if (type.includes(' | ')) {\n" +
+"        throw new TypeError('Expected ' + type + \" at \" + field + \" but found:\\n" +
+"\" + JSON.stringify(d) + \"\\n" +
+"\\n" +
+"Full object:\\n" +
+"\" + JSON.stringify(obj$p));\n" +
+"    }\n" +
+"    else {\n" +
+"        let jsonClone = obj$p;\n" +
+"        try {\n" +
+"            jsonClone = JSON.parse(JSON.stringify(obj$p));\n" +
+"        }\n" +
+"        catch (error) {\n" +
+"            console.log(error);\n" +
+"        }\n" +
+"        console.error('Expected \"' + type + '\" at ' + field + ' but found:\\n" +
+"' + JSON.stringify(d), jsonClone);\n" +
+"    }\n" +
+"}\n" +
+"\n" +
+"// Stores the currently-being-typechecked object for error messages.\n" +
+"let obj$o = null;\n" +
+"class APIDocumentMatching {\n" +
+"    static Parse(d) {\n" +
+"        return APIDocumentMatching.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
 "            obj$o = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
@@ -3926,13 +4654,45 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$o(field, d);\n" +
 "        }\n" +
-"        const knownProperties = [];\n" +
+"        checkString$l(d.amount, field + \".amount\");\n" +
+"        checkNumber$k(d.company_id, field + \".company_id\");\n" +
+"        checkString$l(d.currency, field + \".currency\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkString$l(d.date, field + \".date\", \"string | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$g(d.date, field + \".date\", \"string | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"            }\n" +
+"        }\n" +
+"        checkString$l(d.gross_amount, field + \".gross_amount\");\n" +
+"        checkString$l(d.group_uuid, field + \".group_uuid\");\n" +
+"        checkNumber$k(d.id, field + \".id\");\n" +
+"        checkString$l(d.outstanding_balance, field + \".outstanding_balance\");\n" +
+"        checkNull$g(d.proof_count, field + \".proof_count\");\n" +
+"        checkString$l(d.type, field + \".type\");\n" +
+"        checkString$l(d.updated_at, field + \".updated_at\");\n" +
+"        const knownProperties = [\"amount\", \"company_id\", \"currency\", \"date\", \"gross_amount\", \"group_uuid\", \"id\", \"outstanding_balance\", \"proof_count\", \"type\", \"updated_at\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
 "            errorHelper$o(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
-"        return new ScoredInvoices(d);\n" +
+"        return new APIDocumentMatching(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
+"        this.amount = d.amount;\n" +
+"        this.company_id = d.company_id;\n" +
+"        this.currency = d.currency;\n" +
+"        this.date = d.date;\n" +
+"        this.gross_amount = d.gross_amount;\n" +
+"        this.group_uuid = d.group_uuid;\n" +
+"        this.id = d.id;\n" +
+"        this.outstanding_balance = d.outstanding_balance;\n" +
+"        this.proof_count = d.proof_count;\n" +
+"        this.type = d.type;\n" +
+"        this.updated_at = d.updated_at;\n" +
 "    }\n" +
 "}\n" +
 "function throwNull2NonNull$o(field, value, multiple) {\n" +
@@ -3944,28 +4704,17 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "function throwIsArray$o(field, value, multiple) {\n" +
 "    return errorHelper$o(field, value, \"object\");\n" +
 "}\n" +
-"function checkArray$d(value, field, multiple) {\n" +
-"    if (!Array.isArray(value))\n" +
-"        errorHelper$o(field, value, multiple ?? \"array\");\n" +
-"}\n" +
 "function checkNumber$k(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'number')\n" +
-"        errorHelper$o(field, value, multiple ?? \"number\");\n" +
+"        errorHelper$o(field, value, \"number\");\n" +
 "}\n" +
-"function checkBoolean$d(value, field, multiple) {\n" +
-"    if (typeof (value) !== 'boolean')\n" +
-"        errorHelper$o(field, value, multiple ?? \"boolean\");\n" +
-"}\n" +
-"function checkString$m(value, field, multiple) {\n" +
+"function checkString$l(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'string')\n" +
 "        errorHelper$o(field, value, multiple ?? \"string\");\n" +
 "}\n" +
-"function checkNull$h(value, field, multiple) {\n" +
+"function checkNull$g(value, field, multiple) {\n" +
 "    if (value !== null)\n" +
 "        errorHelper$o(field, value, multiple ?? \"null\");\n" +
-"}\n" +
-"function checkNever$6(value, field, multiple) {\n" +
-"    return errorHelper$o(field, value, \"never\");\n" +
 "}\n" +
 "function errorHelper$o(field, d, type) {\n" +
 "    if (type.includes(' | ')) {\n" +
@@ -3990,9 +4739,9 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
 "let obj$n = null;\n" +
-"class APIDocumentMatching {\n" +
+"class APIDocumentMatchingInvoice {\n" +
 "    static Parse(d) {\n" +
-"        return APIDocumentMatching.Create(JSON.parse(d));\n" +
+"        return APIDocumentMatchingInvoice.Create(JSON.parse(d));\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
@@ -4008,45 +4757,84 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$n(field, d);\n" +
 "        }\n" +
-"        checkString$l(d.amount, field + \".amount\");\n" +
-"        checkNumber$j(d.company_id, field + \".company_id\");\n" +
-"        checkString$l(d.currency, field + \".currency\");\n" +
-"        // This will be refactored in the next release.\n" +
-"        try {\n" +
-"            checkString$l(d.date, field + \".date\", \"string | null\");\n" +
-"        }\n" +
-"        catch (e) {\n" +
-"            try {\n" +
-"                checkNull$g(d.date, field + \".date\", \"string | null\");\n" +
-"            }\n" +
-"            catch (e) {\n" +
+"        checkArray$e(d.grouped_transactions, field + \".grouped_transactions\");\n" +
+"        if (d.grouped_transactions) {\n" +
+"            for (let i = 0; i < d.grouped_transactions.length; i++) {\n" +
+"                d.grouped_transactions[i] = GroupedTransactionsEntity.Create(d.grouped_transactions[i], field + \".grouped_transactions\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
-"        checkString$l(d.gross_amount, field + \".gross_amount\");\n" +
-"        checkString$l(d.group_uuid, field + \".group_uuid\");\n" +
-"        checkNumber$j(d.id, field + \".id\");\n" +
-"        checkString$l(d.outstanding_balance, field + \".outstanding_balance\");\n" +
-"        checkNull$g(d.proof_count, field + \".proof_count\");\n" +
-"        checkString$l(d.type, field + \".type\");\n" +
-"        checkString$l(d.updated_at, field + \".updated_at\");\n" +
-"        const knownProperties = [\"amount\", \"company_id\", \"currency\", \"date\", \"gross_amount\", \"group_uuid\", \"id\", \"outstanding_balance\", \"proof_count\", \"type\", \"updated_at\"];\n" +
+"        checkNumber$j(d.multiplier, field + \".multiplier\");\n" +
+"        checkString$k(d.outstanding_balance, field + \".outstanding_balance\");\n" +
+"        checkArray$e(d.suggested_transactions, field + \".suggested_transactions\");\n" +
+"        if (d.suggested_transactions) {\n" +
+"            for (let i = 0; i < d.suggested_transactions.length; i++) {\n" +
+"                checkNever$6(d.suggested_transactions[i], field + \".suggested_transactions\" + \"[\" + i + \"]\");\n" +
+"            }\n" +
+"        }\n" +
+"        const knownProperties = [\"grouped_transactions\", \"multiplier\", \"outstanding_balance\", \"suggested_transactions\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
 "            errorHelper$n(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
-"        return new APIDocumentMatching(d);\n" +
+"        return new APIDocumentMatchingInvoice(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.grouped_transactions = d.grouped_transactions;\n" +
+"        this.multiplier = d.multiplier;\n" +
+"        this.outstanding_balance = d.outstanding_balance;\n" +
+"        this.suggested_transactions = d.suggested_transactions;\n" +
+"    }\n" +
+"}\n" +
+"class GroupedTransactionsEntity {\n" +
+"    static Parse(d) {\n" +
+"        return GroupedTransactionsEntity.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$n = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$n(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$n(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$n(field, d);\n" +
+"        }\n" +
+"        checkString$k(d.amount, field + \".amount\");\n" +
+"        checkNumber$j(d.company_id, field + \".company_id\");\n" +
+"        checkString$k(d.currency, field + \".currency\");\n" +
+"        checkString$k(d.currency_amount, field + \".currency_amount\");\n" +
+"        checkString$k(d.date, field + \".date\");\n" +
+"        checkString$k(d.gross_amount, field + \".gross_amount\");\n" +
+"        checkString$k(d.group_uuid, field + \".group_uuid\");\n" +
+"        checkNumber$j(d.id, field + \".id\");\n" +
+"        checkBoolean$c(d.is_grouped_or_lettered, field + \".is_grouped_or_lettered\");\n" +
+"        checkBoolean$c(d.is_suggested, field + \".is_suggested\");\n" +
+"        checkString$k(d.label, field + \".label\");\n" +
+"        checkString$k(d.outstanding_balance, field + \".outstanding_balance\");\n" +
+"        checkString$k(d.status, field + \".status\");\n" +
+"        const knownProperties = [\"amount\", \"company_id\", \"currency\", \"currency_amount\", \"date\", \"gross_amount\", \"group_uuid\", \"id\", \"is_grouped_or_lettered\", \"is_suggested\", \"label\", \"outstanding_balance\", \"status\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$n(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
+"        return new GroupedTransactionsEntity(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
 "        this.amount = d.amount;\n" +
 "        this.company_id = d.company_id;\n" +
 "        this.currency = d.currency;\n" +
+"        this.currency_amount = d.currency_amount;\n" +
 "        this.date = d.date;\n" +
 "        this.gross_amount = d.gross_amount;\n" +
 "        this.group_uuid = d.group_uuid;\n" +
 "        this.id = d.id;\n" +
+"        this.is_grouped_or_lettered = d.is_grouped_or_lettered;\n" +
+"        this.is_suggested = d.is_suggested;\n" +
+"        this.label = d.label;\n" +
 "        this.outstanding_balance = d.outstanding_balance;\n" +
-"        this.proof_count = d.proof_count;\n" +
-"        this.type = d.type;\n" +
-"        this.updated_at = d.updated_at;\n" +
+"        this.status = d.status;\n" +
 "    }\n" +
 "}\n" +
 "function throwNull2NonNull$n(field, value, multiple) {\n" +
@@ -4058,17 +4846,24 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "function throwIsArray$n(field, value, multiple) {\n" +
 "    return errorHelper$n(field, value, \"object\");\n" +
 "}\n" +
+"function checkArray$e(value, field, multiple) {\n" +
+"    if (!Array.isArray(value))\n" +
+"        errorHelper$n(field, value, \"array\");\n" +
+"}\n" +
 "function checkNumber$j(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'number')\n" +
 "        errorHelper$n(field, value, \"number\");\n" +
 "}\n" +
-"function checkString$l(value, field, multiple) {\n" +
-"    if (typeof (value) !== 'string')\n" +
-"        errorHelper$n(field, value, multiple ?? \"string\");\n" +
+"function checkBoolean$c(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'boolean')\n" +
+"        errorHelper$n(field, value, \"boolean\");\n" +
 "}\n" +
-"function checkNull$g(value, field, multiple) {\n" +
-"    if (value !== null)\n" +
-"        errorHelper$n(field, value, multiple ?? \"null\");\n" +
+"function checkString$k(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'string')\n" +
+"        errorHelper$n(field, value, \"string\");\n" +
+"}\n" +
+"function checkNever$6(value, field, multiple) {\n" +
+"    return errorHelper$n(field, value, \"never\");\n" +
 "}\n" +
 "function errorHelper$n(field, d, type) {\n" +
 "    if (type.includes(' | ')) {\n" +
@@ -4091,22 +4886,31 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "}\n" +
 "\n" +
-"async function getDocument(id) {\n" +
-"    const response = await apiRequest(`documents/${id}`, null, 'GET');\n" +
-"    if (!response)\n" +
-"        return null;\n" +
-"    const data = await response?.json();\n" +
+"async function getDocument(id, maxAge) {\n" +
+"    const data = await cachedRequest(\"document:getDocument\", { id }, async ({ id }) => {\n" +
+"        const response = await apiRequest(`documents/${id}`, null, \"GET\");\n" +
+"        return await response?.json();\n" +
+"    }, maxAge);\n" +
+"    if (!data)\n" +
+"        return data;\n" +
 "    return APIDocument.Create(data);\n" +
 "}\n" +
 "async function documentMatching(options) {\n" +
 "    const group_uuids = Array.isArray(options.groups) ? options.groups : [options.groups];\n" +
-"    const response = await apiRequest(`documents/${options.id}/matching`, { matching: { unmatch_ids: [], group_uuids } }, 'PUT');\n" +
+"    const args = { matching: { unmatch_ids: [], group_uuids } };\n" +
+"    const document = await getDocument(options.id);\n" +
+"    if (document && document.type === \"Invoice\") {\n" +
+"        const response = await apiRequest(`accountants/matching/invoices/matches/${document.id}?direction=${document.direction}`, args, \"PUT\");\n" +
+"        if (response)\n" +
+"            return APIDocumentMatchingInvoice.Create(await response.json());\n" +
+"    }\n" +
+"    const response = await apiRequest(`documents/${options.id}/matching`, args, \"PUT\");\n" +
 "    if (!response)\n" +
 "        return null;\n" +
 "    return APIDocumentMatching.Create(await response.json());\n" +
 "}\n" +
 "async function reloadLedgerEvents(id) {\n" +
-"    const response = await apiRequest(`documents/${id}/settle`, null, 'POST');\n" +
+"    const response = await apiRequest(`documents/${id}/settle`, null, \"POST\");\n" +
 "    const data = await response?.json();\n" +
 "    return APIDocument.Create(data);\n" +
 "}\n" +
@@ -4115,7 +4919,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 " */\n" +
 "async function archiveDocument(id, unarchive = false) {\n" +
 "    const body = { documents: [{ id }], unarchive };\n" +
-"    const response = await apiRequest('documents/batch_archive', body, 'POST');\n" +
+"    const response = await apiRequest(\"documents/batch_archive\", body, \"POST\");\n" +
 "    const responseData = await response?.json();\n" +
 "    return responseData;\n" +
 "}\n" +
@@ -4123,190 +4927,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 " * Return http link to open a document\n" +
 " */\n" +
 "function getDocumentLink(id) {\n" +
-"    return `${location.href.split('/').slice(0, 5).join('/')}/documents/${id}.html`;\n" +
-"}\n" +
-"\n" +
-"const DB_NAME = \"GM_Pennylane\";\n" +
-"const DB_VERSION = 1;\n" +
-"let registeringTO = null;\n" +
-"const tables = [];\n" +
-"function registerTable(table) {\n" +
-"    if (tables.some((tableItem) => tableItem.name === table.name))\n" +
-"        throw new Error(`Table nammed \"${table.name}\" already exists`);\n" +
-"    tables.push(table);\n" +
-"    registeringTO = sleep(200);\n" +
-"}\n" +
-"let DBLoading;\n" +
-"async function getDB() {\n" +
-"    let end;\n" +
-"    do {\n" +
-"        end = registeringTO;\n" +
-"        await end;\n" +
-"    } while (end !== registeringTO);\n" +
-"    if (!DBLoading)\n" +
-"        DBLoading = loadDB();\n" +
-"    return DBLoading;\n" +
-"}\n" +
-"async function loadDB() {\n" +
-"    const db = await new Promise((rs, rj) => {\n" +
-"        const openRequest = indexedDB.open(DB_NAME, DB_VERSION);\n" +
-"        /**\n" +
-"         * Database upgrade needed : DB_VERSION is greather than the current db version\n" +
-"         */\n" +
-"        openRequest.onupgradeneeded = (event) => {\n" +
-"            const db = openRequest.result;\n" +
-"            switch (event.oldVersion) {\n" +
-"                case 0:\n" +
-"                    tables.forEach((table) => {\n" +
-"                        if (!db.objectStoreNames.contains(table.name))\n" +
-"                            db.createObjectStore(table.name, { keyPath: table.primary, autoIncrement: table.autoIncrement });\n" +
-"                    });\n" +
-"                    return;\n" +
-"                default:\n" +
-"                    console.log(\"IDB load error: upgrade needed\", { openRequest, event });\n" +
-"                    rj(new Error(\"IDB load error: upgrade needed\"));\n" +
-"            }\n" +
-"        };\n" +
-"        /**\n" +
-"         * Database open failed\n" +
-"         */\n" +
-"        openRequest.onerror = (event) => {\n" +
-"            console.error(\"IDB load error : error event\", { error: openRequest.error, event });\n" +
-"            rj(new Error(\"IDB load error : error event\"));\n" +
-"        };\n" +
-"        /**\n" +
-"         * Database successfully opened\n" +
-"         */\n" +
-"        openRequest.onsuccess = () => {\n" +
-"            rs(openRequest.result);\n" +
-"        };\n" +
-"        /**\n" +
-"         * There is outdated version of the database open in another tab\n" +
-"         */\n" +
-"        openRequest.onblocked = (event) => {\n" +
-"            console.error(\"database blocked\", { version: DB_VERSION });\n" +
-"            rj(event);\n" +
-"        };\n" +
-"    });\n" +
-"    if (db) {\n" +
-"        /**\n" +
-"         * Database version change : DB_VERSION becomes lower than the current db version\n" +
-"         */\n" +
-"        db.onversionchange = () => {\n" +
-"            console.error(\"database version change\", { version: DB_VERSION });\n" +
-"            db.close();\n" +
-"        };\n" +
-"    }\n" +
-"    return db;\n" +
-"}\n" +
-"class IDBCache extends Logger {\n" +
-"    constructor(tableName, primary) {\n" +
-"        super();\n" +
-"        this.tableName = tableName;\n" +
-"        this.primary = primary;\n" +
-"        registerTable({ name: tableName, primary });\n" +
-"        this.loading = this.load();\n" +
-"        this.debug(\"new Cache\", this);\n" +
-"    }\n" +
-"    static getInstance(tableName, primary) {\n" +
-"        if (!this.instances[tableName]) {\n" +
-"            this.instances[tableName] = new this(tableName, primary);\n" +
-"        }\n" +
-"        return this.instances[tableName];\n" +
-"    }\n" +
-"    /**\n" +
-"     * Load database\n" +
-"     */\n" +
-"    async load() {\n" +
-"        this.log(\"Loading database\", this.tableName);\n" +
-"        this.db = await getDB();\n" +
-"        this.log(\"Database loaded\", this.db);\n" +
-"        return this.db;\n" +
-"    }\n" +
-"    async find(match) {\n" +
-"        if (this.primary in match)\n" +
-"            return this.get(match[this.primary]);\n" +
-"        for await (const item of this.walk(\"readonly\")) {\n" +
-"            if (!item)\n" +
-"                return null;\n" +
-"            if (Object.entries(match).every(([key, value]) => item[key] === value))\n" +
-"                return item;\n" +
-"        }\n" +
-"        return null;\n" +
-"    }\n" +
-"    async update(match) {\n" +
-"        const oldValue = await this.get(match[this.primary]);\n" +
-"        const newValue = oldValue ? { ...oldValue, ...match } : match;\n" +
-"        const store = await this.getStore(\"readwrite\");\n" +
-"        store.put(newValue);\n" +
-"    }\n" +
-"    async get(id) {\n" +
-"        const store = await this.getStore(\"readonly\");\n" +
-"        const getRequest = store?.get(id);\n" +
-"        return await this.consumeRequest(Object.assign(getRequest, { request: `get(${id})` }));\n" +
-"    }\n" +
-"    async getStore(mode) {\n" +
-"        const db = await this.loading;\n" +
-"        if (!db)\n" +
-"            return null;\n" +
-"        const transaction = Object.assign(db.transaction(this.tableName, mode), { state: [\"pending\", null] });\n" +
-"        transaction.oncomplete = (event) => {\n" +
-"            transaction.state = [\"completed\", event];\n" +
-"        };\n" +
-"        transaction.onerror = (event) => {\n" +
-"            transaction.state = [\"error\", event];\n" +
-"        };\n" +
-"        transaction.onabort = (event) => {\n" +
-"            transaction.state = [\"aborted\", event];\n" +
-"        };\n" +
-"        const store = transaction.objectStore(this.tableName);\n" +
-"        return store;\n" +
-"    }\n" +
-"    async *walk(mode) {\n" +
-"        const store = await this.getStore(mode);\n" +
-"        const cursorRequest = store?.openCursor();\n" +
-"        if (!cursorRequest)\n" +
-"            return null;\n" +
-"        while (true) {\n" +
-"            const cursor = await this.consumeRequest(Object.assign(cursorRequest, { request: \"openCursor\" }));\n" +
-"            if (!cursor)\n" +
-"                return null;\n" +
-"            yield cursor.value;\n" +
-"            cursor.continue();\n" +
-"        }\n" +
-"    }\n" +
-"    consumeRequest(request) {\n" +
-"        if (!request)\n" +
-"            return null;\n" +
-"        if (!request.request)\n" +
-"            console.error(\"IDBRequest has no request property\", request);\n" +
-"        window.getIDBRequests = window.getIDBRequests ?? [];\n" +
-"        if (!window.getIDBRequests.includes(request))\n" +
-"            window.getIDBRequests.push(request);\n" +
-"        return new Promise((rs, rj) => {\n" +
-"            request.onsuccess = () => rs(request.result);\n" +
-"            request.onerror = () => rj(request.error);\n" +
-"        });\n" +
-"    }\n" +
-"}\n" +
-"IDBCache.instances = {};\n" +
-"\n" +
-"const storageKey = \"apiCache\";\n" +
-"const cache = IDBCache.getInstance(storageKey, \"key\");\n" +
-"async function cachedRequest(ref, args, fetcher, maxAge = WEEK_IN_MS) {\n" +
-"    const argsString = JSON.stringify(args);\n" +
-"    const key = `${ref}(${argsString})`;\n" +
-"    const cached = await cache.find({ key });\n" +
-"    if (cached && Date.now() - cached.fetchedAt < maxAge)\n" +
-"        return cached.value;\n" +
-"    const value = await fetcher(args);\n" +
-"    if (value)\n" +
-"        cache.update({ ref, args, value, fetchedAt: Date.now(), key });\n" +
-"    return value;\n" +
-"}\n" +
-"async function updateAPICacheItem(item) {\n" +
-"    const key = `${item.ref}(${JSON.stringify(item.args)})`;\n" +
-"    cache.update({ fetchedAt: Date.now(), ...item, key });\n" +
+"    return `${location.href.split(\"/\").slice(0, 5).join(\"/\")}/documents/${id}.html`;\n" +
 "}\n" +
 "\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
@@ -4390,7 +5011,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkString$k(d.archived_at, field + \".archived_at\", \"string | null\");\n" +
+"            checkString$j(d.archived_at, field + \".archived_at\", \"string | null\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -4400,48 +5021,58 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"children\" in d) {\n" +
-"            checkArray$c(d.children, field + \".children\");\n" +
+"            checkArray$d(d.children, field + \".children\");\n" +
 "            if (d.children) {\n" +
 "                for (let i = 0; i < d.children.length; i++) {\n" +
 "                    d.children[i] = ChildrenEntityOrItemsEntity.Create(d.children[i], field + \".children\" + \"[\" + i + \"]\");\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkString$k(d.created_at, field + \".created_at\");\n" +
+"        checkString$j(d.created_at, field + \".created_at\");\n" +
 "        if (\"creator\" in d) {\n" +
-"            d.creator = Creator$5.Create(d.creator, field + \".creator\");\n" +
+"            // This will be refactored in the next release.\n" +
+"            try {\n" +
+"                d.creator = Creator$5.Create(d.creator, field + \".creator\", \"Creator | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"                try {\n" +
+"                    checkNull$f(d.creator, field + \".creator\", \"Creator | null\");\n" +
+"                }\n" +
+"                catch (e) {\n" +
+"                }\n" +
+"            }\n" +
 "        }\n" +
 "        if (\"favorite\" in d) {\n" +
-"            checkBoolean$c(d.favorite, field + \".favorite\");\n" +
+"            checkBoolean$b(d.favorite, field + \".favorite\");\n" +
 "        }\n" +
 "        if (\"file_extension\" in d) {\n" +
-"            checkString$k(d.file_extension, field + \".file_extension\");\n" +
+"            checkString$j(d.file_extension, field + \".file_extension\");\n" +
 "        }\n" +
 "        if (\"file_size\" in d) {\n" +
 "            checkNumber$i(d.file_size, field + \".file_size\");\n" +
 "        }\n" +
 "        if (\"file_url\" in d) {\n" +
-"            checkString$k(d.file_url, field + \".file_url\");\n" +
+"            checkString$j(d.file_url, field + \".file_url\");\n" +
 "        }\n" +
 "        if (\"filters\" in d) {\n" +
 "            checkNull$f(d.filters, field + \".filters\");\n" +
 "        }\n" +
 "        if (\"fixed\" in d) {\n" +
-"            checkBoolean$c(d.fixed, field + \".fixed\");\n" +
+"            checkBoolean$b(d.fixed, field + \".fixed\");\n" +
 "        }\n" +
 "        checkNumber$i(d.id, field + \".id\");\n" +
-"        checkBoolean$c(d.imports_allowed, field + \".imports_allowed\");\n" +
+"        checkBoolean$b(d.imports_allowed, field + \".imports_allowed\");\n" +
 "        checkNumber$i(d.itemable_id, field + \".itemable_id\");\n" +
 "        if (\"items\" in d) {\n" +
-"            checkArray$c(d.items, field + \".items\");\n" +
+"            checkArray$d(d.items, field + \".items\");\n" +
 "            if (d.items) {\n" +
 "                for (let i = 0; i < d.items.length; i++) {\n" +
 "                    d.items[i] = ItemsEntityOrChildrenEntity.Create(d.items[i], field + \".items\" + \"[\" + i + \"]\");\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkString$k(d.method, field + \".method\");\n" +
-"        checkString$k(d.name, field + \".name\");\n" +
+"        checkString$j(d.method, field + \".method\");\n" +
+"        checkString$j(d.name, field + \".name\");\n" +
 "        if (\"pagination\" in d) {\n" +
 "            d.pagination = Pagination$3.Create(d.pagination, field + \".pagination\");\n" +
 "        }\n" +
@@ -4457,20 +5088,20 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"pusher_channel\" in d) {\n" +
-"            checkString$k(d.pusher_channel, field + \".pusher_channel\");\n" +
+"            checkString$j(d.pusher_channel, field + \".pusher_channel\");\n" +
 "        }\n" +
 "        if (\"readonly\" in d) {\n" +
-"            checkBoolean$c(d.readonly, field + \".readonly\");\n" +
+"            checkBoolean$b(d.readonly, field + \".readonly\");\n" +
 "        }\n" +
 "        if (\"reference_link\" in d) {\n" +
 "            checkNull$f(d.reference_link, field + \".reference_link\");\n" +
 "        }\n" +
-"        checkBoolean$c(d.shared, field + \".shared\");\n" +
+"        checkBoolean$b(d.shared, field + \".shared\");\n" +
 "        if (\"signed_id\" in d) {\n" +
-"            checkString$k(d.signed_id, field + \".signed_id\");\n" +
+"            checkString$j(d.signed_id, field + \".signed_id\");\n" +
 "        }\n" +
 "        if (\"sort\" in d) {\n" +
-"            checkString$k(d.sort, field + \".sort\");\n" +
+"            checkString$j(d.sort, field + \".sort\");\n" +
 "        }\n" +
 "        if (\"summary_text\" in d) {\n" +
 "            checkNull$f(d.summary_text, field + \".summary_text\");\n" +
@@ -4478,10 +5109,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"summary_text_prediction_id\" in d) {\n" +
 "            checkNull$f(d.summary_text_prediction_id, field + \".summary_text_prediction_id\");\n" +
 "        }\n" +
-"        checkString$k(d.type, field + \".type\");\n" +
-"        checkString$k(d.updated_at, field + \".updated_at\");\n" +
+"        checkString$j(d.type, field + \".type\");\n" +
+"        checkString$j(d.updated_at, field + \".updated_at\");\n" +
 "        if (\"visible\" in d) {\n" +
-"            checkBoolean$c(d.visible, field + \".visible\");\n" +
+"            checkBoolean$b(d.visible, field + \".visible\");\n" +
 "        }\n" +
 "        const knownProperties = [\"archived_at\", \"children\", \"created_at\", \"creator\", \"favorite\", \"file_extension\", \"file_size\", \"file_url\", \"filters\", \"fixed\", \"id\", \"imports_allowed\", \"itemable_id\", \"items\", \"method\", \"name\", \"pagination\", \"parent_id\", \"pusher_channel\", \"readonly\", \"reference_link\", \"shared\", \"signed_id\", \"sort\", \"summary_text\", \"summary_text_prediction_id\", \"type\", \"updated_at\", \"visible\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
@@ -4561,49 +5192,49 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"comments_count\" in d) {\n" +
 "            checkNumber$i(d.comments_count, field + \".comments_count\");\n" +
 "        }\n" +
-"        checkString$k(d.created_at, field + \".created_at\");\n" +
+"        checkString$j(d.created_at, field + \".created_at\");\n" +
 "        if (\"creator\" in d) {\n" +
 "            d.creator = Creator1.Create(d.creator, field + \".creator\");\n" +
 "        }\n" +
 "        if (\"favorite\" in d) {\n" +
-"            checkBoolean$c(d.favorite, field + \".favorite\");\n" +
+"            checkBoolean$b(d.favorite, field + \".favorite\");\n" +
 "        }\n" +
 "        if (\"file_extension\" in d) {\n" +
-"            checkString$k(d.file_extension, field + \".file_extension\");\n" +
+"            checkString$j(d.file_extension, field + \".file_extension\");\n" +
 "        }\n" +
 "        if (\"file_size\" in d) {\n" +
 "            checkNumber$i(d.file_size, field + \".file_size\");\n" +
 "        }\n" +
 "        if (\"file_url\" in d) {\n" +
-"            checkString$k(d.file_url, field + \".file_url\");\n" +
+"            checkString$j(d.file_url, field + \".file_url\");\n" +
 "        }\n" +
 "        if (\"files_count\" in d) {\n" +
 "            checkNumber$i(d.files_count, field + \".files_count\");\n" +
 "        }\n" +
 "        if (\"fixed\" in d) {\n" +
-"            checkBoolean$c(d.fixed, field + \".fixed\");\n" +
+"            checkBoolean$b(d.fixed, field + \".fixed\");\n" +
 "        }\n" +
 "        checkNumber$i(d.id, field + \".id\");\n" +
-"        checkBoolean$c(d.imports_allowed, field + \".imports_allowed\");\n" +
+"        checkBoolean$b(d.imports_allowed, field + \".imports_allowed\");\n" +
 "        checkNumber$i(d.itemable_id, field + \".itemable_id\");\n" +
-"        checkString$k(d.method, field + \".method\");\n" +
-"        checkString$k(d.name, field + \".name\");\n" +
+"        checkString$j(d.method, field + \".method\");\n" +
+"        checkString$j(d.name, field + \".name\");\n" +
 "        checkNumber$i(d.parent_id, field + \".parent_id\");\n" +
 "        if (\"pusher_channel\" in d) {\n" +
-"            checkString$k(d.pusher_channel, field + \".pusher_channel\");\n" +
+"            checkString$j(d.pusher_channel, field + \".pusher_channel\");\n" +
 "        }\n" +
 "        if (\"readonly\" in d) {\n" +
-"            checkBoolean$c(d.readonly, field + \".readonly\");\n" +
+"            checkBoolean$b(d.readonly, field + \".readonly\");\n" +
 "        }\n" +
 "        if (\"reference_link\" in d) {\n" +
 "            checkNull$f(d.reference_link, field + \".reference_link\");\n" +
 "        }\n" +
-"        checkBoolean$c(d.shared, field + \".shared\");\n" +
+"        checkBoolean$b(d.shared, field + \".shared\");\n" +
 "        if (\"signed_id\" in d) {\n" +
-"            checkString$k(d.signed_id, field + \".signed_id\");\n" +
+"            checkString$j(d.signed_id, field + \".signed_id\");\n" +
 "        }\n" +
 "        if (\"suggested_folders\" in d) {\n" +
-"            checkArray$c(d.suggested_folders, field + \".suggested_folders\");\n" +
+"            checkArray$d(d.suggested_folders, field + \".suggested_folders\");\n" +
 "            if (d.suggested_folders) {\n" +
 "                for (let i = 0; i < d.suggested_folders.length; i++) {\n" +
 "                    checkNever$5(d.suggested_folders[i], field + \".suggested_folders\" + \"[\" + i + \"]\");\n" +
@@ -4613,12 +5244,15 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"summary_text\" in d) {\n" +
 "            checkNull$f(d.summary_text, field + \".summary_text\");\n" +
 "        }\n" +
-"        checkString$k(d.type, field + \".type\");\n" +
-"        checkString$k(d.updated_at, field + \".updated_at\");\n" +
-"        if (\"visible\" in d) {\n" +
-"            checkBoolean$c(d.visible, field + \".visible\");\n" +
+"        if (\"summary_text_prediction_id\" in d) {\n" +
+"            checkNull$f(d.summary_text_prediction_id, field + \".summary_text_prediction_id\");\n" +
 "        }\n" +
-"        const knownProperties = [\"archived_at\", \"comments_count\", \"created_at\", \"creator\", \"favorite\", \"file_extension\", \"file_size\", \"file_url\", \"files_count\", \"fixed\", \"id\", \"imports_allowed\", \"itemable_id\", \"method\", \"name\", \"parent_id\", \"pusher_channel\", \"readonly\", \"reference_link\", \"shared\", \"signed_id\", \"suggested_folders\", \"summary_text\", \"type\", \"updated_at\", \"visible\"];\n" +
+"        checkString$j(d.type, field + \".type\");\n" +
+"        checkString$j(d.updated_at, field + \".updated_at\");\n" +
+"        if (\"visible\" in d) {\n" +
+"            checkBoolean$b(d.visible, field + \".visible\");\n" +
+"        }\n" +
+"        const knownProperties = [\"archived_at\", \"comments_count\", \"created_at\", \"creator\", \"favorite\", \"file_extension\", \"file_size\", \"file_url\", \"files_count\", \"fixed\", \"id\", \"imports_allowed\", \"itemable_id\", \"method\", \"name\", \"parent_id\", \"pusher_channel\", \"readonly\", \"reference_link\", \"shared\", \"signed_id\", \"suggested_folders\", \"summary_text\", \"summary_text_prediction_id\", \"type\", \"updated_at\", \"visible\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
 "            errorHelper$l(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
@@ -4662,6 +5296,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            this.suggested_folders = d.suggested_folders;\n" +
 "        if (\"summary_text\" in d)\n" +
 "            this.summary_text = d.summary_text;\n" +
+"        if (\"summary_text_prediction_id\" in d)\n" +
+"            this.summary_text_prediction_id = d.summary_text_prediction_id;\n" +
 "        this.type = d.type;\n" +
 "        this.updated_at = d.updated_at;\n" +
 "        if (\"visible\" in d)\n" +
@@ -4686,11 +5322,11 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$l(field, d);\n" +
 "        }\n" +
-"        checkString$k(d.email, field + \".email\");\n" +
-"        checkString$k(d.first_name, field + \".first_name\");\n" +
-"        checkString$k(d.full_name, field + \".full_name\");\n" +
-"        checkString$k(d.last_name, field + \".last_name\");\n" +
-"        checkString$k(d.role, field + \".role\");\n" +
+"        checkString$j(d.email, field + \".email\");\n" +
+"        checkString$j(d.first_name, field + \".first_name\");\n" +
+"        checkString$j(d.full_name, field + \".full_name\");\n" +
+"        checkString$j(d.last_name, field + \".last_name\");\n" +
+"        checkString$j(d.role, field + \".role\");\n" +
 "        const knownProperties = [\"email\", \"first_name\", \"full_name\", \"last_name\", \"role\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -4723,11 +5359,11 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$l(field, d);\n" +
 "        }\n" +
-"        checkString$k(d.email, field + \".email\");\n" +
-"        checkString$k(d.first_name, field + \".first_name\");\n" +
-"        checkString$k(d.full_name, field + \".full_name\");\n" +
-"        checkString$k(d.last_name, field + \".last_name\");\n" +
-"        checkString$k(d.role, field + \".role\");\n" +
+"        checkString$j(d.email, field + \".email\");\n" +
+"        checkString$j(d.first_name, field + \".first_name\");\n" +
+"        checkString$j(d.full_name, field + \".full_name\");\n" +
+"        checkString$j(d.last_name, field + \".last_name\");\n" +
+"        checkString$j(d.role, field + \".role\");\n" +
 "        const knownProperties = [\"email\", \"first_name\", \"full_name\", \"last_name\", \"role\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -4764,7 +5400,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"comments_count\" in d) {\n" +
 "            checkNumber$i(d.comments_count, field + \".comments_count\");\n" +
 "        }\n" +
-"        checkString$k(d.created_at, field + \".created_at\");\n" +
+"        checkString$j(d.created_at, field + \".created_at\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
 "            checkNull$f(d.creator, field + \".creator\", \"null | Creator2\");\n" +
@@ -4777,44 +5413,44 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"favorite\" in d) {\n" +
-"            checkBoolean$c(d.favorite, field + \".favorite\");\n" +
+"            checkBoolean$b(d.favorite, field + \".favorite\");\n" +
 "        }\n" +
 "        if (\"file_extension\" in d) {\n" +
-"            checkString$k(d.file_extension, field + \".file_extension\");\n" +
+"            checkString$j(d.file_extension, field + \".file_extension\");\n" +
 "        }\n" +
 "        if (\"file_size\" in d) {\n" +
 "            checkNumber$i(d.file_size, field + \".file_size\");\n" +
 "        }\n" +
 "        if (\"file_url\" in d) {\n" +
-"            checkString$k(d.file_url, field + \".file_url\");\n" +
+"            checkString$j(d.file_url, field + \".file_url\");\n" +
 "        }\n" +
 "        if (\"files_count\" in d) {\n" +
 "            checkNumber$i(d.files_count, field + \".files_count\");\n" +
 "        }\n" +
 "        if (\"fixed\" in d) {\n" +
-"            checkBoolean$c(d.fixed, field + \".fixed\");\n" +
+"            checkBoolean$b(d.fixed, field + \".fixed\");\n" +
 "        }\n" +
 "        checkNumber$i(d.id, field + \".id\");\n" +
-"        checkBoolean$c(d.imports_allowed, field + \".imports_allowed\");\n" +
+"        checkBoolean$b(d.imports_allowed, field + \".imports_allowed\");\n" +
 "        checkNumber$i(d.itemable_id, field + \".itemable_id\");\n" +
-"        checkString$k(d.method, field + \".method\");\n" +
-"        checkString$k(d.name, field + \".name\");\n" +
+"        checkString$j(d.method, field + \".method\");\n" +
+"        checkString$j(d.name, field + \".name\");\n" +
 "        checkNumber$i(d.parent_id, field + \".parent_id\");\n" +
 "        if (\"pusher_channel\" in d) {\n" +
-"            checkString$k(d.pusher_channel, field + \".pusher_channel\");\n" +
+"            checkString$j(d.pusher_channel, field + \".pusher_channel\");\n" +
 "        }\n" +
 "        if (\"readonly\" in d) {\n" +
-"            checkBoolean$c(d.readonly, field + \".readonly\");\n" +
+"            checkBoolean$b(d.readonly, field + \".readonly\");\n" +
 "        }\n" +
 "        if (\"reference_link\" in d) {\n" +
 "            checkNull$f(d.reference_link, field + \".reference_link\");\n" +
 "        }\n" +
-"        checkBoolean$c(d.shared, field + \".shared\");\n" +
+"        checkBoolean$b(d.shared, field + \".shared\");\n" +
 "        if (\"signed_id\" in d) {\n" +
-"            checkString$k(d.signed_id, field + \".signed_id\");\n" +
+"            checkString$j(d.signed_id, field + \".signed_id\");\n" +
 "        }\n" +
 "        if (\"suggested_folders\" in d) {\n" +
-"            checkArray$c(d.suggested_folders, field + \".suggested_folders\");\n" +
+"            checkArray$d(d.suggested_folders, field + \".suggested_folders\");\n" +
 "            if (d.suggested_folders) {\n" +
 "                for (let i = 0; i < d.suggested_folders.length; i++) {\n" +
 "                    checkNever$5(d.suggested_folders[i], field + \".suggested_folders\" + \"[\" + i + \"]\");\n" +
@@ -4824,12 +5460,15 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"summary_text\" in d) {\n" +
 "            checkNull$f(d.summary_text, field + \".summary_text\");\n" +
 "        }\n" +
-"        checkString$k(d.type, field + \".type\");\n" +
-"        checkString$k(d.updated_at, field + \".updated_at\");\n" +
-"        if (\"visible\" in d) {\n" +
-"            checkBoolean$c(d.visible, field + \".visible\");\n" +
+"        if (\"summary_text_prediction_id\" in d) {\n" +
+"            checkNull$f(d.summary_text_prediction_id, field + \".summary_text_prediction_id\");\n" +
 "        }\n" +
-"        const knownProperties = [\"archived_at\", \"comments_count\", \"created_at\", \"creator\", \"favorite\", \"file_extension\", \"file_size\", \"file_url\", \"files_count\", \"fixed\", \"id\", \"imports_allowed\", \"itemable_id\", \"method\", \"name\", \"parent_id\", \"pusher_channel\", \"readonly\", \"reference_link\", \"shared\", \"signed_id\", \"suggested_folders\", \"summary_text\", \"type\", \"updated_at\", \"visible\"];\n" +
+"        checkString$j(d.type, field + \".type\");\n" +
+"        checkString$j(d.updated_at, field + \".updated_at\");\n" +
+"        if (\"visible\" in d) {\n" +
+"            checkBoolean$b(d.visible, field + \".visible\");\n" +
+"        }\n" +
+"        const knownProperties = [\"archived_at\", \"comments_count\", \"created_at\", \"creator\", \"favorite\", \"file_extension\", \"file_size\", \"file_url\", \"files_count\", \"fixed\", \"id\", \"imports_allowed\", \"itemable_id\", \"method\", \"name\", \"parent_id\", \"pusher_channel\", \"readonly\", \"reference_link\", \"shared\", \"signed_id\", \"suggested_folders\", \"summary_text\", \"summary_text_prediction_id\", \"type\", \"updated_at\", \"visible\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
 "            errorHelper$l(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
@@ -4872,6 +5511,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            this.suggested_folders = d.suggested_folders;\n" +
 "        if (\"summary_text\" in d)\n" +
 "            this.summary_text = d.summary_text;\n" +
+"        if (\"summary_text_prediction_id\" in d)\n" +
+"            this.summary_text_prediction_id = d.summary_text_prediction_id;\n" +
 "        this.type = d.type;\n" +
 "        this.updated_at = d.updated_at;\n" +
 "        if (\"visible\" in d)\n" +
@@ -4896,11 +5537,11 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$l(field, d);\n" +
 "        }\n" +
-"        checkString$k(d.email, field + \".email\");\n" +
-"        checkString$k(d.first_name, field + \".first_name\");\n" +
-"        checkString$k(d.full_name, field + \".full_name\");\n" +
-"        checkString$k(d.last_name, field + \".last_name\");\n" +
-"        checkString$k(d.role, field + \".role\");\n" +
+"        checkString$j(d.email, field + \".email\");\n" +
+"        checkString$j(d.first_name, field + \".first_name\");\n" +
+"        checkString$j(d.full_name, field + \".full_name\");\n" +
+"        checkString$j(d.last_name, field + \".last_name\");\n" +
+"        checkString$j(d.role, field + \".role\");\n" +
 "        const knownProperties = [\"email\", \"first_name\", \"full_name\", \"last_name\", \"role\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -4933,13 +5574,13 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$l(field, d);\n" +
 "        }\n" +
-"        checkBoolean$c(d.hasNextPage, field + \".hasNextPage\");\n" +
+"        checkBoolean$b(d.hasNextPage, field + \".hasNextPage\");\n" +
 "        checkNumber$i(d.page, field + \".page\");\n" +
 "        checkNumber$i(d.pages, field + \".pages\");\n" +
 "        checkNumber$i(d.pageSize, field + \".pageSize\");\n" +
 "        checkNumber$i(d.totalEntries, field + \".totalEntries\");\n" +
-"        checkString$k(d.totalEntriesPrecision, field + \".totalEntriesPrecision\");\n" +
-"        checkString$k(d.totalEntriesStr, field + \".totalEntriesStr\");\n" +
+"        checkString$j(d.totalEntriesPrecision, field + \".totalEntriesPrecision\");\n" +
+"        checkString$j(d.totalEntriesStr, field + \".totalEntriesStr\");\n" +
 "        const knownProperties = [\"hasNextPage\", \"page\", \"pages\", \"pageSize\", \"totalEntries\", \"totalEntriesPrecision\", \"totalEntriesStr\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -4965,7 +5606,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "function throwIsArray$l(field, value, multiple) {\n" +
 "    return errorHelper$l(field, value, \"object\");\n" +
 "}\n" +
-"function checkArray$c(value, field, multiple) {\n" +
+"function checkArray$d(value, field, multiple) {\n" +
 "    if (!Array.isArray(value))\n" +
 "        errorHelper$l(field, value, \"array\");\n" +
 "}\n" +
@@ -4973,11 +5614,11 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    if (typeof (value) !== 'number')\n" +
 "        errorHelper$l(field, value, multiple ?? \"number\");\n" +
 "}\n" +
-"function checkBoolean$c(value, field, multiple) {\n" +
+"function checkBoolean$b(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'boolean')\n" +
 "        errorHelper$l(field, value, \"boolean\");\n" +
 "}\n" +
-"function checkString$k(value, field, multiple) {\n" +
+"function checkString$j(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'string')\n" +
 "        errorHelper$l(field, value, multiple ?? \"string\");\n" +
 "}\n" +
@@ -5031,9 +5672,9 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        checkNumber$h(d.id, field + \".id\");\n" +
 "        checkNumber$h(d.record_id, field + \".record_id\");\n" +
-"        checkString$j(d.record_name, field + \".record_name\");\n" +
-"        checkString$j(d.record_type, field + \".record_type\");\n" +
-"        checkString$j(d.record_url, field + \".record_url\");\n" +
+"        checkString$i(d.record_name, field + \".record_name\");\n" +
+"        checkString$i(d.record_type, field + \".record_type\");\n" +
+"        checkString$i(d.record_url, field + \".record_url\");\n" +
 "        const knownProperties = [\"id\", \"record_id\", \"record_name\", \"record_type\", \"record_url\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -5061,7 +5702,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    if (typeof (value) !== 'number')\n" +
 "        errorHelper$k(field, value, \"number\");\n" +
 "}\n" +
-"function checkString$j(value, field, multiple) {\n" +
+"function checkString$i(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'string')\n" +
 "        errorHelper$k(field, value, \"string\");\n" +
 "}\n" +
@@ -5108,7 +5749,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkString$i(d.filters, field + \".filters\", \"string | null\");\n" +
+"            checkString$h(d.filters, field + \".filters\", \"string | null\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -5117,14 +5758,14 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            catch (e) {\n" +
 "            }\n" +
 "        }\n" +
-"        checkArray$b(d.items, field + \".items\");\n" +
+"        checkArray$c(d.items, field + \".items\");\n" +
 "        if (d.items) {\n" +
 "            for (let i = 0; i < d.items.length; i++) {\n" +
 "                d.items[i] = ItemsEntity.Create(d.items[i], field + \".items\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
 "        d.pagination = Pagination$2.Create(d.pagination, field + \".pagination\");\n" +
-"        checkString$i(d.sort, field + \".sort\");\n" +
+"        checkString$h(d.sort, field + \".sort\");\n" +
 "        const knownProperties = [\"filters\", \"items\", \"pagination\", \"sort\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -5162,7 +5803,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkString$i(d.archived_at, field + \".archived_at\", \"null | string\");\n" +
+"                checkString$h(d.archived_at, field + \".archived_at\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -5170,30 +5811,30 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"comments_count\" in d) {\n" +
 "            checkNumber$g(d.comments_count, field + \".comments_count\");\n" +
 "        }\n" +
-"        checkString$i(d.created_at, field + \".created_at\");\n" +
+"        checkString$h(d.created_at, field + \".created_at\");\n" +
 "        if (\"creator\" in d) {\n" +
 "            d.creator = Creator$4.Create(d.creator, field + \".creator\");\n" +
 "        }\n" +
 "        if (\"favorite\" in d) {\n" +
-"            checkBoolean$b(d.favorite, field + \".favorite\");\n" +
+"            checkBoolean$a(d.favorite, field + \".favorite\");\n" +
 "        }\n" +
 "        if (\"file_extension\" in d) {\n" +
-"            checkString$i(d.file_extension, field + \".file_extension\");\n" +
+"            checkString$h(d.file_extension, field + \".file_extension\");\n" +
 "        }\n" +
 "        if (\"file_size\" in d) {\n" +
 "            checkNumber$g(d.file_size, field + \".file_size\");\n" +
 "        }\n" +
 "        if (\"file_url\" in d) {\n" +
-"            checkString$i(d.file_url, field + \".file_url\");\n" +
+"            checkString$h(d.file_url, field + \".file_url\");\n" +
 "        }\n" +
 "        if (\"fixed\" in d) {\n" +
-"            checkBoolean$b(d.fixed, field + \".fixed\");\n" +
+"            checkBoolean$a(d.fixed, field + \".fixed\");\n" +
 "        }\n" +
 "        checkNumber$g(d.id, field + \".id\");\n" +
-"        checkBoolean$b(d.imports_allowed, field + \".imports_allowed\");\n" +
+"        checkBoolean$a(d.imports_allowed, field + \".imports_allowed\");\n" +
 "        checkNumber$g(d.itemable_id, field + \".itemable_id\");\n" +
-"        checkString$i(d.method, field + \".method\");\n" +
-"        checkString$i(d.name, field + \".name\");\n" +
+"        checkString$h(d.method, field + \".method\");\n" +
+"        checkString$h(d.name, field + \".name\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
 "            checkNumber$g(d.parent_id, field + \".parent_id\", \"number | null\");\n" +
@@ -5206,20 +5847,20 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"pusher_channel\" in d) {\n" +
-"            checkString$i(d.pusher_channel, field + \".pusher_channel\");\n" +
+"            checkString$h(d.pusher_channel, field + \".pusher_channel\");\n" +
 "        }\n" +
 "        if (\"readonly\" in d) {\n" +
-"            checkBoolean$b(d.readonly, field + \".readonly\");\n" +
+"            checkBoolean$a(d.readonly, field + \".readonly\");\n" +
 "        }\n" +
 "        if (\"reference_link\" in d) {\n" +
 "            checkNull$e(d.reference_link, field + \".reference_link\");\n" +
 "        }\n" +
-"        checkBoolean$b(d.shared, field + \".shared\");\n" +
+"        checkBoolean$a(d.shared, field + \".shared\");\n" +
 "        if (\"signed_id\" in d) {\n" +
-"            checkString$i(d.signed_id, field + \".signed_id\");\n" +
+"            checkString$h(d.signed_id, field + \".signed_id\");\n" +
 "        }\n" +
 "        if (\"suggested_folders\" in d) {\n" +
-"            checkArray$b(d.suggested_folders, field + \".suggested_folders\");\n" +
+"            checkArray$c(d.suggested_folders, field + \".suggested_folders\");\n" +
 "            if (d.suggested_folders) {\n" +
 "                for (let i = 0; i < d.suggested_folders.length; i++) {\n" +
 "                    checkNever$4(d.suggested_folders[i], field + \".suggested_folders\" + \"[\" + i + \"]\");\n" +
@@ -5229,10 +5870,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"summary_text\" in d) {\n" +
 "            checkNull$e(d.summary_text, field + \".summary_text\");\n" +
 "        }\n" +
-"        checkString$i(d.type, field + \".type\");\n" +
-"        checkString$i(d.updated_at, field + \".updated_at\");\n" +
+"        checkString$h(d.type, field + \".type\");\n" +
+"        checkString$h(d.updated_at, field + \".updated_at\");\n" +
 "        if (\"visible\" in d) {\n" +
-"            checkBoolean$b(d.visible, field + \".visible\");\n" +
+"            checkBoolean$a(d.visible, field + \".visible\");\n" +
 "        }\n" +
 "        const knownProperties = [\"archived_at\", \"comments_count\", \"created_at\", \"creator\", \"favorite\", \"file_extension\", \"file_size\", \"file_url\", \"fixed\", \"id\", \"imports_allowed\", \"itemable_id\", \"method\", \"name\", \"parent_id\", \"pusher_channel\", \"readonly\", \"reference_link\", \"shared\", \"signed_id\", \"suggested_folders\", \"summary_text\", \"type\", \"updated_at\", \"visible\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
@@ -5300,11 +5941,11 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$j(field, d);\n" +
 "        }\n" +
-"        checkString$i(d.email, field + \".email\");\n" +
-"        checkString$i(d.first_name, field + \".first_name\");\n" +
-"        checkString$i(d.full_name, field + \".full_name\");\n" +
-"        checkString$i(d.last_name, field + \".last_name\");\n" +
-"        checkString$i(d.role, field + \".role\");\n" +
+"        checkString$h(d.email, field + \".email\");\n" +
+"        checkString$h(d.first_name, field + \".first_name\");\n" +
+"        checkString$h(d.full_name, field + \".full_name\");\n" +
+"        checkString$h(d.last_name, field + \".last_name\");\n" +
+"        checkString$h(d.role, field + \".role\");\n" +
 "        const knownProperties = [\"email\", \"first_name\", \"full_name\", \"last_name\", \"role\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -5337,13 +5978,13 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$j(field, d);\n" +
 "        }\n" +
-"        checkBoolean$b(d.hasNextPage, field + \".hasNextPage\");\n" +
+"        checkBoolean$a(d.hasNextPage, field + \".hasNextPage\");\n" +
 "        checkNumber$g(d.page, field + \".page\");\n" +
 "        checkNumber$g(d.pages, field + \".pages\");\n" +
 "        checkNumber$g(d.pageSize, field + \".pageSize\");\n" +
 "        checkNumber$g(d.totalEntries, field + \".totalEntries\");\n" +
-"        checkString$i(d.totalEntriesPrecision, field + \".totalEntriesPrecision\");\n" +
-"        checkString$i(d.totalEntriesStr, field + \".totalEntriesStr\");\n" +
+"        checkString$h(d.totalEntriesPrecision, field + \".totalEntriesPrecision\");\n" +
+"        checkString$h(d.totalEntriesStr, field + \".totalEntriesStr\");\n" +
 "        const knownProperties = [\"hasNextPage\", \"page\", \"pages\", \"pageSize\", \"totalEntries\", \"totalEntriesPrecision\", \"totalEntriesStr\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -5369,7 +6010,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "function throwIsArray$j(field, value, multiple) {\n" +
 "    return errorHelper$j(field, value, \"object\");\n" +
 "}\n" +
-"function checkArray$b(value, field, multiple) {\n" +
+"function checkArray$c(value, field, multiple) {\n" +
 "    if (!Array.isArray(value))\n" +
 "        errorHelper$j(field, value, \"array\");\n" +
 "}\n" +
@@ -5377,11 +6018,11 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    if (typeof (value) !== 'number')\n" +
 "        errorHelper$j(field, value, multiple ?? \"number\");\n" +
 "}\n" +
-"function checkBoolean$b(value, field, multiple) {\n" +
+"function checkBoolean$a(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'boolean')\n" +
 "        errorHelper$j(field, value, \"boolean\");\n" +
 "}\n" +
-"function checkString$i(value, field, multiple) {\n" +
+"function checkString$h(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'string')\n" +
 "        errorHelper$j(field, value, multiple ?? \"string\");\n" +
 "}\n" +
@@ -5436,7 +6077,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"filter\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkArray$a(d.filter, field + \".filter\", \"FilterEntity[] | string\");\n" +
+"                checkArray$b(d.filter, field + \".filter\", \"FilterEntity[] | string\");\n" +
 "                if (d.filter) {\n" +
 "                    for (let i = 0; i < d.filter.length; i++) {\n" +
 "                        d.filter[i] = FilterEntity$1.Create(d.filter[i], field + \".filter\" + \"[\" + i + \"]\");\n" +
@@ -5445,7 +6086,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "                try {\n" +
-"                    checkString$h(d.filter, field + \".filter\", \"FilterEntity[] | string\");\n" +
+"                    checkString$g(d.filter, field + \".filter\", \"FilterEntity[] | string\");\n" +
 "                }\n" +
 "                catch (e) {\n" +
 "                }\n" +
@@ -5455,10 +6096,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            checkNumber$f(d.page, field + \".page\");\n" +
 "        }\n" +
 "        if (\"page_name\" in d) {\n" +
-"            checkString$h(d.page_name, field + \".page_name\");\n" +
+"            checkString$g(d.page_name, field + \".page_name\");\n" +
 "        }\n" +
 "        if (\"sort\" in d) {\n" +
-"            checkString$h(d.sort, field + \".sort\");\n" +
+"            checkString$g(d.sort, field + \".sort\");\n" +
 "        }\n" +
 "        const knownProperties = [\"filter\", \"page\", \"page_name\", \"sort\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
@@ -5495,9 +6136,9 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$i(field, d);\n" +
 "        }\n" +
-"        checkString$h(d.field, field + \".field\");\n" +
-"        checkString$h(d.operator, field + \".operator\");\n" +
-"        checkString$h(d.value, field + \".value\");\n" +
+"        checkString$g(d.field, field + \".field\");\n" +
+"        checkString$g(d.operator, field + \".operator\");\n" +
+"        checkString$g(d.value, field + \".value\");\n" +
 "        const knownProperties = [\"field\", \"operator\", \"value\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -5519,7 +6160,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "function throwIsArray$i(field, value, multiple) {\n" +
 "    return errorHelper$i(field, value, \"object\");\n" +
 "}\n" +
-"function checkArray$a(value, field, multiple) {\n" +
+"function checkArray$b(value, field, multiple) {\n" +
 "    if (!Array.isArray(value))\n" +
 "        errorHelper$i(field, value, multiple);\n" +
 "}\n" +
@@ -5527,7 +6168,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    if (typeof (value) !== 'number')\n" +
 "        errorHelper$i(field, value, \"number\");\n" +
 "}\n" +
-"function checkString$h(value, field, multiple) {\n" +
+"function checkString$g(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'string')\n" +
 "        errorHelper$i(field, value, multiple ?? \"string\");\n" +
 "}\n" +
@@ -5572,18 +6213,18 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$h(field, d);\n" +
 "        }\n" +
-"        checkString$g(d.filters, field + \".filters\");\n" +
-"        checkArray$9(d.firm_admins, field + \".firm_admins\");\n" +
+"        checkString$f(d.filters, field + \".filters\");\n" +
+"        checkArray$a(d.firm_admins, field + \".firm_admins\");\n" +
 "        if (d.firm_admins) {\n" +
 "            for (let i = 0; i < d.firm_admins.length; i++) {\n" +
 "                checkNever$3(d.firm_admins[i], field + \".firm_admins\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
 "        d.folder = Folder.Create(d.folder, field + \".folder\");\n" +
-"        checkBoolean$a(d.is_dms_activated_on_firm, field + \".is_dms_activated_on_firm\");\n" +
-"        checkBoolean$a(d.is_firm_admin, field + \".is_firm_admin\");\n" +
+"        checkBoolean$9(d.is_dms_activated_on_firm, field + \".is_dms_activated_on_firm\");\n" +
+"        checkBoolean$9(d.is_firm_admin, field + \".is_firm_admin\");\n" +
 "        d.item = Item.Create(d.item, field + \".item\");\n" +
-"        checkString$g(d.sort, field + \".sort\");\n" +
+"        checkString$f(d.sort, field + \".sort\");\n" +
 "        const knownProperties = [\"filters\", \"firm_admins\", \"folder\", \"is_dms_activated_on_firm\", \"is_firm_admin\", \"item\", \"sort\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -5619,19 +6260,19 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            throwIsArray$h(field, d);\n" +
 "        }\n" +
 "        checkNull$d(d.archived_at, field + \".archived_at\");\n" +
-"        checkString$g(d.created_at, field + \".created_at\");\n" +
+"        checkString$f(d.created_at, field + \".created_at\");\n" +
 "        d.creator = Creator$3.Create(d.creator, field + \".creator\");\n" +
-"        checkBoolean$a(d.fixed, field + \".fixed\");\n" +
+"        checkBoolean$9(d.fixed, field + \".fixed\");\n" +
 "        checkNumber$e(d.id, field + \".id\");\n" +
-"        checkBoolean$a(d.imports_allowed, field + \".imports_allowed\");\n" +
+"        checkBoolean$9(d.imports_allowed, field + \".imports_allowed\");\n" +
 "        checkNumber$e(d.itemable_id, field + \".itemable_id\");\n" +
-"        checkString$g(d.method, field + \".method\");\n" +
-"        checkString$g(d.name, field + \".name\");\n" +
+"        checkString$f(d.method, field + \".method\");\n" +
+"        checkString$f(d.name, field + \".name\");\n" +
 "        checkNumber$e(d.parent_id, field + \".parent_id\");\n" +
-"        checkBoolean$a(d.shared, field + \".shared\");\n" +
-"        checkString$g(d.type, field + \".type\");\n" +
-"        checkString$g(d.updated_at, field + \".updated_at\");\n" +
-"        checkBoolean$a(d.visible, field + \".visible\");\n" +
+"        checkBoolean$9(d.shared, field + \".shared\");\n" +
+"        checkString$f(d.type, field + \".type\");\n" +
+"        checkString$f(d.updated_at, field + \".updated_at\");\n" +
+"        checkBoolean$9(d.visible, field + \".visible\");\n" +
 "        const knownProperties = [\"archived_at\", \"created_at\", \"creator\", \"fixed\", \"id\", \"imports_allowed\", \"itemable_id\", \"method\", \"name\", \"parent_id\", \"shared\", \"type\", \"updated_at\", \"visible\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -5673,11 +6314,11 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$h(field, d);\n" +
 "        }\n" +
-"        checkString$g(d.email, field + \".email\");\n" +
-"        checkString$g(d.first_name, field + \".first_name\");\n" +
-"        checkString$g(d.full_name, field + \".full_name\");\n" +
-"        checkString$g(d.last_name, field + \".last_name\");\n" +
-"        checkString$g(d.role, field + \".role\");\n" +
+"        checkString$f(d.email, field + \".email\");\n" +
+"        checkString$f(d.first_name, field + \".first_name\");\n" +
+"        checkString$f(d.full_name, field + \".full_name\");\n" +
+"        checkString$f(d.last_name, field + \".last_name\");\n" +
+"        checkString$f(d.role, field + \".role\");\n" +
 "        const knownProperties = [\"email\", \"first_name\", \"full_name\", \"last_name\", \"role\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -5712,25 +6353,25 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        checkNull$d(d.archived_at, field + \".archived_at\");\n" +
 "        checkNumber$e(d.comments_count, field + \".comments_count\");\n" +
-"        checkString$g(d.created_at, field + \".created_at\");\n" +
+"        checkString$f(d.created_at, field + \".created_at\");\n" +
 "        d.creator = Creator$3.Create(d.creator, field + \".creator\");\n" +
-"        checkBoolean$a(d.favorite, field + \".favorite\");\n" +
-"        checkString$g(d.file_extension, field + \".file_extension\");\n" +
+"        checkBoolean$9(d.favorite, field + \".favorite\");\n" +
+"        checkString$f(d.file_extension, field + \".file_extension\");\n" +
 "        checkNumber$e(d.file_size, field + \".file_size\");\n" +
-"        checkString$g(d.file_url, field + \".file_url\");\n" +
+"        checkString$f(d.file_url, field + \".file_url\");\n" +
 "        checkNumber$e(d.id, field + \".id\");\n" +
-"        checkBoolean$a(d.imports_allowed, field + \".imports_allowed\");\n" +
+"        checkBoolean$9(d.imports_allowed, field + \".imports_allowed\");\n" +
 "        checkNumber$e(d.itemable_id, field + \".itemable_id\");\n" +
-"        checkString$g(d.method, field + \".method\");\n" +
-"        checkString$g(d.name, field + \".name\");\n" +
+"        checkString$f(d.method, field + \".method\");\n" +
+"        checkString$f(d.name, field + \".name\");\n" +
 "        checkNumber$e(d.parent_id, field + \".parent_id\");\n" +
-"        checkString$g(d.pusher_channel, field + \".pusher_channel\");\n" +
-"        checkBoolean$a(d.readonly, field + \".readonly\");\n" +
+"        checkString$f(d.pusher_channel, field + \".pusher_channel\");\n" +
+"        checkBoolean$9(d.readonly, field + \".readonly\");\n" +
 "        checkNull$d(d.reference_link, field + \".reference_link\");\n" +
-"        checkBoolean$a(d.shared, field + \".shared\");\n" +
-"        checkString$g(d.signed_id, field + \".signed_id\");\n" +
-"        checkString$g(d.type, field + \".type\");\n" +
-"        checkString$g(d.updated_at, field + \".updated_at\");\n" +
+"        checkBoolean$9(d.shared, field + \".shared\");\n" +
+"        checkString$f(d.signed_id, field + \".signed_id\");\n" +
+"        checkString$f(d.type, field + \".type\");\n" +
+"        checkString$f(d.updated_at, field + \".updated_at\");\n" +
 "        const knownProperties = [\"archived_at\", \"comments_count\", \"created_at\", \"creator\", \"favorite\", \"file_extension\", \"file_size\", \"file_url\", \"id\", \"imports_allowed\", \"itemable_id\", \"method\", \"name\", \"parent_id\", \"pusher_channel\", \"readonly\", \"reference_link\", \"shared\", \"signed_id\", \"type\", \"updated_at\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -5770,7 +6411,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "function throwIsArray$h(field, value, multiple) {\n" +
 "    return errorHelper$h(field, value, \"object\");\n" +
 "}\n" +
-"function checkArray$9(value, field, multiple) {\n" +
+"function checkArray$a(value, field, multiple) {\n" +
 "    if (!Array.isArray(value))\n" +
 "        errorHelper$h(field, value, \"array\");\n" +
 "}\n" +
@@ -5778,11 +6419,11 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    if (typeof (value) !== 'number')\n" +
 "        errorHelper$h(field, value, \"number\");\n" +
 "}\n" +
-"function checkBoolean$a(value, field, multiple) {\n" +
+"function checkBoolean$9(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'boolean')\n" +
 "        errorHelper$h(field, value, \"boolean\");\n" +
 "}\n" +
-"function checkString$g(value, field, multiple) {\n" +
+"function checkString$f(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'string')\n" +
 "        errorHelper$h(field, value, \"string\");\n" +
 "}\n" +
@@ -5834,15 +6475,15 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$g(field, d);\n" +
 "        }\n" +
-"        checkString$f(d.created_at, field + \".created_at\");\n" +
+"        checkString$e(d.created_at, field + \".created_at\");\n" +
 "        checkNumber$d(d.id, field + \".id\");\n" +
 "        checkNumber$d(d.item_id, field + \".item_id\");\n" +
 "        d.linkable = Linkable$1.Create(d.linkable, field + \".linkable\");\n" +
 "        checkNumber$d(d.linkable_id, field + \".linkable_id\");\n" +
-"        checkString$f(d.linkable_type, field + \".linkable_type\");\n" +
-"        checkString$f(d.name, field + \".name\");\n" +
+"        checkString$e(d.linkable_type, field + \".linkable_type\");\n" +
+"        checkString$e(d.name, field + \".name\");\n" +
 "        checkNumber$d(d.record_id, field + \".record_id\");\n" +
-"        checkString$f(d.record_type, field + \".record_type\");\n" +
+"        checkString$e(d.record_type, field + \".record_type\");\n" +
 "        checkNull$c(d.reference, field + \".reference\");\n" +
 "        const knownProperties = [\"created_at\", \"id\", \"item_id\", \"linkable\", \"linkable_id\", \"linkable_type\", \"name\", \"record_id\", \"record_type\", \"reference\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
@@ -5881,16 +6522,16 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$g(field, d);\n" +
 "        }\n" +
-"        checkArray$8(d.comments, field + \".comments\");\n" +
+"        checkArray$9(d.comments, field + \".comments\");\n" +
 "        if (d.comments) {\n" +
 "            for (let i = 0; i < d.comments.length; i++) {\n" +
 "                d.comments[i] = CommentsEntity$1.Create(d.comments[i], field + \".comments\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
 "        d.creator = Creator$2.Create(d.creator, field + \".creator\");\n" +
-"        checkString$f(d.file_extension, field + \".file_extension\");\n" +
+"        checkString$e(d.file_extension, field + \".file_extension\");\n" +
 "        checkNumber$d(d.file_size, field + \".file_size\");\n" +
-"        checkString$f(d.file_url, field + \".file_url\");\n" +
+"        checkString$e(d.file_url, field + \".file_url\");\n" +
 "        checkNumber$d(d.itemable_id, field + \".itemable_id\");\n" +
 "        checkNull$c(d.url, field + \".url\");\n" +
 "        const knownProperties = [\"comments\", \"creator\", \"file_extension\", \"file_size\", \"file_url\", \"itemable_id\", \"url\"];\n" +
@@ -5927,8 +6568,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$g(field, d);\n" +
 "        }\n" +
-"        checkString$f(d.content, field + \".content\");\n" +
-"        checkString$f(d.created_at, field + \".created_at\");\n" +
+"        checkString$e(d.content, field + \".content\");\n" +
+"        checkString$e(d.created_at, field + \".created_at\");\n" +
 "        const knownProperties = [\"content\", \"created_at\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -5958,11 +6599,11 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$g(field, d);\n" +
 "        }\n" +
-"        checkString$f(d.email, field + \".email\");\n" +
-"        checkString$f(d.first_name, field + \".first_name\");\n" +
-"        checkString$f(d.full_name, field + \".full_name\");\n" +
-"        checkString$f(d.last_name, field + \".last_name\");\n" +
-"        checkString$f(d.role, field + \".role\");\n" +
+"        checkString$e(d.email, field + \".email\");\n" +
+"        checkString$e(d.first_name, field + \".first_name\");\n" +
+"        checkString$e(d.full_name, field + \".full_name\");\n" +
+"        checkString$e(d.last_name, field + \".last_name\");\n" +
+"        checkString$e(d.role, field + \".role\");\n" +
 "        const knownProperties = [\"email\", \"first_name\", \"full_name\", \"last_name\", \"role\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -5986,7 +6627,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "function throwIsArray$g(field, value, multiple) {\n" +
 "    return errorHelper$g(field, value, \"object\");\n" +
 "}\n" +
-"function checkArray$8(value, field, multiple) {\n" +
+"function checkArray$9(value, field, multiple) {\n" +
 "    if (!Array.isArray(value))\n" +
 "        errorHelper$g(field, value, \"array\");\n" +
 "}\n" +
@@ -5994,7 +6635,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    if (typeof (value) !== 'number')\n" +
 "        errorHelper$g(field, value, \"number\");\n" +
 "}\n" +
-"function checkString$f(value, field, multiple) {\n" +
+"function checkString$e(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'string')\n" +
 "        errorHelper$g(field, value, \"string\");\n" +
 "}\n" +
@@ -6043,7 +6684,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$f(field, d);\n" +
 "        }\n" +
-"        checkArray$7(d.dms_links, field + \".dms_links\");\n" +
+"        checkArray$8(d.dms_links, field + \".dms_links\");\n" +
 "        if (d.dms_links) {\n" +
 "            for (let i = 0; i < d.dms_links.length; i++) {\n" +
 "                d.dms_links[i] = DmsLinksEntity.Create(d.dms_links[i], field + \".dms_links\" + \"[\" + i + \"]\");\n" +
@@ -6077,15 +6718,15 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$f(field, d);\n" +
 "        }\n" +
-"        checkString$e(d.created_at, field + \".created_at\");\n" +
+"        checkString$d(d.created_at, field + \".created_at\");\n" +
 "        checkNumber$c(d.id, field + \".id\");\n" +
 "        checkNumber$c(d.item_id, field + \".item_id\");\n" +
 "        d.linkable = Linkable.Create(d.linkable, field + \".linkable\");\n" +
 "        checkNumber$c(d.linkable_id, field + \".linkable_id\");\n" +
-"        checkString$e(d.linkable_type, field + \".linkable_type\");\n" +
-"        checkString$e(d.name, field + \".name\");\n" +
+"        checkString$d(d.linkable_type, field + \".linkable_type\");\n" +
+"        checkString$d(d.name, field + \".name\");\n" +
 "        checkNumber$c(d.record_id, field + \".record_id\");\n" +
-"        checkString$e(d.record_type, field + \".record_type\");\n" +
+"        checkString$d(d.record_type, field + \".record_type\");\n" +
 "        checkNull$b(d.reference, field + \".reference\");\n" +
 "        const knownProperties = [\"created_at\", \"id\", \"item_id\", \"linkable\", \"linkable_id\", \"linkable_type\", \"name\", \"record_id\", \"record_type\", \"reference\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
@@ -6124,16 +6765,16 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$f(field, d);\n" +
 "        }\n" +
-"        checkArray$7(d.comments, field + \".comments\");\n" +
+"        checkArray$8(d.comments, field + \".comments\");\n" +
 "        if (d.comments) {\n" +
 "            for (let i = 0; i < d.comments.length; i++) {\n" +
 "                d.comments[i] = CommentsEntity.Create(d.comments[i], field + \".comments\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
 "        d.creator = Creator$1.Create(d.creator, field + \".creator\");\n" +
-"        checkString$e(d.file_extension, field + \".file_extension\");\n" +
+"        checkString$d(d.file_extension, field + \".file_extension\");\n" +
 "        checkNumber$c(d.file_size, field + \".file_size\");\n" +
-"        checkString$e(d.file_url, field + \".file_url\");\n" +
+"        checkString$d(d.file_url, field + \".file_url\");\n" +
 "        checkNumber$c(d.itemable_id, field + \".itemable_id\");\n" +
 "        checkNull$b(d.url, field + \".url\");\n" +
 "        const knownProperties = [\"comments\", \"creator\", \"file_extension\", \"file_size\", \"file_url\", \"itemable_id\", \"url\"];\n" +
@@ -6170,8 +6811,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$f(field, d);\n" +
 "        }\n" +
-"        checkString$e(d.content, field + \".content\");\n" +
-"        checkString$e(d.created_at, field + \".created_at\");\n" +
+"        checkString$d(d.content, field + \".content\");\n" +
+"        checkString$d(d.created_at, field + \".created_at\");\n" +
 "        const knownProperties = [\"content\", \"created_at\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -6201,11 +6842,11 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$f(field, d);\n" +
 "        }\n" +
-"        checkString$e(d.email, field + \".email\");\n" +
-"        checkString$e(d.first_name, field + \".first_name\");\n" +
-"        checkString$e(d.full_name, field + \".full_name\");\n" +
-"        checkString$e(d.last_name, field + \".last_name\");\n" +
-"        checkString$e(d.role, field + \".role\");\n" +
+"        checkString$d(d.email, field + \".email\");\n" +
+"        checkString$d(d.first_name, field + \".first_name\");\n" +
+"        checkString$d(d.full_name, field + \".full_name\");\n" +
+"        checkString$d(d.last_name, field + \".last_name\");\n" +
+"        checkString$d(d.role, field + \".role\");\n" +
 "        const knownProperties = [\"email\", \"first_name\", \"full_name\", \"last_name\", \"role\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -6229,7 +6870,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "function throwIsArray$f(field, value, multiple) {\n" +
 "    return errorHelper$f(field, value, \"object\");\n" +
 "}\n" +
-"function checkArray$7(value, field, multiple) {\n" +
+"function checkArray$8(value, field, multiple) {\n" +
 "    if (!Array.isArray(value))\n" +
 "        errorHelper$f(field, value, \"array\");\n" +
 "}\n" +
@@ -6237,7 +6878,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    if (typeof (value) !== 'number')\n" +
 "        errorHelper$f(field, value, \"number\");\n" +
 "}\n" +
-"function checkString$e(value, field, multiple) {\n" +
+"function checkString$d(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'string')\n" +
 "        errorHelper$f(field, value, \"string\");\n" +
 "}\n" +
@@ -6286,7 +6927,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$e(field, d);\n" +
 "        }\n" +
-"        checkString$d(d.message, field + \".message\");\n" +
+"        checkString$c(d.message, field + \".message\");\n" +
 "        const knownProperties = [\"message\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -6306,7 +6947,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "function throwIsArray$e(field, value, multiple) {\n" +
 "    return errorHelper$e(field, value, \"object\");\n" +
 "}\n" +
-"function checkString$d(value, field, multiple) {\n" +
+"function checkString$c(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'string')\n" +
 "        errorHelper$e(field, value, \"string\");\n" +
 "}\n" +
@@ -6352,17 +6993,17 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            throwIsArray$d(field, d);\n" +
 "        }\n" +
 "        checkNull$a(d.archived_at, field + \".archived_at\");\n" +
-"        checkString$c(d.created_at, field + \".created_at\");\n" +
+"        checkString$b(d.created_at, field + \".created_at\");\n" +
 "        d.creator = Creator.Create(d.creator, field + \".creator\");\n" +
-"        checkBoolean$9(d.favorite, field + \".favorite\");\n" +
-"        checkString$c(d.file_extension, field + \".file_extension\");\n" +
+"        checkBoolean$8(d.favorite, field + \".favorite\");\n" +
+"        checkString$b(d.file_extension, field + \".file_extension\");\n" +
 "        checkNumber$b(d.file_size, field + \".file_size\");\n" +
-"        checkString$c(d.file_url, field + \".file_url\");\n" +
+"        checkString$b(d.file_url, field + \".file_url\");\n" +
 "        checkNumber$b(d.id, field + \".id\");\n" +
-"        checkBoolean$9(d.imports_allowed, field + \".imports_allowed\");\n" +
+"        checkBoolean$8(d.imports_allowed, field + \".imports_allowed\");\n" +
 "        checkNumber$b(d.itemable_id, field + \".itemable_id\");\n" +
-"        checkString$c(d.method, field + \".method\");\n" +
-"        checkString$c(d.name, field + \".name\");\n" +
+"        checkString$b(d.method, field + \".method\");\n" +
+"        checkString$b(d.name, field + \".name\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
 "            checkNumber$b(d.parent_id, field + \".parent_id\", \"number | null\");\n" +
@@ -6374,13 +7015,13 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            catch (e) {\n" +
 "            }\n" +
 "        }\n" +
-"        checkString$c(d.pusher_channel, field + \".pusher_channel\");\n" +
-"        checkBoolean$9(d.readonly, field + \".readonly\");\n" +
+"        checkString$b(d.pusher_channel, field + \".pusher_channel\");\n" +
+"        checkBoolean$8(d.readonly, field + \".readonly\");\n" +
 "        checkNull$a(d.reference_link, field + \".reference_link\");\n" +
-"        checkBoolean$9(d.shared, field + \".shared\");\n" +
-"        checkString$c(d.signed_id, field + \".signed_id\");\n" +
-"        checkString$c(d.type, field + \".type\");\n" +
-"        checkString$c(d.updated_at, field + \".updated_at\");\n" +
+"        checkBoolean$8(d.shared, field + \".shared\");\n" +
+"        checkString$b(d.signed_id, field + \".signed_id\");\n" +
+"        checkString$b(d.type, field + \".type\");\n" +
+"        checkString$b(d.updated_at, field + \".updated_at\");\n" +
 "        const knownProperties = [\"archived_at\", \"created_at\", \"creator\", \"favorite\", \"file_extension\", \"file_size\", \"file_url\", \"id\", \"imports_allowed\", \"itemable_id\", \"method\", \"name\", \"parent_id\", \"pusher_channel\", \"readonly\", \"reference_link\", \"shared\", \"signed_id\", \"type\", \"updated_at\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -6428,11 +7069,11 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$d(field, d);\n" +
 "        }\n" +
-"        checkString$c(d.email, field + \".email\");\n" +
-"        checkString$c(d.first_name, field + \".first_name\");\n" +
-"        checkString$c(d.full_name, field + \".full_name\");\n" +
-"        checkString$c(d.last_name, field + \".last_name\");\n" +
-"        checkString$c(d.role, field + \".role\");\n" +
+"        checkString$b(d.email, field + \".email\");\n" +
+"        checkString$b(d.first_name, field + \".first_name\");\n" +
+"        checkString$b(d.full_name, field + \".full_name\");\n" +
+"        checkString$b(d.last_name, field + \".last_name\");\n" +
+"        checkString$b(d.role, field + \".role\");\n" +
 "        const knownProperties = [\"email\", \"first_name\", \"full_name\", \"last_name\", \"role\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -6460,11 +7101,11 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    if (typeof (value) !== 'number')\n" +
 "        errorHelper$d(field, value, multiple ?? \"number\");\n" +
 "}\n" +
-"function checkBoolean$9(value, field, multiple) {\n" +
+"function checkBoolean$8(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'boolean')\n" +
 "        errorHelper$d(field, value, \"boolean\");\n" +
 "}\n" +
-"function checkString$c(value, field, multiple) {\n" +
+"function checkString$b(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'string')\n" +
 "        errorHelper$d(field, value, \"string\");\n" +
 "}\n" +
@@ -6500,15 +7141,17 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 " * @param recordType\n" +
 " * @returns\n" +
 " */\n" +
-"async function getDMSLinks(recordId, recordType) {\n" +
+"async function getDMSLinks(recordId, recordType, maxAge) {\n" +
 "    if (!recordType)\n" +
 "        recordType = (await getDocument(recordId)).type;\n" +
-"    const response = await apiRequest(`dms/links/data?record_ids[]=${recordId}&record_type=${recordType}`, null, 'GET');\n" +
-"    const data = await response?.json();\n" +
+"    const data = await cachedRequest(\"dms:getDMSLinks\", { recordId, recordType }, async ({ recordId, recordType }) => {\n" +
+"        const response = await apiRequest(`dms/links/data?record_ids[]=${recordId}&record_type=${recordType}`, null, \"GET\");\n" +
+"        return await response?.json();\n" +
+"    }, maxAge);\n" +
 "    if (!data)\n" +
 "        return data;\n" +
 "    const list = APIDMSLinkList.Create(data);\n" +
-"    return list.dms_links.map(link => APIDMSLink.Create(link));\n" +
+"    return list.dms_links.map((link) => APIDMSLink.Create(link));\n" +
 "}\n" +
 "/**\n" +
 " * Get DMS item\n" +
@@ -6671,10 +7314,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$c(field, d);\n" +
 "        }\n" +
-"        checkString$b(d.code, field + \".code\");\n" +
+"        checkString$a(d.code, field + \".code\");\n" +
 "        checkNumber$a(d.id, field + \".id\");\n" +
-"        checkString$b(d.journal_type, field + \".journal_type\");\n" +
-"        checkString$b(d.label, field + \".label\");\n" +
+"        checkString$a(d.journal_type, field + \".journal_type\");\n" +
+"        checkString$a(d.label, field + \".label\");\n" +
 "        const knownProperties = [\"code\", \"id\", \"journal_type\", \"label\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -6701,7 +7344,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    if (typeof (value) !== 'number')\n" +
 "        errorHelper$c(field, value, \"number\");\n" +
 "}\n" +
-"function checkString$b(value, field, multiple) {\n" +
+"function checkString$a(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'string')\n" +
 "        errorHelper$c(field, value, \"string\");\n" +
 "}\n" +
@@ -6754,33 +7397,33 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$b(field, d);\n" +
 "        }\n" +
-"        checkString$a(d.amount, field + \".amount\");\n" +
+"        checkString$9(d.amount, field + \".amount\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
 "            checkNull$9(d.date, field + \".date\", \"null | string\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkString$a(d.date, field + \".date\", \"null | string\");\n" +
+"                checkString$9(d.date, field + \".date\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
 "        }\n" +
-"        checkString$a(d.fec_pieceref, field + \".fec_pieceref\");\n" +
+"        checkString$9(d.fec_pieceref, field + \".fec_pieceref\");\n" +
 "        checkNumber$9(d.id, field + \".id\");\n" +
-"        checkBoolean$8(d.is_waiting_details, field + \".is_waiting_details\");\n" +
+"        checkBoolean$7(d.is_waiting_details, field + \".is_waiting_details\");\n" +
 "        d.journal = Journal.Create(d.journal, field + \".journal\");\n" +
 "        checkNumber$9(d.journal_id, field + \".journal_id\");\n" +
-"        checkString$a(d.label, field + \".label\");\n" +
+"        checkString$9(d.label, field + \".label\");\n" +
 "        checkNumber$9(d.ledgerEventsCount, field + \".ledgerEventsCount\");\n" +
-"        checkBoolean$8(d.readonly, field + \".readonly\");\n" +
-"        checkString$a(d.source, field + \".source\");\n" +
+"        checkBoolean$7(d.readonly, field + \".readonly\");\n" +
+"        checkString$9(d.source, field + \".source\");\n" +
 "        if (\"taggingCount\" in d) {\n" +
 "            checkNumber$9(d.taggingCount, field + \".taggingCount\");\n" +
 "        }\n" +
-"        checkString$a(d.totalCredit, field + \".totalCredit\");\n" +
-"        checkString$a(d.totalDebit, field + \".totalDebit\");\n" +
-"        checkString$a(d.type, field + \".type\");\n" +
+"        checkString$9(d.totalCredit, field + \".totalCredit\");\n" +
+"        checkString$9(d.totalDebit, field + \".totalDebit\");\n" +
+"        checkString$9(d.type, field + \".type\");\n" +
 "        const knownProperties = [\"amount\", \"date\", \"fec_pieceref\", \"id\", \"is_waiting_details\", \"journal\", \"journal_id\", \"label\", \"ledgerEventsCount\", \"readonly\", \"source\", \"taggingCount\", \"totalCredit\", \"totalDebit\", \"type\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -6824,9 +7467,9 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$b(field, d);\n" +
 "        }\n" +
-"        checkString$a(d.code, field + \".code\");\n" +
+"        checkString$9(d.code, field + \".code\");\n" +
 "        checkNumber$9(d.id, field + \".id\");\n" +
-"        checkString$a(d.label, field + \".label\");\n" +
+"        checkString$9(d.label, field + \".label\");\n" +
 "        const knownProperties = [\"code\", \"id\", \"label\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -6852,11 +7495,11 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    if (typeof (value) !== 'number')\n" +
 "        errorHelper$b(field, value, \"number\");\n" +
 "}\n" +
-"function checkBoolean$8(value, field, multiple) {\n" +
+"function checkBoolean$7(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'boolean')\n" +
 "        errorHelper$b(field, value, \"boolean\");\n" +
 "}\n" +
-"function checkString$a(value, field, multiple) {\n" +
+"function checkString$9(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'string')\n" +
 "        errorHelper$b(field, value, multiple ?? \"string\");\n" +
 "}\n" +
@@ -6905,11 +7548,11 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$a(field, d);\n" +
 "        }\n" +
-"        checkString$9(d.amount, field + \".amount\");\n" +
-"        checkString$9(d.balance, field + \".balance\");\n" +
-"        checkBoolean$7(d.closed, field + \".closed\");\n" +
-"        checkString$9(d.credit, field + \".credit\");\n" +
-"        checkString$9(d.debit, field + \".debit\");\n" +
+"        checkString$8(d.amount, field + \".amount\");\n" +
+"        checkString$8(d.balance, field + \".balance\");\n" +
+"        checkBoolean$6(d.closed, field + \".closed\");\n" +
+"        checkString$8(d.credit, field + \".credit\");\n" +
+"        checkString$8(d.debit, field + \".debit\");\n" +
 "        checkNumber$8(d.id, field + \".id\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
@@ -6917,7 +7560,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkString$9(d.label, field + \".label\", \"null | string\");\n" +
+"                checkString$8(d.label, field + \".label\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -6946,8 +7589,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        checkNumber$8(d.plan_item_id, field + \".plan_item_id\");\n" +
 "        d.planItem = PlanItem$1.Create(d.planItem, field + \".planItem\");\n" +
-"        checkBoolean$7(d.readonly, field + \".readonly\");\n" +
-"        checkBoolean$7(d.readonlyAmounts, field + \".readonlyAmounts\");\n" +
+"        checkBoolean$6(d.readonly, field + \".readonly\");\n" +
+"        checkBoolean$6(d.readonlyAmounts, field + \".readonlyAmounts\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
 "            checkNull$8(d.reconciliation_id, field + \".reconciliation_id\", \"null | number\");\n" +
@@ -6959,7 +7602,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            catch (e) {\n" +
 "            }\n" +
 "        }\n" +
-"        checkString$9(d.source, field + \".source\");\n" +
+"        checkString$8(d.source, field + \".source\");\n" +
 "        const knownProperties = [\"amount\", \"balance\", \"closed\", \"credit\", \"debit\", \"id\", \"label\", \"lettering\", \"lettering_id\", \"plan_item_id\", \"planItem\", \"readonly\", \"readonlyAmounts\", \"reconciliation_id\", \"source\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -7002,11 +7645,11 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$a(field, d);\n" +
 "        }\n" +
-"        checkString$9(d.balance, field + \".balance\");\n" +
+"        checkString$8(d.balance, field + \".balance\");\n" +
 "        checkNumber$8(d.id, field + \".id\");\n" +
-"        checkString$9(d.max_date, field + \".max_date\");\n" +
-"        checkString$9(d.min_date, field + \".min_date\");\n" +
-"        checkString$9(d.plan_item_number, field + \".plan_item_number\");\n" +
+"        checkString$8(d.max_date, field + \".max_date\");\n" +
+"        checkString$8(d.min_date, field + \".min_date\");\n" +
+"        checkString$8(d.plan_item_number, field + \".plan_item_number\");\n" +
 "        const knownProperties = [\"balance\", \"id\", \"max_date\", \"min_date\", \"plan_item_number\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -7039,12 +7682,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$a(field, d);\n" +
 "        }\n" +
-"        checkString$9(d[\"country_alpha2\"], field + \".country_alpha2\");\n" +
-"        checkBoolean$7(d.enabled, field + \".enabled\");\n" +
+"        checkString$8(d[\"country_alpha2\"], field + \".country_alpha2\");\n" +
+"        checkBoolean$6(d.enabled, field + \".enabled\");\n" +
 "        checkNumber$8(d.id, field + \".id\");\n" +
-"        checkString$9(d.label, field + \".label\");\n" +
-"        checkString$9(d.number, field + \".number\");\n" +
-"        checkString$9(d.vat_rate, field + \".vat_rate\");\n" +
+"        checkString$8(d.label, field + \".label\");\n" +
+"        checkString$8(d.number, field + \".number\");\n" +
+"        checkString$8(d.vat_rate, field + \".vat_rate\");\n" +
 "        const knownProperties = [\"country_alpha2\", \"enabled\", \"id\", \"label\", \"number\", \"vat_rate\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -7073,11 +7716,11 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    if (typeof (value) !== 'number')\n" +
 "        errorHelper$a(field, value, multiple ?? \"number\");\n" +
 "}\n" +
-"function checkBoolean$7(value, field, multiple) {\n" +
+"function checkBoolean$6(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'boolean')\n" +
 "        errorHelper$a(field, value, \"boolean\");\n" +
 "}\n" +
-"function checkString$9(value, field, multiple) {\n" +
+"function checkString$8(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'string')\n" +
 "        errorHelper$a(field, value, multiple ?? \"string\");\n" +
 "}\n" +
@@ -7208,81 +7851,81 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$9(field, d);\n" +
 "        }\n" +
-"        checkString$8(d.address, field + \".address\");\n" +
-"        checkString$8(d.address_additional_info, field + \".address_additional_info\");\n" +
+"        checkString$7(d.address, field + \".address\");\n" +
+"        checkString$7(d.address_additional_info, field + \".address_additional_info\");\n" +
 "        checkNull$7(d.billing_bank, field + \".billing_bank\");\n" +
 "        checkNull$7(d.billing_bic, field + \".billing_bic\");\n" +
 "        checkNull$7(d.billing_footer_invoice, field + \".billing_footer_invoice\");\n" +
 "        checkNull$7(d.billing_footer_invoice_id, field + \".billing_footer_invoice_id\");\n" +
 "        checkNull$7(d.billing_iban, field + \".billing_iban\");\n" +
-"        checkString$8(d.billing_language, field + \".billing_language\");\n" +
-"        checkString$8(d.city, field + \".city\");\n" +
+"        checkString$7(d.billing_language, field + \".billing_language\");\n" +
+"        checkString$7(d.city, field + \".city\");\n" +
 "        checkNumber$7(d.company_id, field + \".company_id\");\n" +
-"        checkString$8(d[\"country_alpha2\"], field + \".country_alpha2\");\n" +
+"        checkString$7(d[\"country_alpha2\"], field + \".country_alpha2\");\n" +
 "        checkNull$7(d.current_mandate, field + \".current_mandate\");\n" +
-"        checkString$8(d.customer_type, field + \".customer_type\");\n" +
-"        checkString$8(d.delivery_address, field + \".delivery_address\");\n" +
-"        checkString$8(d.delivery_address_additional_info, field + \".delivery_address_additional_info\");\n" +
-"        checkString$8(d.delivery_city, field + \".delivery_city\");\n" +
-"        checkString$8(d[\"delivery_country_alpha2\"], field + \".delivery_country_alpha2\");\n" +
-"        checkString$8(d.delivery_postal_code, field + \".delivery_postal_code\");\n" +
-"        checkBoolean$6(d.disable_pending_vat, field + \".disable_pending_vat\");\n" +
-"        checkArray$6(d.emails, field + \".emails\");\n" +
+"        checkString$7(d.customer_type, field + \".customer_type\");\n" +
+"        checkString$7(d.delivery_address, field + \".delivery_address\");\n" +
+"        checkString$7(d.delivery_address_additional_info, field + \".delivery_address_additional_info\");\n" +
+"        checkString$7(d.delivery_city, field + \".delivery_city\");\n" +
+"        checkString$7(d[\"delivery_country_alpha2\"], field + \".delivery_country_alpha2\");\n" +
+"        checkString$7(d.delivery_postal_code, field + \".delivery_postal_code\");\n" +
+"        checkBoolean$5(d.disable_pending_vat, field + \".disable_pending_vat\");\n" +
+"        checkArray$7(d.emails, field + \".emails\");\n" +
 "        if (d.emails) {\n" +
 "            for (let i = 0; i < d.emails.length; i++) {\n" +
 "                checkNever$2(d.emails[i], field + \".emails\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
-"        checkString$8(d.first_name, field + \".first_name\");\n" +
-"        checkBoolean$6(d.force_pending_vat, field + \".force_pending_vat\");\n" +
+"        checkString$7(d.first_name, field + \".first_name\");\n" +
+"        checkBoolean$5(d.force_pending_vat, field + \".force_pending_vat\");\n" +
 "        checkNumber$7(d.id, field + \".id\");\n" +
-"        checkBoolean$6(d.invoices_auto_generated, field + \".invoices_auto_generated\");\n" +
-"        checkBoolean$6(d.invoices_auto_validated, field + \".invoices_auto_validated\");\n" +
-"        checkString$8(d.last_name, field + \".last_name\");\n" +
-"        checkString$8(d.name, field + \".name\");\n" +
-"        checkString$8(d.notes, field + \".notes\");\n" +
+"        checkBoolean$5(d.invoices_auto_generated, field + \".invoices_auto_generated\");\n" +
+"        checkBoolean$5(d.invoices_auto_validated, field + \".invoices_auto_validated\");\n" +
+"        checkString$7(d.last_name, field + \".last_name\");\n" +
+"        checkString$7(d.name, field + \".name\");\n" +
+"        checkString$7(d.notes, field + \".notes\");\n" +
 "        checkNull$7(d.notes_comment, field + \".notes_comment\");\n" +
-"        checkString$8(d.payment_conditions, field + \".payment_conditions\");\n" +
-"        checkString$8(d.phone, field + \".phone\");\n" +
+"        checkString$7(d.payment_conditions, field + \".payment_conditions\");\n" +
+"        checkString$7(d.phone, field + \".phone\");\n" +
 "        d.plan_item = PlanItem.Create(d.plan_item, field + \".plan_item\");\n" +
-"        checkString$8(d.postal_code, field + \".postal_code\");\n" +
-"        checkBoolean$6(d.received_a_mandate_request, field + \".received_a_mandate_request\");\n" +
-"        checkString$8(d.recipient, field + \".recipient\");\n" +
-"        checkString$8(d.reference, field + \".reference\");\n" +
-"        checkString$8(d.reg_no, field + \".reg_no\");\n" +
-"        checkArray$6(d.search_terms, field + \".search_terms\");\n" +
+"        checkString$7(d.postal_code, field + \".postal_code\");\n" +
+"        checkBoolean$5(d.received_a_mandate_request, field + \".received_a_mandate_request\");\n" +
+"        checkString$7(d.recipient, field + \".recipient\");\n" +
+"        checkString$7(d.reference, field + \".reference\");\n" +
+"        checkString$7(d.reg_no, field + \".reg_no\");\n" +
+"        checkArray$7(d.search_terms, field + \".search_terms\");\n" +
 "        if (d.search_terms) {\n" +
 "            for (let i = 0; i < d.search_terms.length; i++) {\n" +
-"                checkString$8(d.search_terms[i], field + \".search_terms\" + \"[\" + i + \"]\");\n" +
+"                checkString$7(d.search_terms[i], field + \".search_terms\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
 "        checkNull$7(d.sepa_mandate, field + \".sepa_mandate\");\n" +
-"        checkString$8(d.source_id, field + \".source_id\");\n" +
-"        checkArray$6(d.tags, field + \".tags\");\n" +
+"        checkString$7(d.source_id, field + \".source_id\");\n" +
+"        checkArray$7(d.tags, field + \".tags\");\n" +
 "        if (d.tags) {\n" +
 "            for (let i = 0; i < d.tags.length; i++) {\n" +
 "                checkNever$2(d.tags[i], field + \".tags\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
-"        checkArray$6(d.thirdparties_tags, field + \".thirdparties_tags\");\n" +
+"        checkArray$7(d.thirdparties_tags, field + \".thirdparties_tags\");\n" +
 "        if (d.thirdparties_tags) {\n" +
 "            for (let i = 0; i < d.thirdparties_tags.length; i++) {\n" +
 "                checkNever$2(d.thirdparties_tags[i], field + \".thirdparties_tags\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
-"        checkArray$6(d.thirdparty_contacts, field + \".thirdparty_contacts\");\n" +
+"        checkArray$7(d.thirdparty_contacts, field + \".thirdparty_contacts\");\n" +
 "        if (d.thirdparty_contacts) {\n" +
 "            for (let i = 0; i < d.thirdparty_contacts.length; i++) {\n" +
 "                checkNever$2(d.thirdparty_contacts[i], field + \".thirdparty_contacts\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
-"        checkArray$6(d.thirdparty_invoice_line_rules, field + \".thirdparty_invoice_line_rules\");\n" +
+"        checkArray$7(d.thirdparty_invoice_line_rules, field + \".thirdparty_invoice_line_rules\");\n" +
 "        if (d.thirdparty_invoice_line_rules) {\n" +
 "            for (let i = 0; i < d.thirdparty_invoice_line_rules.length; i++) {\n" +
 "                d.thirdparty_invoice_line_rules[i] = ThirdpartyInvoiceLineRulesEntity.Create(d.thirdparty_invoice_line_rules[i], field + \".thirdparty_invoice_line_rules\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
-"        checkString$8(d.vat_number, field + \".vat_number\");\n" +
+"        checkString$7(d.vat_number, field + \".vat_number\");\n" +
 "        const knownProperties = [\"address\", \"address_additional_info\", \"billing_bank\", \"billing_bic\", \"billing_footer_invoice\", \"billing_footer_invoice_id\", \"billing_iban\", \"billing_language\", \"city\", \"company_id\", \"country_alpha2\", \"current_mandate\", \"customer_type\", \"delivery_address\", \"delivery_address_additional_info\", \"delivery_city\", \"delivery_country_alpha2\", \"delivery_postal_code\", \"disable_pending_vat\", \"emails\", \"first_name\", \"force_pending_vat\", \"id\", \"invoices_auto_generated\", \"invoices_auto_validated\", \"last_name\", \"name\", \"notes\", \"notes_comment\", \"payment_conditions\", \"phone\", \"plan_item\", \"postal_code\", \"received_a_mandate_request\", \"recipient\", \"reference\", \"reg_no\", \"search_terms\", \"sepa_mandate\", \"source_id\", \"tags\", \"thirdparties_tags\", \"thirdparty_contacts\", \"thirdparty_invoice_line_rules\", \"vat_number\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -7356,7 +7999,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            throwIsArray$9(field, d);\n" +
 "        }\n" +
 "        checkNumber$7(d.id, field + \".id\");\n" +
-"        checkString$8(d.number, field + \".number\");\n" +
+"        checkString$7(d.number, field + \".number\");\n" +
 "        const knownProperties = [\"id\", \"number\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -7387,7 +8030,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            throwIsArray$9(field, d);\n" +
 "        }\n" +
 "        d.pnl_plan_item = PnlPlanItem$1.Create(d.pnl_plan_item, field + \".pnl_plan_item\");\n" +
-"        checkString$8(d.vat_rate, field + \".vat_rate\");\n" +
+"        checkString$7(d.vat_rate, field + \".vat_rate\");\n" +
 "        const knownProperties = [\"pnl_plan_item\", \"vat_rate\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -7417,10 +8060,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$9(field, d);\n" +
 "        }\n" +
-"        checkBoolean$6(d.enabled, field + \".enabled\");\n" +
+"        checkBoolean$5(d.enabled, field + \".enabled\");\n" +
 "        checkNumber$7(d.id, field + \".id\");\n" +
-"        checkString$8(d.label, field + \".label\");\n" +
-"        checkString$8(d.number, field + \".number\");\n" +
+"        checkString$7(d.label, field + \".label\");\n" +
+"        checkString$7(d.number, field + \".number\");\n" +
 "        const knownProperties = [\"enabled\", \"id\", \"label\", \"number\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -7452,27 +8095,27 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$9(field, d);\n" +
 "        }\n" +
-"        checkString$8(d.activity_nomenclature, field + \".activity_nomenclature\");\n" +
-"        checkString$8(d.address, field + \".address\");\n" +
+"        checkString$7(d.activity_nomenclature, field + \".activity_nomenclature\");\n" +
+"        checkString$7(d.address, field + \".address\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
 "            checkNull$7(d.admin_city_code, field + \".admin_city_code\", \"null | string\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkString$8(d.admin_city_code, field + \".admin_city_code\", \"null | string\");\n" +
+"                checkString$7(d.admin_city_code, field + \".admin_city_code\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"auto_process_invoices\" in d) {\n" +
-"            checkBoolean$6(d.auto_process_invoices, field + \".auto_process_invoices\");\n" +
+"            checkBoolean$5(d.auto_process_invoices, field + \".auto_process_invoices\");\n" +
 "        }\n" +
-"        checkString$8(d.city, field + \".city\");\n" +
+"        checkString$7(d.city, field + \".city\");\n" +
 "        checkNumber$7(d.company_id, field + \".company_id\");\n" +
-"        checkString$8(d[\"country_alpha2\"], field + \".country_alpha2\");\n" +
-"        checkBoolean$6(d.disable_pending_vat, field + \".disable_pending_vat\");\n" +
-"        checkArray$6(d.emails, field + \".emails\");\n" +
+"        checkString$7(d[\"country_alpha2\"], field + \".country_alpha2\");\n" +
+"        checkBoolean$5(d.disable_pending_vat, field + \".disable_pending_vat\");\n" +
+"        checkArray$7(d.emails, field + \".emails\");\n" +
 "        if (d.emails) {\n" +
 "            for (let i = 0; i < d.emails.length; i++) {\n" +
 "                checkNever$2(d.emails[i], field + \".emails\" + \"[\" + i + \"]\");\n" +
@@ -7484,13 +8127,13 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkString$8(d.establishment_no, field + \".establishment_no\", \"null | string\");\n" +
+"                checkString$7(d.establishment_no, field + \".establishment_no\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
 "        }\n" +
-"        checkBoolean$6(d.force_pending_vat, field + \".force_pending_vat\");\n" +
-"        checkString$8(d.iban, field + \".iban\");\n" +
+"        checkBoolean$5(d.force_pending_vat, field + \".force_pending_vat\");\n" +
+"        checkString$7(d.iban, field + \".iban\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
 "            checkNull$7(d.iban_last_update, field + \".iban_last_update\", \"null | IbanLastUpdate\");\n" +
@@ -7506,50 +8149,50 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            checkNull$7(d.iban_proof, field + \".iban_proof\");\n" +
 "        }\n" +
 "        checkNumber$7(d.id, field + \".id\");\n" +
-"        checkBoolean$6(d.invoices_auto_generated, field + \".invoices_auto_generated\");\n" +
-"        checkBoolean$6(d.invoices_auto_validated, field + \".invoices_auto_validated\");\n" +
-"        checkString$8(d.name, field + \".name\");\n" +
-"        checkString$8(d.notes, field + \".notes\");\n" +
+"        checkBoolean$5(d.invoices_auto_generated, field + \".invoices_auto_generated\");\n" +
+"        checkBoolean$5(d.invoices_auto_validated, field + \".invoices_auto_validated\");\n" +
+"        checkString$7(d.name, field + \".name\");\n" +
+"        checkString$7(d.notes, field + \".notes\");\n" +
 "        checkNull$7(d.notes_comment, field + \".notes_comment\");\n" +
 "        d.plan_item = PlanItem1.Create(d.plan_item, field + \".plan_item\");\n" +
-"        checkString$8(d.postal_code, field + \".postal_code\");\n" +
-"        checkArray$6(d.search_terms, field + \".search_terms\");\n" +
+"        checkString$7(d.postal_code, field + \".postal_code\");\n" +
+"        checkArray$7(d.search_terms, field + \".search_terms\");\n" +
 "        if (d.search_terms) {\n" +
 "            for (let i = 0; i < d.search_terms.length; i++) {\n" +
-"                checkString$8(d.search_terms[i], field + \".search_terms\" + \"[\" + i + \"]\");\n" +
+"                checkString$7(d.search_terms[i], field + \".search_terms\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
 "        checkNull$7(d.supplier_due_date_delay, field + \".supplier_due_date_delay\");\n" +
-"        checkString$8(d.supplier_due_date_rule, field + \".supplier_due_date_rule\");\n" +
+"        checkString$7(d.supplier_due_date_rule, field + \".supplier_due_date_rule\");\n" +
 "        checkNull$7(d.supplier_payment_method, field + \".supplier_payment_method\");\n" +
-"        checkArray$6(d.tags, field + \".tags\");\n" +
+"        checkArray$7(d.tags, field + \".tags\");\n" +
 "        if (d.tags) {\n" +
 "            for (let i = 0; i < d.tags.length; i++) {\n" +
 "                d.tags[i] = TagsEntityOrTag.Create(d.tags[i], field + \".tags\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
-"        checkArray$6(d.thirdparties_tags, field + \".thirdparties_tags\");\n" +
+"        checkArray$7(d.thirdparties_tags, field + \".thirdparties_tags\");\n" +
 "        if (d.thirdparties_tags) {\n" +
 "            for (let i = 0; i < d.thirdparties_tags.length; i++) {\n" +
 "                d.thirdparties_tags[i] = ThirdpartiesTagsEntity.Create(d.thirdparties_tags[i], field + \".thirdparties_tags\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
-"        checkArray$6(d.thirdparty_invoice_line_rules, field + \".thirdparty_invoice_line_rules\");\n" +
+"        checkArray$7(d.thirdparty_invoice_line_rules, field + \".thirdparty_invoice_line_rules\");\n" +
 "        if (d.thirdparty_invoice_line_rules) {\n" +
 "            for (let i = 0; i < d.thirdparty_invoice_line_rules.length; i++) {\n" +
 "                d.thirdparty_invoice_line_rules[i] = ThirdpartyInvoiceLineRulesEntity1.Create(d.thirdparty_invoice_line_rules[i], field + \".thirdparty_invoice_line_rules\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
-"        checkArray$6(d.thirdparty_visibility_rules, field + \".thirdparty_visibility_rules\");\n" +
+"        checkArray$7(d.thirdparty_visibility_rules, field + \".thirdparty_visibility_rules\");\n" +
 "        if (d.thirdparty_visibility_rules) {\n" +
 "            for (let i = 0; i < d.thirdparty_visibility_rules.length; i++) {\n" +
 "                d.thirdparty_visibility_rules[i] = ThirdpartyVisibilityRulesEntity.Create(d.thirdparty_visibility_rules[i], field + \".thirdparty_visibility_rules\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"validation_status\" in d) {\n" +
-"            checkString$8(d.validation_status, field + \".validation_status\");\n" +
+"            checkString$7(d.validation_status, field + \".validation_status\");\n" +
 "        }\n" +
-"        checkString$8(d.vat_number, field + \".vat_number\");\n" +
+"        checkString$7(d.vat_number, field + \".vat_number\");\n" +
 "        const knownProperties = [\"activity_nomenclature\", \"address\", \"admin_city_code\", \"auto_process_invoices\", \"city\", \"company_id\", \"country_alpha2\", \"disable_pending_vat\", \"emails\", \"establishment_no\", \"force_pending_vat\", \"iban\", \"iban_last_update\", \"iban_proof\", \"id\", \"invoices_auto_generated\", \"invoices_auto_validated\", \"name\", \"notes\", \"notes_comment\", \"plan_item\", \"postal_code\", \"search_terms\", \"supplier_due_date_delay\", \"supplier_due_date_rule\", \"supplier_payment_method\", \"tags\", \"thirdparties_tags\", \"thirdparty_invoice_line_rules\", \"thirdparty_visibility_rules\", \"validation_status\", \"vat_number\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -7612,9 +8255,9 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$9(field, d);\n" +
 "        }\n" +
-"        checkString$8(d.at, field + \".at\");\n" +
-"        checkBoolean$6(d.from_pennylane, field + \".from_pennylane\");\n" +
-"        checkString$8(d.name, field + \".name\");\n" +
+"        checkString$7(d.at, field + \".at\");\n" +
+"        checkBoolean$5(d.from_pennylane, field + \".from_pennylane\");\n" +
+"        checkString$7(d.name, field + \".name\");\n" +
 "        const knownProperties = [\"at\", \"from_pennylane\", \"name\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -7646,7 +8289,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            throwIsArray$9(field, d);\n" +
 "        }\n" +
 "        checkNumber$7(d.id, field + \".id\");\n" +
-"        checkString$8(d.number, field + \".number\");\n" +
+"        checkString$7(d.number, field + \".number\");\n" +
 "        const knownProperties = [\"id\", \"number\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -7677,12 +8320,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            throwIsArray$9(field, d);\n" +
 "        }\n" +
 "        if (\"color\" in d) {\n" +
-"            checkString$8(d.color, field + \".color\");\n" +
+"            checkString$7(d.color, field + \".color\");\n" +
 "        }\n" +
 "        d.group = Group$1.Create(d.group, field + \".group\");\n" +
 "        checkNumber$7(d.group_id, field + \".group_id\");\n" +
 "        checkNumber$7(d.id, field + \".id\");\n" +
-"        checkString$8(d.label, field + \".label\");\n" +
+"        checkString$7(d.label, field + \".label\");\n" +
 "        const knownProperties = [\"color\", \"group\", \"group_id\", \"id\", \"label\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -7716,8 +8359,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$9(field, d);\n" +
 "        }\n" +
-"        checkString$8(d.label, field + \".label\");\n" +
-"        checkBoolean$6(d.self_service_accounting, field + \".self_service_accounting\");\n" +
+"        checkString$7(d.label, field + \".label\");\n" +
+"        checkBoolean$5(d.self_service_accounting, field + \".self_service_accounting\");\n" +
 "        const knownProperties = [\"label\", \"self_service_accounting\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -7749,7 +8392,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        checkNumber$7(d.id, field + \".id\");\n" +
 "        d.tag = TagsEntityOrTag1.Create(d.tag, field + \".tag\");\n" +
-"        checkString$8(d.weight, field + \".weight\");\n" +
+"        checkString$7(d.weight, field + \".weight\");\n" +
 "        const knownProperties = [\"id\", \"tag\", \"weight\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -7781,12 +8424,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            throwIsArray$9(field, d);\n" +
 "        }\n" +
 "        if (\"color\" in d) {\n" +
-"            checkString$8(d.color, field + \".color\");\n" +
+"            checkString$7(d.color, field + \".color\");\n" +
 "        }\n" +
 "        d.group = Group$1.Create(d.group, field + \".group\");\n" +
 "        checkNumber$7(d.group_id, field + \".group_id\");\n" +
 "        checkNumber$7(d.id, field + \".id\");\n" +
-"        checkString$8(d.label, field + \".label\");\n" +
+"        checkString$7(d.label, field + \".label\");\n" +
 "        const knownProperties = [\"color\", \"group\", \"group_id\", \"id\", \"label\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -7833,7 +8476,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkString$8(d.vat_rate, field + \".vat_rate\", \"string | null\");\n" +
+"            checkString$7(d.vat_rate, field + \".vat_rate\", \"string | null\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -7871,10 +8514,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$9(field, d);\n" +
 "        }\n" +
-"        checkBoolean$6(d.enabled, field + \".enabled\");\n" +
+"        checkBoolean$5(d.enabled, field + \".enabled\");\n" +
 "        checkNumber$7(d.id, field + \".id\");\n" +
-"        checkString$8(d.label, field + \".label\");\n" +
-"        checkString$8(d.number, field + \".number\");\n" +
+"        checkString$7(d.label, field + \".label\");\n" +
+"        checkString$7(d.number, field + \".number\");\n" +
 "        const knownProperties = [\"enabled\", \"id\", \"label\", \"number\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -7907,7 +8550,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            throwIsArray$9(field, d);\n" +
 "        }\n" +
 "        checkNumber$7(d.id, field + \".id\");\n" +
-"        checkString$8(d.visible_on, field + \".visible_on\");\n" +
+"        checkString$7(d.visible_on, field + \".visible_on\");\n" +
 "        const knownProperties = [\"id\", \"visible_on\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
@@ -7928,7 +8571,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "function throwIsArray$9(field, value, multiple) {\n" +
 "    return errorHelper$9(field, value, \"object\");\n" +
 "}\n" +
-"function checkArray$6(value, field, multiple) {\n" +
+"function checkArray$7(value, field, multiple) {\n" +
 "    if (!Array.isArray(value))\n" +
 "        errorHelper$9(field, value, \"array\");\n" +
 "}\n" +
@@ -7936,11 +8579,11 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    if (typeof (value) !== 'number')\n" +
 "        errorHelper$9(field, value, \"number\");\n" +
 "}\n" +
-"function checkBoolean$6(value, field, multiple) {\n" +
+"function checkBoolean$5(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'boolean')\n" +
 "        errorHelper$9(field, value, \"boolean\");\n" +
 "}\n" +
-"function checkString$8(value, field, multiple) {\n" +
+"function checkString$7(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'string')\n" +
 "        errorHelper$9(field, value, multiple ?? \"string\");\n" +
 "}\n" +
@@ -7985,187 +8628,45 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    return { direction, thirdparty };\n" +
 "}\n" +
 "\n" +
-"class Cache extends Logger {\n" +
-"    constructor(key, initialValue) {\n" +
-"        super();\n" +
-"        this.storageKey = key;\n" +
-"        this.data = initialValue;\n" +
-"        this.load();\n" +
-"        this.debug('new Cache', this);\n" +
-"        this.follow();\n" +
-"    }\n" +
-"    /**\n" +
-"     * stringify data for storage\n" +
-"     */\n" +
-"    stringify(value) {\n" +
-"        return JSON.stringify(value);\n" +
-"    }\n" +
-"    /**\n" +
-"     * Load data from localStorage\n" +
-"     */\n" +
-"    load() {\n" +
-"        try {\n" +
-"            this.data = this.parse(localStorage.getItem(this.storageKey));\n" +
-"            this.emit('loadend', this);\n" +
-"        }\n" +
-"        catch (_error) { /* Reject data and overrid it at next save() */ }\n" +
-"    }\n" +
-"    /**\n" +
-"     * Save data to localStorage\n" +
-"     */\n" +
-"    save(data) {\n" +
-"        if (data) {\n" +
-"            this.parse(this.stringify(data)); // validate value: throws if invalid\n" +
-"            this.data = data;\n" +
-"        }\n" +
-"        localStorage.setItem(this.storageKey, this.stringify(this.data));\n" +
-"        this.emit('saved', this);\n" +
-"    }\n" +
-"    /**\n" +
-"     * Follow storage change from other Browser pages\n" +
-"     */\n" +
-"    follow() {\n" +
-"        window.addEventListener('storage', event => {\n" +
-"            if (event.storageArea !== localStorage || event.key !== this.storageKey)\n" +
-"                return;\n" +
-"            try {\n" +
-"                this.data = this.parse(event.newValue);\n" +
-"                this.emit('change', this);\n" +
-"            }\n" +
-"            catch (error) {\n" +
-"                this.log('storage event error', { error, value: event.newValue });\n" +
-"                /* Reject data and overrid it at next save() */\n" +
-"            }\n" +
-"        });\n" +
-"    }\n" +
+"function isDocumentType(value) {\n" +
+"    return [\"transaction\", \"invoice\"].includes(value);\n" +
 "}\n" +
-"\n" +
-"/**\n" +
-" * CacheList is a cache that stores a list of data.\n" +
-" * It extends Cache and provides a simple interface to filter and find.\n" +
-" */\n" +
-"class CacheList extends Cache {\n" +
-"    static getInstance(storageKey) {\n" +
-"        if (!this.instances[storageKey]) {\n" +
-"            this.instances[storageKey] = new this(storageKey);\n" +
-"        }\n" +
-"        return this.instances[storageKey];\n" +
-"    }\n" +
-"    constructor(key, initialValue = []) {\n" +
-"        super(key, initialValue);\n" +
-"    }\n" +
-"    parse(data) {\n" +
-"        const value = JSON.parse(data);\n" +
-"        if (!Array.isArray(value))\n" +
-"            throw new Error(\"The given value does not parse as an Array.\");\n" +
-"        return value;\n" +
-"    }\n" +
-"    filter(matchOrPredicate) {\n" +
-"        this.load();\n" +
-"        if (typeof matchOrPredicate === \"function\")\n" +
-"            return this.data.filter(matchOrPredicate);\n" +
-"        return this.data.filter((item) => Object.entries(matchOrPredicate).every(([key, value]) => item[key] === value));\n" +
-"    }\n" +
-"    find(match) {\n" +
-"        this.load();\n" +
-"        if (typeof match === \"function\")\n" +
-"            return this.data.find(match);\n" +
-"        return this.data.find((item) => Object.entries(match).every(([key, value]) => item[key] === value));\n" +
-"    }\n" +
-"    /**\n" +
-"     * delete one item\n" +
-"     *\n" +
-"     * @return Deleted item if found\n" +
-"     */\n" +
-"    delete(match) {\n" +
-"        this.load();\n" +
-"        const found = this.find(match);\n" +
-"        if (!found)\n" +
-"            return null;\n" +
-"        this.data.splice(this.data.indexOf(found), 1);\n" +
-"        this.emit(\"delete\", { old: found });\n" +
-"        this.save();\n" +
-"        this.emit(\"change\", this);\n" +
-"        return found;\n" +
-"    }\n" +
-"    /**\n" +
-"     * clear all data\n" +
-"     */\n" +
-"    clear() {\n" +
-"        this.data.length = 0;\n" +
-"        this.emit(\"clear\", this);\n" +
-"        this.save();\n" +
-"        this.emit(\"change\", this);\n" +
-"        return this;\n" +
-"    }\n" +
-"    updateItem(matchOrValue, valueOrCreate, create) {\n" +
-"        let match;\n" +
-"        let value;\n" +
-"        if (typeof valueOrCreate === \"boolean\" ||\n" +
-"            typeof valueOrCreate === \"undefined\") {\n" +
-"            if (!(\"id\" in matchOrValue))\n" +
-"                throw new Error(\"`matchOrValue` MUST have an `id` property\");\n" +
-"            create = valueOrCreate ?? true;\n" +
-"            value = matchOrValue;\n" +
-"            match = { id: matchOrValue.id };\n" +
-"        }\n" +
-"        else {\n" +
-"            value = valueOrCreate;\n" +
-"            match = matchOrValue;\n" +
-"        }\n" +
-"        this.load();\n" +
-"        const item = this.find(match);\n" +
-"        if (item) {\n" +
-"            this.data.splice(this.data.indexOf(item), 1, value);\n" +
-"            this.emit(\"update\", { old: item, new: value });\n" +
-"        }\n" +
-"        else {\n" +
-"            if (!create)\n" +
-"                return;\n" +
-"            this.data.push(value);\n" +
-"            this.emit(\"add\", { new: value });\n" +
-"        }\n" +
-"        this.save();\n" +
-"        this.emit(\"change\", this);\n" +
-"        return item;\n" +
-"    }\n" +
-"    /**\n" +
-"     * Calls the specified callback function for all the elements in an array.\n" +
-"     * The return value of the callback function is the accumulated result,\n" +
-"     * and is provided as an argument in the next call to the callback function.\n" +
-"     */\n" +
-"    reduce(cb, startingValue) {\n" +
-"        this.load();\n" +
-"        return this.data.reduce(cb, startingValue);\n" +
-"    }\n" +
+"function isTypedDocument(value) {\n" +
+"    return (value &&\n" +
+"        \"object\" === typeof value &&\n" +
+"        \"type\" in value &&\n" +
+"        \"string\" === typeof value.type &&\n" +
+"        isDocumentType(value.type.toLowerCase()));\n" +
 "}\n" +
-"CacheList.instances = {};\n" +
-"\n" +
+"const DocumentCache = new Map();\n" +
 "class Document extends Logger {\n" +
-"    constructor({ id }) {\n" +
+"    constructor({ id, ...raw }) {\n" +
 "        super();\n" +
 "        if (!Number.isSafeInteger(id)) {\n" +
 "            this.log(\"constructor\", { id, args: arguments });\n" +
 "            throw new Error(\"`id` MUST be an integer\");\n" +
 "        }\n" +
 "        this.id = id;\n" +
-"        Document.DocumentCache.set(id, this);\n" +
+"        if (isTypedDocument(raw))\n" +
+"            this.type = raw.type.toLowerCase();\n" +
+"        DocumentCache.set(id, this);\n" +
 "    }\n" +
 "    /**\n" +
 "     * Get a document by id, all documents are cached for performance\n" +
 "     */\n" +
-"    static get(id) {\n" +
-"        if (!Document.DocumentCache.has(id)) {\n" +
-"            return new Document({ id });\n" +
+"    static get(raw) {\n" +
+"        if (!DocumentCache.has(raw.id)) {\n" +
+"            return new Document(raw);\n" +
 "        }\n" +
-"        return Document.DocumentCache.get(id);\n" +
+"        return DocumentCache.get(raw.id);\n" +
 "    }\n" +
 "    /**\n" +
 "     * Update a document from an APIGroupedDocument\n" +
 "     */\n" +
 "    static fromAPIGroupedDocument(apigdoc) {\n" +
-"        const doc = Document.get(apigdoc.id);\n" +
+"        const doc = Document.get({ id: apigdoc.id });\n" +
 "        doc.gDocument = apigdoc;\n" +
+"        doc.type = apigdoc.type === \"Invoice\" ? \"invoice\" : \"transaction\";\n" +
 "        return doc;\n" +
 "    }\n" +
 "    async getDocument() {\n" +
@@ -8214,17 +8715,6 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const ledgerEvents = await this.getLedgerEvents();\n" +
 "        return ledgerEvents.some((event) => event.closed);\n" +
 "    }\n" +
-"    async isReconciled() {\n" +
-"        const groupedDocuments = await this.getGroupedDocuments();\n" +
-"        for (const doc of groupedDocuments) {\n" +
-"            const gDocument = await doc.getDocument();\n" +
-"            const meAsGdoc = gDocument.grouped_documents.find((d) => d.id === this.id);\n" +
-"            if (meAsGdoc)\n" +
-"                return meAsGdoc.reconciled;\n" +
-"        }\n" +
-"        const ledgerEvents = await getLedgerEvents(this.id);\n" +
-"        return ledgerEvents.some((event) => event.reconciliation_id);\n" +
-"    }\n" +
 "    async archive(unarchive = false) {\n" +
 "        return await archiveDocument(this.id, unarchive);\n" +
 "    }\n" +
@@ -8272,7 +8762,6 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        return closed;\n" +
 "    }\n" +
 "}\n" +
-"Document.DocumentCache = new Map();\n" +
 "Document.closedCache = new CacheList(\"closedDocumentsCache\", []);\n" +
 "\n" +
 "class ValidableDocument extends Document {\n" +
@@ -8320,9 +8809,86 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
 "let obj$8 = null;\n" +
-"class APITransaction {\n" +
+"class APITransactionList {\n" +
 "    static Parse(d) {\n" +
-"        return APITransaction.Create(JSON.parse(d));\n" +
+"        return APITransactionList.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$8 = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$8(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$8(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$8(field, d);\n" +
+"        }\n" +
+"        d.pagination = Pagination$1.Create(d.pagination, field + \".pagination\");\n" +
+"        checkArray$6(d.transactions, field + \".transactions\");\n" +
+"        if (d.transactions) {\n" +
+"            for (let i = 0; i < d.transactions.length; i++) {\n" +
+"                d.transactions[i] = TransactionsEntity$1.Create(d.transactions[i], field + \".transactions\" + \"[\" + i + \"]\");\n" +
+"            }\n" +
+"        }\n" +
+"        const knownProperties = [\"pagination\", \"transactions\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$8(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
+"        return new APITransactionList(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.pagination = d.pagination;\n" +
+"        this.transactions = d.transactions;\n" +
+"    }\n" +
+"}\n" +
+"let Pagination$1 = class Pagination {\n" +
+"    static Parse(d) {\n" +
+"        return Pagination.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$8 = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$8(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$8(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$8(field, d);\n" +
+"        }\n" +
+"        checkBoolean$4(d.hasNextPage, field + \".hasNextPage\");\n" +
+"        checkNumber$6(d.page, field + \".page\");\n" +
+"        checkNumber$6(d.pages, field + \".pages\");\n" +
+"        checkNumber$6(d.pageSize, field + \".pageSize\");\n" +
+"        checkNumber$6(d.totalEntries, field + \".totalEntries\");\n" +
+"        checkString$6(d.totalEntriesPrecision, field + \".totalEntriesPrecision\");\n" +
+"        checkString$6(d.totalEntriesStr, field + \".totalEntriesStr\");\n" +
+"        const knownProperties = [\"hasNextPage\", \"page\", \"pages\", \"pageSize\", \"totalEntries\", \"totalEntriesPrecision\", \"totalEntriesStr\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$8(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
+"        return new Pagination(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.hasNextPage = d.hasNextPage;\n" +
+"        this.page = d.page;\n" +
+"        this.pages = d.pages;\n" +
+"        this.pageSize = d.pageSize;\n" +
+"        this.totalEntries = d.totalEntries;\n" +
+"        this.totalEntriesPrecision = d.totalEntriesPrecision;\n" +
+"        this.totalEntriesStr = d.totalEntriesStr;\n" +
+"    }\n" +
+"};\n" +
+"let TransactionsEntity$1 = class TransactionsEntity {\n" +
+"    static Parse(d) {\n" +
+"        return TransactionsEntity.Create(JSON.parse(d));\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
@@ -8339,27 +8905,27 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            throwIsArray$8(field, d);\n" +
 "        }\n" +
 "        checkNumber$6(d.account_id, field + \".account_id\");\n" +
-"        d.account_synchronization = AccountSynchronization$1.Create(d.account_synchronization, field + \".account_synchronization\");\n" +
-"        checkString$7(d.amount, field + \".amount\");\n" +
+"        d.account_synchronization = AccountSynchronization.Create(d.account_synchronization, field + \".account_synchronization\");\n" +
+"        checkString$6(d.amount, field + \".amount\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
 "            checkNull$6(d.archived_at, field + \".archived_at\", \"null | string\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkString$7(d.archived_at, field + \".archived_at\", \"null | string\");\n" +
+"                checkString$6(d.archived_at, field + \".archived_at\", \"null | string\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
 "        }\n" +
-"        checkBoolean$5(d.attachment_lost, field + \".attachment_lost\");\n" +
-"        checkBoolean$5(d.attachment_required, field + \".attachment_required\");\n" +
+"        checkBoolean$4(d.attachment_lost, field + \".attachment_lost\");\n" +
+"        checkBoolean$4(d.attachment_required, field + \".attachment_required\");\n" +
 "        checkNumber$6(d.company_id, field + \".company_id\");\n" +
-"        checkString$7(d.currency, field + \".currency\");\n" +
-"        checkString$7(d.currency_amount, field + \".currency_amount\");\n" +
+"        checkString$6(d.currency, field + \".currency\");\n" +
+"        checkString$6(d.currency_amount, field + \".currency_amount\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkString$7(d.currency_fee, field + \".currency_fee\", \"string | null\");\n" +
+"            checkString$6(d.currency_fee, field + \".currency_fee\", \"string | null\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -8368,14 +8934,14 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            catch (e) {\n" +
 "            }\n" +
 "        }\n" +
-"        checkString$7(d.date, field + \".date\");\n" +
+"        checkString$6(d.date, field + \".date\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
 "            checkNull$6(d.dump, field + \".dump\", \"null | Dump\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                d.dump = Dump$1.Create(d.dump, field + \".dump\", \"null | Dump\");\n" +
+"                d.dump = Dump.Create(d.dump, field + \".dump\", \"null | Dump\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -8393,7 +8959,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
-"            checkString$7(d.fee, field + \".fee\", \"string | null\");\n" +
+"            checkString$6(d.fee, field + \".fee\", \"string | null\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
@@ -8403,360 +8969,14 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "        }\n" +
 "        checkNumber$6(d.files_count, field + \".files_count\");\n" +
-"        checkString$7(d.gross_amount, field + \".gross_amount\");\n" +
-"        checkString$7(d.group_uuid, field + \".group_uuid\");\n" +
-"        checkNumber$6(d.id, field + \".id\");\n" +
-"        checkBoolean$5(d.is_potential_duplicate, field + \".is_potential_duplicate\");\n" +
-"        checkBoolean$5(d.is_waiting_details, field + \".is_waiting_details\");\n" +
-"        checkString$7(d.label, field + \".label\");\n" +
-"        checkBoolean$5(d.pending, field + \".pending\");\n" +
-"        checkNull$6(d.reconciliation_id, field + \".reconciliation_id\");\n" +
-"        checkString$7(d.source, field + \".source\");\n" +
-"        checkString$7(d.source_logo, field + \".source_logo\");\n" +
-"        checkString$7(d.status, field + \".status\");\n" +
-"        checkString$7(d.type, field + \".type\");\n" +
-"        checkString$7(d.updated_at, field + \".updated_at\");\n" +
-"        checkBoolean$5(d.validation_needed, field + \".validation_needed\");\n" +
-"        const knownProperties = [\"account_id\", \"account_synchronization\", \"amount\", \"archived_at\", \"attachment_lost\", \"attachment_required\", \"company_id\", \"currency\", \"currency_amount\", \"currency_fee\", \"date\", \"dump\", \"dump_id\", \"fee\", \"files_count\", \"gross_amount\", \"group_uuid\", \"id\", \"is_potential_duplicate\", \"is_waiting_details\", \"label\", \"pending\", \"reconciliation_id\", \"source\", \"source_logo\", \"status\", \"type\", \"updated_at\", \"validation_needed\"];\n" +
-"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
-"        if (unknownProperty)\n" +
-"            errorHelper$8(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
-"        return new APITransaction(d);\n" +
-"    }\n" +
-"    constructor(d) {\n" +
-"        this.account_id = d.account_id;\n" +
-"        this.account_synchronization = d.account_synchronization;\n" +
-"        this.amount = d.amount;\n" +
-"        this.archived_at = d.archived_at;\n" +
-"        this.attachment_lost = d.attachment_lost;\n" +
-"        this.attachment_required = d.attachment_required;\n" +
-"        this.company_id = d.company_id;\n" +
-"        this.currency = d.currency;\n" +
-"        this.currency_amount = d.currency_amount;\n" +
-"        this.currency_fee = d.currency_fee;\n" +
-"        this.date = d.date;\n" +
-"        this.dump = d.dump;\n" +
-"        this.dump_id = d.dump_id;\n" +
-"        this.fee = d.fee;\n" +
-"        this.files_count = d.files_count;\n" +
-"        this.gross_amount = d.gross_amount;\n" +
-"        this.group_uuid = d.group_uuid;\n" +
-"        this.id = d.id;\n" +
-"        this.is_potential_duplicate = d.is_potential_duplicate;\n" +
-"        this.is_waiting_details = d.is_waiting_details;\n" +
-"        this.label = d.label;\n" +
-"        this.pending = d.pending;\n" +
-"        this.reconciliation_id = d.reconciliation_id;\n" +
-"        this.source = d.source;\n" +
-"        this.source_logo = d.source_logo;\n" +
-"        this.status = d.status;\n" +
-"        this.type = d.type;\n" +
-"        this.updated_at = d.updated_at;\n" +
-"        this.validation_needed = d.validation_needed;\n" +
-"    }\n" +
-"}\n" +
-"let AccountSynchronization$1 = class AccountSynchronization {\n" +
-"    static Parse(d) {\n" +
-"        return AccountSynchronization.Create(JSON.parse(d));\n" +
-"    }\n" +
-"    static Create(d, field, multiple) {\n" +
-"        if (!field) {\n" +
-"            obj$8 = d;\n" +
-"            field = \"root\";\n" +
-"        }\n" +
-"        if (!d) {\n" +
-"            throwNull2NonNull$8(field, d, multiple ?? this.name);\n" +
-"        }\n" +
-"        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$8(field, d);\n" +
-"        }\n" +
-"        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$8(field, d);\n" +
-"        }\n" +
-"        // This will be refactored in the next release.\n" +
-"        try {\n" +
-"            checkString$7(d.created_at, field + \".created_at\", \"string | null\");\n" +
-"        }\n" +
-"        catch (e) {\n" +
-"            try {\n" +
-"                checkNull$6(d.created_at, field + \".created_at\", \"string | null\");\n" +
-"            }\n" +
-"            catch (e) {\n" +
-"            }\n" +
-"        }\n" +
-"        checkNull$6(d.error_message, field + \".error_message\");\n" +
-"        // This will be refactored in the next release.\n" +
-"        try {\n" +
-"            checkBoolean$5(d.triggered_manually, field + \".triggered_manually\", \"boolean | null\");\n" +
-"        }\n" +
-"        catch (e) {\n" +
-"            try {\n" +
-"                checkNull$6(d.triggered_manually, field + \".triggered_manually\", \"boolean | null\");\n" +
-"            }\n" +
-"            catch (e) {\n" +
-"            }\n" +
-"        }\n" +
-"        const knownProperties = [\"created_at\", \"error_message\", \"triggered_manually\"];\n" +
-"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
-"        if (unknownProperty)\n" +
-"            errorHelper$8(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
-"        return new AccountSynchronization(d);\n" +
-"    }\n" +
-"    constructor(d) {\n" +
-"        this.created_at = d.created_at;\n" +
-"        this.error_message = d.error_message;\n" +
-"        this.triggered_manually = d.triggered_manually;\n" +
-"    }\n" +
-"};\n" +
-"let Dump$1 = class Dump {\n" +
-"    static Parse(d) {\n" +
-"        return Dump.Create(JSON.parse(d));\n" +
-"    }\n" +
-"    static Create(d, field, multiple) {\n" +
-"        if (!field) {\n" +
-"            obj$8 = d;\n" +
-"            field = \"root\";\n" +
-"        }\n" +
-"        if (!d) {\n" +
-"            throwNull2NonNull$8(field, d, multiple ?? this.name);\n" +
-"        }\n" +
-"        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$8(field, d);\n" +
-"        }\n" +
-"        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$8(field, d);\n" +
-"        }\n" +
-"        checkString$7(d.created_at, field + \".created_at\");\n" +
-"        checkString$7(d.creator, field + \".creator\");\n" +
-"        checkString$7(d.type, field + \".type\");\n" +
-"        const knownProperties = [\"created_at\", \"creator\", \"type\"];\n" +
-"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
-"        if (unknownProperty)\n" +
-"            errorHelper$8(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
-"        return new Dump(d);\n" +
-"    }\n" +
-"    constructor(d) {\n" +
-"        this.created_at = d.created_at;\n" +
-"        this.creator = d.creator;\n" +
-"        this.type = d.type;\n" +
-"    }\n" +
-"};\n" +
-"function throwNull2NonNull$8(field, value, multiple) {\n" +
-"    return errorHelper$8(field, value, multiple ?? \"non-nullable object\");\n" +
-"}\n" +
-"function throwNotObject$8(field, value, multiple) {\n" +
-"    return errorHelper$8(field, value, \"object\");\n" +
-"}\n" +
-"function throwIsArray$8(field, value, multiple) {\n" +
-"    return errorHelper$8(field, value, \"object\");\n" +
-"}\n" +
-"function checkNumber$6(value, field, multiple) {\n" +
-"    if (typeof (value) !== 'number')\n" +
-"        errorHelper$8(field, value, multiple ?? \"number\");\n" +
-"}\n" +
-"function checkBoolean$5(value, field, multiple) {\n" +
-"    if (typeof (value) !== 'boolean')\n" +
-"        errorHelper$8(field, value, multiple ?? \"boolean\");\n" +
-"}\n" +
-"function checkString$7(value, field, multiple) {\n" +
-"    if (typeof (value) !== 'string')\n" +
-"        errorHelper$8(field, value, multiple ?? \"string\");\n" +
-"}\n" +
-"function checkNull$6(value, field, multiple) {\n" +
-"    if (value !== null)\n" +
-"        errorHelper$8(field, value, multiple ?? \"null\");\n" +
-"}\n" +
-"function errorHelper$8(field, d, type) {\n" +
-"    if (type.includes(' | ')) {\n" +
-"        throw new TypeError('Expected ' + type + \" at \" + field + \" but found:\\n" +
-"\" + JSON.stringify(d) + \"\\n" +
-"\\n" +
-"Full object:\\n" +
-"\" + JSON.stringify(obj$8));\n" +
-"    }\n" +
-"    else {\n" +
-"        let jsonClone = obj$8;\n" +
-"        try {\n" +
-"            jsonClone = JSON.parse(JSON.stringify(obj$8));\n" +
-"        }\n" +
-"        catch (error) {\n" +
-"            console.log(error);\n" +
-"        }\n" +
-"        console.error('Expected \"' + type + '\" at ' + field + ' but found:\\n" +
-"' + JSON.stringify(d), jsonClone);\n" +
-"    }\n" +
-"}\n" +
-"\n" +
-"// Stores the currently-being-typechecked object for error messages.\n" +
-"let obj$7 = null;\n" +
-"class APITransactionList {\n" +
-"    static Parse(d) {\n" +
-"        return APITransactionList.Create(JSON.parse(d));\n" +
-"    }\n" +
-"    static Create(d, field, multiple) {\n" +
-"        if (!field) {\n" +
-"            obj$7 = d;\n" +
-"            field = \"root\";\n" +
-"        }\n" +
-"        if (!d) {\n" +
-"            throwNull2NonNull$7(field, d, multiple ?? this.name);\n" +
-"        }\n" +
-"        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$7(field, d);\n" +
-"        }\n" +
-"        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$7(field, d);\n" +
-"        }\n" +
-"        d.pagination = Pagination$1.Create(d.pagination, field + \".pagination\");\n" +
-"        checkArray$5(d.transactions, field + \".transactions\");\n" +
-"        if (d.transactions) {\n" +
-"            for (let i = 0; i < d.transactions.length; i++) {\n" +
-"                d.transactions[i] = TransactionsEntity.Create(d.transactions[i], field + \".transactions\" + \"[\" + i + \"]\");\n" +
-"            }\n" +
-"        }\n" +
-"        const knownProperties = [\"pagination\", \"transactions\"];\n" +
-"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
-"        if (unknownProperty)\n" +
-"            errorHelper$7(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
-"        return new APITransactionList(d);\n" +
-"    }\n" +
-"    constructor(d) {\n" +
-"        this.pagination = d.pagination;\n" +
-"        this.transactions = d.transactions;\n" +
-"    }\n" +
-"}\n" +
-"let Pagination$1 = class Pagination {\n" +
-"    static Parse(d) {\n" +
-"        return Pagination.Create(JSON.parse(d));\n" +
-"    }\n" +
-"    static Create(d, field, multiple) {\n" +
-"        if (!field) {\n" +
-"            obj$7 = d;\n" +
-"            field = \"root\";\n" +
-"        }\n" +
-"        if (!d) {\n" +
-"            throwNull2NonNull$7(field, d, multiple ?? this.name);\n" +
-"        }\n" +
-"        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$7(field, d);\n" +
-"        }\n" +
-"        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$7(field, d);\n" +
-"        }\n" +
-"        checkBoolean$4(d.hasNextPage, field + \".hasNextPage\");\n" +
-"        checkNumber$5(d.page, field + \".page\");\n" +
-"        checkNumber$5(d.pages, field + \".pages\");\n" +
-"        checkNumber$5(d.pageSize, field + \".pageSize\");\n" +
-"        checkNumber$5(d.totalEntries, field + \".totalEntries\");\n" +
-"        checkString$6(d.totalEntriesPrecision, field + \".totalEntriesPrecision\");\n" +
-"        checkString$6(d.totalEntriesStr, field + \".totalEntriesStr\");\n" +
-"        const knownProperties = [\"hasNextPage\", \"page\", \"pages\", \"pageSize\", \"totalEntries\", \"totalEntriesPrecision\", \"totalEntriesStr\"];\n" +
-"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
-"        if (unknownProperty)\n" +
-"            errorHelper$7(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
-"        return new Pagination(d);\n" +
-"    }\n" +
-"    constructor(d) {\n" +
-"        this.hasNextPage = d.hasNextPage;\n" +
-"        this.page = d.page;\n" +
-"        this.pages = d.pages;\n" +
-"        this.pageSize = d.pageSize;\n" +
-"        this.totalEntries = d.totalEntries;\n" +
-"        this.totalEntriesPrecision = d.totalEntriesPrecision;\n" +
-"        this.totalEntriesStr = d.totalEntriesStr;\n" +
-"    }\n" +
-"};\n" +
-"class TransactionsEntity {\n" +
-"    static Parse(d) {\n" +
-"        return TransactionsEntity.Create(JSON.parse(d));\n" +
-"    }\n" +
-"    static Create(d, field, multiple) {\n" +
-"        if (!field) {\n" +
-"            obj$7 = d;\n" +
-"            field = \"root\";\n" +
-"        }\n" +
-"        if (!d) {\n" +
-"            throwNull2NonNull$7(field, d, multiple ?? this.name);\n" +
-"        }\n" +
-"        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$7(field, d);\n" +
-"        }\n" +
-"        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$7(field, d);\n" +
-"        }\n" +
-"        checkNumber$5(d.account_id, field + \".account_id\");\n" +
-"        d.account_synchronization = AccountSynchronization.Create(d.account_synchronization, field + \".account_synchronization\");\n" +
-"        checkString$6(d.amount, field + \".amount\");\n" +
-"        // This will be refactored in the next release.\n" +
-"        try {\n" +
-"            checkNull$5(d.archived_at, field + \".archived_at\", \"null | string\");\n" +
-"        }\n" +
-"        catch (e) {\n" +
-"            try {\n" +
-"                checkString$6(d.archived_at, field + \".archived_at\", \"null | string\");\n" +
-"            }\n" +
-"            catch (e) {\n" +
-"            }\n" +
-"        }\n" +
-"        checkBoolean$4(d.attachment_lost, field + \".attachment_lost\");\n" +
-"        checkBoolean$4(d.attachment_required, field + \".attachment_required\");\n" +
-"        checkNumber$5(d.company_id, field + \".company_id\");\n" +
-"        checkString$6(d.currency, field + \".currency\");\n" +
-"        checkString$6(d.currency_amount, field + \".currency_amount\");\n" +
-"        // This will be refactored in the next release.\n" +
-"        try {\n" +
-"            checkString$6(d.currency_fee, field + \".currency_fee\", \"string | null\");\n" +
-"        }\n" +
-"        catch (e) {\n" +
-"            try {\n" +
-"                checkNull$5(d.currency_fee, field + \".currency_fee\", \"string | null\");\n" +
-"            }\n" +
-"            catch (e) {\n" +
-"            }\n" +
-"        }\n" +
-"        checkString$6(d.date, field + \".date\");\n" +
-"        // This will be refactored in the next release.\n" +
-"        try {\n" +
-"            checkNull$5(d.dump, field + \".dump\", \"null | Dump\");\n" +
-"        }\n" +
-"        catch (e) {\n" +
-"            try {\n" +
-"                d.dump = Dump.Create(d.dump, field + \".dump\", \"null | Dump\");\n" +
-"            }\n" +
-"            catch (e) {\n" +
-"            }\n" +
-"        }\n" +
-"        // This will be refactored in the next release.\n" +
-"        try {\n" +
-"            checkNull$5(d.dump_id, field + \".dump_id\", \"null | number\");\n" +
-"        }\n" +
-"        catch (e) {\n" +
-"            try {\n" +
-"                checkNumber$5(d.dump_id, field + \".dump_id\", \"null | number\");\n" +
-"            }\n" +
-"            catch (e) {\n" +
-"            }\n" +
-"        }\n" +
-"        // This will be refactored in the next release.\n" +
-"        try {\n" +
-"            checkString$6(d.fee, field + \".fee\", \"string | null\");\n" +
-"        }\n" +
-"        catch (e) {\n" +
-"            try {\n" +
-"                checkNull$5(d.fee, field + \".fee\", \"string | null\");\n" +
-"            }\n" +
-"            catch (e) {\n" +
-"            }\n" +
-"        }\n" +
-"        checkNumber$5(d.files_count, field + \".files_count\");\n" +
 "        checkString$6(d.gross_amount, field + \".gross_amount\");\n" +
 "        checkString$6(d.group_uuid, field + \".group_uuid\");\n" +
-"        checkNumber$5(d.id, field + \".id\");\n" +
+"        checkNumber$6(d.id, field + \".id\");\n" +
 "        checkBoolean$4(d.is_potential_duplicate, field + \".is_potential_duplicate\");\n" +
 "        checkBoolean$4(d.is_waiting_details, field + \".is_waiting_details\");\n" +
 "        checkString$6(d.label, field + \".label\");\n" +
 "        checkBoolean$4(d.pending, field + \".pending\");\n" +
-"        checkNull$5(d.reconciliation_id, field + \".reconciliation_id\");\n" +
+"        checkNull$6(d.reconciliation_id, field + \".reconciliation_id\");\n" +
 "        checkString$6(d.source, field + \".source\");\n" +
 "        checkString$6(d.source_logo, field + \".source_logo\");\n" +
 "        checkString$6(d.status, field + \".status\");\n" +
@@ -8766,7 +8986,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"account_id\", \"account_synchronization\", \"amount\", \"archived_at\", \"attachment_lost\", \"attachment_required\", \"company_id\", \"currency\", \"currency_amount\", \"currency_fee\", \"date\", \"dump\", \"dump_id\", \"fee\", \"files_count\", \"gross_amount\", \"group_uuid\", \"id\", \"is_potential_duplicate\", \"is_waiting_details\", \"label\", \"pending\", \"reconciliation_id\", \"source\", \"source_logo\", \"status\", \"type\", \"updated_at\", \"validation_needed\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$7(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
+"            errorHelper$8(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new TransactionsEntity(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -8800,24 +9020,24 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        this.updated_at = d.updated_at;\n" +
 "        this.validation_needed = d.validation_needed;\n" +
 "    }\n" +
-"}\n" +
+"};\n" +
 "class AccountSynchronization {\n" +
 "    static Parse(d) {\n" +
 "        return AccountSynchronization.Create(JSON.parse(d));\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$7 = d;\n" +
+"            obj$8 = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
 "        if (!d) {\n" +
-"            throwNull2NonNull$7(field, d, multiple ?? this.name);\n" +
+"            throwNull2NonNull$8(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$7(field, d);\n" +
+"            throwNotObject$8(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$7(field, d);\n" +
+"            throwIsArray$8(field, d);\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
@@ -8825,19 +9045,19 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$5(d.created_at, field + \".created_at\", \"string | null\");\n" +
+"                checkNull$6(d.created_at, field + \".created_at\", \"string | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
 "        }\n" +
-"        checkNull$5(d.error_message, field + \".error_message\");\n" +
+"        checkNull$6(d.error_message, field + \".error_message\");\n" +
 "        // This will be refactored in the next release.\n" +
 "        try {\n" +
 "            checkBoolean$4(d.triggered_manually, field + \".triggered_manually\", \"boolean | null\");\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$5(d.triggered_manually, field + \".triggered_manually\", \"boolean | null\");\n" +
+"                checkNull$6(d.triggered_manually, field + \".triggered_manually\", \"boolean | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
@@ -8845,7 +9065,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"created_at\", \"error_message\", \"triggered_manually\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$7(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
+"            errorHelper$8(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new AccountSynchronization(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -8860,6 +9080,91 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
+"            obj$8 = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$8(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$8(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$8(field, d);\n" +
+"        }\n" +
+"        checkString$6(d.created_at, field + \".created_at\");\n" +
+"        checkString$6(d.creator, field + \".creator\");\n" +
+"        checkString$6(d.type, field + \".type\");\n" +
+"        const knownProperties = [\"created_at\", \"creator\", \"type\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$8(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
+"        return new Dump(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.created_at = d.created_at;\n" +
+"        this.creator = d.creator;\n" +
+"        this.type = d.type;\n" +
+"    }\n" +
+"}\n" +
+"function throwNull2NonNull$8(field, value, multiple) {\n" +
+"    return errorHelper$8(field, value, multiple ?? \"non-nullable object\");\n" +
+"}\n" +
+"function throwNotObject$8(field, value, multiple) {\n" +
+"    return errorHelper$8(field, value, \"object\");\n" +
+"}\n" +
+"function throwIsArray$8(field, value, multiple) {\n" +
+"    return errorHelper$8(field, value, \"object\");\n" +
+"}\n" +
+"function checkArray$6(value, field, multiple) {\n" +
+"    if (!Array.isArray(value))\n" +
+"        errorHelper$8(field, value, \"array\");\n" +
+"}\n" +
+"function checkNumber$6(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'number')\n" +
+"        errorHelper$8(field, value, multiple ?? \"number\");\n" +
+"}\n" +
+"function checkBoolean$4(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'boolean')\n" +
+"        errorHelper$8(field, value, multiple ?? \"boolean\");\n" +
+"}\n" +
+"function checkString$6(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'string')\n" +
+"        errorHelper$8(field, value, multiple ?? \"string\");\n" +
+"}\n" +
+"function checkNull$6(value, field, multiple) {\n" +
+"    if (value !== null)\n" +
+"        errorHelper$8(field, value, multiple ?? \"null\");\n" +
+"}\n" +
+"function errorHelper$8(field, d, type) {\n" +
+"    if (type.includes(' | ')) {\n" +
+"        throw new TypeError('Expected ' + type + \" at \" + field + \" but found:\\n" +
+"\" + JSON.stringify(d) + \"\\n" +
+"\\n" +
+"Full object:\\n" +
+"\" + JSON.stringify(obj$8));\n" +
+"    }\n" +
+"    else {\n" +
+"        let jsonClone = obj$8;\n" +
+"        try {\n" +
+"            jsonClone = JSON.parse(JSON.stringify(obj$8));\n" +
+"        }\n" +
+"        catch (error) {\n" +
+"            console.log(error);\n" +
+"        }\n" +
+"        console.error('Expected \"' + type + '\" at ' + field + ' but found:\\n" +
+"' + JSON.stringify(d), jsonClone);\n" +
+"    }\n" +
+"}\n" +
+"\n" +
+"// Stores the currently-being-typechecked object for error messages.\n" +
+"let obj$7 = null;\n" +
+"class APITransactionListParams {\n" +
+"    static Parse(d) {\n" +
+"        return APITransactionListParams.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
 "            obj$7 = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
@@ -8872,19 +9177,28 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$7(field, d);\n" +
 "        }\n" +
-"        checkString$6(d.created_at, field + \".created_at\");\n" +
-"        checkString$6(d.creator, field + \".creator\");\n" +
-"        checkString$6(d.type, field + \".type\");\n" +
-"        const knownProperties = [\"created_at\", \"creator\", \"type\"];\n" +
+"        if (\"filter\" in d) {\n" +
+"            checkString$5(d.filter, field + \".filter\");\n" +
+"        }\n" +
+"        if (\"page\" in d) {\n" +
+"            checkNumber$5(d.page, field + \".page\");\n" +
+"        }\n" +
+"        if (\"sort\" in d) {\n" +
+"            checkString$5(d.sort, field + \".sort\");\n" +
+"        }\n" +
+"        const knownProperties = [\"filter\", \"page\", \"sort\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
 "            errorHelper$7(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
-"        return new Dump(d);\n" +
+"        return new APITransactionListParams(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
-"        this.created_at = d.created_at;\n" +
-"        this.creator = d.creator;\n" +
-"        this.type = d.type;\n" +
+"        if (\"filter\" in d)\n" +
+"            this.filter = d.filter;\n" +
+"        if (\"page\" in d)\n" +
+"            this.page = d.page;\n" +
+"        if (\"sort\" in d)\n" +
+"            this.sort = d.sort;\n" +
 "    }\n" +
 "}\n" +
 "function throwNull2NonNull$7(field, value, multiple) {\n" +
@@ -8896,25 +9210,13 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "function throwIsArray$7(field, value, multiple) {\n" +
 "    return errorHelper$7(field, value, \"object\");\n" +
 "}\n" +
-"function checkArray$5(value, field, multiple) {\n" +
-"    if (!Array.isArray(value))\n" +
-"        errorHelper$7(field, value, \"array\");\n" +
-"}\n" +
 "function checkNumber$5(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'number')\n" +
-"        errorHelper$7(field, value, multiple ?? \"number\");\n" +
+"        errorHelper$7(field, value, \"number\");\n" +
 "}\n" +
-"function checkBoolean$4(value, field, multiple) {\n" +
-"    if (typeof (value) !== 'boolean')\n" +
-"        errorHelper$7(field, value, multiple ?? \"boolean\");\n" +
-"}\n" +
-"function checkString$6(value, field, multiple) {\n" +
+"function checkString$5(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'string')\n" +
-"        errorHelper$7(field, value, multiple ?? \"string\");\n" +
-"}\n" +
-"function checkNull$5(value, field, multiple) {\n" +
-"    if (value !== null)\n" +
-"        errorHelper$7(field, value, multiple ?? \"null\");\n" +
+"        errorHelper$7(field, value, \"string\");\n" +
 "}\n" +
 "function errorHelper$7(field, d, type) {\n" +
 "    if (type.includes(' | ')) {\n" +
@@ -8939,9 +9241,9 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
 "let obj$6 = null;\n" +
-"class APITransactionListParams {\n" +
+"class APITransactionLite {\n" +
 "    static Parse(d) {\n" +
-"        return APITransactionListParams.Create(JSON.parse(d));\n" +
+"        return APITransactionLite.Create(JSON.parse(d));\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
@@ -8957,88 +9259,6 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$6(field, d);\n" +
 "        }\n" +
-"        if (\"filter\" in d) {\n" +
-"            checkString$5(d.filter, field + \".filter\");\n" +
-"        }\n" +
-"        if (\"page\" in d) {\n" +
-"            checkNumber$4(d.page, field + \".page\");\n" +
-"        }\n" +
-"        if (\"sort\" in d) {\n" +
-"            checkString$5(d.sort, field + \".sort\");\n" +
-"        }\n" +
-"        const knownProperties = [\"filter\", \"page\", \"sort\"];\n" +
-"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
-"        if (unknownProperty)\n" +
-"            errorHelper$6(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
-"        return new APITransactionListParams(d);\n" +
-"    }\n" +
-"    constructor(d) {\n" +
-"        if (\"filter\" in d)\n" +
-"            this.filter = d.filter;\n" +
-"        if (\"page\" in d)\n" +
-"            this.page = d.page;\n" +
-"        if (\"sort\" in d)\n" +
-"            this.sort = d.sort;\n" +
-"    }\n" +
-"}\n" +
-"function throwNull2NonNull$6(field, value, multiple) {\n" +
-"    return errorHelper$6(field, value, multiple ?? \"non-nullable object\");\n" +
-"}\n" +
-"function throwNotObject$6(field, value, multiple) {\n" +
-"    return errorHelper$6(field, value, \"object\");\n" +
-"}\n" +
-"function throwIsArray$6(field, value, multiple) {\n" +
-"    return errorHelper$6(field, value, \"object\");\n" +
-"}\n" +
-"function checkNumber$4(value, field, multiple) {\n" +
-"    if (typeof (value) !== 'number')\n" +
-"        errorHelper$6(field, value, \"number\");\n" +
-"}\n" +
-"function checkString$5(value, field, multiple) {\n" +
-"    if (typeof (value) !== 'string')\n" +
-"        errorHelper$6(field, value, \"string\");\n" +
-"}\n" +
-"function errorHelper$6(field, d, type) {\n" +
-"    if (type.includes(' | ')) {\n" +
-"        throw new TypeError('Expected ' + type + \" at \" + field + \" but found:\\n" +
-"\" + JSON.stringify(d) + \"\\n" +
-"\\n" +
-"Full object:\\n" +
-"\" + JSON.stringify(obj$6));\n" +
-"    }\n" +
-"    else {\n" +
-"        let jsonClone = obj$6;\n" +
-"        try {\n" +
-"            jsonClone = JSON.parse(JSON.stringify(obj$6));\n" +
-"        }\n" +
-"        catch (error) {\n" +
-"            console.log(error);\n" +
-"        }\n" +
-"        console.error('Expected \"' + type + '\" at ' + field + ' but found:\\n" +
-"' + JSON.stringify(d), jsonClone);\n" +
-"    }\n" +
-"}\n" +
-"\n" +
-"// Stores the currently-being-typechecked object for error messages.\n" +
-"let obj$5 = null;\n" +
-"class APITransactionLite {\n" +
-"    static Parse(d) {\n" +
-"        return APITransactionLite.Create(JSON.parse(d));\n" +
-"    }\n" +
-"    static Create(d, field, multiple) {\n" +
-"        if (!field) {\n" +
-"            obj$5 = d;\n" +
-"            field = \"root\";\n" +
-"        }\n" +
-"        if (!d) {\n" +
-"            throwNull2NonNull$5(field, d, multiple ?? this.name);\n" +
-"        }\n" +
-"        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$5(field, d);\n" +
-"        }\n" +
-"        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$5(field, d);\n" +
-"        }\n" +
 "        d.account = Account.Create(d.account, field + \".account\");\n" +
 "        checkBoolean$3(d.automatically_processed, field + \".automatically_processed\");\n" +
 "        // This will be refactored in the next release.\n" +
@@ -9047,22 +9267,22 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        catch (e) {\n" +
 "            try {\n" +
-"                checkNull$4(d.automation_rule_plan_item, field + \".automation_rule_plan_item\", \"AutomationRulePlanItem | null\");\n" +
+"                checkNull$5(d.automation_rule_plan_item, field + \".automation_rule_plan_item\", \"AutomationRulePlanItem | null\");\n" +
 "            }\n" +
 "            catch (e) {\n" +
 "            }\n" +
 "        }\n" +
-"        checkNumber$3(d.comments_count, field + \".comments_count\");\n" +
+"        checkNumber$4(d.comments_count, field + \".comments_count\");\n" +
 "        checkString$4(d.fee, field + \".fee\");\n" +
-"        checkArray$4(d.grouped_documents, field + \".grouped_documents\");\n" +
+"        checkArray$5(d.grouped_documents, field + \".grouped_documents\");\n" +
 "        if (d.grouped_documents) {\n" +
 "            for (let i = 0; i < d.grouped_documents.length; i++) {\n" +
 "                d.grouped_documents[i] = GroupedDocumentsEntity.Create(d.grouped_documents[i], field + \".grouped_documents\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
-"        checkNumber$3(d.id, field + \".id\");\n" +
+"        checkNumber$4(d.id, field + \".id\");\n" +
 "        checkBoolean$3(d.internal_transfer, field + \".internal_transfer\");\n" +
-"        checkArray$4(d.ledger_events, field + \".ledger_events\");\n" +
+"        checkArray$5(d.ledger_events, field + \".ledger_events\");\n" +
 "        if (d.ledger_events) {\n" +
 "            for (let i = 0; i < d.ledger_events.length; i++) {\n" +
 "                checkNever$1(d.ledger_events[i], field + \".ledger_events\" + \"[\" + i + \"]\");\n" +
@@ -9075,7 +9295,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const knownProperties = [\"account\", \"automatically_processed\", \"automation_rule_plan_item\", \"comments_count\", \"fee\", \"grouped_documents\", \"id\", \"internal_transfer\", \"ledger_events\", \"outstanding_balance\", \"pusher_channel\", \"source\", \"source_logo\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$5(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
+"            errorHelper$6(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new APITransactionLite(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -9100,24 +9320,24 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$5 = d;\n" +
+"            obj$6 = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
 "        if (!d) {\n" +
-"            throwNull2NonNull$5(field, d, multiple ?? this.name);\n" +
+"            throwNull2NonNull$6(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$5(field, d);\n" +
+"            throwNotObject$6(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$5(field, d);\n" +
+"            throwIsArray$6(field, d);\n" +
 "        }\n" +
 "        checkString$4(d.logo_url, field + \".logo_url\");\n" +
 "        checkString$4(d.name, field + \".name\");\n" +
 "        const knownProperties = [\"logo_url\", \"name\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$5(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
+"            errorHelper$6(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new Account(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -9131,26 +9351,26 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
-"            obj$5 = d;\n" +
+"            obj$6 = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
 "        if (!d) {\n" +
-"            throwNull2NonNull$5(field, d, multiple ?? this.name);\n" +
+"            throwNull2NonNull$6(field, d, multiple ?? this.name);\n" +
 "        }\n" +
 "        else if (typeof (d) !== 'object') {\n" +
-"            throwNotObject$5(field, d);\n" +
+"            throwNotObject$6(field, d);\n" +
 "        }\n" +
 "        else if (Array.isArray(d)) {\n" +
-"            throwIsArray$5(field, d);\n" +
+"            throwIsArray$6(field, d);\n" +
 "        }\n" +
-"        checkNumber$3(d.id, field + \".id\");\n" +
+"        checkNumber$4(d.id, field + \".id\");\n" +
 "        checkString$4(d.label, field + \".label\");\n" +
 "        checkString$4(d.number, field + \".number\");\n" +
 "        checkString$4(d.vat_rate, field + \".vat_rate\");\n" +
 "        const knownProperties = [\"id\", \"label\", \"number\", \"vat_rate\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
-"            errorHelper$5(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
+"            errorHelper$6(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
 "        return new AutomationRulePlanItem(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
@@ -9166,6 +9386,98 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    static Create(d, field, multiple) {\n" +
 "        if (!field) {\n" +
+"            obj$6 = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$6(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$6(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$6(field, d);\n" +
+"        }\n" +
+"        checkString$4(d.amount, field + \".amount\");\n" +
+"        checkString$4(d.currency, field + \".currency\");\n" +
+"        checkString$4(d.currency_amount, field + \".currency_amount\");\n" +
+"        checkNumber$4(d.id, field + \".id\");\n" +
+"        checkString$4(d.type, field + \".type\");\n" +
+"        const knownProperties = [\"amount\", \"currency\", \"currency_amount\", \"id\", \"type\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$6(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
+"        return new GroupedDocumentsEntity(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
+"        this.amount = d.amount;\n" +
+"        this.currency = d.currency;\n" +
+"        this.currency_amount = d.currency_amount;\n" +
+"        this.id = d.id;\n" +
+"        this.type = d.type;\n" +
+"    }\n" +
+"}\n" +
+"function throwNull2NonNull$6(field, value, multiple) {\n" +
+"    return errorHelper$6(field, value, multiple ?? \"non-nullable object\");\n" +
+"}\n" +
+"function throwNotObject$6(field, value, multiple) {\n" +
+"    return errorHelper$6(field, value, \"object\");\n" +
+"}\n" +
+"function throwIsArray$6(field, value, multiple) {\n" +
+"    return errorHelper$6(field, value, \"object\");\n" +
+"}\n" +
+"function checkArray$5(value, field, multiple) {\n" +
+"    if (!Array.isArray(value))\n" +
+"        errorHelper$6(field, value, \"array\");\n" +
+"}\n" +
+"function checkNumber$4(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'number')\n" +
+"        errorHelper$6(field, value, \"number\");\n" +
+"}\n" +
+"function checkBoolean$3(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'boolean')\n" +
+"        errorHelper$6(field, value, \"boolean\");\n" +
+"}\n" +
+"function checkString$4(value, field, multiple) {\n" +
+"    if (typeof (value) !== 'string')\n" +
+"        errorHelper$6(field, value, \"string\");\n" +
+"}\n" +
+"function checkNull$5(value, field, multiple) {\n" +
+"    if (value !== null)\n" +
+"        errorHelper$6(field, value, multiple);\n" +
+"}\n" +
+"function checkNever$1(value, field, multiple) {\n" +
+"    return errorHelper$6(field, value, \"never\");\n" +
+"}\n" +
+"function errorHelper$6(field, d, type) {\n" +
+"    if (type.includes(' | ')) {\n" +
+"        throw new TypeError('Expected ' + type + \" at \" + field + \" but found:\\n" +
+"\" + JSON.stringify(d) + \"\\n" +
+"\\n" +
+"Full object:\\n" +
+"\" + JSON.stringify(obj$6));\n" +
+"    }\n" +
+"    else {\n" +
+"        let jsonClone = obj$6;\n" +
+"        try {\n" +
+"            jsonClone = JSON.parse(JSON.stringify(obj$6));\n" +
+"        }\n" +
+"        catch (error) {\n" +
+"            console.log(error);\n" +
+"        }\n" +
+"        console.error('Expected \"' + type + '\" at ' + field + ' but found:\\n" +
+"' + JSON.stringify(d), jsonClone);\n" +
+"    }\n" +
+"}\n" +
+"\n" +
+"// Stores the currently-being-typechecked object for error messages.\n" +
+"let obj$5 = null;\n" +
+"class APITransactionReconciliation {\n" +
+"    static Parse(d) {\n" +
+"        return APITransactionReconciliation.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
 "            obj$5 = d;\n" +
 "            field = \"root\";\n" +
 "        }\n" +
@@ -9178,23 +9490,61 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$5(field, d);\n" +
 "        }\n" +
-"        checkString$4(d.amount, field + \".amount\");\n" +
-"        checkString$4(d.currency, field + \".currency\");\n" +
-"        checkString$4(d.currency_amount, field + \".currency_amount\");\n" +
-"        checkNumber$3(d.id, field + \".id\");\n" +
-"        checkString$4(d.type, field + \".type\");\n" +
-"        const knownProperties = [\"amount\", \"currency\", \"currency_amount\", \"id\", \"type\"];\n" +
+"        checkArray$4(d.transactions, field + \".transactions\");\n" +
+"        if (d.transactions) {\n" +
+"            for (let i = 0; i < d.transactions.length; i++) {\n" +
+"                d.transactions[i] = TransactionsEntity.Create(d.transactions[i], field + \".transactions\" + \"[\" + i + \"]\");\n" +
+"            }\n" +
+"        }\n" +
+"        const knownProperties = [\"transactions\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
 "            errorHelper$5(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
-"        return new GroupedDocumentsEntity(d);\n" +
+"        return new APITransactionReconciliation(d);\n" +
 "    }\n" +
 "    constructor(d) {\n" +
-"        this.amount = d.amount;\n" +
-"        this.currency = d.currency;\n" +
-"        this.currency_amount = d.currency_amount;\n" +
+"        this.transactions = d.transactions;\n" +
+"    }\n" +
+"}\n" +
+"class TransactionsEntity {\n" +
+"    static Parse(d) {\n" +
+"        return TransactionsEntity.Create(JSON.parse(d));\n" +
+"    }\n" +
+"    static Create(d, field, multiple) {\n" +
+"        if (!field) {\n" +
+"            obj$5 = d;\n" +
+"            field = \"root\";\n" +
+"        }\n" +
+"        if (!d) {\n" +
+"            throwNull2NonNull$5(field, d, multiple ?? this.name);\n" +
+"        }\n" +
+"        else if (typeof (d) !== 'object') {\n" +
+"            throwNotObject$5(field, d);\n" +
+"        }\n" +
+"        else if (Array.isArray(d)) {\n" +
+"            throwIsArray$5(field, d);\n" +
+"        }\n" +
+"        checkNumber$3(d.id, field + \".id\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNumber$3(d.reconciliation_id, field + \".reconciliation_id\", \"number | null\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNull$4(d.reconciliation_id, field + \".reconciliation_id\", \"number | null\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"            }\n" +
+"        }\n" +
+"        const knownProperties = [\"id\", \"reconciliation_id\"];\n" +
+"        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
+"        if (unknownProperty)\n" +
+"            errorHelper$5(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
+"        return new TransactionsEntity(d);\n" +
+"    }\n" +
+"    constructor(d) {\n" +
 "        this.id = d.id;\n" +
-"        this.type = d.type;\n" +
+"        this.reconciliation_id = d.reconciliation_id;\n" +
 "    }\n" +
 "}\n" +
 "function throwNull2NonNull$5(field, value, multiple) {\n" +
@@ -9212,22 +9562,11 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "}\n" +
 "function checkNumber$3(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'number')\n" +
-"        errorHelper$5(field, value, \"number\");\n" +
-"}\n" +
-"function checkBoolean$3(value, field, multiple) {\n" +
-"    if (typeof (value) !== 'boolean')\n" +
-"        errorHelper$5(field, value, \"boolean\");\n" +
-"}\n" +
-"function checkString$4(value, field, multiple) {\n" +
-"    if (typeof (value) !== 'string')\n" +
-"        errorHelper$5(field, value, \"string\");\n" +
+"        errorHelper$5(field, value, multiple ?? \"number\");\n" +
 "}\n" +
 "function checkNull$4(value, field, multiple) {\n" +
 "    if (value !== null)\n" +
 "        errorHelper$5(field, value, multiple);\n" +
-"}\n" +
-"function checkNever$1(value, field, multiple) {\n" +
-"    return errorHelper$5(field, value, \"never\");\n" +
 "}\n" +
 "function errorHelper$5(field, d, type) {\n" +
 "    if (type.includes(' | ')) {\n" +
@@ -9281,6 +9620,14 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            yield transaction;\n" +
 "        ++page;\n" +
 "    } while (true);\n" +
+"}\n" +
+"async function getTransactionReconciliationId(id, maxAge) {\n" +
+"    const data = cachedRequest(\"transaction:getTransactionIsReconciled\", { id }, async ({ id }) => {\n" +
+"        const response = await apiRequest(`accountants/transactions/reconciliations?transaction_ids%5B%5D=${id}`, null, \"GET\");\n" +
+"        return await response?.json();\n" +
+"    }, maxAge);\n" +
+"    const transactions = APITransactionReconciliation.Create(data);\n" +
+"    return transactions.transactions.find((t) => t.id === id)?.reconciliation_id;\n" +
 "}\n" +
 "\n" +
 "/**\n" +
@@ -11683,9 +12030,9 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (isReceivedTransfer) {\n" +
 "            const templates = [\n" +
 "                {\n" +
-"                    title: 'Reçu de don',\n" +
-"                    text: 'CERFA n°&lt;n° de cerfa&gt; - &lt;nom donateur&gt; - jj-mm-aaaa - &lt;montant&gt;€',\n" +
-"                    regex: /^CERFA n° ?[\\d-]* - .* - [0123]\\d-[01]\\d-\\d{4} - [\\d .]*(?:,\\d\\d)? ?€(?:\\.[a-zA-Z]{3,4})?$/u,\n" +
+"                    title: \"Reçu de don\",\n" +
+"                    text: \"CERFA n°&lt;n° de cerfa&gt; - &lt;nom donateur&gt; - jj-mm-aaaa - &lt;montant&gt;€\",\n" +
+"                    regex: /^CERFA n° ?[\\d\\w\\/-]* - .* - [0123]\\d-[01]\\d-\\d{4} - [\\d .]*(?:,\\d\\d)? ?€(?:\\.[a-zA-Z]{3,4})?$/u,\n" +
 "                },\n" +
 "            ];\n" +
 "            const message = `<a\n" +
@@ -11816,52 +12163,20 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "}\n" +
 "\n" +
-"/**\n" +
-" * CacheListRecord is a cache that stores a list of records.\n" +
-" * It extends CacheList and provides a simple interface to update one item.\n" +
-" */\n" +
-"class CacheListRecord extends CacheList {\n" +
-"    updateItem(match, newValueOrCreate, create = true) {\n" +
-"        let newValue;\n" +
-"        if (typeof newValueOrCreate === 'object') {\n" +
-"            newValue = newValueOrCreate;\n" +
-"        }\n" +
-"        else {\n" +
-"            if (!('id' in match))\n" +
-"                throw new ReferenceError('updating without match/newValue pair requires id property');\n" +
-"            create = newValueOrCreate ?? true;\n" +
-"            newValue = match;\n" +
-"        }\n" +
-"        this.load();\n" +
-"        const oldValue = this.find(match);\n" +
-"        if (oldValue) {\n" +
-"            newValue = { ...oldValue, ...newValue };\n" +
-"            this.data.splice(this.data.indexOf(oldValue), 1, newValue);\n" +
-"            if (('id' in newValue) && newValue.id == getParam(location.href, 'id'))\n" +
-"                this.debug('updateItem', { match, create, oldValue, newValue, stack: new Error('').stack });\n" +
-"            this.emit('update', { oldValue, newValue });\n" +
-"        }\n" +
-"        else {\n" +
-"            if (!create)\n" +
-"                return;\n" +
-"            this.data.push(newValue);\n" +
-"            this.emit('add', { newValue });\n" +
-"        }\n" +
-"        this.save();\n" +
-"        this.emit('change', this);\n" +
-"        return oldValue;\n" +
-"    }\n" +
-"}\n" +
-"\n" +
-"class CacheStatus extends CacheListRecord {\n" +
-"}\n" +
-"\n" +
-"const user = localStorage.getItem('user') ?? 'assistant';\n" +
+"const user = localStorage.getItem(\"user\") ?? \"assistant\";\n" +
 "class Transaction extends ValidableDocument {\n" +
 "    constructor(raw) {\n" +
 "        super(raw);\n" +
 "        this._raw = raw;\n" +
 "        this.cacheStatus = CacheStatus.getInstance(\"transactionValidation\");\n" +
+"    }\n" +
+"    static get(raw) {\n" +
+"        if (!isTypedDocument(raw) || raw.type.toLowerCase() !== \"transaction\")\n" +
+"            throw new Error(\"`raw.type` MUST be 'transaction'\");\n" +
+"        const old = DocumentCache.get(raw.id);\n" +
+"        if (old instanceof Transaction)\n" +
+"            return old;\n" +
+"        return new Transaction(raw);\n" +
 "    }\n" +
 "    async getTransaction() {\n" +
 "        if (!this._transaction) {\n" +
@@ -11881,6 +12196,23 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    isCurrent() {\n" +
 "        return String(this.id) === getParam(location.href, \"transaction_id\");\n" +
 "    }\n" +
+"    async isReconciled() {\n" +
+"        if (typeof this._isReconciled !== \"boolean\") {\n" +
+"            this._isReconciled = new Promise(async (rs) => {\n" +
+"                if (this.groupedDocuments) {\n" +
+"                    const groupedDocuments = await this.groupedDocuments;\n" +
+"                    for (const doc of groupedDocuments) {\n" +
+"                        const gDocument = await doc.getDocument();\n" +
+"                        const meAsGdoc = gDocument.grouped_documents.find((d) => d.id === this.id);\n" +
+"                        if (meAsGdoc)\n" +
+"                            return rs(meAsGdoc.reconciled);\n" +
+"                    }\n" +
+"                }\n" +
+"                rs(Boolean(await getTransactionReconciliationId(this.id)));\n" +
+"            });\n" +
+"        }\n" +
+"        return await this._isReconciled;\n" +
+"    }\n" +
 "    async getBalance() {\n" +
 "        if (!this._balance) {\n" +
 "            this._balance = new Promise(async (rs) => {\n" +
@@ -11889,12 +12221,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                const groupedDocuments = await this.getGroupedDocuments();\n" +
 "                for (const gDocument of groupedDocuments) {\n" +
 "                    if (this.isCurrent())\n" +
-"                        this.debug(\"balance counting\", jsonClone({ gdoc: gDocument, balance }));\n" +
+"                        this.debug(\"balance counting\", gDocument, jsonClone(balance));\n" +
 "                    const gdoc = await gDocument.getGdoc();\n" +
 "                    const journal = await gDocument.getJournal();\n" +
 "                    const coeff = gdoc.type === \"Invoice\" && journal.code === \"HA\" ? -1 : 1;\n" +
 "                    const value = parseFloat(gdoc.amount) * coeff;\n" +
-"                    if (gDocument.type === \"transaction\") {\n" +
+"                    if (gdoc.type === \"Transaction\") {\n" +
 "                        if (this.isCurrent())\n" +
 "                            this.log(\"Balance: Transaction\", { balance, gdoc, value });\n" +
 "                        balance.addTransaction(value);\n" +
@@ -11918,7 +12250,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                const dmsLinks = await this.getDMSLinks();\n" +
 "                dmsLinks.forEach((dmsLink) => {\n" +
 "                    if (this.isCurrent())\n" +
-"                        this.debug(\"balance counting\", jsonClone({ dmsLink, balance }));\n" +
+"                        this.debug(\"balance counting\", dmsLink, jsonClone(balance));\n" +
 "                    if (dmsLink.name.startsWith(\"CHQ\")) {\n" +
 "                        const amount = dmsLink.name.match(/- (?<amount>[\\d \\.]*) ?€$/u)?.groups.amount;\n" +
 "                        balance.addCHQ(parseFloat(amount ?? \"0\") * Math.sign(balance.transaction));\n" +
@@ -12043,7 +12375,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }, {});\n" +
 "        const [unbalanced, events] = Object.entries(thirdparties).find(([key, val]) => Math.abs(val.reduce((a, b) => a + b, 0)) > 0.001) ?? [];\n" +
 "        if (unbalanced) {\n" +
-"            this.log(\"hasUnbalancedThirdparty\", { ledgerEvents, thirdparties, unbalanced, events });\n" +
+"            if (this.isCurrent())\n" +
+"                this.log(\"hasUnbalancedThirdparty\", { ledgerEvents, thirdparties, unbalanced, events });\n" +
 "            return `Le compte tiers \"${unbalanced}\" n'est pas équilibré.`;\n" +
 "        }\n" +
 "    }\n" +
@@ -12148,6 +12481,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            \"754110001\", // Dons Manuels - Allodons\n" +
 "            \"6270005\", // Frais Bancaires Société Générale\n" +
 "            \"6270001\", // Frais Stripe\n" +
+"            \"768\", // Autres produits financiers (Interets créditeurs)\n" +
 "        ];\n" +
 "        if (ledgerEvents.some((line) => optionalProof.some((number) => line.planItem.number === number))) {\n" +
 "            if (this.isCurrent())\n" +
@@ -12456,7 +12790,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            const groupedDocuments = await this.getGroupedDocuments();\n" +
 "            const gdocs = await Promise.all(groupedDocuments.map((doc) => doc.getGdoc()));\n" +
 "            const chqs = gdocs.filter((gdoc) => gdoc.label.includes(\" - CHQ\"));\n" +
-"            this.log(\"hasToSendToDMS\", { groupedDocuments, chqs, balance });\n" +
+"            if (this.isCurrent())\n" +
+"                this.log(\"hasToSendToDMS\", { groupedDocuments, chqs, balance });\n" +
 "            if (!chqs.length) {\n" +
 "                if (this.isCurrent())\n" +
 "                    this.log(\"hasToSendToDMS\", \"tous les chq sont en GED\", { groupedDocuments, balance });\n" +
@@ -12470,7 +12805,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (balance.reçu) {\n" +
 "            const dmsLinks = await this.getDMSLinks();\n" +
 "            const receipts = dmsLinks.filter((link) => [\"CERFA\", \"AIDES\"].some((key) => link.name.startsWith(key)));\n" +
-"            this.log(\"hasToSendToInvoice\", { dmsLinks, receipts, balance });\n" +
+"            if (this.isCurrent())\n" +
+"                this.log(\"hasToSendToInvoice\", { dmsLinks, receipts, balance });\n" +
 "            if (!receipts.length) {\n" +
 "                if (this.isCurrent())\n" +
 "                    this.log(\"hasToSendToInvoice\", \"tous les reçus sont en facturation\", {\n" +
@@ -12493,19 +12829,133 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "}\n" +
 "\n" +
-"function openInTab(url, options = {}) {\n" +
-"    document.body.appendChild(parseHTML(`<div\n" +
-"      class=\"open_tab\"\n" +
-"      data-url=\"${escape(url)}\"\n" +
-"      data-options=\"${escape(JSON.stringify(options))}\"\n" +
-"      style=\"display: none;\"\n" +
-"    ></div>`));\n" +
+"const cache = CacheStatus.getInstance(\"transactionValidation\");\n" +
+"/** Add validation message on transaction panel */\n" +
+"class TransactionValidMessage extends Service {\n" +
+"    constructor() {\n" +
+"        super(...arguments);\n" +
+"        this.container = parseHTML(`<div><div class=\"headband-is-valid\">⟳</div></div>`)\n" +
+"            .firstElementChild;\n" +
+"        this.state = { ledgerEvents: [] };\n" +
+"        this._message = \"⟳\";\n" +
+"    }\n" +
+"    static getInstance() {\n" +
+"        if (!this.instance)\n" +
+"            this.instance = new this();\n" +
+"        return this.instance;\n" +
+"    }\n" +
+"    async init() {\n" +
+"        await this.insertContainer();\n" +
+"        this.on(\"message-change\", () => this.displayMessage());\n" +
+"        this.watchReloadHotkey();\n" +
+"        await this.loadMessage();\n" +
+"        setInterval(() => this.watch(), 200);\n" +
+"        cache.on(\"update\", this.handleCacheUpdate.bind(this));\n" +
+"        cache.on(\"add\", this.handleCacheUpdate.bind(this));\n" +
+"    }\n" +
+"    async insertContainer() {\n" +
+"        await waitElem(\"h3\", \"Transactions\"); // Transactions panel\n" +
+"        await waitElem(\".paragraph-body-m+.heading-page.mt-1\"); // transaction detail panel\n" +
+"        const detailTab = await waitElem(\"aside div\");\n" +
+"        detailTab.insertBefore(this.container, detailTab.firstChild);\n" +
+"        waitFunc(() => $(\"aside div\") !== detailTab).then(() => {\n" +
+"            this.insertContainer();\n" +
+"        });\n" +
+"    }\n" +
+"    watchReloadHotkey() {\n" +
+"        document.addEventListener(\"keydown\", (event) => {\n" +
+"            if (findElem(\"h3\", \"Transactions\") && event.ctrlKey && event.key.toLowerCase() === \"s\") {\n" +
+"                event.preventDefault();\n" +
+"                this.reload();\n" +
+"            }\n" +
+"        });\n" +
+"    }\n" +
+"    reload() {\n" +
+"        this.loadMessage();\n" +
+"    }\n" +
+"    set message(html) {\n" +
+"        this._message = html;\n" +
+"        this.emit(\"message-change\", html);\n" +
+"    }\n" +
+"    get message() {\n" +
+"        return this._message;\n" +
+"    }\n" +
+"    async loadMessage() {\n" +
+"        this.log(\"loadMessage\", this);\n" +
+"        this.message = \"⟳\";\n" +
+"        const rawTransaction = APITransaction.Create(getReactProps($(\".paragraph-body-m+.heading-page.mt-1\"), 9).transaction);\n" +
+"        this.state.transaction = Transaction.get(rawTransaction);\n" +
+"        const cachedStatus = cache.find({ id: rawTransaction.id });\n" +
+"        if (cachedStatus)\n" +
+"            this.message = `<aside style=\"background: lightgray;\">⟳ ${cachedStatus.message}</aside>`;\n" +
+"        const status = await this.state.transaction.getStatus();\n" +
+"        cache.updateItem({\n" +
+"            id: rawTransaction.id,\n" +
+"            valid: status.valid,\n" +
+"            message: status.message,\n" +
+"            createdAt: Date.now(),\n" +
+"            date: new Date(rawTransaction.date).getTime(),\n" +
+"        });\n" +
+"        this.handleCacheUpdate({ newValue: status });\n" +
+"    }\n" +
+"    async watch() {\n" +
+"        const ledgerEvents = $$(\"form[name^=DocumentEntries-]\").reduce((events, form) => {\n" +
+"            const formEvents = getReactProps(form.parentElement, 3)?.initialValues?.ledgerEvents ?? [];\n" +
+"            return [...events, ...formEvents];\n" +
+"        }, []);\n" +
+"        if (ledgerEvents.some((event, id) => this.state.ledgerEvents[id] !== event)) {\n" +
+"            const logData = { oldEvents: this.state.ledgerEvents };\n" +
+"            this.state.ledgerEvents = ledgerEvents;\n" +
+"            this.debug(\"ledgerEvents desynchronisé\", { ...logData, ...this });\n" +
+"            this.reload();\n" +
+"        }\n" +
+"        const current = Number(getParam(location.href, \"transaction_id\"));\n" +
+"        if (current && current !== this.state.transaction?.id) {\n" +
+"            this.debug(\"transaction desynchronisée\", { current, ...this });\n" +
+"            this.reload();\n" +
+"        }\n" +
+"    }\n" +
+"    async displayMessage() {\n" +
+"        $(\".headband-is-valid\", this.container).innerHTML = `${this.getTransactionId()}${this.getCommentLogo()} ${this.message}`;\n" +
+"    }\n" +
+"    getTransactionId() {\n" +
+"        if (!this.state.transaction?.id)\n" +
+"            return \"\";\n" +
+"        return `<span class=\"transaction-id d-inline-block bg-secondary-100 dihsuQ px-0_5 m-0\">#${this.state.transaction.id}</span>`;\n" +
+"    }\n" +
+"    getCommentLogo() {\n" +
+"        if (!this.state.transaction)\n" +
+"            return \"\";\n" +
+"        if (!this.state.comments || this.state.transaction.id !== this.state.comments.transactionId) {\n" +
+"            this.reloadCommentState();\n" +
+"            return \"\";\n" +
+"        }\n" +
+"        return this.state.comments.hasComment ? '<span class=\"d-inline-block bg-danger m-0\">💬</span>' : \"\";\n" +
+"    }\n" +
+"    async reloadCommentState() {\n" +
+"        if (!this.state.transaction)\n" +
+"            return;\n" +
+"        const transactionId = this.state.transaction.id;\n" +
+"        const transactionDoc = await this.state.transaction.getDocument();\n" +
+"        const transaction = transactionDoc.grouped_documents.find((doc) => doc.id === transactionId);\n" +
+"        this.state.comments = {\n" +
+"            transactionId,\n" +
+"            hasComment: Boolean(transaction?.client_comments?.length),\n" +
+"        };\n" +
+"        this.displayMessage();\n" +
+"    }\n" +
+"    handleCacheUpdate({ newValue: status }) {\n" +
+"        if (status.id !== this.state.transaction?.id)\n" +
+"            return;\n" +
+"        this.log(\"handleCacheUpdate\", { status, _this: this });\n" +
+"        this.message = `${status.valid ? \"✓\" : \"✗\"} ${status.message}`;\n" +
+"    }\n" +
 "}\n" +
-"\n" +
-"function openDocument(documentId) {\n" +
-"    const url = new URL(location.href.replace(/accountants.*$/, `documents/${documentId}.html`));\n" +
-"    openInTab(url.toString(), { insert: false });\n" +
-"}\n" +
+"/** Open next invalid transaction */\n" +
+"/**\n" +
+" * Dans la page des transactions, utiliser le code suivant pour afficher une transaction :\n" +
+"getReactProps($('tbody tr'),5).extra.openSidePanel(transactionId);\n" +
+" */\n" +
 "\n" +
 "function uniquid(length = 20) {\n" +
 "    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';\n" +
@@ -12598,6 +13048,108 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            tooltip.style.transform = tooltipTransform;\n" +
 "        }\n" +
 "    }\n" +
+"}\n" +
+"\n" +
+"async function waitPage(pageName) {\n" +
+"    return await waitFunc(() => isPage(pageName));\n" +
+"}\n" +
+"function isPage(pageName) {\n" +
+"    switch (pageName) {\n" +
+"        case 'invoiceDetail': return findElem('h4', 'Réconciliation') ?? false;\n" +
+"        case 'DMS': return location.href.split('/')[5] === 'dms' && findElem('h3', 'GED') || false;\n" +
+"        case 'DMSDetail': return ((location.href.split('/')[5] === 'dms' && findElem('h3', 'Détail du document'))\n" +
+"            || false);\n" +
+"        case 'transactionDetail': return findElem('button.tabbarlink', 'Réconciliation') ?? false;\n" +
+"        default: throw new Error(`unknown page required : \"${pageName}\"`);\n" +
+"    }\n" +
+"}\n" +
+"\n" +
+"/** Add 'add by ID' button on transaction reconciliation tab */\n" +
+"class TransactionAddByIdButton extends Service {\n" +
+"    constructor() {\n" +
+"        super(...arguments);\n" +
+"        this.button = parseHTML('<div class=\"btn-sm w-100 btn-primary add-by-id-btn\" style=\"cursor: pointer;\">Ajouter par ID</div>').firstElementChild;\n" +
+"        this.disabled = false;\n" +
+"    }\n" +
+"    async init() {\n" +
+"        await this.insertContainer();\n" +
+"        this.attachEvent();\n" +
+"    }\n" +
+"    async insertContainer() {\n" +
+"        const div = (await Promise.race([\n" +
+"            waitElem(\"button\", \"Voir plus de factures\"),\n" +
+"            waitElem(\"button\", \"Chercher parmi les factures\"),\n" +
+"        ])).closest(\".mt-2\");\n" +
+"        if (!div) {\n" +
+"            this.log(\"TransactionAddByIdButton\", {\n" +
+"                button: await Promise.race([\n" +
+"                    waitElem(\"button\", \"Voir plus de factures\"),\n" +
+"                    waitElem(\"button\", \"Chercher parmi les factures\"),\n" +
+"                ]),\n" +
+"                div,\n" +
+"            });\n" +
+"            throw new Error(\"Impossible de trouver le bloc de boutons\");\n" +
+"        }\n" +
+"        div.insertBefore(this.button, div.lastElementChild);\n" +
+"        Tooltip.make({ target: this.button, text: \"Ajouter par ID (Alt+Z)\" });\n" +
+"        waitFunc(async () => {\n" +
+"            const currentDiv = (await Promise.race([\n" +
+"                waitElem(\"button\", \"Voir plus de factures\"),\n" +
+"                waitElem(\"button\", \"Chercher parmi les factures\"),\n" +
+"            ])).closest(\".mt-2\");\n" +
+"            return currentDiv !== div;\n" +
+"        }).then(() => this.insertContainer());\n" +
+"    }\n" +
+"    attachEvent() {\n" +
+"        this.log({ button: this.button });\n" +
+"        this.button.addEventListener(\"click\", () => {\n" +
+"            this.addById();\n" +
+"        });\n" +
+"        document.addEventListener(\"keydown\", (event) => {\n" +
+"            if (isPage(\"transactionDetail\") && event.altKey && [\"z\", \"Z\"].includes(event.key)) {\n" +
+"                this.addById();\n" +
+"            }\n" +
+"            else {\n" +
+"                this.debug({\n" +
+"                    isPageTransactionDetail: isPage(\"transactionDetail\"),\n" +
+"                    event,\n" +
+"                });\n" +
+"            }\n" +
+"        });\n" +
+"    }\n" +
+"    async addById() {\n" +
+"        if (this.disabled)\n" +
+"            return;\n" +
+"        /**\n" +
+"         * Obligé de recharger la transaction à chaque appel : le numéro guid du\n" +
+"         * groupe change à chaque attachement de nouvelle pièce\n" +
+"         */\n" +
+"        const transactionId = Number(getParam(location.href, \"transaction_id\"));\n" +
+"        const id = Number(prompt(\"ID du justificatif ?\"));\n" +
+"        const transaction = new Transaction({ id: transactionId });\n" +
+"        this.disabled = true;\n" +
+"        const spinner = parseHTML('<div class=\"spinner-border spinner-border-sm\" role=\"status\"></div>')\n" +
+"            .firstElementChild;\n" +
+"        this.button.appendChild(spinner);\n" +
+"        await transaction.groupAdd(id);\n" +
+"        spinner.remove();\n" +
+"        this.disabled = false;\n" +
+"        TransactionValidMessage.getInstance().reload();\n" +
+"    }\n" +
+"}\n" +
+"\n" +
+"function openInTab(url, options = {}) {\n" +
+"    document.body.appendChild(parseHTML(`<div\n" +
+"      class=\"open_tab\"\n" +
+"      data-url=\"${escape(url)}\"\n" +
+"      data-options=\"${escape(JSON.stringify(options))}\"\n" +
+"      style=\"display: none;\"\n" +
+"    ></div>`));\n" +
+"}\n" +
+"\n" +
+"function openDocument(documentId) {\n" +
+"    const url = new URL(location.href.replace(/accountants.*$/, `documents/${documentId}.html`));\n" +
+"    openInTab(url.toString(), { insert: false });\n" +
 "}\n" +
 "\n" +
 "/**\n" +
@@ -13113,263 +13665,21 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "}\n" +
 "\n" +
-"class NextInvalidTransaction extends OpenNextInvalid {\n" +
-"    constructor() {\n" +
-"        super(...arguments);\n" +
-"        this.id = 'next-invalid-transaction';\n" +
-"        this.storageKey = 'transactionValidation';\n" +
-"        this.idParamName = 'transaction_id';\n" +
-"    }\n" +
-"    async init() {\n" +
-"        // Wait for appending button in the matching page before init auto open service\n" +
-"        await this.appendContainer();\n" +
-"        this.cache = CacheStatus.getInstance(this.storageKey);\n" +
-"        await super.init();\n" +
-"    }\n" +
-"    async *walk() {\n" +
-"        // Load new added transactions\n" +
-"        const max = this.cache.reduce((acc, status) => Math.max(status.createdAt, acc), 0);\n" +
-"        if (max) {\n" +
-"            const params = {\n" +
-"                filter: JSON.stringify([{ field: 'created_at', operator: 'gteq', value: new Date(max).toISOString() }]),\n" +
-"                sort: '+created_at',\n" +
-"            };\n" +
-"            for await (const transaction of getTransactionGenerator(params)) {\n" +
-"                yield new Transaction(transaction).getStatus();\n" +
-"            }\n" +
-"        }\n" +
-"        // Load old unloaded transactions\n" +
-"        const min = this.cache.reduce((acc, status) => Math.min(status.createdAt, acc), Date.now());\n" +
-"        const params = {\n" +
-"            filter: JSON.stringify([{ field: 'created_at', operator: 'lteq', value: new Date(min).toISOString() }]),\n" +
-"            sort: '-created_at',\n" +
-"        };\n" +
-"        for await (const transaction of getTransactionGenerator(params)) {\n" +
-"            yield new Transaction(transaction).getStatus();\n" +
-"        }\n" +
-"    }\n" +
-"    async getStatus(id) {\n" +
-"        const transaction = new Transaction({ id });\n" +
-"        return await transaction.getStatus();\n" +
-"    }\n" +
-"    /** Add \"next invalid transaction\" button on transactions list */\n" +
-"    async appendContainer() {\n" +
-"        const nextButton = await waitFunc(() => findElem('div', 'Détails')?.querySelector('button+button:last-child') ?? false);\n" +
-"        nextButton.parentElement?.insertBefore(this.container, nextButton.previousElementSibling);\n" +
-"        waitFunc(() => findElem('div', 'Détails')?.querySelector('button+button:last-child') !== nextButton)\n" +
-"            .then(() => this.appendContainer());\n" +
-"    }\n" +
-"}\n" +
-"\n" +
-"/** Add validation message on transaction panel */\n" +
-"class ValidMessage extends Service {\n" +
-"    constructor() {\n" +
-"        super(...arguments);\n" +
-"        this.container = parseHTML(`<div><div class=\"headband-is-valid\">⟳</div></div>`)\n" +
-"            .firstElementChild;\n" +
-"        this.state = { ledgerEvents: [] };\n" +
-"        this._message = '⟳';\n" +
-"    }\n" +
-"    static getInstance() {\n" +
-"        if (!this.instance)\n" +
-"            this.instance = new this();\n" +
-"        return this.instance;\n" +
-"    }\n" +
-"    async init() {\n" +
-"        await this.insertContainer();\n" +
-"        this.on('message-change', () => this.displayMessage());\n" +
-"        this.watchReloadHotkey();\n" +
-"        await this.loadMessage();\n" +
-"        setInterval(() => this.watch(), 200);\n" +
-"    }\n" +
-"    async insertContainer() {\n" +
-"        await waitElem('h3', 'Transactions'); // Transactions panel\n" +
-"        await waitElem('.paragraph-body-m+.heading-page.mt-1'); // transaction detail panel\n" +
-"        const detailTab = await waitElem('aside div');\n" +
-"        detailTab.insertBefore(this.container, detailTab.firstChild);\n" +
-"        waitFunc(() => $('aside div') !== detailTab).then(() => { this.insertContainer(); });\n" +
-"    }\n" +
-"    watchReloadHotkey() {\n" +
-"        document.addEventListener('keydown', event => {\n" +
-"            if (findElem('h3', 'Transactions') && event.ctrlKey && event.key.toLowerCase() === 's') {\n" +
-"                event.preventDefault();\n" +
-"                this.reload();\n" +
-"            }\n" +
-"        });\n" +
-"    }\n" +
-"    reload() {\n" +
-"        this.loadMessage();\n" +
-"    }\n" +
-"    set message(html) {\n" +
-"        this._message = html;\n" +
-"        this.emit('message-change', html);\n" +
-"    }\n" +
-"    get message() {\n" +
-"        return this._message;\n" +
-"    }\n" +
-"    async loadMessage() {\n" +
-"        this.log('loadMessage', this);\n" +
-"        this.message = '⟳';\n" +
-"        const rawTransaction = getReactProps($('.paragraph-body-m+.heading-page.mt-1'), 9).transaction;\n" +
-"        this.state.transaction = new Transaction(rawTransaction);\n" +
-"        const cache = NextInvalidTransaction.getInstance().getCache();\n" +
-"        const cachedStatus = cache.find({ id: this.state.transaction?.id });\n" +
-"        if (cachedStatus)\n" +
-"            this.message = `<aside style=\"background: lightgray;\">⟳ ${cachedStatus.message}</aside>`;\n" +
-"        const message = await this.state.transaction.getValidMessage();\n" +
-"        if (this.state.transaction?.id !== rawTransaction.id)\n" +
-"            return;\n" +
-"        this.message = `${(await this.state.transaction.isValid()) ? '✓' : '✗'} ${message}`;\n" +
-"    }\n" +
-"    async watch() {\n" +
-"        const ledgerEvents = $$('form[name^=DocumentEntries-]')\n" +
-"            .reduce((events, form) => {\n" +
-"            const formEvents = getReactProps(form.parentElement, 3)?.initialValues?.ledgerEvents ?? [];\n" +
-"            return [...events, ...formEvents];\n" +
-"        }, []);\n" +
-"        if (ledgerEvents.some((event, id) => this.state.ledgerEvents[id] !== event)) {\n" +
-"            const logData = { oldEvents: this.state.ledgerEvents };\n" +
-"            this.state.ledgerEvents = ledgerEvents;\n" +
-"            this.debug('ledgerEvents desynchronisé', { ...logData, ...this });\n" +
-"            this.reload();\n" +
-"        }\n" +
-"        const current = Number(getParam(location.href, 'transaction_id'));\n" +
-"        if (current && current !== this.state.transaction?.id) {\n" +
-"            this.debug('transaction desynchronisée', { current, ...this });\n" +
-"            this.reload();\n" +
-"        }\n" +
-"    }\n" +
-"    async displayMessage() {\n" +
-"        $('.headband-is-valid', this.container).innerHTML =\n" +
-"            `${this.getTransactionId()}${this.getCommentLogo()} ${this.message}`;\n" +
-"    }\n" +
-"    getTransactionId() {\n" +
-"        if (!this.state.transaction?.id)\n" +
-"            return '';\n" +
-"        return `<span class=\"transaction-id d-inline-block bg-secondary-100 dihsuQ px-0_5 m-0\">#${this.state.transaction.id}</span>`;\n" +
-"    }\n" +
-"    getCommentLogo() {\n" +
-"        if (!this.state.transaction)\n" +
-"            return '';\n" +
-"        if (!this.state.comments || this.state.transaction.id !== this.state.comments.transactionId) {\n" +
-"            this.reloadCommentState();\n" +
-"            return '';\n" +
-"        }\n" +
-"        return this.state.comments.hasComment ?\n" +
-"            '<span class=\"d-inline-block bg-danger m-0\">💬</span>' : '';\n" +
-"    }\n" +
-"    async reloadCommentState() {\n" +
-"        if (!this.state.transaction)\n" +
-"            return;\n" +
-"        const transactionId = this.state.transaction.id;\n" +
-"        const transactionDoc = await this.state.transaction.getDocument();\n" +
-"        const transaction = transactionDoc.grouped_documents.find(doc => doc.id === transactionId);\n" +
-"        this.state.comments = {\n" +
-"            transactionId,\n" +
-"            hasComment: Boolean(transaction?.client_comments?.length),\n" +
-"        };\n" +
-"        this.displayMessage();\n" +
-"    }\n" +
-"}\n" +
-"/** Open next invalid transaction */\n" +
-"/**\n" +
-" * Dans la page des transactions, utiliser le code suivant pour afficher une transaction :\n" +
-"getReactProps($('tbody tr'),5).extra.openSidePanel(transactionId);\n" +
-" */\n" +
-"\n" +
-"async function waitPage(pageName) {\n" +
-"    return await waitFunc(() => isPage(pageName));\n" +
-"}\n" +
-"function isPage(pageName) {\n" +
-"    switch (pageName) {\n" +
-"        case 'invoiceDetail': return findElem('h4', 'Réconciliation') ?? false;\n" +
-"        case 'DMS': return location.href.split('/')[5] === 'dms' && findElem('h3', 'GED') || false;\n" +
-"        case 'DMSDetail': return ((location.href.split('/')[5] === 'dms' && findElem('h3', 'Détail du document'))\n" +
-"            || false);\n" +
-"        case 'transactionDetail': return findElem('button.tabbarlink', 'Réconciliation') ?? false;\n" +
-"        default: throw new Error(`unknown page required : \"${pageName}\"`);\n" +
-"    }\n" +
-"}\n" +
-"\n" +
-"/** Add 'add by ID' button on transaction reconciliation tab */\n" +
-"class TransactionAddByIdButton extends Service {\n" +
-"    constructor() {\n" +
-"        super(...arguments);\n" +
-"        this.button = parseHTML('<div class=\"btn-sm w-100 btn-primary add-by-id-btn\" style=\"cursor: pointer;\">Ajouter par ID</div>').firstElementChild;\n" +
-"        this.disabled = false;\n" +
-"    }\n" +
-"    async init() {\n" +
-"        await this.insertContainer();\n" +
-"        this.attachEvent();\n" +
-"    }\n" +
-"    async insertContainer() {\n" +
-"        const div = (await Promise.race([\n" +
-"            waitElem(\"button\", \"Voir plus de factures\"),\n" +
-"            waitElem(\"button\", \"Chercher parmi les factures\"),\n" +
-"        ])).closest(\".mt-2\");\n" +
-"        if (!div) {\n" +
-"            this.log(\"TransactionAddByIdButton\", {\n" +
-"                button: await Promise.race([\n" +
-"                    waitElem(\"button\", \"Voir plus de factures\"),\n" +
-"                    waitElem(\"button\", \"Chercher parmi les factures\"),\n" +
-"                ]),\n" +
-"                div,\n" +
-"            });\n" +
-"            throw new Error(\"Impossible de trouver le bloc de boutons\");\n" +
-"        }\n" +
-"        div.insertBefore(this.button, div.lastElementChild);\n" +
-"        Tooltip.make({ target: this.button, text: \"Ajouter par ID (Alt+Z)\" });\n" +
-"        waitFunc(async () => {\n" +
-"            const currentDiv = (await Promise.race([\n" +
-"                waitElem(\"button\", \"Voir plus de factures\"),\n" +
-"                waitElem(\"button\", \"Chercher parmi les factures\"),\n" +
-"            ])).closest(\".mt-2\");\n" +
-"            return currentDiv !== div;\n" +
-"        }).then(() => this.insertContainer());\n" +
-"    }\n" +
-"    attachEvent() {\n" +
-"        this.log({ button: this.button });\n" +
-"        this.button.addEventListener(\"click\", () => {\n" +
-"            this.addById();\n" +
-"        });\n" +
-"        document.addEventListener(\"keydown\", (event) => {\n" +
-"            if (isPage(\"transactionDetail\") && event.altKey && [\"z\", \"Z\"].includes(event.key)) {\n" +
-"                this.addById();\n" +
-"            }\n" +
-"            else {\n" +
-"                this.debug({\n" +
-"                    isPageTransactionDetail: isPage(\"transactionDetail\"),\n" +
-"                    event,\n" +
-"                });\n" +
-"            }\n" +
-"        });\n" +
-"    }\n" +
-"    async addById() {\n" +
-"        if (this.disabled)\n" +
-"            return;\n" +
-"        /**\n" +
-"         * Obligé de recharger la transaction à chaque appel : le numéro guid du\n" +
-"         * groupe change à chaque attachement de nouvelle pièce\n" +
-"         */\n" +
-"        const transactionId = Number(getParam(location.href, \"transaction_id\"));\n" +
-"        const id = Number(prompt(\"ID du justificatif ?\"));\n" +
-"        const transaction = new Transaction({ id: transactionId });\n" +
-"        this.disabled = true;\n" +
-"        const spinner = parseHTML('<div class=\"spinner-border spinner-border-sm\" role=\"status\"></div>')\n" +
-"            .firstElementChild;\n" +
-"        this.button.appendChild(spinner);\n" +
-"        await transaction.groupAdd(id);\n" +
-"        spinner.remove();\n" +
-"        this.disabled = false;\n" +
-"        ValidMessage.getInstance().reload();\n" +
-"    }\n" +
-"}\n" +
-"\n" +
 "const staticLogger = new Logger(\"Invoice\");\n" +
 "class Invoice extends ValidableDocument {\n" +
 "    constructor() {\n" +
 "        super(...arguments);\n" +
 "        this.type = \"invoice\";\n" +
+"    }\n" +
+"    static get(raw) {\n" +
+"        const old = DocumentCache.get(raw.id);\n" +
+"        if (old instanceof Invoice)\n" +
+"            return old;\n" +
+"        if (!isTypedDocument(raw) || raw.type.toLowerCase() !== \"invoice\")\n" +
+"            throw new Error(\"`raw.type` MUST be 'invoice'\");\n" +
+"        if (\"direction\" in raw && typeof raw.direction === \"string\" && [\"supplier\", \"customer\"].includes(raw.direction))\n" +
+"            return Invoice.from(raw);\n" +
+"        throw new Error(\"`raw.direction` MUST be 'supplier' or 'customer'\");\n" +
 "    }\n" +
 "    static from(invoice) {\n" +
 "        if (invoice.direction === \"supplier\")\n" +
@@ -14167,7 +14477,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        await invoice.archive();\n" +
 "        buttonsBlock.closest('.ui-card')?.remove();\n" +
 "        this.log(`archive invoice #${id}`, { invoice });\n" +
-"        ValidMessage.getInstance().reload();\n" +
+"        TransactionValidMessage.getInstance().reload();\n" +
 "    }\n" +
 "    async dms(card) {\n" +
 "        const id = getReactProps(card, 2).invoice.id;\n" +
@@ -14194,7 +14504,55 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        buttonsBlock.closest('.ui-card')?.remove();\n" +
 "        this.log('moveToDms', { dmsItem });\n" +
-"        ValidMessage.getInstance().reload();\n" +
+"        TransactionValidMessage.getInstance().reload();\n" +
+"    }\n" +
+"}\n" +
+"\n" +
+"class NextInvalidTransaction extends OpenNextInvalid {\n" +
+"    constructor() {\n" +
+"        super(...arguments);\n" +
+"        this.id = 'next-invalid-transaction';\n" +
+"        this.storageKey = 'transactionValidation';\n" +
+"        this.idParamName = 'transaction_id';\n" +
+"    }\n" +
+"    async init() {\n" +
+"        // Wait for appending button in the matching page before init auto open service\n" +
+"        await this.appendContainer();\n" +
+"        this.cache = CacheStatus.getInstance(this.storageKey);\n" +
+"        await super.init();\n" +
+"    }\n" +
+"    async *walk() {\n" +
+"        // Load new added transactions\n" +
+"        const max = this.cache.reduce((acc, status) => Math.max(status.createdAt, acc), 0);\n" +
+"        if (max) {\n" +
+"            const params = {\n" +
+"                filter: JSON.stringify([{ field: 'created_at', operator: 'gteq', value: new Date(max).toISOString() }]),\n" +
+"                sort: '+created_at',\n" +
+"            };\n" +
+"            for await (const transaction of getTransactionGenerator(params)) {\n" +
+"                yield new Transaction(transaction).getStatus();\n" +
+"            }\n" +
+"        }\n" +
+"        // Load old unloaded transactions\n" +
+"        const min = this.cache.reduce((acc, status) => Math.min(status.createdAt, acc), Date.now());\n" +
+"        const params = {\n" +
+"            filter: JSON.stringify([{ field: 'created_at', operator: 'lteq', value: new Date(min).toISOString() }]),\n" +
+"            sort: '-created_at',\n" +
+"        };\n" +
+"        for await (const transaction of getTransactionGenerator(params)) {\n" +
+"            yield new Transaction(transaction).getStatus();\n" +
+"        }\n" +
+"    }\n" +
+"    async getStatus(id) {\n" +
+"        const transaction = new Transaction({ id });\n" +
+"        return await transaction.getStatus();\n" +
+"    }\n" +
+"    /** Add \"next invalid transaction\" button on transactions list */\n" +
+"    async appendContainer() {\n" +
+"        const nextButton = await waitFunc(() => findElem('div', 'Détails')?.querySelector('button+button:last-child') ?? false);\n" +
+"        nextButton.parentElement?.insertBefore(this.container, nextButton.previousElementSibling);\n" +
+"        waitFunc(() => findElem('div', 'Détails')?.querySelector('button+button:last-child') !== nextButton)\n" +
+"            .then(() => this.appendContainer());\n" +
 "    }\n" +
 "}\n" +
 "\n" +
@@ -15302,8 +15660,52 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "}\n" +
 "\n" +
+"const statusCache = CacheStatus.getInstance(\"transactionValidation\");\n" +
+"class AddIsValidTransactionListIndicator extends Service {\n" +
+"    async init() {\n" +
+"        this.watch();\n" +
+"        statusCache.on(\"update\", ({ newValue }) => this.updateIndicator(newValue));\n" +
+"    }\n" +
+"    async watch() {\n" +
+"        const checkboxDiv = (await waitElem(`div:not(.isValidReady)[data-tracking-action=\"Accounting Transactions - Row Selection Checkbox\"]`));\n" +
+"        this.log(\"found:\", checkboxDiv);\n" +
+"        await this.addIndicator(checkboxDiv);\n" +
+"        this.watch();\n" +
+"    }\n" +
+"    async addIndicator(checkboxDiv) {\n" +
+"        const rawTransaction = APITransaction.Create(getReactPropValue(checkboxDiv, \"data\"));\n" +
+"        const isValid = await this.getIsValid(rawTransaction);\n" +
+"        checkboxDiv.classList.toggle(\"isValid\", isValid);\n" +
+"        checkboxDiv.classList.add(\"isValidReady\");\n" +
+"        checkboxDiv.classList.add(`isValid-${rawTransaction.id}`);\n" +
+"        $(\"span\", checkboxDiv).style.background = isValid ? \"#00ff0030\" : \"#ff000030\";\n" +
+"    }\n" +
+"    async getIsValid(transaction) {\n" +
+"        let status = statusCache.find({ id: transaction.id });\n" +
+"        if (status)\n" +
+"            return status.valid;\n" +
+"        status = await Transaction.get(transaction).getStatus();\n" +
+"        statusCache.updateItem({\n" +
+"            id: transaction.id,\n" +
+"            valid: status.valid,\n" +
+"            message: \"\",\n" +
+"            createdAt: Date.now(),\n" +
+"            date: new Date(transaction.date).getTime(),\n" +
+"        });\n" +
+"        return status.valid;\n" +
+"    }\n" +
+"    updateIndicator(status) {\n" +
+"        const checkboxDiv = $(`div.isValid-${status.id}`);\n" +
+"        if (!checkboxDiv)\n" +
+"            return;\n" +
+"        checkboxDiv.classList.toggle(\"isValid\", status.valid);\n" +
+"        $(\"span\", checkboxDiv).style.background = status.valid ? \"#00ff0030\" : \"#ff000030\";\n" +
+"    }\n" +
+"}\n" +
+"\n" +
 "last7DaysFilter();\n" +
 "AddInvoiceIdColumn.start();\n" +
+"AddIsValidTransactionListIndicator.start();\n" +
 "AllowChangeArchivedInvoiceNumber.start();\n" +
 "ArchiveGroupedDocument.start();\n" +
 "AutoSearchTransaction.start();\n" +
@@ -15326,7 +15728,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "TransactionAddByIdButton.start();\n" +
 "TransactionPanelHotkeys.start();\n" +
 "TransactionPannelStyle.start();\n" +
-"ValidMessage.start();\n" +
+"TransactionValidMessage.start();\n" +
 "DMSListHasLinks.start();\n" +
 "/*\n" +
 "async function mergeInvoices () {\n" +
