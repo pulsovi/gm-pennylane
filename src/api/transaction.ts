@@ -1,10 +1,12 @@
 import { jsonClone } from '../_/json.js';
+import { cachedRequest } from "./cache.js";
 
 import { apiRequest } from './core.js';
 import { APITransaction } from './Transaction/index.js';
 import { APITransactionList, TransactionsEntity } from './Transaction/List.js';
 import { APITransactionListParams } from './Transaction/ListParams.js';
 import { APITransactionLite } from './Transaction/Lite.js';
+import { APITransactionReconciliation } from "./Transaction/Reconciliation.js";
 /**
  * @return {Promise<RawTransactionMin>}    Type vérifié
  */
@@ -66,4 +68,22 @@ export async function findTransaction (
     parameters = Object.assign(jsonClone(parameters), { page: parameters.page + 1 });
   } while (parameters.page <= data.pagination.pages);
   return null;
+}
+
+export async function getTransactionReconciliationId(id: number, maxAge?: number) {
+  const data = cachedRequest(
+    "transaction:getTransactionIsReconciled",
+    { id },
+    async ({ id }: { id: number }) => {
+      const response = await apiRequest(
+        `accountants/transactions/reconciliations?transaction_ids%5B%5D=${id}`,
+        null,
+        "GET"
+      );
+      return await response?.json();
+    },
+    maxAge
+  );
+  const transactions = APITransactionReconciliation.Create(data);
+  return transactions.transactions.find((t) => t.id === id)?.reconciliation_id;
 }
