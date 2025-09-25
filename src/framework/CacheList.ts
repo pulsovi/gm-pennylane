@@ -20,8 +20,7 @@ export default class CacheList<T> extends Cache<T[]> {
 
   protected parse(data: string | null): T[] {
     const value = JSON.parse(data!);
-    if (!Array.isArray(value))
-      throw new Error("The given value does not parse as an Array.");
+    if (!Array.isArray(value)) throw new Error("The given value does not parse as an Array.");
     return value;
   }
 
@@ -32,14 +31,9 @@ export default class CacheList<T> extends Cache<T[]> {
   public filter(match: Partial<T>): T[];
   public filter(matchOrPredicate: ((item: T) => boolean) | Partial<T>): T[] {
     this.load();
-    if (typeof matchOrPredicate === "function")
-      return this.data.filter(matchOrPredicate);
+    if (typeof matchOrPredicate === "function") return this.data.filter(matchOrPredicate);
 
-    return this.data.filter((item) =>
-      Object.entries(matchOrPredicate).every(
-        ([key, value]) => item[key] === value
-      )
-    );
+    return this.data.filter((item) => Object.entries(matchOrPredicate).every(([key, value]) => item[key] === value));
   }
 
   /**
@@ -47,20 +41,12 @@ export default class CacheList<T> extends Cache<T[]> {
    * otherwise.
    */
   public find(match: Partial<T>): T | undefined;
-  public find<S extends T>(
-    match: (value?: T, index?: number, obj?: T[]) => value is S
-  ): S | undefined;
-  public find(
-    match: (value?: T, index?: number, obj?: T[]) => boolean
-  ): T | undefined;
-  public find(
-    match: Partial<T> | ((value?: T, index?: number, obj?: T[]) => boolean)
-  ): T | undefined {
+  public find<S extends T>(match: (value?: T, index?: number, obj?: T[]) => value is S): S | undefined;
+  public find(match: (value?: T, index?: number, obj?: T[]) => boolean): T | undefined;
+  public find(match: Partial<T> | ((value?: T, index?: number, obj?: T[]) => boolean)): T | undefined {
     this.load();
     if (typeof match === "function") return this.data.find(match);
-    return this.data.find((item) =>
-      Object.entries(match).every(([key, value]) => item[key] === value)
-    );
+    return this.data.find((item) => Object.entries(match).every(([key, value]) => item[key] === value));
   }
 
   /**
@@ -93,15 +79,17 @@ export default class CacheList<T> extends Cache<T[]> {
   /**
    * Update one item
    *
+   * Updates an item in the CacheList cache, optionally creating it if not found.
+   *
+   * Overloads handle both direct value and match/value pairs.
+   * Emits `update` when replaced, or `add` if created; saves and emits `change`.
+   * Uses internal `load()` and `find()` to locate items before update.
+   *
    * @param create Create the item if no match found
    * @return Old value
    */
   public updateItem(value: T, create?: boolean): T | undefined;
-  public updateItem(
-    match: Partial<T>,
-    value: T,
-    create?: boolean
-  ): T | undefined;
+  public updateItem(match: Partial<T>, value: T, create?: boolean): T | undefined;
   public updateItem(
     matchOrValue: Partial<T> | (T & { id: number }),
     valueOrCreate?: T | boolean,
@@ -110,12 +98,8 @@ export default class CacheList<T> extends Cache<T[]> {
     let match: Partial<T> | { id: number };
     let value: T;
 
-    if (
-      typeof valueOrCreate === "boolean" ||
-      typeof valueOrCreate === "undefined"
-    ) {
-      if (!("id" in matchOrValue))
-        throw new Error("`matchOrValue` MUST have an `id` property");
+    if (typeof valueOrCreate === "boolean" || typeof valueOrCreate === "undefined") {
+      if (!("id" in matchOrValue)) throw new Error("`matchOrValue` MUST have an `id` property");
       create = valueOrCreate ?? true;
       value = matchOrValue as T;
       match = { id: matchOrValue.id };
@@ -146,10 +130,7 @@ export default class CacheList<T> extends Cache<T[]> {
    * The return value of the callback function is the accumulated result,
    * and is provided as an argument in the next call to the callback function.
    */
-  public reduce<R extends unknown>(
-    cb: (acc: R, item: T) => R,
-    startingValue: R
-  ): R {
+  public reduce<R extends unknown>(cb: (acc: R, item: T) => R, startingValue: R): R {
     this.load();
     return this.data.reduce(cb, startingValue);
   }

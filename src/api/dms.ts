@@ -24,13 +24,24 @@ const logger = new Logger('API_DMS');
  * @param recordType
  * @returns
  */
-export async function getDMSLinks(recordId: number, recordType?: string): Promise<APIDMSLink[]> {
+export async function getDMSLinks(recordId: number, recordType?: string, maxAge?: number): Promise<APIDMSLink[]> {
   if (!recordType) recordType = (await getDocument(recordId)).type;
-  const response = await apiRequest(`dms/links/data?record_ids[]=${recordId}&record_type=${recordType}`, null, 'GET');
-  const data = await response?.json();
+  const data = await cachedRequest(
+    "dms:getDMSLinks",
+    { recordId, recordType },
+    async ({ recordId, recordType }) => {
+      const response = await apiRequest(
+        `dms/links/data?record_ids[]=${recordId}&record_type=${recordType}`,
+        null,
+        "GET"
+      );
+      return await response?.json();
+    },
+    maxAge
+  );
   if (!data) return data;
   const list = APIDMSLinkList.Create(data);
-  return list.dms_links.map(link => APIDMSLink.Create(link));
+  return list.dms_links.map((link) => APIDMSLink.Create(link));
 }
 
 /**

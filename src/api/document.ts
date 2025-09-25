@@ -1,11 +1,20 @@
-import { apiRequest  } from './core.js';
-import {APIDocument} from './Document/index.js';
-import { APIDocumentMatching } from './Document/Matching.js';
+import { cachedRequest } from "./cache.js";
+import { apiRequest } from "./core.js";
+import { APIDocument } from "./Document/index.js";
+import { APIDocumentMatching } from "./Document/Matching.js";
+import { APIDocumentMatchingInvoice } from "./Document/MatchingInvoice.js";
 
-export async function getDocument (id): Promise<APIDocument> {
-  const response = await apiRequest(`documents/${id}`, null, 'GET');
-  if (!response) return null;
-  const data = await response?.json();
+export async function getDocument(id: number, maxAge?: number): Promise<APIDocument> {
+  const data = await cachedRequest(
+    "document:getDocument",
+    { id },
+    async ({ id }) => {
+      const response = await apiRequest(`documents/${id}`, null, "GET");
+      return await response?.json();
+    },
+    maxAge
+  );
+  if (!data) return data;
   return APIDocument.Create(data);
 }
 
@@ -24,8 +33,8 @@ export async function documentMatching (options: MatchingOptions) {
   return APIDocumentMatching.Create(await response.json());
 }
 
-export async function reloadLedgerEvents (id): Promise<APIDocument> {
-  const response = await apiRequest(`documents/${id}/settle`, null, 'POST');
+export async function reloadLedgerEvents(id): Promise<APIDocument> {
+  const response = await apiRequest(`documents/${id}/settle`, null, "POST");
   const data = await response?.json();
   return APIDocument.Create(data);
 }
@@ -33,9 +42,9 @@ export async function reloadLedgerEvents (id): Promise<APIDocument> {
 /**
  * @return {Promise<number>} The number of modified documents
  */
-export async function archiveDocument (id: number, unarchive = false): Promise<number> {
-  const body = { documents: [{id}], unarchive };
-  const response = await apiRequest('documents/batch_archive', body, 'POST');
+export async function archiveDocument(id: number, unarchive = false): Promise<number> {
+  const body = { documents: [{ id }], unarchive };
+  const response = await apiRequest("documents/batch_archive", body, "POST");
   const responseData = await response?.json();
   return responseData;
 }
@@ -43,6 +52,6 @@ export async function archiveDocument (id: number, unarchive = false): Promise<n
 /**
  * Return http link to open a document
  */
-export function getDocumentLink(id:number): string {
-  return `${location.href.split('/').slice(0,5).join('/')}/documents/${id}.html`;
+export function getDocumentLink(id: number): string {
+  return `${location.href.split("/").slice(0, 5).join("/")}/documents/${id}.html`;
 }
