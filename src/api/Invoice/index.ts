@@ -510,6 +510,7 @@ export class InvoiceLinesEntity {
   public readonly deferral_id: null;
   public readonly global_vat: boolean;
   public readonly id: number;
+  public readonly invoice_line_period?: null;
   public readonly label: string;
   public readonly ledger_event_label: null | string;
   public readonly ocr_vat_rate: null | string;
@@ -578,6 +579,9 @@ export class InvoiceLinesEntity {
     checkNull(d.deferral_id, field + ".deferral_id");
     checkBoolean(d.global_vat, field + ".global_vat");
     checkNumber(d.id, field + ".id");
+    if ("invoice_line_period" in d) {
+      checkNull(d.invoice_line_period, field + ".invoice_line_period");
+    }
     checkString(d.label, field + ".label");
     // This will be refactored in the next release.
     try {
@@ -602,7 +606,7 @@ export class InvoiceLinesEntity {
     checkBoolean(d.prepaid_pnl, field + ".prepaid_pnl");
     checkString(d.tax, field + ".tax");
     checkString(d.vat_rate, field + ".vat_rate");
-    const knownProperties = ["advance","advance_id","advance_pnl","amount","asset","asset_id","currency_amount","currency_price_before_tax","currency_tax","deferral","deferral_id","global_vat","id","label","ledger_event_label","ocr_vat_rate","pnl_plan_item","pnl_plan_item_id","prepaid_pnl","tax","vat_rate"];
+    const knownProperties = ["advance","advance_id","advance_pnl","amount","asset","asset_id","currency_amount","currency_price_before_tax","currency_tax","deferral","deferral_id","global_vat","id","invoice_line_period","label","ledger_event_label","ocr_vat_rate","pnl_plan_item","pnl_plan_item_id","prepaid_pnl","tax","vat_rate"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
     if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new InvoiceLinesEntity(d);
@@ -621,6 +625,7 @@ export class InvoiceLinesEntity {
     this.deferral_id = d.deferral_id;
     this.global_vat = d.global_vat;
     this.id = d.id;
+    if ("invoice_line_period" in d) this.invoice_line_period = d.invoice_line_period;
     this.label = d.label;
     this.ledger_event_label = d.ledger_event_label;
     this.ocr_vat_rate = d.ocr_vat_rate;

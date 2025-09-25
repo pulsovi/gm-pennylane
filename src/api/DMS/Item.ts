@@ -5,7 +5,7 @@ export class APIDMSItem {
   public readonly archived_at: string | null;
   public readonly children?: ChildrenEntityOrItemsEntity[];
   public readonly created_at: string;
-  public readonly creator: null | Creator;
+  public readonly creator?: Creator;
   public readonly favorite?: boolean;
   public readonly file_extension?: string;
   public readonly file_size?: number;
@@ -27,6 +27,7 @@ export class APIDMSItem {
   public readonly signed_id?: string;
   public readonly sort?: string;
   public readonly summary_text?: null;
+  public readonly summary_text_prediction_id?: null;
   public readonly type: string;
   public readonly updated_at: string;
   public readonly visible?: boolean;
@@ -63,14 +64,8 @@ export class APIDMSItem {
       }
     }
     checkString(d.created_at, field + ".created_at");
-    // This will be refactored in the next release.
-    try {
-      checkNull(d.creator, field + ".creator", "null | Creator");
-    } catch (e) {
-      try {
-        d.creator = Creator.Create(d.creator, field + ".creator", "null | Creator");
-      } catch (e) {
-      }
+    if ("creator" in d) {
+      d.creator = Creator.Create(d.creator, field + ".creator");
     }
     if ("favorite" in d) {
       checkBoolean(d.favorite, field + ".favorite");
@@ -134,12 +129,15 @@ export class APIDMSItem {
     if ("summary_text" in d) {
       checkNull(d.summary_text, field + ".summary_text");
     }
+    if ("summary_text_prediction_id" in d) {
+      checkNull(d.summary_text_prediction_id, field + ".summary_text_prediction_id");
+    }
     checkString(d.type, field + ".type");
     checkString(d.updated_at, field + ".updated_at");
     if ("visible" in d) {
       checkBoolean(d.visible, field + ".visible");
     }
-    const knownProperties = ["archived_at","children","created_at","creator","favorite","file_extension","file_size","file_url","filters","fixed","id","imports_allowed","itemable_id","items","method","name","pagination","parent_id","pusher_channel","readonly","reference_link","shared","signed_id","sort","summary_text","type","updated_at","visible"];
+    const knownProperties = ["archived_at","children","created_at","creator","favorite","file_extension","file_size","file_url","filters","fixed","id","imports_allowed","itemable_id","items","method","name","pagination","parent_id","pusher_channel","readonly","reference_link","shared","signed_id","sort","summary_text","summary_text_prediction_id","type","updated_at","visible"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
     if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new APIDMSItem(d);
@@ -148,7 +146,7 @@ export class APIDMSItem {
     this.archived_at = d.archived_at;
     if ("children" in d) this.children = d.children;
     this.created_at = d.created_at;
-    this.creator = d.creator;
+    if ("creator" in d) this.creator = d.creator;
     if ("favorite" in d) this.favorite = d.favorite;
     if ("file_extension" in d) this.file_extension = d.file_extension;
     if ("file_size" in d) this.file_size = d.file_size;
@@ -170,6 +168,7 @@ export class APIDMSItem {
     if ("signed_id" in d) this.signed_id = d.signed_id;
     if ("sort" in d) this.sort = d.sort;
     if ("summary_text" in d) this.summary_text = d.summary_text;
+    if ("summary_text_prediction_id" in d) this.summary_text_prediction_id = d.summary_text_prediction_id;
     this.type = d.type;
     this.updated_at = d.updated_at;
     if ("visible" in d) this.visible = d.visible;
