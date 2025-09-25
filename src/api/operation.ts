@@ -6,13 +6,20 @@ import { APILedgerEvent } from "./LedgerEvent/index.js";
 
 const logger = new Logger("Operation");
 
-export async function getLedgerEvents(id): Promise<APILedgerEvent[] | null> {
-  const response = await apiRequest(`accountants/operations/${id}/ledger_events?per_page=-1`, null, "GET");
-  if (!response) {
-    logger.error(`Unable to load ledger events for ${id}`);
-    return [];
-  }
-  const data = await response!.json();
+export async function getLedgerEvents(id: number, maxAge?: number): Promise<APILedgerEvent[] | null> {
+  const data = await cachedRequest(
+    "operation:getLedgerEvents",
+    { id },
+    async ({ id }: { id: number }) => {
+      const response = await apiRequest(`accountants/operations/${id}/ledger_events?per_page=-1`, null, "GET");
+      if (!response) {
+        logger.error(`Unable to load ledger events for ${id}`);
+        return [];
+      }
+      return await response!.json();
+    },
+    maxAge
+  );
   return data.map((item) => APILedgerEvent.Create(item));
 }
 
