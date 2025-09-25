@@ -1,57 +1,56 @@
-import { sleep } from '../_/time.js';
-import { isObject, isString } from '../_/typing.js';
-import Logger from '../framework/Logger.js';
+import { isString } from "../_/typing.js";
+import Logger from "../framework/Logger.js";
 
-const logger = new Logger('apiRequest');
+const logger = new Logger("API Request");
 
-export async function apiRequest (
-  endpoint: string | (RequestInit & {url: string}),
+export async function apiRequest(
+  endpoint: string | (RequestInit & { url: string }),
   data: Record<string, unknown> | null = null,
-  method = 'POST'
+  method = "POST"
 ) {
   await apiRequestQueue.wait(200);
   const delayBefore = apiRequestQueue.MIN_DELAY;
   const options: RequestInit = isString(endpoint) ? {} : endpoint;
   const rawUrl = isString(endpoint) ? endpoint : endpoint.url;
-  const url = rawUrl.startsWith('http') ? rawUrl : `${location.href.split('/').slice(0, 5).join('/')}/${rawUrl}`;
+  const url = rawUrl.startsWith("http") ? rawUrl : `${location.href.split("/").slice(0, 5).join("/")}/${rawUrl}`;
   const response = await fetch(url, {
     method,
     headers: {
-      "X-CSRF-TOKEN": getCookies('my_csrf_token'),
+      "X-CSRF-TOKEN": getCookies("my_csrf_token"),
       "Content-Type": "application/json",
-      Accept: 'application/json'
+      Accept: "application/json",
     },
     body: data ? JSON.stringify(data) : null,
-    ...options
-  }).catch(error => ({ error }));
+    ...options,
+  }).catch((error) => ({ error }));
 
-  if ('error' in response) {
-    console.log('API request error :', { endpoint, data, method, error: response.error });
+  if ("error" in response) {
+    console.log("API request error :", { endpoint, data, method, error: response.error });
     apiRequestQueue.push(3000);
-    logger.debug('apiRequestWait: 3000');
+    logger.debug("apiRequestWait: 3000");
     return apiRequest(endpoint, data, method);
   }
 
   if (response.status === 204) {
-    console.log('API Request: pas de contenu', { endpoint, data, method });
+    console.log("API Request: pas de contenu", { endpoint, data, method });
     return null;
   }
 
   if (response.status === 404) {
-    console.log('API Request: page introuvable', { endpoint, data, method });
+    logger.error("page introuvable", { endpoint, data, method });
     return null;
   }
 
   if (response.status === 422) {
     const message = (await response.clone().json()).message;
-    logger.log(message, {endpoint, method, data});
-    if (typeof endpoint !== 'string' && !endpoint.headers?.['X-CSRF-TOKEN']) {
+    logger.log(message, { endpoint, method, data });
+    if (typeof endpoint !== "string" && !endpoint.headers?.["X-CSRF-TOKEN"]) {
       apiRequestQueue.push(200);
-      logger.debug('apiRequestWait: 200');
+      logger.debug("apiRequestWait: 200");
       return apiRequest({
         ...endpoint,
         headers: {
-          "X-CSRF-TOKEN": getCookies('my_csrf_token'),
+          "X-CSRF-TOKEN": getCookies("my_csrf_token"),
           /*
           "X-COMPANY-CONTEXT-DATA-UPDATED-AT": "2025-05-11T19:23:33.772Z",
           "X-PLAN-USED-BY-FRONT-END": "v1_saas_free",
@@ -65,7 +64,7 @@ export async function apiRequest (
           "traceparent": "00-000000000000000024a046b489ead241-33404d6d5ea99f22-01",
           */
           ...endpoint.headers,
-        }
+        },
       });
     }
 
@@ -78,17 +77,14 @@ export async function apiRequest (
   if (response.status === 429 || response.status === 418) {
     apiRequestQueue.unshift(1000);
     apiRequestQueue.MIN_DELAY = delayBefore + 1;
-    apiRequestQueue.VERY_MIN_DELAY = Math.max(
-      apiRequestQueue.VERY_MIN_DELAY,
-      delayBefore + 1
-    );
-    logger.debug('apiRequestWait: 1000');
+    apiRequestQueue.VERY_MIN_DELAY = Math.max(apiRequestQueue.VERY_MIN_DELAY, delayBefore + 1);
+    logger.debug("apiRequestWait: 1000");
     return apiRequest(endpoint, data, method);
   }
 
   if (response.status !== 200) {
-    console.log('apiRequest response status is not 200', {response, status: response.status});
-    console.error('Todo : Créer un gestionnaire pour le code error status = '+response.status);
+    console.log("apiRequest response status is not 200", { response, status: response.status });
+    console.error("Todo : Créer un gestionnaire pour le code error status = " + response.status);
     return null;
   }
 
@@ -96,15 +92,20 @@ export async function apiRequest (
   return response;
 }
 
-function getCookies (): URLSearchParams;
-function getCookies (key: string): string;
-function getCookies (key?: string) {
-  const allCookies = new URLSearchParams(document.cookie.split(';').map(c => c.trim()).join('&'));
+function getCookies(): URLSearchParams;
+function getCookies(key: string): string;
+function getCookies(key?: string) {
+  const allCookies = new URLSearchParams(
+    document.cookie
+      .split(";")
+      .map((c) => c.trim())
+      .join("&")
+  );
   if (key) return allCookies.get(key);
   return allCookies;
 }
 
-Object.assign(window, {apiRequest});
+Object.assign(window, { apiRequest });
 
 class Queue {
   public VERY_MIN_DELAY = 0;
@@ -112,17 +113,18 @@ class Queue {
   private queue: ({ time: number } | { cb: () => void })[] = [];
   private running = false;
 
-  wait (postDelay?: number) {
-    return new Promise<void>(rs => {
+  wait(postDelay?: number) {
+    return new Promise<void>((rs) => {
       this.queue.push({ cb: rs });
       if (postDelay) this.push(postDelay);
       this.run();
     });
   }
 
-  push (delay: number) {
+  push(delay: number) {
     const last = this.queue.reduce((last, item) => {
-      if ('time' in item) return item.time; return last;
+      if ("time" in item) return item.time;
+      return last;
     }, Date.now());
     const time = Math.max(last + this.MIN_DELAY, Date.now() + delay);
     this.queue.push({ time });
@@ -134,13 +136,13 @@ class Queue {
     this.run();
   }
 
-  private run () {
+  private run() {
     if (this.running || this.queue.length === 0) return;
     this.running = true;
 
     const nextItem = this.queue.shift();
 
-    if ('time' in nextItem) {
+    if ("time" in nextItem) {
       setTimeout(() => {
         this.running = false;
         this.run();
@@ -153,4 +155,4 @@ class Queue {
   }
 }
 const apiRequestQueue = new Queue();
-logger.log({apiRequestQueue});
+logger.log({ apiRequestQueue });

@@ -1,4 +1,5 @@
 import Logger from '../framework/Logger.js';
+import { cachedRequest } from "./cache.js";
 import { apiRequest } from './core.js';
 import { APIDMSCreateLink } from './DMS/CreateLink.js';
 import { APIDMSItem } from './DMS/Item.js';
@@ -56,17 +57,24 @@ export async function getDMSItem(id: number): Promise<APIDMSItem> {
  */
 export async function getDMSItemLinks(
   /** the DMSItem.itemable_id */
-  dmsFileId: number
+  dmsFileId: number,
+  maxAge?: number
 ): Promise<APIDMSItemLink[]> {
-  const response = await dmsRequest({ url: `dms/files/${dmsFileId}/links` });
-  const data = await response?.json();
-  if (!data) return [];
-  if (!Array.isArray(data)) {
-    logger.error('réponse inattendue pour getDMSItemLinks', { response, data });
-    return [];
-  }
-  const links = data.map(item => APIDMSItemLink.Create(item));
-  return links;
+  const data = await cachedRequest(
+    "dms:getDMSItemLinks",
+    { id: dmsFileId },
+    async ({ id }) => {
+      const response = await apiRequest(`dms/files/${id}/links`, null, "GET");
+      const data = await response?.json();
+      if (!Array.isArray(data)) {
+        logger.error("réponse inattendue pour getDMSItemLinks", { response, data });
+        return [];
+      }
+      return data;
+    },
+    maxAge
+  );
+  return data.map((item) => APIDMSItemLink.Create(item));
 }
 
 /**
