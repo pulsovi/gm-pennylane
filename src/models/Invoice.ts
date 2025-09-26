@@ -79,7 +79,9 @@ export default abstract class Invoice extends ValidableDocument {
       invoice.thirdparty?.name ?? "",
       invoice.date ? new Date(invoice.date).toLocaleDateString().replace(/\//g, "-") : "",
       `${invoice.amount.replace(/.0+$/, "")}€`,
-    ].join(" - ");
+    ]
+      .join(" - ")
+      .replace(" - Donateurs - Dons Manuels", "");
     const response = await moveToDms(this.id, destId);
     this.debug("moveToDms response");
     const files = await getDMSItemList({

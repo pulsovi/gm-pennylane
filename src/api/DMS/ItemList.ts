@@ -74,6 +74,7 @@ export class ItemsEntity {
   public readonly signed_id?: string;
   public readonly suggested_folders?: never[];
   public readonly summary_text?: null;
+  public readonly summary_text_prediction_id?: null;
   public readonly type: string;
   public readonly updated_at: string;
   public readonly visible?: boolean;
@@ -161,12 +162,15 @@ export class ItemsEntity {
     if ("summary_text" in d) {
       checkNull(d.summary_text, field + ".summary_text");
     }
+    if ("summary_text_prediction_id" in d) {
+      checkNull(d.summary_text_prediction_id, field + ".summary_text_prediction_id");
+    }
     checkString(d.type, field + ".type");
     checkString(d.updated_at, field + ".updated_at");
     if ("visible" in d) {
       checkBoolean(d.visible, field + ".visible");
     }
-    const knownProperties = ["archived_at","comments_count","created_at","creator","favorite","file_extension","file_size","file_url","fixed","id","imports_allowed","itemable_id","method","name","parent_id","pusher_channel","readonly","reference_link","shared","signed_id","suggested_folders","summary_text","type","updated_at","visible"];
+    const knownProperties = ["archived_at","comments_count","created_at","creator","favorite","file_extension","file_size","file_url","fixed","id","imports_allowed","itemable_id","method","name","parent_id","pusher_channel","readonly","reference_link","shared","signed_id","suggested_folders","summary_text","summary_text_prediction_id","type","updated_at","visible"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
     if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new ItemsEntity(d);
@@ -194,6 +198,7 @@ export class ItemsEntity {
     if ("signed_id" in d) this.signed_id = d.signed_id;
     if ("suggested_folders" in d) this.suggested_folders = d.suggested_folders;
     if ("summary_text" in d) this.summary_text = d.summary_text;
+    if ("summary_text_prediction_id" in d) this.summary_text_prediction_id = d.summary_text_prediction_id;
     this.type = d.type;
     this.updated_at = d.updated_at;
     if ("visible" in d) this.visible = d.visible;

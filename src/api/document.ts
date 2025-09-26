@@ -24,17 +24,17 @@ interface MatchingOptions {
 }
 export async function documentMatching(options: MatchingOptions) {
   const group_uuids = Array.isArray(options.groups) ? options.groups : [options.groups];
-  const args = { matching: { unmatch_ids: [], group_uuids } };
+  const matching = { unmatch_ids: [], group_uuids };
   const document = await getDocument(options.id);
   if (document && document.type === "Invoice") {
     const response = await apiRequest(
       `accountants/matching/invoices/matches/${document.id}?direction=${document.direction}`,
-      args,
+      matching,
       "PUT"
     );
     if (response) return APIDocumentMatchingInvoice.Create(await response.json());
   }
-  const response = await apiRequest(`documents/${options.id}/matching`, args, "PUT");
+  const response = await apiRequest(`documents/${options.id}/matching`, { matching }, "PUT");
   if (!response) return null;
   return APIDocumentMatching.Create(await response.json());
 }
