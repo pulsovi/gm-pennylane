@@ -20,6 +20,9 @@ export class APIDMSUpdateItem {
   public readonly reference_link: null;
   public readonly shared: boolean;
   public readonly signed_id: string;
+  public readonly suggested_folders?: never[];
+  public readonly summary_text?: null;
+  public readonly summary_text_prediction_id?: null;
   public readonly type: string;
   public readonly updated_at: string;
   public static Parse(d: string): APIDMSUpdateItem {
@@ -63,9 +66,23 @@ export class APIDMSUpdateItem {
     checkNull(d.reference_link, field + ".reference_link");
     checkBoolean(d.shared, field + ".shared");
     checkString(d.signed_id, field + ".signed_id");
+    if ("suggested_folders" in d) {
+      checkArray(d.suggested_folders, field + ".suggested_folders");
+      if (d.suggested_folders) {
+        for (let i = 0; i < d.suggested_folders.length; i++) {
+          checkNever(d.suggested_folders[i], field + ".suggested_folders" + "[" + i + "]");
+        }
+      }
+    }
+    if ("summary_text" in d) {
+      checkNull(d.summary_text, field + ".summary_text");
+    }
+    if ("summary_text_prediction_id" in d) {
+      checkNull(d.summary_text_prediction_id, field + ".summary_text_prediction_id");
+    }
     checkString(d.type, field + ".type");
     checkString(d.updated_at, field + ".updated_at");
-    const knownProperties = ["archived_at","created_at","creator","favorite","file_extension","file_size","file_url","id","imports_allowed","itemable_id","method","name","parent_id","pusher_channel","readonly","reference_link","shared","signed_id","type","updated_at"];
+    const knownProperties = ["archived_at","created_at","creator","favorite","file_extension","file_size","file_url","id","imports_allowed","itemable_id","method","name","parent_id","pusher_channel","readonly","reference_link","shared","signed_id","suggested_folders","summary_text","summary_text_prediction_id","type","updated_at"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
     if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new APIDMSUpdateItem(d);
@@ -89,6 +106,9 @@ export class APIDMSUpdateItem {
     this.reference_link = d.reference_link;
     this.shared = d.shared;
     this.signed_id = d.signed_id;
+    if ("suggested_folders" in d) this.suggested_folders = d.suggested_folders;
+    if ("summary_text" in d) this.summary_text = d.summary_text;
+    if ("summary_text_prediction_id" in d) this.summary_text_prediction_id = d.summary_text_prediction_id;
     this.type = d.type;
     this.updated_at = d.updated_at;
   }
@@ -143,6 +163,9 @@ function throwNotObject(field: string, value: any, multiple?: string): void {
 function throwIsArray(field: string, value: any, multiple?: string): void {
   return errorHelper(field, value, multiple ?? "object");
 }
+function checkArray(value: any, field: string, multiple?: string): void {
+  if (!Array.isArray(value)) errorHelper(field, value, multiple ?? "array");
+}
 function checkNumber(value: any, field: string, multiple?: string): void {
   if (typeof(value) !== 'number') errorHelper(field, value, multiple ?? "number");
 }
@@ -154,6 +177,9 @@ function checkString(value: any, field: string, multiple?: string): void {
 }
 function checkNull(value: any, field: string, multiple?: string): void {
   if (value !== null) errorHelper(field, value, multiple ?? "null");
+}
+function checkNever(value: any, field: string, multiple?: string): void {
+  return errorHelper(field, value, multiple ?? "never");
 }
 function errorHelper(field: string, d: any, type: string): void {
   if (type.includes(' | ')) {
