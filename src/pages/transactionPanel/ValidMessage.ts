@@ -57,7 +57,7 @@ export default class TransactionValidMessage extends Service {
   }
 
   reload() {
-    this.loadMessage();
+    this.loadMessage(true);
   }
 
   set message(html: string) {
@@ -69,7 +69,7 @@ export default class TransactionValidMessage extends Service {
     return this._message;
   }
 
-  async loadMessage() {
+  async loadMessage(refresh = false) {
     this.log("loadMessage", this);
     this.message = "⟳";
 
@@ -81,14 +81,17 @@ export default class TransactionValidMessage extends Service {
     const cachedStatus = cache.find({ id: rawTransaction.id });
     if (cachedStatus) this.message = `<aside style="background: lightgray;">⟳ ${cachedStatus.message}</aside>`;
 
-    const status = await this.state.transaction.getStatus();
-    cache.updateItem({
-      id: rawTransaction.id,
-      valid: status.valid,
-      message: status.message,
-      createdAt: Date.now(),
-      date: new Date(rawTransaction.date).getTime(),
-    });
+    const status = await this.state.transaction.getStatus(refresh);
+    cache.updateItem(
+      { id: rawTransaction.id },
+      {
+        id: rawTransaction.id,
+        valid: status.valid,
+        message: status.message,
+        createdAt: Date.now(),
+        date: new Date(rawTransaction.date).getTime(),
+      }
+    );
     this.handleCacheUpdate({ newValue: status });
   }
 
@@ -149,7 +152,7 @@ export default class TransactionValidMessage extends Service {
 
   private handleCacheUpdate({ newValue: status }: { newValue: Status }) {
     if (status.id !== this.state.transaction?.id) return;
-    this.log("handleCacheUpdate", { status, _this: this });
+    this.error("handleCacheUpdate", { status, _this: this });
     this.message = `${status.valid ? "✓" : "✗"} ${status.message}`;
   }
 }

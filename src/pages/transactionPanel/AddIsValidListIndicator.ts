@@ -17,7 +17,7 @@ export default class AddIsValidTransactionListIndicator extends Service {
     const checkboxDiv = (await waitElem(
       `div:not(.isValidReady)[data-tracking-action="Accounting Transactions - Row Selection Checkbox"]`
     )) as HTMLDivElement;
-    this.log("found:", checkboxDiv);
+    this.debug("found:", checkboxDiv);
     await this.addIndicator(checkboxDiv);
     this.watch();
   }
@@ -48,6 +48,7 @@ export default class AddIsValidTransactionListIndicator extends Service {
   private updateIndicator(status: Status) {
     const checkboxDiv = $(`div.isValid-${status.id}`);
     if (!checkboxDiv) return;
+    this.debug("handle cache update", status, checkboxDiv);
     checkboxDiv.classList.toggle("isValid", status.valid);
     $("span", checkboxDiv).style.background = status.valid ? "#00ff0030" : "#ff000030";
   }

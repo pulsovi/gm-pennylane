@@ -44,6 +44,7 @@ export default class Document extends Logger {
   protected groupedDocuments: SyncOrPromise<Document[]>;
   protected ledgerEvents?: APILedgerEvent[] | Promise<APILedgerEvent[]>;
   protected thirdparty?: Promise<Thirdparty>;
+  protected _dmslinks: SyncOrPromise<APIDMSLink[]>;
   private static closedCache = new CacheList<ClosedStatus>("closedDocumentsCache", []);
 
   constructor({ id, ...raw }: { id: number }) {
@@ -165,8 +166,11 @@ export default class Document extends Logger {
     return await getThirdparty(doc.thirdparty_id);
   }
 
-  public async getDMSLinks(recordType?: string): Promise<APIDMSLink[]> {
-    return await getDMSLinks(this.id, recordType);
+  public async getDMSLinks(recordType?: string, maxAge?: number): Promise<APIDMSLink[]> {
+    if (!this._dmslinks) {
+      this._dmslinks = getDMSLinks(this.id, recordType, maxAge);
+    }
+    return await this._dmslinks;
   }
 
   public static async isClosed(id: number): Promise<boolean> {

@@ -19,6 +19,7 @@ export default class Transaction extends ValidableDocument {
   protected _transaction: Promise<APITransactionLite> | APITransactionLite;
   protected _balance: SyncOrPromise<Balance>;
   protected _isReconciled: SyncOrPromise<boolean>;
+  private refreshing: boolean = false;
   public readonly cacheStatus: CacheStatus;
 
   constructor(raw: { id: number }) {
@@ -49,7 +50,7 @@ export default class Transaction extends ValidableDocument {
   }
 
   public async getDMSLinks(): Promise<APIDMSLink[]> {
-    return await super.getDMSLinks("Transaction");
+    return await super.getDMSLinks("Transaction", this.isCurrent() ? 0 : void 0);
   }
 
   private isCurrent() {
@@ -105,13 +106,15 @@ export default class Transaction extends ValidableDocument {
         dmsLinks.forEach((dmsLink) => {
           if (this.isCurrent()) this.debug("balance counting", dmsLink, jsonClone(balance));
           if (dmsLink.name.startsWith("CHQ")) {
-            const amount = dmsLink.name.match(/- (?<amount>[\d \.]*) ?€$/u)?.groups.amount;
+            const amount = dmsLink.name.match(/- (?<amount>[\d \.]*) ?€(?:\.\w+)?$/u)?.groups.amount;
             balance.addCHQ(parseFloat(amount ?? "0") * Math.sign(balance.transaction));
-          }
-          if (/^(?:CERFA|AIDES) /u.test(dmsLink.name)) {
+          } else if (/^(?:CERFA|AIDES) /u.test(dmsLink.name)) {
             if (this.isCurrent()) this.log("aide trouvée", { dmsLink });
             const amount = dmsLink.name.match(/- (?<amount>[\d \.]*) ?€$/u)?.groups.amount;
             balance.addReçu(parseFloat(amount ?? "0") * Math.sign(balance.transaction));
+          } else {
+            const amount = dmsLink.name.match(/(?<amount>[\d \.]*) ?€(?:\.\w+)?$/u)?.groups.amount;
+            balance.addAutre(parseFloat(amount ?? "0") * Math.sign(balance.transaction));
           }
         });
 
@@ -131,13 +134,14 @@ export default class Transaction extends ValidableDocument {
     return this._balance;
   }
 
-  public async getStatus(): Promise<Status> {
-    const status = await super.getStatus();
+  public async getStatus(refresh = false): Promise<Status> {
+    const status = await super.getStatus(refresh);
     this.cacheStatus.updateItem(status, false);
     return status;
   }
 
-  protected async loadValidMessage(): Promise<string> {
+  protected async loadValidMessage(refresh = false): Promise<string> {
+    if (refresh) this.refreshing = true;
     if (this.isCurrent()) this.log("loadValidMessage", this);
 
     const status = ((await this.isClosedCheck()) ??
@@ -162,12 +166,8 @@ export default class Transaction extends ValidableDocument {
       (await this.hasToSendToDMS()) ??
       "OK") as string;
 
-    if (user !== "assistant") return status;
-
-    const assistant = ["orange", "envoyer les reçus en facturation"];
-    if (assistant.some((needle) => status.includes(needle)) === (user === "assistant") || this.isCurrent())
-      return status;
-    return "OK";
+    this.refreshing = false;
+    return status;
   }
 
   private async is2025() {
@@ -782,10 +782,13 @@ export default class Transaction extends ValidableDocument {
 
   /** Add item to this transaction's group */
   async groupAdd(id: number) {
-    const doc = await this.getDocument();
+    const doc = await this.getDocument(0);
     const groups = doc.group_uuid;
-    const docMatchResp = await documentMatching({ id, groups });
-    this.debug("groupAdd", { docMatchResp });
-    if (docMatchResp?.id !== id) await createDMSLink(id, this.id, "Transaction");
+    const response = await documentMatching({ id, groups });
+
+    // If the provided id is a DMS file, we need use the DMS link instead of relying on document matching.
+    if ("grouped_transactions" in response && response.grouped_transactions.some((tr) => tr.id === this.id)) return;
+    this.error("groupAdd", { response });
+    await createDMSLink(id, this.id, "Transaction");
   }
 }

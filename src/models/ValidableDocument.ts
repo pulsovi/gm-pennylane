@@ -14,20 +14,20 @@ export default abstract class ValidableDocument extends Document {
   public valid: boolean | null = null;
   public validMessage: string | null = null;
 
-  protected abstract loadValidMessage(): Promise<string>;
+  protected abstract loadValidMessage(refresh?: boolean): Promise<string>;
 
-  async getValidMessage() {
-    if (this.validMessage === null) await this.loadValidation();
+  async getValidMessage(refresh = false) {
+    if (this.validMessage === null || refresh) await this.loadValidation(refresh);
     return this.validMessage!;
   }
 
-  private async loadValidation() {
-    if (this.validMessage === null) this.validMessage = await this.loadValidMessage();
+  private async loadValidation(refresh = false) {
+    if (this.validMessage === null || refresh) this.validMessage = await this.loadValidMessage(refresh);
     this.valid = this.validMessage === "OK";
   }
 
-  async isValid() {
-    if (this.valid === null) await this.loadValidation();
+  async isValid(refresh = false) {
+    if (this.valid === null || refresh) await this.loadValidation(refresh);
     return this.valid!;
   }
 
@@ -35,10 +35,10 @@ export default abstract class ValidableDocument extends Document {
    * Get validation status of the document.
    * @returns The status of the document or null if the document is not found.
    */
-  async getStatus(): Promise<Status | null> {
+  async getStatus(refresh = false): Promise<Status | null> {
     const id = this.id;
-    const valid = await this.isValid();
-    const message = await this.getValidMessage();
+    const valid = await this.isValid(refresh);
+    const message = await this.getValidMessage(refresh);
     const doc = await this.getDocument();
     if (!doc) return null;
     const createdAt = doc && new Date(doc.created_at).getTime();
