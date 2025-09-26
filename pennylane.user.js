@@ -1528,10 +1528,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"converted_invoice_urls\" in d) {\n" +
-"            checkArray$f(d.converted_invoice_urls, field + \".converted_invoice_urls\");\n" +
+"            checkArray$g(d.converted_invoice_urls, field + \".converted_invoice_urls\");\n" +
 "            if (d.converted_invoice_urls) {\n" +
 "                for (let i = 0; i < d.converted_invoice_urls.length; i++) {\n" +
-"                    checkNever$6(d.converted_invoice_urls[i], field + \".converted_invoice_urls\" + \"[\" + i + \"]\");\n" +
+"                    checkNever$7(d.converted_invoice_urls[i], field + \".converted_invoice_urls\" + \"[\" + i + \"]\");\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1661,7 +1661,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                prompt(proxyName$p + ':', JSON.stringify(obj$p));\n" +
 "            }\n" +
 "        }\n" +
-"        checkArray$f(d.grouped_documents, field + \".grouped_documents\");\n" +
+"        checkArray$g(d.grouped_documents, field + \".grouped_documents\");\n" +
 "        if (d.grouped_documents) {\n" +
 "            for (let i = 0; i < d.grouped_documents.length; i++) {\n" +
 "                d.grouped_documents[i] = GroupedDocumentsEntity$1.Create(d.grouped_documents[i], field + \".grouped_documents\" + \"[\" + i + \"]\");\n" +
@@ -1812,10 +1812,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkBoolean$d(d.quotes, field + \".quotes\");\n" +
 "        checkBoolean$d(d.readonly, field + \".readonly\");\n" +
 "        if (\"recipients\" in d) {\n" +
-"            checkArray$f(d.recipients, field + \".recipients\");\n" +
+"            checkArray$g(d.recipients, field + \".recipients\");\n" +
 "            if (d.recipients) {\n" +
 "                for (let i = 0; i < d.recipients.length; i++) {\n" +
-"                    checkNever$6(d.recipients[i], field + \".recipients\" + \"[\" + i + \"]\");\n" +
+"                    checkNever$7(d.recipients[i], field + \".recipients\" + \"[\" + i + \"]\");\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -1836,10 +1836,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"scored_transactions\" in d) {\n" +
-"            checkArray$f(d.scored_transactions, field + \".scored_transactions\");\n" +
+"            checkArray$g(d.scored_transactions, field + \".scored_transactions\");\n" +
 "            if (d.scored_transactions) {\n" +
 "                for (let i = 0; i < d.scored_transactions.length; i++) {\n" +
-"                    checkNever$6(d.scored_transactions[i], field + \".scored_transactions\" + \"[\" + i + \"]\");\n" +
+"                    checkNever$7(d.scored_transactions[i], field + \".scored_transactions\" + \"[\" + i + \"]\");\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -2187,7 +2187,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkArray$f(d.client_comments, field + \".client_comments\");\n" +
+"        checkArray$g(d.client_comments, field + \".client_comments\");\n" +
 "        if (d.client_comments) {\n" +
 "            for (let i = 0; i < d.client_comments.length; i++) {\n" +
 "                d.client_comments[i] = ClientCommentsEntityOrEstablishmentComment.Create(d.client_comments[i], field + \".client_comments\" + \"[\" + i + \"]\");\n" +
@@ -2215,10 +2215,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            checkNumber$l(d.completeness, field + \".completeness\");\n" +
 "        }\n" +
 "        if (\"converted_invoice_urls\" in d) {\n" +
-"            checkArray$f(d.converted_invoice_urls, field + \".converted_invoice_urls\");\n" +
+"            checkArray$g(d.converted_invoice_urls, field + \".converted_invoice_urls\");\n" +
 "            if (d.converted_invoice_urls) {\n" +
 "                for (let i = 0; i < d.converted_invoice_urls.length; i++) {\n" +
-"                    checkNever$6(d.converted_invoice_urls[i], field + \".converted_invoice_urls\" + \"[\" + i + \"]\");\n" +
+"                    checkNever$7(d.converted_invoice_urls[i], field + \".converted_invoice_urls\" + \"[\" + i + \"]\");\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -2577,7 +2577,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"invoice_lines\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkArray$f(d.invoice_lines, field + \".invoice_lines\", \"InvoiceLinesEntity[] | null\");\n" +
+"                checkArray$g(d.invoice_lines, field + \".invoice_lines\", \"InvoiceLinesEntity[] | null\");\n" +
 "                if (d.invoice_lines) {\n" +
 "                    for (let i = 0; i < d.invoice_lines.length; i++) {\n" +
 "                        d.invoice_lines[i] = InvoiceLinesEntity$2.Create(d.invoice_lines[i], field + \".invoice_lines\" + \"[\" + i + \"]\");\n" +
@@ -2712,7 +2712,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
-"        checkArray$f(d.ledgerEvents, field + \".ledgerEvents\");\n" +
+"        checkArray$g(d.ledgerEvents, field + \".ledgerEvents\");\n" +
 "        if (d.ledgerEvents) {\n" +
 "            for (let i = 0; i < d.ledgerEvents.length; i++) {\n" +
 "                d.ledgerEvents[i] = LedgerEventsEntity.Create(d.ledgerEvents[i], field + \".ledgerEvents\" + \"[\" + i + \"]\");\n" +
@@ -2967,7 +2967,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                prompt(proxyName$p + ':', JSON.stringify(obj$p));\n" +
 "            }\n" +
 "        }\n" +
-"        checkArray$f(d.preview_urls, field + \".preview_urls\");\n" +
+"        checkArray$g(d.preview_urls, field + \".preview_urls\");\n" +
 "        if (d.preview_urls) {\n" +
 "            for (let i = 0; i < d.preview_urls.length; i++) {\n" +
 "                checkString$m(d.preview_urls[i], field + \".preview_urls\" + \"[\" + i + \"]\");\n" +
@@ -3010,10 +3010,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"recipients\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkArray$f(d.recipients, field + \".recipients\", \"never[] | null\");\n" +
+"                checkArray$g(d.recipients, field + \".recipients\", \"never[] | null\");\n" +
 "                if (d.recipients) {\n" +
 "                    for (let i = 0; i < d.recipients.length; i++) {\n" +
-"                        checkNever$6(d.recipients[i], field + \".recipients\" + \"[\" + i + \"]\");\n" +
+"                        checkNever$7(d.recipients[i], field + \".recipients\" + \"[\" + i + \"]\");\n" +
 "                    }\n" +
 "                }\n" +
 "            }\n" +
@@ -3046,10 +3046,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"scored_transactions\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkArray$f(d.scored_transactions, field + \".scored_transactions\", \"never[] | null\");\n" +
+"                checkArray$g(d.scored_transactions, field + \".scored_transactions\", \"never[] | null\");\n" +
 "                if (d.scored_transactions) {\n" +
 "                    for (let i = 0; i < d.scored_transactions.length; i++) {\n" +
-"                        checkNever$6(d.scored_transactions[i], field + \".scored_transactions\" + \"[\" + i + \"]\");\n" +
+"                        checkNever$7(d.scored_transactions[i], field + \".scored_transactions\" + \"[\" + i + \"]\");\n" +
 "                    }\n" +
 "                }\n" +
 "            }\n" +
@@ -3546,7 +3546,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            throwIsArray$p(field, d);\n" +
 "        }\n" +
 "        checkNumber$l(d.accounts_count, field + \".accounts_count\");\n" +
-"        checkArray$f(d.bridge_ids, field + \".bridge_ids\");\n" +
+"        checkArray$g(d.bridge_ids, field + \".bridge_ids\");\n" +
 "        if (d.bridge_ids) {\n" +
 "            for (let i = 0; i < d.bridge_ids.length; i++) {\n" +
 "                checkNumber$l(d.bridge_ids[i], field + \".bridge_ids\" + \"[\" + i + \"]\");\n" +
@@ -4478,10 +4478,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkString$m(d.delivery_postal_code, field + \".delivery_postal_code\");\n" +
 "        checkBoolean$d(d.disable_pending_vat, field + \".disable_pending_vat\");\n" +
 "        checkNull$i(d.display_name, field + \".display_name\");\n" +
-"        checkArray$f(d.emails, field + \".emails\");\n" +
+"        checkArray$g(d.emails, field + \".emails\");\n" +
 "        if (d.emails) {\n" +
 "            for (let i = 0; i < d.emails.length; i++) {\n" +
-"                checkNever$6(d.emails[i], field + \".emails\" + \"[\" + i + \"]\");\n" +
+"                checkNever$7(d.emails[i], field + \".emails\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
 "        // This will be refactored in the next release.\n" +
@@ -4553,7 +4553,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkString$m(d.reg_no, field + \".reg_no\");\n" +
 "        checkString$m(d.role, field + \".role\");\n" +
 "        checkBoolean$d(d.rule_enabled, field + \".rule_enabled\");\n" +
-"        checkArray$f(d.search_terms, field + \".search_terms\");\n" +
+"        checkArray$g(d.search_terms, field + \".search_terms\");\n" +
 "        if (d.search_terms) {\n" +
 "            for (let i = 0; i < d.search_terms.length; i++) {\n" +
 "                checkString$m(d.search_terms[i], field + \".search_terms\" + \"[\" + i + \"]\");\n" +
@@ -4574,10 +4574,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                prompt(proxyName$p + ':', JSON.stringify(obj$p));\n" +
 "            }\n" +
 "        }\n" +
-"        checkArray$f(d.tags, field + \".tags\");\n" +
+"        checkArray$g(d.tags, field + \".tags\");\n" +
 "        if (d.tags) {\n" +
 "            for (let i = 0; i < d.tags.length; i++) {\n" +
-"                checkNever$6(d.tags[i], field + \".tags\" + \"[\" + i + \"]\");\n" +
+"                checkNever$7(d.tags[i], field + \".tags\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
 "        checkNull$i(d.turnover, field + \".turnover\");\n" +
@@ -4716,7 +4716,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "function throwIsArray$p(field, value, multiple) {\n" +
 "    return errorHelper$p(field, value, \"object\");\n" +
 "}\n" +
-"function checkArray$f(value, field, multiple) {\n" +
+"function checkArray$g(value, field, multiple) {\n" +
 "    if (!Array.isArray(value))\n" +
 "        errorHelper$p(field, value, multiple ?? \"array\");\n" +
 "}\n" +
@@ -4736,7 +4736,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    if (value !== null)\n" +
 "        errorHelper$p(field, value, multiple ?? \"null\");\n" +
 "}\n" +
-"function checkNever$6(value, field, multiple) {\n" +
+"function checkNever$7(value, field, multiple) {\n" +
 "    return errorHelper$p(field, value, \"never\");\n" +
 "}\n" +
 "function errorHelper$p(field, d, type) {\n" +
@@ -4888,7 +4888,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$n(field, d);\n" +
 "        }\n" +
-"        checkArray$e(d.grouped_transactions, field + \".grouped_transactions\");\n" +
+"        checkArray$f(d.grouped_transactions, field + \".grouped_transactions\");\n" +
 "        if (d.grouped_transactions) {\n" +
 "            for (let i = 0; i < d.grouped_transactions.length; i++) {\n" +
 "                d.grouped_transactions[i] = GroupedTransactionsEntity.Create(d.grouped_transactions[i], field + \".grouped_transactions\" + \"[\" + i + \"]\");\n" +
@@ -4896,7 +4896,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        checkNumber$j(d.multiplier, field + \".multiplier\");\n" +
 "        checkString$k(d.outstanding_balance, field + \".outstanding_balance\");\n" +
-"        checkArray$e(d.suggested_transactions, field + \".suggested_transactions\");\n" +
+"        checkArray$f(d.suggested_transactions, field + \".suggested_transactions\");\n" +
 "        if (d.suggested_transactions) {\n" +
 "            for (let i = 0; i < d.suggested_transactions.length; i++) {\n" +
 "                d.suggested_transactions[i] = SuggestedTransactionsEntity.Create(d.suggested_transactions[i], field + \".suggested_transactions\" + \"[\" + i + \"]\");\n" +
@@ -5073,7 +5073,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "function throwIsArray$n(field, value, multiple) {\n" +
 "    return errorHelper$n(field, value, \"object\");\n" +
 "}\n" +
-"function checkArray$e(value, field, multiple) {\n" +
+"function checkArray$f(value, field, multiple) {\n" +
 "    if (!Array.isArray(value))\n" +
 "        errorHelper$n(field, value, \"array\");\n" +
 "}\n" +
@@ -5254,7 +5254,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "        }\n" +
 "        if (\"children\" in d) {\n" +
-"            checkArray$d(d.children, field + \".children\");\n" +
+"            checkArray$e(d.children, field + \".children\");\n" +
 "            if (d.children) {\n" +
 "                for (let i = 0; i < d.children.length; i++) {\n" +
 "                    d.children[i] = ChildrenEntityOrItemsEntity.Create(d.children[i], field + \".children\" + \"[\" + i + \"]\");\n" +
@@ -5298,7 +5298,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkBoolean$b(d.imports_allowed, field + \".imports_allowed\");\n" +
 "        checkNumber$i(d.itemable_id, field + \".itemable_id\");\n" +
 "        if (\"items\" in d) {\n" +
-"            checkArray$d(d.items, field + \".items\");\n" +
+"            checkArray$e(d.items, field + \".items\");\n" +
 "            if (d.items) {\n" +
 "                for (let i = 0; i < d.items.length; i++) {\n" +
 "                    d.items[i] = ItemsEntityOrChildrenEntity.Create(d.items[i], field + \".items\" + \"[\" + i + \"]\");\n" +
@@ -5469,10 +5469,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            checkString$j(d.signed_id, field + \".signed_id\");\n" +
 "        }\n" +
 "        if (\"suggested_folders\" in d) {\n" +
-"            checkArray$d(d.suggested_folders, field + \".suggested_folders\");\n" +
+"            checkArray$e(d.suggested_folders, field + \".suggested_folders\");\n" +
 "            if (d.suggested_folders) {\n" +
 "                for (let i = 0; i < d.suggested_folders.length; i++) {\n" +
-"                    checkNever$5(d.suggested_folders[i], field + \".suggested_folders\" + \"[\" + i + \"]\");\n" +
+"                    checkNever$6(d.suggested_folders[i], field + \".suggested_folders\" + \"[\" + i + \"]\");\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -5686,10 +5686,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            checkString$j(d.signed_id, field + \".signed_id\");\n" +
 "        }\n" +
 "        if (\"suggested_folders\" in d) {\n" +
-"            checkArray$d(d.suggested_folders, field + \".suggested_folders\");\n" +
+"            checkArray$e(d.suggested_folders, field + \".suggested_folders\");\n" +
 "            if (d.suggested_folders) {\n" +
 "                for (let i = 0; i < d.suggested_folders.length; i++) {\n" +
-"                    checkNever$5(d.suggested_folders[i], field + \".suggested_folders\" + \"[\" + i + \"]\");\n" +
+"                    checkNever$6(d.suggested_folders[i], field + \".suggested_folders\" + \"[\" + i + \"]\");\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -5842,7 +5842,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "function throwIsArray$l(field, value, multiple) {\n" +
 "    return errorHelper$l(field, value, \"object\");\n" +
 "}\n" +
-"function checkArray$d(value, field, multiple) {\n" +
+"function checkArray$e(value, field, multiple) {\n" +
 "    if (!Array.isArray(value))\n" +
 "        errorHelper$l(field, value, \"array\");\n" +
 "}\n" +
@@ -5862,7 +5862,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    if (value !== null)\n" +
 "        errorHelper$l(field, value, multiple ?? \"null\");\n" +
 "}\n" +
-"function checkNever$5(value, field, multiple) {\n" +
+"function checkNever$6(value, field, multiple) {\n" +
 "    return errorHelper$l(field, value, \"never\");\n" +
 "}\n" +
 "function errorHelper$l(field, d, type) {\n" +
@@ -5999,7 +5999,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                prompt(proxyName$j + ':', JSON.stringify(obj$j));\n" +
 "            }\n" +
 "        }\n" +
-"        checkArray$c(d.items, field + \".items\");\n" +
+"        checkArray$d(d.items, field + \".items\");\n" +
 "        if (d.items) {\n" +
 "            for (let i = 0; i < d.items.length; i++) {\n" +
 "                d.items[i] = ItemsEntity.Create(d.items[i], field + \".items\" + \"[\" + i + \"]\");\n" +
@@ -6103,10 +6103,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            checkString$h(d.signed_id, field + \".signed_id\");\n" +
 "        }\n" +
 "        if (\"suggested_folders\" in d) {\n" +
-"            checkArray$c(d.suggested_folders, field + \".suggested_folders\");\n" +
+"            checkArray$d(d.suggested_folders, field + \".suggested_folders\");\n" +
 "            if (d.suggested_folders) {\n" +
 "                for (let i = 0; i < d.suggested_folders.length; i++) {\n" +
-"                    checkNever$4(d.suggested_folders[i], field + \".suggested_folders\" + \"[\" + i + \"]\");\n" +
+"                    checkNever$5(d.suggested_folders[i], field + \".suggested_folders\" + \"[\" + i + \"]\");\n" +
 "                }\n" +
 "            }\n" +
 "        }\n" +
@@ -6258,7 +6258,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "function throwIsArray$j(field, value, multiple) {\n" +
 "    return errorHelper$j(field, value, \"object\");\n" +
 "}\n" +
-"function checkArray$c(value, field, multiple) {\n" +
+"function checkArray$d(value, field, multiple) {\n" +
 "    if (!Array.isArray(value))\n" +
 "        errorHelper$j(field, value, \"array\");\n" +
 "}\n" +
@@ -6278,7 +6278,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    if (value !== null)\n" +
 "        errorHelper$j(field, value, multiple ?? \"null\");\n" +
 "}\n" +
-"function checkNever$4(value, field, multiple) {\n" +
+"function checkNever$5(value, field, multiple) {\n" +
 "    return errorHelper$j(field, value, \"never\");\n" +
 "}\n" +
 "function errorHelper$j(field, d, type) {\n" +
@@ -6327,7 +6327,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"filter\" in d) {\n" +
 "            // This will be refactored in the next release.\n" +
 "            try {\n" +
-"                checkArray$b(d.filter, field + \".filter\", \"FilterEntity[] | string\");\n" +
+"                checkArray$c(d.filter, field + \".filter\", \"FilterEntity[] | string\");\n" +
 "                if (d.filter) {\n" +
 "                    for (let i = 0; i < d.filter.length; i++) {\n" +
 "                        d.filter[i] = FilterEntity$1.Create(d.filter[i], field + \".filter\" + \"[\" + i + \"]\");\n" +
@@ -6411,7 +6411,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "function throwIsArray$i(field, value, multiple) {\n" +
 "    return errorHelper$i(field, value, \"object\");\n" +
 "}\n" +
-"function checkArray$b(value, field, multiple) {\n" +
+"function checkArray$c(value, field, multiple) {\n" +
 "    if (!Array.isArray(value))\n" +
 "        errorHelper$i(field, value, multiple);\n" +
 "}\n" +
@@ -6467,10 +6467,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            throwIsArray$h(field, d);\n" +
 "        }\n" +
 "        checkString$f(d.filters, field + \".filters\");\n" +
-"        checkArray$a(d.firm_admins, field + \".firm_admins\");\n" +
+"        checkArray$b(d.firm_admins, field + \".firm_admins\");\n" +
 "        if (d.firm_admins) {\n" +
 "            for (let i = 0; i < d.firm_admins.length; i++) {\n" +
-"                checkNever$3(d.firm_admins[i], field + \".firm_admins\" + \"[\" + i + \"]\");\n" +
+"                checkNever$4(d.firm_admins[i], field + \".firm_admins\" + \"[\" + i + \"]\");\n" +
 "            }\n" +
 "        }\n" +
 "        d.folder = Folder.Create(d.folder, field + \".folder\");\n" +
@@ -6664,7 +6664,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "function throwIsArray$h(field, value, multiple) {\n" +
 "    return errorHelper$h(field, value, \"object\");\n" +
 "}\n" +
-"function checkArray$a(value, field, multiple) {\n" +
+"function checkArray$b(value, field, multiple) {\n" +
 "    if (!Array.isArray(value))\n" +
 "        errorHelper$h(field, value, \"array\");\n" +
 "}\n" +
@@ -6684,7 +6684,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    if (value !== null)\n" +
 "        errorHelper$h(field, value, \"null\");\n" +
 "}\n" +
-"function checkNever$3(value, field, multiple) {\n" +
+"function checkNever$4(value, field, multiple) {\n" +
 "    return errorHelper$h(field, value, \"never\");\n" +
 "}\n" +
 "function errorHelper$h(field, d, type) {\n" +
@@ -6777,7 +6777,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$g(field, d);\n" +
 "        }\n" +
-"        checkArray$9(d.comments, field + \".comments\");\n" +
+"        checkArray$a(d.comments, field + \".comments\");\n" +
 "        if (d.comments) {\n" +
 "            for (let i = 0; i < d.comments.length; i++) {\n" +
 "                d.comments[i] = CommentsEntity$1.Create(d.comments[i], field + \".comments\" + \"[\" + i + \"]\");\n" +
@@ -6882,7 +6882,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "function throwIsArray$g(field, value, multiple) {\n" +
 "    return errorHelper$g(field, value, \"object\");\n" +
 "}\n" +
-"function checkArray$9(value, field, multiple) {\n" +
+"function checkArray$a(value, field, multiple) {\n" +
 "    if (!Array.isArray(value))\n" +
 "        errorHelper$g(field, value, \"array\");\n" +
 "}\n" +
@@ -6941,7 +6941,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$f(field, d);\n" +
 "        }\n" +
-"        checkArray$8(d.dms_links, field + \".dms_links\");\n" +
+"        checkArray$9(d.dms_links, field + \".dms_links\");\n" +
 "        if (d.dms_links) {\n" +
 "            for (let i = 0; i < d.dms_links.length; i++) {\n" +
 "                d.dms_links[i] = DmsLinksEntity.Create(d.dms_links[i], field + \".dms_links\" + \"[\" + i + \"]\");\n" +
@@ -7022,7 +7022,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        else if (Array.isArray(d)) {\n" +
 "            throwIsArray$f(field, d);\n" +
 "        }\n" +
-"        checkArray$8(d.comments, field + \".comments\");\n" +
+"        checkArray$9(d.comments, field + \".comments\");\n" +
 "        if (d.comments) {\n" +
 "            for (let i = 0; i < d.comments.length; i++) {\n" +
 "                d.comments[i] = CommentsEntity.Create(d.comments[i], field + \".comments\" + \"[\" + i + \"]\");\n" +
@@ -7127,7 +7127,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "function throwIsArray$f(field, value, multiple) {\n" +
 "    return errorHelper$f(field, value, \"object\");\n" +
 "}\n" +
-"function checkArray$8(value, field, multiple) {\n" +
+"function checkArray$9(value, field, multiple) {\n" +
 "    if (!Array.isArray(value))\n" +
 "        errorHelper$f(field, value, \"array\");\n" +
 "}\n" +
@@ -7282,9 +7282,23 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        checkNull$a(d.reference_link, field + \".reference_link\");\n" +
 "        checkBoolean$8(d.shared, field + \".shared\");\n" +
 "        checkString$b(d.signed_id, field + \".signed_id\");\n" +
+"        if (\"suggested_folders\" in d) {\n" +
+"            checkArray$8(d.suggested_folders, field + \".suggested_folders\");\n" +
+"            if (d.suggested_folders) {\n" +
+"                for (let i = 0; i < d.suggested_folders.length; i++) {\n" +
+"                    checkNever$3(d.suggested_folders[i], field + \".suggested_folders\" + \"[\" + i + \"]\");\n" +
+"                }\n" +
+"            }\n" +
+"        }\n" +
+"        if (\"summary_text\" in d) {\n" +
+"            checkNull$a(d.summary_text, field + \".summary_text\");\n" +
+"        }\n" +
+"        if (\"summary_text_prediction_id\" in d) {\n" +
+"            checkNull$a(d.summary_text_prediction_id, field + \".summary_text_prediction_id\");\n" +
+"        }\n" +
 "        checkString$b(d.type, field + \".type\");\n" +
 "        checkString$b(d.updated_at, field + \".updated_at\");\n" +
-"        const knownProperties = [\"archived_at\", \"created_at\", \"creator\", \"favorite\", \"file_extension\", \"file_size\", \"file_url\", \"id\", \"imports_allowed\", \"itemable_id\", \"method\", \"name\", \"parent_id\", \"pusher_channel\", \"readonly\", \"reference_link\", \"shared\", \"signed_id\", \"type\", \"updated_at\"];\n" +
+"        const knownProperties = [\"archived_at\", \"created_at\", \"creator\", \"favorite\", \"file_extension\", \"file_size\", \"file_url\", \"id\", \"imports_allowed\", \"itemable_id\", \"method\", \"name\", \"parent_id\", \"pusher_channel\", \"readonly\", \"reference_link\", \"shared\", \"signed_id\", \"suggested_folders\", \"summary_text\", \"summary_text_prediction_id\", \"type\", \"updated_at\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
 "            errorHelper$d(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
@@ -7309,6 +7323,12 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        this.reference_link = d.reference_link;\n" +
 "        this.shared = d.shared;\n" +
 "        this.signed_id = d.signed_id;\n" +
+"        if (\"suggested_folders\" in d)\n" +
+"            this.suggested_folders = d.suggested_folders;\n" +
+"        if (\"summary_text\" in d)\n" +
+"            this.summary_text = d.summary_text;\n" +
+"        if (\"summary_text_prediction_id\" in d)\n" +
+"            this.summary_text_prediction_id = d.summary_text_prediction_id;\n" +
 "        this.type = d.type;\n" +
 "        this.updated_at = d.updated_at;\n" +
 "    }\n" +
@@ -7359,6 +7379,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "function throwIsArray$d(field, value, multiple) {\n" +
 "    return errorHelper$d(field, value, \"object\");\n" +
 "}\n" +
+"function checkArray$8(value, field, multiple) {\n" +
+"    if (!Array.isArray(value))\n" +
+"        errorHelper$d(field, value, \"array\");\n" +
+"}\n" +
 "function checkNumber$b(value, field, multiple) {\n" +
 "    if (typeof (value) !== 'number')\n" +
 "        errorHelper$d(field, value, multiple ?? \"number\");\n" +
@@ -7374,6 +7398,9 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "function checkNull$a(value, field, multiple) {\n" +
 "    if (value !== null)\n" +
 "        errorHelper$d(field, value, multiple ?? \"null\");\n" +
+"}\n" +
+"function checkNever$3(value, field, multiple) {\n" +
+"    return errorHelper$d(field, value, \"never\");\n" +
 "}\n" +
 "function errorHelper$d(field, d, type) {\n" +
 "    if (type.includes(' | ')) {\n" +
@@ -8974,17 +9001,16 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            return gdoc.journal;\n" +
 "        return await getJournal(gdoc.journal_id);\n" +
 "    }\n" +
-"    async getLedgerEvents() {\n" +
-"        if (!this.ledgerEvents) {\n" +
-"            this.ledgerEvents = this._loadLedgerEvents();\n" +
+"    async getLedgerEvents(maxAge) {\n" +
+"        if (!this.ledgerEvents || typeof maxAge === \"number\") {\n" +
+"            this.ledgerEvents = new Promise(async (resolve) => {\n" +
+"                const groupedDocuments = await this.getGroupedDocuments(maxAge);\n" +
+"                const events = await Promise.all(groupedDocuments.map((doc) => getLedgerEvents(doc.id, maxAge)));\n" +
+"                this.ledgerEvents = [].concat(...events);\n" +
+"                resolve(this.ledgerEvents);\n" +
+"            });\n" +
 "        }\n" +
 "        return await this.ledgerEvents;\n" +
-"    }\n" +
-"    async _loadLedgerEvents() {\n" +
-"        const groupedDocuments = await this.getGroupedDocuments();\n" +
-"        const events = await Promise.all(groupedDocuments.map((doc) => getLedgerEvents(doc.id)));\n" +
-"        this.ledgerEvents = [].concat(...events);\n" +
-"        return this.ledgerEvents;\n" +
 "    }\n" +
 "    async reloadLedgerEvents() {\n" +
 "        delete this.ledgerEvents;\n" +
@@ -9003,19 +9029,20 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        return await this.archive(true);\n" +
 "    }\n" +
 "    async getGroupedDocuments(maxAge) {\n" +
-"        if (!this.groupedDocuments)\n" +
-"            this.groupedDocuments = this._loadGroupedDocuments(maxAge);\n" +
-"        return await this.groupedDocuments;\n" +
-"    }\n" +
-"    async _loadGroupedDocuments(maxAge) {\n" +
-"        const mainDocument = await this.getDocument();\n" +
-"        if (!mainDocument) {\n" +
-"            this.error(`Document introuvable ${this.id}`);\n" +
-"            return [];\n" +
+"        if (!this.groupedDocuments || typeof maxAge === \"number\") {\n" +
+"            this.groupedDocuments = new Promise(async (resolve) => {\n" +
+"                const mainDocument = await this.getDocument(maxAge);\n" +
+"                if (!mainDocument) {\n" +
+"                    this.error(`Document introuvable ${this.id}`);\n" +
+"                    resolve([]);\n" +
+"                    return;\n" +
+"                }\n" +
+"                const otherDocuments = (await getGroupedDocuments(this.id, maxAge)).map((doc) => Document.fromAPIGroupedDocument(doc));\n" +
+"                this.groupedDocuments = [...otherDocuments, this];\n" +
+"                resolve(this.groupedDocuments);\n" +
+"            });\n" +
 "        }\n" +
-"        const otherDocuments = (await getGroupedDocuments(this.id, maxAge)).map((doc) => Document.fromAPIGroupedDocument(doc));\n" +
-"        this.groupedDocuments = [...otherDocuments, this];\n" +
-"        return this.groupedDocuments;\n" +
+"        return await this.groupedDocuments;\n" +
 "    }\n" +
 "    async getThirdparty() {\n" +
 "        if (!this.thirdparty)\n" +
@@ -12538,8 +12565,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            return await this._transaction;\n" +
 "        return this._transaction;\n" +
 "    }\n" +
-"    async getGroupedDocuments() {\n" +
-"        return await super.getGroupedDocuments(this.isCurrent() ? 0 : void 0);\n" +
+"    async getGroupedDocuments(maxAge) {\n" +
+"        if (typeof maxAge === \"undefined\" && (this.refreshing || this.isCurrent()))\n" +
+"            maxAge = 1000;\n" +
+"        return await super.getGroupedDocuments(maxAge);\n" +
 "    }\n" +
 "    async getDMSLinks() {\n" +
 "        return await super.getDMSLinks(\"Transaction\", this.isCurrent() ? 0 : void 0);\n" +
@@ -12548,10 +12577,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        return String(this.id) === getParam(location.href, \"transaction_id\");\n" +
 "    }\n" +
 "    async isReconciled() {\n" +
-"        if (typeof this._isReconciled !== \"boolean\") {\n" +
+"        if (typeof this._isReconciled !== \"boolean\" || this.refreshing) {\n" +
 "            this._isReconciled = new Promise(async (rs) => {\n" +
 "                if (this.groupedDocuments) {\n" +
-"                    const groupedDocuments = await this.groupedDocuments;\n" +
+"                    const groupedDocuments = await this.getGroupedDocuments();\n" +
 "                    for (const doc of groupedDocuments) {\n" +
 "                        const gDocument = await doc.getDocument();\n" +
 "                        const meAsGdoc = gDocument.grouped_documents.find((d) => d.id === this.id);\n" +
@@ -12564,8 +12593,13 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        return await this._isReconciled;\n" +
 "    }\n" +
+"    async getLedgerEvents(maxAge) {\n" +
+"        if (typeof maxAge === \"undefined\" && (this.refreshing || this.isCurrent()))\n" +
+"            maxAge = 1000;\n" +
+"        return await super.getLedgerEvents(maxAge);\n" +
+"    }\n" +
 "    async getBalance() {\n" +
-"        if (!this._balance) {\n" +
+"        if (!this._balance || this.refreshing) {\n" +
 "            this._balance = new Promise(async (rs) => {\n" +
 "                // balance déséquilibrée - version exigeante\n" +
 "                const balance = new Balance();\n" +
@@ -12645,7 +12679,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const status = ((await this.isClosedCheck()) ??\n" +
 "            (await this.isArchived()) ??\n" +
 "            (await this.hasMalnammedDMSLink()) ??\n" +
-"            (await this.is2025()) ??\n" +
+"            (await this.isNextYear()) ??\n" +
 "            (await this.hasVAT()) ??\n" +
 "            (await this.isMissingBanking()) ??\n" +
 "            (await this.hasToSendToInvoice()) ??\n" +
@@ -12666,11 +12700,11 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        this.refreshing = false;\n" +
 "        return status;\n" +
 "    }\n" +
-"    async is2025() {\n" +
+"    async isNextYear() {\n" +
 "        if (this.isCurrent())\n" +
-"            this.log(\"is2025\");\n" +
+"            this.log(\"isNextYear\");\n" +
 "        const doc = await this.getDocument();\n" +
-"        if (doc.date.startsWith(\"2025\")) {\n" +
+"        if (doc.date.startsWith(\"2026\")) {\n" +
 "            return (await this.isUnbalanced()) ?? (await this.isMissingAttachment()) ?? (await this.hasToSendToDMS()) ?? \"OK\";\n" +
 "        }\n" +
 "    }\n" +

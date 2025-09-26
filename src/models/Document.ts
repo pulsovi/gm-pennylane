@@ -104,18 +104,16 @@ export default class Document extends Logger {
     return await getJournal(gdoc.journal_id);
   }
 
-  async getLedgerEvents() {
-    if (!this.ledgerEvents) {
-      this.ledgerEvents = this._loadLedgerEvents();
+  async getLedgerEvents(maxAge?: number) {
+    if (!this.ledgerEvents || typeof maxAge === "number") {
+      this.ledgerEvents = new Promise(async (resolve) => {
+        const groupedDocuments = await this.getGroupedDocuments(maxAge);
+        const events = await Promise.all(groupedDocuments.map((doc) => getLedgerEvents(doc.id, maxAge)));
+        this.ledgerEvents = ([] as APILedgerEvent[]).concat(...events);
+        resolve(this.ledgerEvents);
+      });
     }
     return await this.ledgerEvents;
-  }
-
-  private async _loadLedgerEvents() {
-    const groupedDocuments = await this.getGroupedDocuments();
-    const events = await Promise.all(groupedDocuments.map((doc) => getLedgerEvents(doc.id)));
-    this.ledgerEvents = ([] as APILedgerEvent[]).concat(...events);
-    return this.ledgerEvents;
   }
 
   async reloadLedgerEvents() {
@@ -139,21 +137,22 @@ export default class Document extends Logger {
   }
 
   async getGroupedDocuments(maxAge?: number) {
-    if (!this.groupedDocuments) this.groupedDocuments = this._loadGroupedDocuments(maxAge);
-    return await this.groupedDocuments;
-  }
-
-  async _loadGroupedDocuments(maxAge?: number): Promise<Document[]> {
-    const mainDocument = await this.getDocument();
-    if (!mainDocument) {
-      this.error(`Document introuvable ${this.id}`);
-      return [];
+    if (!this.groupedDocuments || typeof maxAge === "number") {
+      this.groupedDocuments = new Promise(async (resolve) => {
+        const mainDocument = await this.getDocument(maxAge);
+        if (!mainDocument) {
+          this.error(`Document introuvable ${this.id}`);
+          resolve([]);
+          return;
+        }
+        const otherDocuments = (await getGroupedDocuments(this.id, maxAge)).map((doc) =>
+          Document.fromAPIGroupedDocument(doc)
+        );
+        this.groupedDocuments = [...otherDocuments, this];
+        resolve(this.groupedDocuments);
+      });
     }
-    const otherDocuments = (await getGroupedDocuments(this.id, maxAge)).map((doc) =>
-      Document.fromAPIGroupedDocument(doc)
-    );
-    this.groupedDocuments = [...otherDocuments, this];
-    return this.groupedDocuments;
+    return await this.groupedDocuments;
   }
 
   async getThirdparty(): Promise<Thirdparty["thirdparty"] | null> {

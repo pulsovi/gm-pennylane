@@ -11,6 +11,7 @@ import { jsonClone } from "../_/json.js";
 import Balance from "./Balance.js";
 import { APITransactionLite } from "../api/Transaction/Lite.js";
 import CacheStatus, { Status } from "../framework/CacheStatus.js";
+import { APILedgerEvent } from "../api/LedgerEvent/index.js";
 
 const user = localStorage.getItem("user") ?? "assistant";
 
@@ -45,8 +46,9 @@ export default class Transaction extends ValidableDocument {
     return this._transaction;
   }
 
-  public async getGroupedDocuments(): Promise<Document[]> {
-    return await super.getGroupedDocuments(this.isCurrent() ? 0 : void 0);
+  public async getGroupedDocuments(maxAge?: number): Promise<Document[]> {
+    if (typeof maxAge === "undefined" && (this.refreshing || this.isCurrent())) maxAge = 1000;
+    return await super.getGroupedDocuments(maxAge);
   }
 
   public async getDMSLinks(): Promise<APIDMSLink[]> {
@@ -58,10 +60,10 @@ export default class Transaction extends ValidableDocument {
   }
 
   public async isReconciled() {
-    if (typeof this._isReconciled !== "boolean") {
+    if (typeof this._isReconciled !== "boolean" || this.refreshing) {
       this._isReconciled = new Promise<boolean>(async (rs) => {
         if (this.groupedDocuments) {
-          const groupedDocuments = await this.groupedDocuments;
+          const groupedDocuments = await this.getGroupedDocuments();
           for (const doc of groupedDocuments) {
             const gDocument = await doc.getDocument();
             const meAsGdoc = gDocument.grouped_documents.find((d) => d.id === this.id);
@@ -74,8 +76,13 @@ export default class Transaction extends ValidableDocument {
     return await this._isReconciled;
   }
 
+  public async getLedgerEvents(maxAge?: number): Promise<APILedgerEvent[]> {
+    if (typeof maxAge === "undefined" && (this.refreshing || this.isCurrent())) maxAge = 1000;
+    return await super.getLedgerEvents(maxAge);
+  }
+
   public async getBalance(): Promise<Balance> {
-    if (!this._balance) {
+    if (!this._balance || this.refreshing) {
       this._balance = new Promise(async (rs) => {
         // balance déséquilibrée - version exigeante
         const balance: Balance = new Balance();
@@ -147,7 +154,7 @@ export default class Transaction extends ValidableDocument {
     const status = ((await this.isClosedCheck()) ??
       (await this.isArchived()) ??
       (await this.hasMalnammedDMSLink()) ??
-      (await this.is2025()) ??
+      (await this.isNextYear()) ??
       (await this.hasVAT()) ??
       (await this.isMissingBanking()) ??
       (await this.hasToSendToInvoice()) ??
@@ -170,11 +177,11 @@ export default class Transaction extends ValidableDocument {
     return status;
   }
 
-  private async is2025() {
-    if (this.isCurrent()) this.log("is2025");
+  private async isNextYear() {
+    if (this.isCurrent()) this.log("isNextYear");
     const doc = await this.getDocument();
 
-    if (doc.date.startsWith("2025")) {
+    if (doc.date.startsWith("2026")) {
       return (await this.isUnbalanced()) ?? (await this.isMissingAttachment()) ?? (await this.hasToSendToDMS()) ?? "OK";
     }
   }
