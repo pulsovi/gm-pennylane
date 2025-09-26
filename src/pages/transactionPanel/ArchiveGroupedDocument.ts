@@ -83,8 +83,8 @@ export default class ArchiveGroupedDocument extends Service {
     archiveButton.innerText = '⟳';
     const invoice = await Invoice.load(id);
     if (!invoice) {
-      alert('Impossible de trouver la facture #' + id);
-      archiveButton.innerText = '⚠';
+      archiveButton.innerText = "⚠";
+      Tooltip.make({ target: archiveButton, text: "Impossible de trouver la facture #" + id });
       return;
     }
 
@@ -118,13 +118,14 @@ export default class ArchiveGroupedDocument extends Service {
     dmsButton.innerText = '⟳';
     const invoice = await Invoice.load(id);
     if (!invoice) {
-      alert('Impossible de trouver la facture #' + id);
-      dmsButton.innerText = '⚠';
+      dmsButton.innerText = "⚠";
+      Tooltip.make({ target: dmsButton, text: "Impossible de trouver la facture #" + id });
       return;
     }
     const dmsItem = await invoice.moveToDms();
     if (!dmsItem) {
-      this.error('move to dms error');
+      dmsButton.innerText = "⚠";
+      Tooltip.make({ target: dmsButton, text: "Impossible d'envoyer en GED (voir la console pour plus de détails)" });
       return;
     }
     buttonsBlock.closest('.ui-card')?.remove();

@@ -58,8 +58,8 @@ export default abstract class Invoice extends ValidableDocument {
     return this.invoice;
   }
 
-  async getGroupedDocuments(): Promise<Document[]> {
-    const maxAge = this.isCurrent() ? 0 : void 0;
+  async getGroupedDocuments(maxAge?: number): Promise<Document[]> {
+    if (this.isCurrent() && typeof maxAge === "undefined") maxAge = 0;
     return await super.getGroupedDocuments(maxAge);
   }
 
@@ -91,7 +91,7 @@ export default abstract class Invoice extends ValidableDocument {
   }
 
   public async getDMSDestId(): Promise<{ parent_id: number; direction: string } | null> {
-    const groupedDocuments = await this.getGroupedDocuments();
+    const groupedDocuments = await this.getGroupedDocuments(0);
     const gdocs = await Promise.all(groupedDocuments.map((doc) => doc.getGdoc()));
     const transaction = gdocs.find(
       (gdoc): gdoc is typeof gdoc & { type: "Transaction" } => gdoc.type === "Transaction"

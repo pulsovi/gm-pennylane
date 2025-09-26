@@ -77,9 +77,9 @@ export default class Document extends Logger {
     return doc;
   }
 
-  async getDocument(): Promise<APIDocument> {
-    if (!this.document) {
-      this.document = getDocument(this.id);
+  async getDocument(maxAge?: number): Promise<APIDocument> {
+    if (!this.document || typeof maxAge === "number") {
+      this.document = getDocument(this.id, maxAge);
       this.document = await this.document;
     }
     return await this.document;

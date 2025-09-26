@@ -1,21 +1,39 @@
 import { $, parseHTML } from '../_/index.js';
 import { uniquid } from '../_/uniquid.js';
 
+const map = new WeakMap<Element, Tooltip>();
+
 export default class Tooltip {
   private readonly id = `T${uniquid()}`;
   private readonly target: Element;
 
-  private constructor ({target}: {target: Element}) {
+  private constructor({ target }: { target: Element }) {
     this.target = target;
+    map.set(target, this);
     this.createContainer();
-    setInterval(() => { this.setPos(); }, 200);
+    setInterval(() => {
+      this.setPos();
+    }, 200);
   }
 
-  public static make ({target, text}: {
+  /**
+   * Create a tooltip for an element or update the tooltip text if it already exists
+   * @returns The tooltip instance
+   */
+  public static make({
+    target,
+    text,
+  }: {
+    /** The element to attach the tooltip to */
     target: Element;
+    /** The tooltip text */
     text?: string;
-  }) {
-    const tooltip = new Tooltip({target});
+  }): Tooltip {
+    let tooltip = map.get(target);
+    if (!tooltip) {
+      tooltip = new Tooltip({ target });
+      map.set(target, tooltip);
+    }
     if (text) tooltip.setText(text);
     return tooltip;
   }
@@ -23,8 +41,9 @@ export default class Tooltip {
   /**
    * Create the tooltip DOM and append it to the page
    */
-  private createContainer () {
-    document.body.appendChild(parseHTML(`<div
+  private createContainer() {
+    document.body.appendChild(
+      parseHTML(`<div
       style="display: none; position: absolute; inset: 0px auto auto 0px;"
       role="tooltip"
       x-placement="bottom"
@@ -36,22 +55,23 @@ export default class Tooltip {
     >
       <div class="arrow" style="position: absolute; left: 0px; transform: translate(33.5px);"></div>
       <div class="tooltip-inner"></div>
-    </div>`));
-    this.target.setAttribute('aria-labelledby', this.id);
-    this.target.addEventListener('mouseenter', () => {
-      $<HTMLDivElement>(`#${this.id}`)!.style.display = 'unset';
+    </div>`)
+    );
+    this.target.setAttribute("aria-labelledby", this.id);
+    this.target.addEventListener("mouseenter", () => {
+      $<HTMLDivElement>(`#${this.id}`)!.style.display = "unset";
     });
-    this.target.addEventListener('mouseleave', () => {
-      $<HTMLDivElement>(`#${this.id}`)!.style.display = 'none';
+    this.target.addEventListener("mouseleave", () => {
+      $<HTMLDivElement>(`#${this.id}`)!.style.display = "none";
     });
   }
 
   /**
    * Set the text for the tooltip
    */
-  public setText (text: string, html = false) {
+  public setText(text: string, html = false) {
     const inner = $<HTMLDivElement>(`#${this.id} .tooltip-inner`);
-    if (!inner) throw new Error('Unable to find tooltip container');
+    if (!inner) throw new Error("Unable to find tooltip container");
     if (html) {
       inner.innerHTML = text;
     } else {
@@ -62,7 +82,7 @@ export default class Tooltip {
   /**
    * Get the tooltip HTML text
    */
-  public getHTML (): string {
+  public getHTML(): string {
     const inner = $<HTMLDivElement>(`#${this.id} .tooltip-inner`);
     return inner.innerHTML;
   }
@@ -70,11 +90,11 @@ export default class Tooltip {
   /**
    * Move the tooltip at good position to point visually the target
    */
-  private setPos () {
+  private setPos() {
     const tooltip = $<HTMLDivElement>(`#${this.id}`)!;
-    const arrow = $<HTMLDivElement>('.arrow', tooltip)!;
+    const arrow = $<HTMLDivElement>(".arrow", tooltip)!;
 
-    if (tooltip.style.display === 'none') return;
+    if (tooltip.style.display === "none") return;
 
     const targetRect = this.target.getBoundingClientRect();
     const tooltipRect = tooltip.getBoundingClientRect();
@@ -84,14 +104,14 @@ export default class Tooltip {
     const tooltipWidth = tooltipRect.right - tooltipRect.left;
     const arrowWidth = arrowRect.right - arrowRect.left;
 
-    const arrowTransform = `translate(${Math.round(10*((tooltipWidth/2)-(arrowWidth/2)))/10}px)`;
+    const arrowTransform = `translate(${Math.round(10 * (tooltipWidth / 2 - arrowWidth / 2)) / 10}px)`;
     if (arrow.style.transform !== arrowTransform) {
       arrow.style.transform = arrowTransform;
     }
 
     const tooltipTransform = `translate(${
-      Math.round(10*(targetRect.left+(targetWidth/2)-(tooltipWidth/2)))/10}px, ${
-      Math.round(10*targetRect.bottom)/10}px)`;
+      Math.round(10 * (targetRect.left + targetWidth / 2 - tooltipWidth / 2)) / 10
+    }px, ${Math.round(10 * targetRect.bottom) / 10}px)`;
     if (tooltip.style.transform !== tooltipTransform) {
       tooltip.style.transform = tooltipTransform;
     }
