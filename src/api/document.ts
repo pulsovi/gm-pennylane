@@ -5,6 +5,7 @@ import { APIDocumentMatching } from "./Document/Matching.js";
 import { APIDocumentMatchingInvoice } from "./Document/MatchingInvoice.js";
 
 export async function getDocument(id: number, maxAge?: number): Promise<APIDocument> {
+  if (typeof id !== "number") throw new Error("id must be a number");
   const data = await cachedRequest(
     "document:getDocument",
     { id },
