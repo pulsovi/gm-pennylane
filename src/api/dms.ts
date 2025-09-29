@@ -49,15 +49,23 @@ export async function getDMSLinks(recordId: number, recordType?: string, maxAge?
  * @param id
  * @returns
  */
-export async function getDMSItem(id: number): Promise<APIDMSItem> {
-  const response = await apiRequest(`dms/items/${id}`, null, 'GET');
-  const data = await response?.json();
-  if (!data) {
-    logger.error('getDMSItem', { id, response, data });
-    const settings = await getDMSItemSettings(id);
-    if (!settings?.item) return null;
-    return settings.item;
-  }
+export async function getDMSItem(id: number, maxAge?: number): Promise<APIDMSItem> {
+  const data = await cachedRequest(
+    "dms:getDMSItem",
+    { id },
+    async ({ id }: { id: number }) => {
+      logger.debug("getDMSItem", { id, maxAge });
+      const response = await apiRequest(`dms/items/${id}`, null, "GET");
+      const data = await response?.json();
+      if (data) return data;
+
+      logger.error("getDMSItem", { id, response, data });
+      const settings = await getDMSItemSettings(id, maxAge);
+      if (!settings?.item) return null;
+      return settings.item;
+    },
+    maxAge
+  );
   return APIDMSItem.Create(data);
 }
 
@@ -93,26 +101,30 @@ export async function getDMSItemLinks(
  * @param id
  * @returns
  */
-export async function getDMSItemSettings(id: number): Promise<APIDMSItemSettings> {
-  const response = await apiRequest(`dms/items/settings.json?filter=&item_id=${id}`, null, 'GET');
-  const data = await response?.json();
-  if (!data) {
-    logger.error('getDMSItemSettings', { id, response, data });
-    return data;
-  }
+export async function getDMSItemSettings(id: number, maxAge?: number): Promise<APIDMSItemSettings> {
+  const data = await cachedRequest(
+    "dms:getDMSItemSettings",
+    { id },
+    async ({ id }: { id: number }) => {
+      logger.debug("getDMSItemSettings", { id, maxAge });
+      const response = await apiRequest(`dms/items/settings.json?filter=&item_id=${id}`, null, "GET");
+      const data = await response?.json();
+      if (!data) logger.error("getDMSItemSettings", { id, response, data });
+      return data;
+    },
+    maxAge
+  );
   return APIDMSItemSettings.Create(data);
 }
 
 /**
  * Generate all result one by one as generator
  */
-export async function* getDMSItemGenerator(
-  params: APIDMSItemListParams = {}
-): AsyncGenerator<APIDMSItem> {
+export async function* getDMSItemGenerator(params: APIDMSItemListParams = {}): AsyncGenerator<APIDMSItem> {
   let page = Number(params.page ?? 1);
   if (!Number.isSafeInteger(page)) {
-    console.log('getDMSItemGenerator', { params, page });
-    throw new Error('params.page, if provided, MUST be a safe integer');
+    console.log("getDMSItemGenerator", { params, page });
+    throw new Error("params.page, if provided, MUST be a safe integer");
   }
   do {
     const data = await getDMSItemList(Object.assign({}, params, { page }));
@@ -126,15 +138,13 @@ export async function* getDMSItemGenerator(
 /**
  * Load list of DMS from API. paginated.
  */
-export async function getDMSItemList(
-  params: APIDMSItemListParams = {}
-): Promise<APIDMSItemList> {
-  if ('filter' in params && typeof params.filter !== 'string')
+export async function getDMSItemList(params: APIDMSItemListParams = {}): Promise<APIDMSItemList> {
+  if ("filter" in params && typeof params.filter !== "string")
     params = { ...params, filter: JSON.stringify(params.filter) };
-  params = { ...params, page_name: 'all' };
+  params = { ...params, page_name: "all" };
   const searchParams = new URLSearchParams(APIDMSItemListParams.Create(params) as Record<string, string>);
   const url = `dms/items/data.json?${searchParams.toString()}`;
-  const response = await apiRequest(url, null, 'GET');
+  const response = await apiRequest(url, null, "GET");
   return APIDMSItemList.Create(await response.json());
 }
 
@@ -143,7 +153,7 @@ export async function getDMSItemList(
  */
 export async function updateDMSItem(entry: Partial<APIDMSItem> & { id: number }) {
   const { id, ...value } = entry;
-  const response = await apiRequest(`dms/items/${id}`, { dms_item: value }, 'PUT');
+  const response = await apiRequest(`dms/items/${id}`, { dms_item: value }, "PUT");
   return APIDMSUpdateItem.Create(await response.json());
 }
 
@@ -156,11 +166,11 @@ export async function updateDMSItem(entry: Partial<APIDMSItem> & { id: number })
 export async function createDMSLink(dmsFileId: number, recordId: number, recordType?: string) {
   if (!recordType) recordType = (await getDocument(recordId)).type;
   const response = await apiRequest(
-    'dms/links/batch_create',
+    "dms/links/batch_create",
     { dms_links: { record_ids: [recordId], record_type: recordType, dms_file_ids: [dmsFileId] } },
-    'POST'
+    "POST"
   );
-  return APIDMSCreateLink.Create(await response.json());
+  return APIDMSCreateLink.Create(await response?.json());
 }
 
 

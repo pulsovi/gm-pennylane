@@ -42,16 +42,13 @@ export default class DMSDisplayStatus extends Service {
       input?.focus();
       input?.select();
       const indexes = await item.partialMatch(input.value);
-      this.log(
-        'partialMatch indexes',
-        indexes,
-        [
-          input.value,
-          input.value.slice(0, indexes[0]),
-          input.value.slice(indexes[0], indexes[1]),
-          input.value.slice(indexes[1]),
-        ]
-      );
+      this.log("partialMatch indexes", indexes, {
+        currentValue: input.value,
+        before: input.value.slice(0, indexes[0]),
+        match: input.value.slice(indexes[0], indexes[1]),
+        after: input.value.slice(indexes[1]),
+        template: indexes[2],
+      });
       input.selectionStart = indexes[0];
       input.selectionEnd = indexes[1];
     }

@@ -20,7 +20,8 @@ export default class Transaction extends ValidableDocument {
   protected _transaction: Promise<APITransactionLite> | APITransactionLite;
   protected _balance: SyncOrPromise<Balance>;
   protected _isReconciled: SyncOrPromise<boolean>;
-  private refreshing: boolean = false;
+  /** Date timestamp of start of refresh */
+  private refreshing: number;
   public readonly cacheStatus: CacheStatus;
 
   constructor(raw: { id: number }) {
@@ -47,12 +48,12 @@ export default class Transaction extends ValidableDocument {
   }
 
   public async getGroupedDocuments(maxAge?: number): Promise<Document[]> {
-    if (typeof maxAge === "undefined" && (this.refreshing || this.isCurrent())) maxAge = 1000;
-    return await super.getGroupedDocuments(maxAge);
+    return await super.getGroupedDocuments(this.maxAge(maxAge));
   }
 
   public async getDMSLinks(): Promise<APIDMSLink[]> {
-    return await super.getDMSLinks("Transaction", this.isCurrent() ? 0 : void 0);
+    this.debug("getDMSLinks", this);
+    return await super.getDMSLinks("Transaction", this.isCurrent() ? 1000 : void 0);
   }
 
   private isCurrent() {
@@ -77,8 +78,7 @@ export default class Transaction extends ValidableDocument {
   }
 
   public async getLedgerEvents(maxAge?: number): Promise<APILedgerEvent[]> {
-    if (typeof maxAge === "undefined" && (this.refreshing || this.isCurrent())) maxAge = 1000;
-    return await super.getLedgerEvents(maxAge);
+    return await super.getLedgerEvents(this.maxAge(maxAge));
   }
 
   public async getBalance(): Promise<Balance> {
@@ -147,8 +147,8 @@ export default class Transaction extends ValidableDocument {
     return status;
   }
 
-  protected async loadValidMessage(refresh = false): Promise<string> {
-    if (refresh) this.refreshing = true;
+  protected async loadValidMessage(refresh: boolean | number = false): Promise<string> {
+    if (refresh) this.refreshing = refresh === true ? Date.now() : refresh;
     if (this.isCurrent()) this.log("loadValidMessage", this);
 
     const status = ((await this.isClosedCheck()) ??
@@ -173,12 +173,13 @@ export default class Transaction extends ValidableDocument {
       (await this.hasToSendToDMS()) ??
       "OK") as string;
 
-    this.refreshing = false;
+    this.refreshing = null;
     return status;
   }
 
   private async isNextYear() {
     if (this.isCurrent()) this.log("isNextYear");
+    else this.debug("isNextYear", this);
     const doc = await this.getDocument();
 
     if (doc.date.startsWith("2026")) {
@@ -187,6 +188,7 @@ export default class Transaction extends ValidableDocument {
   }
 
   private async isClosedCheck() {
+    this.debug("isClosedCheck");
     const closed = await Document.isClosed(this.id);
     if (closed) {
       if (this.isCurrent()) this.log("fait partie d'un exercice clos");
@@ -195,6 +197,7 @@ export default class Transaction extends ValidableDocument {
   }
 
   private async isArchived() {
+    this.debug("isArchived");
     // Transaction archivée
     const doc = await this.getDocument();
     if (doc.archived) {
@@ -204,17 +207,19 @@ export default class Transaction extends ValidableDocument {
   }
 
   private async hasMalnammedDMSLink() {
+    this.debug("hasMalnammedDMSLink");
     // Fichiers DMS mal nommés
     const dmsLinks = await this.getDMSLinks();
     for (const dmsLink of dmsLinks) {
       const dmsItem = new DMSItem({ id: dmsLink.item_id });
-      const dmsStatus = await dmsItem.getValidMessage();
+      const dmsStatus = await dmsItem.getValidMessage(true);
       if (dmsStatus !== "OK")
         return `Corriger les noms des fichiers attachés dans l'onglet "Réconciliation" (surlignés en orange)`;
     }
   }
 
   private async isMissingBanking() {
+    this.debug("isMissingBanking");
     // Pas de rapprochement bancaire
     const doc = await this.getDocument();
 
@@ -233,6 +238,7 @@ export default class Transaction extends ValidableDocument {
   }
 
   private async hasUnbalancedThirdparty() {
+    this.debug("hasUnbalancedThirdparty");
     const ledgerEvents = await this.getLedgerEvents();
 
     const thirdparties: Record<string, number[]> = ledgerEvents.reduce((tp, event) => {
@@ -252,6 +258,7 @@ export default class Transaction extends ValidableDocument {
 
   private async isUnbalanced() {
     if (this.isCurrent()) this.log("isUnbalanced");
+    else this.debug("isUnbalanced");
     const balance = await this.getBalance();
     if (this.isCurrent()) this.log({ balance });
 
@@ -287,6 +294,7 @@ export default class Transaction extends ValidableDocument {
   }
 
   private async isCheckRemittance(balance: Balance) {
+    this.debug("isCheckRemittance");
     const doc = await this.getDocument();
     const ledgerEvents = await this.getLedgerEvents();
     const aidLedgerEvent = ledgerEvents.find((line) => line.planItem.number.startsWith("6571"));
@@ -317,6 +325,7 @@ export default class Transaction extends ValidableDocument {
   }
 
   private async hasUnbalancedCHQ(balance: Balance) {
+    this.debug("hasUnbalancedCHQ");
     if (balance.hasCHQ()) {
       if (Math.abs(balance.CHQ - balance.transaction) > 0.001) {
         if (this.isCurrent()) this.log("hasUnbalancedCHQ(): somme des chèques incorrecte");
@@ -333,6 +342,7 @@ export default class Transaction extends ValidableDocument {
   }
 
   private async hasUnbalancedReceipt(balance: Balance) {
+    this.debug("hasUnbalancedReceipt");
     if (balance.hasReçu()) {
       if (Math.abs(balance.reçu - balance.transaction) > 0.001) {
         if (this.isCurrent()) this.log("hasUnbalancedReceipt(): somme des reçus incorrecte");
@@ -344,6 +354,7 @@ export default class Transaction extends ValidableDocument {
   }
 
   private async isOtherUnbalanced(balance: Balance) {
+    this.debug("isOtherUnbalanced");
     const doc = await this.getDocument();
     const ledgerEvents = await this.getLedgerEvents();
 
@@ -381,6 +392,7 @@ export default class Transaction extends ValidableDocument {
   }
 
   private async hasVAT() {
+    this.debug("hasVAT");
     const ledgerEvents = await this.getLedgerEvents();
 
     // Les associations ne gèrent pas la TVA
@@ -390,6 +402,7 @@ export default class Transaction extends ValidableDocument {
   }
 
   private async isTrashCounterpart() {
+    this.debug("isTrashCounterpart");
     const ledgerEvents = await this.getLedgerEvents();
 
     if (ledgerEvents.find((line) => line.planItem.number === "6288")) {
@@ -398,6 +411,7 @@ export default class Transaction extends ValidableDocument {
   }
 
   private async isMissingCounterpart() {
+    this.debug("isMissingCounterpart");
     const ledgerEvents = await this.getLedgerEvents();
 
     if (ledgerEvents.find((line) => line.planItem.number === "4716001")) {
@@ -416,6 +430,7 @@ export default class Transaction extends ValidableDocument {
   }
 
   private async isWrongDonationCounterpart() {
+    this.debug("isWrongDonationCounterpart");
     const ledgerEvents = await this.getLedgerEvents();
     const groupedDocuments = await Promise.all((await this.getGroupedDocuments()).map((doc) => doc.getGdoc()));
     const dmsLinks = await this.getDMSLinks();
@@ -438,6 +453,7 @@ export default class Transaction extends ValidableDocument {
   }
 
   private async isOldUnbalanced() {
+    this.debug("isOldUnbalanced");
     const ledgerEvents = await this.getLedgerEvents();
 
     // balance déséquilibrée
@@ -457,6 +473,7 @@ export default class Transaction extends ValidableDocument {
   }
 
   private async isMissingAttachment() {
+    this.debug("isMissingAttachment");
     const doc = await this.getDocument();
     const ledgerEvents = await this.getLedgerEvents();
     const groupedDocuments = await this.getGroupedDocuments();
@@ -483,11 +500,13 @@ export default class Transaction extends ValidableDocument {
   }
 
   private async isBankFees() {
+    this.debug("isBankFees");
     return await this.isIntlTransferFees();
     //?? await this.isStripeFees()
   }
 
   private async isIntlTransferFees() {
+    this.debug("isIntlTransferFees");
     const doc = await this.getDocument();
     const ledgerEvents = await this.getLedgerEvents();
     const groupedDocuments = await this.getGroupedDocuments();
@@ -506,6 +525,7 @@ export default class Transaction extends ValidableDocument {
   }
 
   private async isStripeFees() {
+    this.debug("isStripeFees");
     const doc = await this.getDocument();
     const ledgerEvents = await this.getLedgerEvents();
     const groupedDocuments = await this.getGroupedDocuments();
@@ -524,6 +544,7 @@ export default class Transaction extends ValidableDocument {
   }
 
   private async isAllodons() {
+    this.debug("isAllodons");
     const doc = await this.getDocument();
     const ledgerEvents = await this.getLedgerEvents();
     const groupedDocuments = await this.getGroupedDocuments();
@@ -542,6 +563,7 @@ export default class Transaction extends ValidableDocument {
   }
 
   private async isDonationRenewal() {
+    this.debug("isDonationRenewal");
     const doc = await this.getDocument();
     const ledgerEvents = await this.getLedgerEvents();
     const groupedDocuments = await this.getGroupedDocuments();
@@ -561,6 +583,7 @@ export default class Transaction extends ValidableDocument {
   }
 
   private async isTransfer() {
+    this.debug("isTransfer");
     const doc = await this.getDocument();
     if (["VIR ", "Payout: "].some((label) => doc.label.startsWith(label))) {
       return await this.isStripeInternalTransfer();
@@ -595,6 +618,7 @@ export default class Transaction extends ValidableDocument {
   }
 
   private async isAssociationDonation() {
+    this.debug("isAssociationDonation");
     const doc = await this.getDocument();
     const ledgerEvents = await this.getLedgerEvents();
     const groupedDocuments = await this.getGroupedDocuments();
@@ -623,6 +647,7 @@ export default class Transaction extends ValidableDocument {
   }
 
   private async isOptionalReceiptDonation() {
+    this.debug("isOptionalReceiptDonation");
     const doc = await this.getDocument();
     const ledgerEvents = await this.getLedgerEvents();
     const groupedDocuments = await this.getGroupedDocuments();
@@ -663,6 +688,7 @@ export default class Transaction extends ValidableDocument {
   }
 
   private async isAid() {
+    this.debug("isAid");
     // Aides octroyées
     return (
       (await this.isAssociationAid()) ??
@@ -672,6 +698,7 @@ export default class Transaction extends ValidableDocument {
   }
 
   private async isAssociationAid() {
+    this.debug("isAssociationAid");
     const ledgerEvents = await this.getLedgerEvents();
     const aidLedgerEvent = ledgerEvents.find((line) => line.planItem.number.startsWith("6571"));
 
@@ -715,6 +742,7 @@ export default class Transaction extends ValidableDocument {
   }
 
   private async isMissingBeneficiaryName() {
+    this.debug("isMissingBeneficiaryName");
     const ledgerEvents = await this.getLedgerEvents();
     const aidLedgerEvent = ledgerEvents.find((line) => line.planItem.number.startsWith("6571"));
 
@@ -728,6 +756,7 @@ export default class Transaction extends ValidableDocument {
   }
 
   private async isMissingCounterpartLabel() {
+    this.debug("isMissingCounterpartLabel");
     const doc = await this.getDocument();
     const ledgerEvents = await this.getLedgerEvents();
     const groupedDocuments = await this.getGroupedDocuments();
@@ -751,6 +780,7 @@ export default class Transaction extends ValidableDocument {
   }
 
   private async hasToSendToDMS() {
+    this.debug("hasToSendToDMS");
     const balance = await this.getBalance();
     if (
       balance.CHQ &&
@@ -770,6 +800,7 @@ export default class Transaction extends ValidableDocument {
   }
 
   private async hasToSendToInvoice() {
+    this.debug("hasToSendToInvoice");
     const balance = await this.getBalance();
     if (balance.reçu) {
       const dmsLinks = await this.getDMSLinks();
@@ -789,13 +820,23 @@ export default class Transaction extends ValidableDocument {
 
   /** Add item to this transaction's group */
   async groupAdd(id: number) {
+    this.debug("groupAdd");
     const doc = await this.getDocument(0);
     const groups = doc.group_uuid;
     const response = await documentMatching({ id, groups });
 
     // If the provided id is a DMS file, we need use the DMS link instead of relying on document matching.
-    if ("grouped_transactions" in response && response.grouped_transactions.some((tr) => tr.id === this.id)) return;
+    if (response && "grouped_transactions" in response && response.grouped_transactions.some((tr) => tr.id === this.id))
+      return;
     this.error("groupAdd", { response });
     await createDMSLink(id, this.id, "Transaction");
+  }
+
+  /** Determine the acceptable maxAge of API data */
+  private maxAge(maxAge?: number) {
+    if (typeof maxAge === "number") return maxAge;
+    if (this.refreshing) return Date.now() - this.refreshing;
+    if (this.isCurrent()) return Date.now() - performance.timeOrigin;
+    return void 0;
   }
 }
