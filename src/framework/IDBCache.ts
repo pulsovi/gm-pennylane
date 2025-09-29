@@ -9,50 +9,30 @@ interface Table {
 type State = ["pending" | "completed" | "error" | "aborted", Event | null];
 
 const DB_NAME = "GM_Pennylane";
-const DB_VERSION = 1;
 
-let registeringTO: Promise<void> | null = null;
-const tables: Table[] = [];
+const structure: { version: number; tables: Table[] } = JSON.parse(
+  localStorage.getItem(`${DB_NAME}_IDB_structure`) || JSON.stringify({ version: 1, tables: [] })
+);
 function registerTable(table: Table) {
-  if (tables.some((tableItem) => tableItem.name === table.name))
-    throw new Error(`Table nammed "${table.name}" already exists`);
-
-  tables.push(table);
-  registeringTO = sleep(200);
+  if (structure.tables.some((tableItem) => tableItem.name === table.name)) return;
+  structure.tables.push(table);
+  structure.version++;
+  localStorage.setItem(`${DB_NAME}_IDB_structure`, JSON.stringify(structure));
 }
 
-let DBLoading;
-async function getDB() {
-  let end: Promise<void>;
-  do {
-    end = registeringTO;
-    await end;
-  } while (end !== registeringTO);
-
-  if (!DBLoading) DBLoading = loadDB();
-  return DBLoading;
-}
-
-async function loadDB(): Promise<IDBDatabase | null> {
+async function getDB(): Promise<IDBDatabase | null> {
   const db = await new Promise<IDBDatabase | null>((rs, rj) => {
-    const openRequest = indexedDB.open(DB_NAME, DB_VERSION);
+    const openRequest = indexedDB.open(DB_NAME, structure.version);
 
     /**
      * Database upgrade needed : DB_VERSION is greather than the current db version
      */
-    openRequest.onupgradeneeded = (event) => {
+    openRequest.onupgradeneeded = () => {
       const db = openRequest.result;
-      switch (event.oldVersion) {
-        case 0:
-          tables.forEach((table) => {
-            if (!db.objectStoreNames.contains(table.name))
-              db.createObjectStore(table.name, { keyPath: table.primary, autoIncrement: table.autoIncrement });
-          });
-          return;
-        default:
-          console.log("IDB load error: upgrade needed", { openRequest, event });
-          rj(new Error("IDB load error: upgrade needed"));
-      }
+      structure.tables.forEach((table) => {
+        if (!db.objectStoreNames.contains(table.name))
+          db.createObjectStore(table.name, { keyPath: table.primary, autoIncrement: table.autoIncrement });
+      });
     };
 
     /**
@@ -73,9 +53,9 @@ async function loadDB(): Promise<IDBDatabase | null> {
     /**
      * There is outdated version of the database open in another tab
      */
-    openRequest.onblocked = (event) => {
-      console.error("database blocked", { version: DB_VERSION });
-      rj(event);
+    openRequest.onblocked = () => {
+      console.error("database blocked", { version: structure.version });
+      rj(new Error("database blocked"));
     };
   });
 
@@ -84,7 +64,7 @@ async function loadDB(): Promise<IDBDatabase | null> {
      * Database version change : DB_VERSION becomes lower than the current db version
      */
     db.onversionchange = () => {
-      console.error("database version change", { version: DB_VERSION });
+      console.error("database version change", { structure });
       db.close();
     };
   }
@@ -143,6 +123,11 @@ export default class IDBCache<T extends object & { [C in K]: string }, K extends
     const newValue = oldValue ? { ...oldValue, ...match } : match;
     const store = await this.getStore("readwrite");
     store.put(newValue);
+  }
+
+  public async delete(match: Partial<T> & { [C in K]: string }) {
+    const store = await this.getStore("readwrite");
+    store.delete(match[this.primary]);
   }
 
   public async get(id: IDBValidKey): Promise<T | null> {
