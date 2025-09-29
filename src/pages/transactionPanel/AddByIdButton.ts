@@ -7,6 +7,36 @@ import ValidMessage from './ValidMessage.js';
 
 /** Add 'add by ID' button on transaction reconciliation tab */
 export default class TransactionAddByIdButton extends Service {
+  private spinner: HTMLDivElement = parseHTML(
+    '<div class="spinner-border spinner-border-sm" style="margin-left: 0.5em;" role="status"></div>'
+  ).firstElementChild as HTMLDivElement;
+
+  private alertIcon: HTMLDivElement = parseHTML(
+    `<div class="alert alert-danger" style="margin-left: 0.5em;" role="alert">&#x26A0;</div>`
+  ).firstElementChild as HTMLDivElement;
+
+  private set alert(value: boolean) {
+    if (value) {
+      this.button.appendChild(this.alertIcon);
+    } else {
+      this.alertIcon.remove();
+    }
+  }
+
+  private _running = false;
+  private get running() {
+    return this._running;
+  }
+  private set running(value: boolean) {
+    this._running = value;
+    if (value) {
+      this.alert = false;
+      this.button.appendChild(this.spinner);
+    } else {
+      this.spinner.remove();
+    }
+  }
+
   private button = parseHTML(
     '<div class="btn-sm w-100 btn-primary add-by-id-btn" style="cursor: pointer;">Ajouter par ID</div>'
   ).firstElementChild as HTMLDivElement;
@@ -68,7 +98,7 @@ export default class TransactionAddByIdButton extends Service {
   }
 
   async addById() {
-    if (this.disabled) return;
+    if (this.running) return;
     /**
      * Obligé de recharger la transaction à chaque appel : le numéro guid du
      * groupe change à chaque attachement de nouvelle pièce
@@ -76,13 +106,14 @@ export default class TransactionAddByIdButton extends Service {
     const transactionId = Number(getParam(location.href, "transaction_id"));
     const id = Number(prompt("ID du justificatif ?"));
     const transaction = new Transaction({ id: transactionId });
-    this.disabled = true;
-    const spinner = parseHTML('<div class="spinner-border spinner-border-sm" role="status"></div>')
-      .firstElementChild as HTMLDivElement;
-    this.button.appendChild(spinner);
-    await transaction.groupAdd(id);
-    spinner.remove();
-    this.disabled = false;
+    this.running = true;
+    await transaction.groupAdd(id).catch((error) => {
+      this.error("addById>Transaction.groupAdd Error:", error);
+      this.alert = true;
+      this.running = false;
+      throw error;
+    });
+    this.running = false;
     ValidMessage.getInstance().reload();
   }
 }
