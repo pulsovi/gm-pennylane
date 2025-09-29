@@ -640,6 +640,7 @@ export class InvoiceLinesEntity {
 export class Advance {
   public readonly company_id: number;
   public readonly date: string;
+  public readonly end_date?: null;
   public readonly has_ledger_events: boolean;
   public readonly id: number;
   public static Parse(d: string): Advance {
@@ -659,9 +660,12 @@ export class Advance {
     }
     checkNumber(d.company_id, field + ".company_id");
     checkString(d.date, field + ".date");
+    if ("end_date" in d) {
+      checkNull(d.end_date, field + ".end_date");
+    }
     checkBoolean(d.has_ledger_events, field + ".has_ledger_events");
     checkNumber(d.id, field + ".id");
-    const knownProperties = ["company_id","date","has_ledger_events","id"];
+    const knownProperties = ["company_id","date","end_date","has_ledger_events","id"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
     if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new Advance(d);
@@ -669,6 +673,7 @@ export class Advance {
   private constructor(d: any) {
     this.company_id = d.company_id;
     this.date = d.date;
+    if ("end_date" in d) this.end_date = d.end_date;
     this.has_ledger_events = d.has_ledger_events;
     this.id = d.id;
   }

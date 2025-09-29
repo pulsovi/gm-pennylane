@@ -1782,7 +1782,7 @@ export class Account {
   public readonly label: string;
   public readonly last_successful_sync_at: string | null;
   public readonly last_sync_at: string | null;
-  public readonly last_sync_error: null;
+  public readonly last_sync_error: string | null;
   public readonly last_sync_http_code: number;
   public readonly ledger_events_count: null;
   public readonly ledger_events_max_date: null;
@@ -1862,7 +1862,15 @@ export class Account {
       } catch (e) {
       }
     }
-    checkNull(d.last_sync_error, field + ".last_sync_error");
+    // This will be refactored in the next release.
+    try {
+      checkString(d.last_sync_error, field + ".last_sync_error", "string | null");
+    } catch (e) {
+      try {
+        checkNull(d.last_sync_error, field + ".last_sync_error", "string | null");
+      } catch (e) {
+      }
+    }
     checkNumber(d.last_sync_http_code, field + ".last_sync_http_code");
     checkNull(d.ledger_events_count, field + ".ledger_events_count");
     checkNull(d.ledger_events_max_date, field + ".ledger_events_max_date");
