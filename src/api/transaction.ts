@@ -23,8 +23,8 @@ export async function getTransactionsList (
   params: APITransactionListParams = {}
 ): Promise<APITransactionList> {
   const searchParams = new URLSearchParams(APITransactionListParams.Create(params) as Record<string, string>);
-  const url = `accountants/wip/transactions?${searchParams.toString()}`;
-  const response = await apiRequest(url, null, 'GET');
+  const url = `accountants/transactions?${searchParams.toString()}`;
+  const response = await apiRequest(url, null, "GET");
   return APITransactionList.Create(await response.json());
 }
 
