@@ -1,6 +1,9 @@
 import { WEEK_IN_MS } from "../_/time.js";
 import IDBCache from "../framework/IDBCache.js";
 import { PartialRequired } from "./types.js";
+import Logger from "../framework/Logger.js";
+
+const logger = new Logger("apiCache");
 
 export interface APICacheItem {
   /** The API endpoint or function name */
@@ -27,6 +30,15 @@ export async function cachedRequest<T, Args extends Record<string, unknown>>(
   const key = `${ref}(${argsString})`;
   const cached = await cache.find({ key });
   if (cached && Date.now() - cached.fetchedAt < maxAge) return cached.value as T;
+  logger.debug("cachedRequest", {
+    ref,
+    args,
+    maxAge,
+    key,
+    cached,
+    now: Date.now(),
+    age: cached ? Date.now() - cached.fetchedAt : null,
+  });
   const value = await fetcher(args);
   if (value) cache.update({ ref, args, value, fetchedAt: Date.now(), key });
   return value;
