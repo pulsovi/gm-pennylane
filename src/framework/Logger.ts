@@ -7,7 +7,9 @@ const csl = Object.entries(window.console).reduce((acc, [key, value]) => {
   return acc;
 }, {}) as typeof console;
 
-Object.assign(window, { GM_Pennylane_debug: window["GM_Pennylane_debug"] ?? false });
+Object.assign(window, {
+  GM_Pennylane_debug: window["GM_Pennylane_debug"] ?? localStorage.getItem("GM_Pennylane_debug") === "true",
+});
 
 export default class Logger extends EventEmitter {
   private logColor?: { bg: string; fg: string };
@@ -53,7 +55,7 @@ export default class Logger extends EventEmitter {
   public debug(...messages: unknown[]): void {
     if (!GM_Pennylane_debug) return;
     const date = new Date().toISOString().replace(/^[^T]*T([\d:]*).*$/, "[$1]");
-    csl.log(
+    csl.trace(
       `${date} %cGM_Pennylane%c${this.loggerName ?? this.constructor.name}%cDebug`,
       ...this.getStyles(),
       ...messages
