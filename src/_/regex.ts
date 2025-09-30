@@ -10,16 +10,18 @@ export function regexPartialMatch (str: string, regex: RegExp): [number, number]
   if (regex.test(str)) return [str.length, str.length];
   const source = regex.source;
 
-  let partialRegex = regex;
-  for (let i = 1; i < source.length; ++i) {
+  let partialRegex = new RegExp(source);
+  for (let i = 0; i < source.length; ++i) {
     try {
-      partialRegex = new RegExp(source.slice(0, -i));
+      partialRegex = new RegExp(source.slice(0, i ? -i : void 0));
       if (partialRegex.test(str)) break;
-    } catch (_error) { /* do nothing */ }
+    } catch (_error) {
+      /* do nothing */
+    }
   }
   const start = partialRegex.test(str) ? str.match(partialRegex)[0].length : 0;
 
-  partialRegex = regex;
+  partialRegex = new RegExp(source);
   for (let i = 0; i < source.length; ++i) {
     try {
       partialRegex = new RegExp(source.slice(i));
