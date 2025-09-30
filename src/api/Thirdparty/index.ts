@@ -39,6 +39,7 @@ export class APIThirdparty {
 export class Customer {
   public readonly address: string;
   public readonly address_additional_info: string;
+  public readonly auto_process_invoices?: boolean;
   public readonly billing_bank: null;
   public readonly billing_bic: null;
   public readonly billing_footer_invoice: null;
@@ -99,6 +100,9 @@ export class Customer {
     }
     checkString(d.address, field + ".address");
     checkString(d.address_additional_info, field + ".address_additional_info");
+    if ("auto_process_invoices" in d) {
+      checkBoolean(d.auto_process_invoices, field + ".auto_process_invoices");
+    }
     checkNull(d.billing_bank, field + ".billing_bank");
     checkNull(d.billing_bic, field + ".billing_bic");
     checkNull(d.billing_footer_invoice, field + ".billing_footer_invoice");
@@ -172,7 +176,7 @@ export class Customer {
       }
     }
     checkString(d.vat_number, field + ".vat_number");
-    const knownProperties = ["address","address_additional_info","billing_bank","billing_bic","billing_footer_invoice","billing_footer_invoice_id","billing_iban","billing_language","city","company_id","country_alpha2","current_mandate","customer_type","delivery_address","delivery_address_additional_info","delivery_city","delivery_country_alpha2","delivery_postal_code","disable_pending_vat","emails","first_name","force_pending_vat","id","invoices_auto_generated","invoices_auto_validated","last_name","name","notes","notes_comment","payment_conditions","phone","plan_item","postal_code","received_a_mandate_request","recipient","reference","reg_no","search_terms","sepa_mandate","source_id","tags","thirdparties_tags","thirdparty_contacts","thirdparty_invoice_line_rules","vat_number"];
+    const knownProperties = ["address","address_additional_info","auto_process_invoices","billing_bank","billing_bic","billing_footer_invoice","billing_footer_invoice_id","billing_iban","billing_language","city","company_id","country_alpha2","current_mandate","customer_type","delivery_address","delivery_address_additional_info","delivery_city","delivery_country_alpha2","delivery_postal_code","disable_pending_vat","emails","first_name","force_pending_vat","id","invoices_auto_generated","invoices_auto_validated","last_name","name","notes","notes_comment","payment_conditions","phone","plan_item","postal_code","received_a_mandate_request","recipient","reference","reg_no","search_terms","sepa_mandate","source_id","tags","thirdparties_tags","thirdparty_contacts","thirdparty_invoice_line_rules","vat_number"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
     if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new Customer(d);
@@ -180,6 +184,7 @@ export class Customer {
   private constructor(d: any) {
     this.address = d.address;
     this.address_additional_info = d.address_additional_info;
+    if ("auto_process_invoices" in d) this.auto_process_invoices = d.auto_process_invoices;
     this.billing_bank = d.billing_bank;
     this.billing_bic = d.billing_bic;
     this.billing_footer_invoice = d.billing_footer_invoice;
