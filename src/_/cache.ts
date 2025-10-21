@@ -40,7 +40,7 @@ export default class DataCache extends Logger {
   private static instances: Record<string, DataCache> = {};
 
   public constructor(storageKey: string) {
-    super();
+    super(`DataCache(${storageKey})`);
     this.storageKey = storageKey;
     this.cache = IDBCache.getInstance<DataCacheItem & { key: string }, "key">(this.storageKey, "key");
   }
@@ -56,11 +56,16 @@ export default class DataCache extends Logger {
     options: DataCacheFetchOptions<T, U, Args>
   ): Promise<U> {
     const { ref, args, fetcher, maxAge = WEEK_IN_MS } = options;
+    this.debug("fetch", { options, ref, args, maxAge });
     const argsString = JSON.stringify(args);
     const key = `${ref}(${argsString})`;
     const cached = (await this.cache.find({ key })) as DataCacheItem<T | U> | null;
-    if (cached && Date.now() - cached.fetchedAt < maxAge) return this.sanitize(options, cached.value);
-    this.debug("fetch", {
+    if (cached && Date.now() - cached.fetchedAt < maxAge) {
+      this.debug(`fetch:${key}:FromCache`, { ref, args, maxAge, key, cached, age: Date.now() - cached.fetchedAt });
+      return this.sanitize(options, cached.value);
+    }
+    const value = await fetcher(args);
+    this.debug(`fetch:${key}:Reload`, {
       ref,
       args,
       maxAge,
@@ -68,8 +73,8 @@ export default class DataCache extends Logger {
       cached,
       now: Date.now(),
       age: cached ? Date.now() - cached.fetchedAt : void 0,
+      value,
     });
-    const value = await fetcher(args);
     if (value) this.cache.update({ ref, args, value, fetchedAt: Date.now(), key });
     return this.sanitize(options, value);
   }
