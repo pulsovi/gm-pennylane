@@ -1,5 +1,5 @@
 import { $, $$, findElem, HTMLToString } from "../../_/dom.js";
-import { getReact, getReactProps } from "../../_/react.js";
+import { getReact, getReactProps, getReactPropValue } from "../../_/react.js";
 import { sleep } from "../../_/time.js";
 import { APIDMSItem } from "../../api/DMS/Item.js";
 import { APIDMSLink } from "../../api/DMS/Link.js";
@@ -26,7 +26,7 @@ export default class HighlightWrongDMSFilenames extends Service {
       }
       for (const span of unmanagedDMSItems) {
         this.debug({ span, fiber: getReact(span) });
-        const files = getReactProps(span, 11).files as APIDMSLink[];
+        const files = getReactPropValue(span, "files") as APIDMSLink[];
         for (const file of files) {
           const dmsItem = new DMSItem({id:file.item_id});
           const status = await dmsItem.getValidMessage();
