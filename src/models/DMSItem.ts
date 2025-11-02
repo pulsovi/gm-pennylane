@@ -58,7 +58,7 @@ export default class DMSItem extends Logger {
   }
 
   public async getItem() {
-    return await this.getCached("getItem", ({ id }: { id: number }) => getDMSItem(id), APIDMSItem);
+    return await this.getCached("getItem", ({ id }: { id: number }) => getDMSItem(id, this.maxAge()), APIDMSItem);
   }
 
   public async toInvoice() {
@@ -192,6 +192,7 @@ export default class DMSItem extends Logger {
       const item = await this.getItem();
       if (!item) return resolve(null);
 
+      if (item.archived_at) return resolve("OK");
       if (item.type === "dms_folder") return resolve("OK");
       if (await this.isPermanent()) return resolve("OK");
 
@@ -382,21 +383,37 @@ export default class DMSItem extends Logger {
     return void 0;
   }
 
-  private getCached<T, U>(
+  private async getCached<T, U>(
     ref: string,
     fetcher: (args: { id: number }) => Promise<T>,
     sanitizer: { Create: (data: any) => U }
   ): Promise<U> {
-    return cache.fetch({
+    const maxAge = this.maxAge();
+    const refreshing = this.refreshing;
+    const now = Date.now();
+    const elapsed = refreshing ? now - refreshing : this.isCurrent() ? now - performance.timeOrigin : void 0;
+    let reloaded = false;
+    const result = await cache.fetch({
       ref,
       args: { id: this.id },
       fetcher: async (args) => {
-        const data = await fetcher(args);
-        this.debug("getCached", { ref, args, data });
-        return data;
+        reloaded = true;
+        const result = await fetcher(args);
+        this.debug(`getCached:${ref}(${this.id}):Reload`, { ref, args, result });
+        return result;
       },
       sanitizer: (data: any) => sanitizer.Create(jsonClone(data)),
-      maxAge: this.maxAge(),
+      maxAge,
     });
+    if (!reloaded)
+      this.debug(`getCached:${ref}(${this.id}):FromCache`, {
+        maxAge,
+        refreshing,
+        now,
+        elapsed,
+        isCurrent: this.isCurrent(),
+        result,
+      });
+    return result;
   }
 }
