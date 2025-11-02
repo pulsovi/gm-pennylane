@@ -48,6 +48,7 @@ import PreviewDMSFiles from "./pages/transactionPanel/PreviewDMSFiles.js";
 import NextInvalidDMS from "./pages/DMS/NextInvalidDMS.js";
 import FullPeriod from "./pages/FullPeriod.js";
 import AddIsValidTransactionListIndicator from "./pages/transactionPanel/AddIsValidListIndicator.js";
+import { beep } from "./_/beep.js";
 
 last7DaysFilter();
 AddInvoiceIdColumn.start();
@@ -112,6 +113,7 @@ const augmentation = {
     },
     $$,
     $,
+    beep,
     findElem,
     findReactProp,
     getReact,

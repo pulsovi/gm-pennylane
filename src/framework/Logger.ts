@@ -1,5 +1,6 @@
-import { contrastScore, textToColor } from '../_/color.js';
-import EventEmitter from './EventEmitter.js';
+import { beep } from "../_/beep.js";
+import { contrastScore, textToColor } from "../_/color.js";
+import EventEmitter from "./EventEmitter.js";
 
 declare const GM_Pennylane_debug: boolean;
 const csl = Object.entries(window.console).reduce((acc, [key, value]) => {
@@ -50,12 +51,13 @@ export default class Logger extends EventEmitter {
       ...this.getStyles().slice(0, 2),
       ...messages
     );
+    beep();
   }
 
   public debug(...messages: unknown[]): void {
     if (!GM_Pennylane_debug) return;
     const date = new Date().toISOString().replace(/^[^T]*T([\d:]*).*$/, "[$1]");
-    csl.trace(
+    csl.error(
       `${date} %cGM_Pennylane%c${this.loggerName ?? this.constructor.name}%cDebug`,
       ...this.getStyles(),
       ...messages
