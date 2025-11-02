@@ -37,6 +37,7 @@ export default class InvoiceDisplayInfos extends Service {
     this.watchEventSave();
     await this.appendContainer();
     setInterval(() => { this.watch(); }, 200);
+    document.addEventListener('keydown', event => this.watchHotkey(event));
   }
 
   async tooltipThirdpartyId () {
@@ -187,5 +188,25 @@ export default class InvoiceDisplayInfos extends Service {
       this.reload();
       this.log('handleCacheChange', diff);
     }
+  }
+
+  watchHotkey (event: KeyboardEvent) {
+    if (event.ctrlKey && (event.key === 'c' || event.key === 'C') && !getSelection()?.toString() && this.state.invoice?.id) {
+      navigator.clipboard.writeText(this.state.invoice.id.toString());
+      this.selectId();
+    }
+  }
+
+  selectId () {
+    const idDiv = $<HTMLDivElement>('#invoice-id', this.container)!;
+    const activeElement = document.activeElement;
+    if (activeElement instanceof HTMLElement) activeElement.blur();
+    const textNode = idDiv.firstChild;
+    const range = document.createRange();
+    range.setStart(textNode!, 1);
+    range.setEnd(textNode!, String(this.state.invoice?.id).length + 1);
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
   }
 }
