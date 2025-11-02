@@ -1,8 +1,7 @@
 import { documentMatching } from '../api/document.js';
 import ValidableDocument from './ValidableDocument.js';
 import Document, { DocumentCache, isTypedDocument } from "./Document.js";
-import { getTransaction, getTransactionReconciliationId } from "../api/transaction.js";
-import { GroupedDocumentsEntity } from "../api/Document/index.js";
+import { getTransaction, getTransactionFull, getTransactionReconciliationId } from "../api/transaction.js";
 import { getParam } from "../_/url.js";
 import { APIDMSLink } from "../api/DMS/Link.js";
 import DMSItem from "./DMSItem.js";
@@ -12,6 +11,7 @@ import Balance from "./Balance.js";
 import { APITransactionLite } from "../api/Transaction/Lite.js";
 import CacheStatus, { Status } from "../framework/CacheStatus.js";
 import { APILedgerEvent } from "../api/LedgerEvent/index.js";
+import { APITransaction } from "../api/Transaction/index.js";
 
 const user = localStorage.getItem("user") ?? "assistant";
 
@@ -45,6 +45,11 @@ export default class Transaction extends ValidableDocument {
     }
     if (this._transaction instanceof Promise) return await this._transaction;
     return this._transaction;
+  }
+
+  public async getTransactionFull(maxAge?: number): Promise<APITransaction> {
+    if (typeof maxAge !== "number") maxAge = this.maxAge(maxAge);
+    return await getTransactionFull(this.id, maxAge);
   }
 
   public async getGroupedDocuments(maxAge?: number): Promise<Document[]> {
@@ -180,9 +185,9 @@ export default class Transaction extends ValidableDocument {
   private async isNextYear() {
     if (this.isCurrent()) this.log("isNextYear");
     else this.debug("isNextYear", this);
-    const doc = await this.getDocument();
+    const transaction = await this.getTransactionFull();
 
-    if (doc.date.startsWith("2026")) {
+    if (transaction.date.startsWith("2026")) {
       return (await this.isUnbalanced()) ?? (await this.isMissingAttachment()) ?? (await this.hasToSendToDMS()) ?? "OK";
     }
   }
@@ -303,7 +308,7 @@ export default class Transaction extends ValidableDocument {
     if (doc.label.startsWith("REMISE CHEQUE ") || (aidLedgerEvent && doc.label.startsWith("CHEQUE "))) {
       // Pour les remises de chèques, on a deux pièces justificatives necessaires : le chèque et le cerfa
       // On a parfois des calculs qui ne tombent pas très juste en JS
-      if (Math.abs(balance.transaction - balance.reçu) > 0.001) {
+      if (Math.abs(Math.abs(balance.transaction) - Math.abs(balance.reçu)) > 0.001) {
         balance.addReçu(null);
         if (this.isCurrent()) this.log("isCheckRemittance(): somme des reçus incorrecte");
         return "La somme des reçus doit valoir le montant de la transaction";
@@ -327,14 +332,21 @@ export default class Transaction extends ValidableDocument {
   private async hasUnbalancedCHQ(balance: Balance) {
     this.debug("hasUnbalancedCHQ");
     if (balance.hasCHQ()) {
-      if (Math.abs(balance.CHQ - balance.transaction) > 0.001) {
+      if (Math.abs(Math.abs(balance.CHQ) - Math.abs(balance.transaction)) > 0.001) {
         if (this.isCurrent()) this.log("hasUnbalancedCHQ(): somme des chèques incorrecte");
         return "La somme des chèques doit valoir le montant de la transaction";
       }
-      if (Math.abs(balance.CHQ - balance.reçu) > 0.001) {
-        if (this.isCurrent()) this.log("hasUnbalancedCHQ(): somme des reçus incorrecte");
-        // sample: 1798997950
-        return "La somme des reçus doit valoir celles des chèques";
+      if (Math.abs(Math.abs(balance.CHQ) - Math.abs(balance.autre) - Math.abs(balance.reçu)) > 0.001) {
+        if (this.isCurrent()) {
+          this.log("hasUnbalancedCHQ(): somme des factures incorrecte", {
+            CHQ: balance.CHQ,
+            autre: balance.autre,
+            reçu: balance.reçu,
+            diff: Math.abs(Math.abs(balance.CHQ) - Math.abs(balance.autre) - Math.abs(balance.reçu)),
+          });
+        }
+        // sample: 1798997950, 821819482
+        return "La somme des factures et des reçus doit valoir celles des chèques";
       }
       if (this.isCurrent()) this.log("balance avec chèques équilibrée", balance);
       return "";
@@ -801,6 +813,7 @@ export default class Transaction extends ValidableDocument {
 
   private async hasToSendToInvoice() {
     this.debug("hasToSendToInvoice");
+    if (await this.isFrozen()) return;
     const balance = await this.getBalance();
     if (balance.reçu) {
       const dmsLinks = await this.getDMSLinks();

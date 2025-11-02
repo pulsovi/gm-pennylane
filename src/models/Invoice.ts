@@ -8,6 +8,7 @@ import Logger from "../framework/Logger.js";
 
 import DMSItem from "./DMSItem.js";
 import Document, { DocumentCache, isTypedDocument } from "./Document.js";
+import Transaction from "./Transaction.js";
 
 import ValidableDocument from "./ValidableDocument.js";
 
@@ -51,7 +52,10 @@ export default abstract class Invoice extends ValidableDocument {
     const maxAge = this.isCurrent() ? 0 : void 0;
     if (!this.invoice) {
       this.invoice = getInvoice(this.id, maxAge).then((response) => {
-        if (!response) throw new Error("Impossible de charger la facture");
+        if (!response) {
+          this.error("getInvoice", "Impossible de charger la facture", { id: this.id, maxAge });
+          throw new Error("Impossible de charger la facture");
+        }
         return response;
       });
     }
@@ -65,8 +69,16 @@ export default abstract class Invoice extends ValidableDocument {
 
   async moveToDms(destId?: { parent_id: number; direction: string }) {
     this.debug("moveToDms before auto destId", { destId });
+    const groupedDocuments = await this.getGroupedDocuments(0);
+    const transaction = groupedDocuments.find((doc) => doc.type === "transaction");
+    if (groupedDocuments.length > 1 && !transaction) {
+      alert("ouvrir la console");
+      debugger;
+    }
     destId = destId ?? (await this.getDMSDestId());
     if (!destId) {
+      alert("Unable to choose DMS folder: ouvrir la console");
+      debugger;
       this.error("Unable to choose DMS folder", this);
       return;
     }
@@ -89,6 +101,17 @@ export default abstract class Invoice extends ValidableDocument {
     });
     const item = files.items.find((fileItem) => fileItem.signed_id === fileId);
     await updateDMSItem({ id: item.id, name: invoiceName });
+
+    if (transaction) {
+      let newGroup = await transaction.getGroupedDocuments(0);
+      let missing = groupedDocuments.find((doc) => doc.id !== this.id && !newGroup.some((gdoc) => gdoc.id === doc.id));
+      while (missing) {
+        this.log("moveToDms: some grouped documents were degrouped", { missing, groupedDocuments, newGroup });
+        await Transaction.get({ id: transaction.id }).groupAdd(missing.id);
+        newGroup = await transaction.getGroupedDocuments(0);
+      }
+    }
+
     return new DMSItem({ id: item.id });
   }
 

@@ -39,10 +39,14 @@ export default abstract class ValidableDocument extends Document {
     const id = this.id;
     const valid = await this.isValid(refresh);
     const message = await this.getValidMessage(refresh);
-    const doc = await this.getDocument();
+    let doc = await this.getFullDocument();
     if (!doc) return null;
-    const createdAt = doc && new Date(doc.created_at).getTime();
-    const date = doc && new Date(doc.date).getTime();
+    if (!doc.created_at || !doc.date) {
+      this.error(`Document incomplet ${this.id}`, { Document: this, doc });
+      throw new Error("Document incomplet");
+    }
+    const createdAt = new Date(doc.created_at).getTime();
+    const date = new Date(doc.date).getTime();
     return { id, valid, message, createdAt, date };
   }
 
