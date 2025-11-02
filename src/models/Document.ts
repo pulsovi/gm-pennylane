@@ -1,12 +1,15 @@
 import { WEEK_IN_MS } from '../_/time.js';
 import { getDMSLinks } from '../api/dms.js';
 import { APIDMSLink } from '../api/DMS/Link.js';
-import { archiveDocument, getDocument, reloadLedgerEvents } from '../api/document.js';
-import { APIDocument } from '../api/Document/index.js';
+import { archiveDocument, getDocument, getFullDocument, reloadLedgerEvents } from "../api/document.js";
+import { APIDocumentFull } from "../api/Document/Full.js";
+import { APIDocument } from "../api/Document/index.js";
+import { getExercise } from "../api/global.js";
 import { APIGroupedDocument } from "../api/GroupedDocument/index.js";
 import { getJournal } from "../api/journal.js";
 import { APILedgerEvent } from "../api/LedgerEvent/index.js";
-import { getGroupedDocuments, getLedgerEvents } from "../api/operation.js";
+import { getGroupedDocuments, getLedgerEvents, getOperation } from "../api/operation.js";
+import { APIOperation } from "../api/Operation/index.js";
 import { getThirdparty, type Thirdparty } from "../api/thirdparties.js";
 import CacheList from "../framework/CacheList.js";
 import { Logger } from "../framework/Logger.js";
@@ -39,6 +42,8 @@ export default class Document extends Logger {
   public type: DocumentType;
   public readonly id: number;
   protected document?: APIDocument | Promise<APIDocument>;
+  protected fullDocument?: APIFullDocument | Promise<APIFullDocument>;
+  protected operation?: SyncOrPromise<APIOperation>;
   protected gDocument?: SyncOrPromise<APIGroupedDocument>;
   protected journal?: SyncOrPromise<APIGroupedDocument["journal"]>;
   protected groupedDocuments: SyncOrPromise<Document[]>;
@@ -86,6 +91,14 @@ export default class Document extends Logger {
     return await this.document;
   }
 
+  async getFullDocument(maxAge?: number): Promise<APIDocumentFull> {
+    if (!this.fullDocument || typeof maxAge === "number") {
+      this.fullDocument = getFullDocument(this.id, maxAge);
+      this.fullDocument = await this.fullDocument;
+    }
+    return await this.fullDocument;
+  }
+
   async getGdoc(): Promise<APIGroupedDocument | APIDocument> {
     if (this.gDocument) return this.gDocument;
     return this.getDocument();
@@ -93,15 +106,22 @@ export default class Document extends Logger {
 
   async getJournal(): Promise<APIGroupedDocument["journal"]> {
     if (!this.journal) {
-      this.journal = this._loadJournal();
+      this.journal = new Promise(async (resolve) => {
+        const operation = await this.getOperation();
+        if (!operation) return;
+        if ("journal" in operation) return operation.journal;
+        return await getJournal(operation.journal_id);
+      });
     }
     return await this.journal;
   }
 
-  private async _loadJournal(): Promise<APIGroupedDocument["journal"]> {
-    const gdoc = await this.getGdoc();
-    if ("journal" in gdoc) return gdoc.journal;
-    return await getJournal(gdoc.journal_id);
+  async getOperation(): Promise<APIOperation | null> {
+    if (!this.operation) {
+      this.operation = getOperation(this.id);
+      this.operation = await this.operation;
+    }
+    return await this.operation;
   }
 
   async getLedgerEvents(maxAge?: number) {
@@ -126,6 +146,12 @@ export default class Document extends Logger {
   public async isClosed() {
     const ledgerEvents = await this.getLedgerEvents();
     return ledgerEvents.some((event) => event.closed);
+  }
+
+  public async isFrozen() {
+    const doc = await this.getDocument();
+    const exercise = await getExercise(parseInt(doc.date.slice(0, 4)));
+    return ["frozen", "closed"].includes(exercise.status);
   }
 
   async archive(unarchive = false) {
@@ -161,7 +187,14 @@ export default class Document extends Logger {
   }
 
   private async _getThirdparty() {
-    const doc = await this.getDocument();
+    let doc = await this.getFullDocument();
+    if (!doc?.thirdparty_id) {
+      doc = await this.getDocument(1000);
+      if (!doc?.thirdparty_id) {
+        this.error(`Thirdparty introuvable ${this.id}`, this);
+        return null;
+      }
+    }
     return await getThirdparty(doc.thirdparty_id);
   }
 

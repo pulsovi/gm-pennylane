@@ -141,11 +141,10 @@ export default class TransactionValidMessage extends Service {
   private async reloadCommentState() {
     if (!this.state.transaction) return;
     const transactionId = this.state.transaction.id;
-    const transactionDoc = await this.state.transaction.getDocument();
-    const transaction = transactionDoc.grouped_documents.find((doc) => doc.id === transactionId);
+    const transaction = await this.state.transaction.getTransaction();
     this.state.comments = {
       transactionId,
-      hasComment: Boolean(transaction?.client_comments?.length),
+      hasComment: Boolean(transaction?.comments_count > 0),
     };
     this.displayMessage();
   }
