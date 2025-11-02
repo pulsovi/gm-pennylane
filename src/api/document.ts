@@ -1,5 +1,6 @@
 import { cachedRequest } from "./cache.js";
 import { apiRequest } from "./core.js";
+import { APIDocumentFull } from "./Document/Full.js";
 import { APIDocument } from "./Document/index.js";
 import { APIDocumentMatching } from "./Document/Matching.js";
 import { APIDocumentMatchingInvoice } from "./Document/MatchingInvoice.js";
@@ -11,12 +12,39 @@ export async function getDocument(id: number, maxAge?: number): Promise<APIDocum
     { id },
     async ({ id }) => {
       const response = await apiRequest(`documents/${id}`, null, "GET");
-      return await response?.json();
+      const data = await response?.json();
+      return data;
     },
     maxAge
   );
   if (!data) return data;
   return APIDocument.Create(data);
+}
+
+export async function getFullDocument(id: number, maxAge?: number): Promise<APIDocumentFull> {
+  if (typeof id !== "number") throw new Error("id must be a number");
+  const data = await cachedRequest(
+    "document:getFullDocument",
+    { id },
+    async ({ id }) => {
+      const doc = await getDocument(id, maxAge);
+      if (!doc) return doc;
+      const response = await apiRequest(
+        doc.url
+          .split("/")
+          .slice(3)
+          .join("/")
+          .replace(/\?[^=]*=/u, "/"),
+        null,
+        "GET"
+      );
+      const data = await response?.json();
+      return data;
+    },
+    maxAge
+  );
+  if (!data) return data;
+  return APIDocumentFull.Create(data);
 }
 
 interface MatchingOptions {

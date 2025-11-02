@@ -74,6 +74,16 @@ export async function apiRequest(
     }
   }
 
+  if (response.status === 502) {
+    // La réponse contient de l'HTML. L'afficher dans un nouvel onglet
+    logger.error("API Request: error 502", { endpoint, data, method });
+    const html = await response.clone().text();
+    const newTab = window.open("", "_blank");
+    newTab?.document.write(html);
+    newTab?.document.close();
+    return null;
+  }
+
   if (response.status === 429 || response.status === 418) {
     apiRequestQueue.unshift(1000);
     apiRequestQueue.MIN_DELAY = delayBefore + 1;
@@ -81,6 +91,9 @@ export async function apiRequest(
     logger.debug("apiRequestWait: 1000");
     return apiRequest(endpoint, data, method);
   }
+
+  // empty success response
+  if (response.status === 201) return null;
 
   if (response.status !== 200) {
     console.log("apiRequest response status is not 200", { response, status: response.status });

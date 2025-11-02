@@ -1,19 +1,48 @@
 import { jsonClone } from '../_/json.js';
+import Logger from "../framework/Logger.js";
 import { cachedRequest } from "./cache.js";
 
-import { apiRequest } from './core.js';
-import { APITransaction } from './Transaction/index.js';
-import { APITransactionList, TransactionsEntity } from './Transaction/List.js';
-import { APITransactionListParams } from './Transaction/ListParams.js';
-import { APITransactionLite } from './Transaction/Lite.js';
+import { apiRequest } from "./core.js";
+import { APITransaction } from "./Transaction/index.js";
+import { APITransactionList } from "./Transaction/List.js";
+import { APITransactionListParams } from "./Transaction/ListParams.js";
+import { APITransactionLite } from "./Transaction/Lite.js";
 import { APITransactionReconciliation } from "./Transaction/Reconciliation.js";
+
+const logger = new Logger("API:transaction");
 /**
  * @return {Promise<RawTransactionMin>}    Type vérifié
  */
-export async function getTransaction (id: number): Promise<APITransactionLite> {
-  const response = await apiRequest(`accountants/wip/transactions/${id}`, null, 'GET');
+export async function getTransaction(id: number): Promise<APITransactionLite> {
+  const response = await apiRequest(`accountants/wip/transactions/${id}`, null, "GET");
   const data = await response?.json();
+  if (!data) {
+    logger.error(`Transaction ${id} not found`, { response });
+    return null;
+  }
   return APITransactionLite.Create(data);
+}
+
+export async function getTransactionFull(id: number, maxAge?: number): Promise<APITransaction> {
+  const data = await cachedRequest(
+    "transaction:getTransactionFull",
+    { id },
+    async ({ id }: { id: number }) => {
+      const response = await apiRequest(`accountants/transactions?ids[]=${id}`, null, "GET");
+      const data = (await response?.json())?.transactions[0];
+      if (!data) {
+        logger.error(`Transaction ${id} not found`, { response });
+        return null;
+      }
+      return data;
+    },
+    maxAge
+  );
+  if (!data) {
+    logger.error(`Transaction ${id} not found`);
+    return null;
+  }
+  return APITransaction.Create(data);
 }
 
 /**

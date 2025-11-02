@@ -13,6 +13,7 @@ export interface Thirdparty {
 export async function getThirdparty (
   id
 ): Promise<Thirdparty|null> {
+  if (!id) throw new Error(`id is mandatory "${id}" given`);
   const response = await apiRequest(`thirdparties/${id}`, null, 'GET');
   const json = await response?.json();
   if (!json) return json;

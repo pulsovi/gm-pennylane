@@ -3,6 +3,7 @@ import { cachedRequest, updateAPICacheItem } from "./cache.js";
 import { apiRequest } from "./core.js";
 import { APIGroupedDocument } from "./GroupedDocument/index.js";
 import { APILedgerEvent } from "./LedgerEvent/index.js";
+import { APIOperation } from "./Operation/index.js";
 
 const logger = new Logger("Operation");
 
@@ -59,4 +60,21 @@ async function fetchGroupedDocuments({ id }: { id: number }): Promise<APIGrouped
     response = await apiRequest(`accountants/operations/${id}/grouped_documents?per_page=20&page=${page}`, null, "GET");
   } while (response && list.length === 20);
   return documents;
+}
+
+export async function getOperation(id: number, maxAge?: number): Promise<APIOperation | null> {
+  const data = await cachedRequest(
+    "operation:getOperation",
+    { id },
+    async ({ id }: { id: number }) => {
+      const response = await apiRequest(`accountants/operations/${id}`, null, "GET");
+      if (!response) {
+        logger.error(`Unable to load operation for ${id}`);
+        return null;
+      }
+      return await response!.json();
+    },
+    maxAge
+  );
+  return APIOperation.Create(data);
 }
