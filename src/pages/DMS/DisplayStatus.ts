@@ -30,12 +30,14 @@ export default class DMSDisplayStatus extends Service {
 
     rightList.insertBefore(this.container, rightList.firstChild);
     const item = new DMSItem(ref);
-    const dmsItem = await item.getItem();
     const message = await item.getValidMessage();
-    this.container.innerHTML = `#${dmsItem.itemable_id} (${dmsItem.id})<br/>${message}`;
-    const isOk = message === 'OK';
-    this.container.classList.toggle('bg-warning-100', !isOk);
-    this.container.classList.toggle('bg-primary-100', isOk);
+    const dmsItem = await item.getItem();
+    this.container.innerHTML = `${dmsItem.archived_at ? "📦" : ""} #${dmsItem.itemable_id} (${
+      dmsItem.id
+    })<br/>${message}`;
+    const isOk = message === "OK";
+    this.container.classList.toggle("bg-warning-100", !isOk);
+    this.container.classList.toggle("bg-primary-100", isOk);
 
     if (!isOk) {
       const input = $<HTMLInputElement>('input[name="name"]');
@@ -44,6 +46,7 @@ export default class DMSDisplayStatus extends Service {
       const indexes = await item.partialMatch(input.value);
       this.log("partialMatch indexes", indexes, {
         currentValue: input.value,
+        matchIndexes: indexes,
         before: input.value.slice(0, indexes[0]),
         match: input.value.slice(indexes[0], indexes[1]),
         after: input.value.slice(indexes[1]),
