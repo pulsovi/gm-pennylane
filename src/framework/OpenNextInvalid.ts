@@ -31,7 +31,7 @@ interface Status extends RawStatus {
 
 export default abstract class OpenNextInvalid extends Service implements AutostarterParent {
   public abstract readonly id: string;
-  public readonly container = document.createElement('div');
+  public readonly container = document.createElement("div");
 
   private autostart: Autostarter;
   private current: number;
@@ -40,7 +40,7 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
   private spinner: Spinner & { index?: number } = {
     //frames: '🕛 🕧 🕐 🕜 🕑 🕝 🕒 🕞 🕓 🕟 🕔 🕠 🕕 🕡 🕖 🕢 🕗 🕣 🕘 🕤 🕙 🕥 🕚 🕦'.split(' '),
     //frames: '🕛 🕐 🕑 🕒 🕓 🕔 🕕 🕖 🕗 🕘 🕙 🕚'.split(' '),
-    frames: '⢎⡰ ⢎⡡ ⢎⡑ ⢎⠱ ⠎⡱ ⢊⡱ ⢌⡱ ⢆⡱'.split(' '),
+    frames: "⢎⡰ ⢎⡡ ⢎⡑ ⢎⠱ ⠎⡱ ⢊⡱ ⢌⡱ ⢆⡱".split(" "),
     interval: 200,
   };
   private skippedElems: Status[];
@@ -50,12 +50,14 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
   protected abstract cache: CacheList<Status>;
 
   async init() {
-    this.log('init');
+    this.log("init");
 
     this.start = this.start.bind(this);
     this.loadCurrent();
     this.appendOpenNextButton();
-    setInterval(() => { this.setSpinner(); }, this.spinner.interval);
+    setInterval(() => {
+      this.setSpinner();
+    }, this.spinner.interval);
     this.allowIgnoring();
     this.allowWaiting();
     this.autostart = new Autostarter(this);
@@ -63,10 +65,11 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
     this.invalidGenerator = this.loadInvalid();
     this.firstLoading();
 
-    window.addEventListener('beforeunload', event => {
+    window.addEventListener("beforeunload", (event) => {
       if (this.running) {
         this.log("Vous allez fermer la page alors que le prochain élément à corriger n'a pas été ouvert.");
-        event.returnValue = "Vous allez fermer la page alors que le prochain élément à corriger n'a pas été ouvert. Voulez-vous vraiment continuer ?";
+        event.returnValue =
+          "Vous allez fermer la page alors que le prochain élément à corriger n'a pas été ouvert. Voulez-vous vraiment continuer ?";
         const modal = parseHTML(`
           <div class="modal" style="display: block;padding: 10em; background-color: #DDDD;">
             <div class="modal-content" style="max-width: 40em;">
@@ -81,7 +84,9 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
         `).firstElementChild as HTMLDivElement;
         document.body.appendChild(modal);
         event.preventDefault();
-        setTimeout(() => { modal.remove(); }, 100);
+        setTimeout(() => {
+          modal.remove();
+        }, 100);
       }
     });
   }
@@ -95,7 +100,7 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
       const current = Number(getParam(location.href, this.idParamName));
       if (current === this.current) return;
       this.current = current;
-      this.emit('reload', current);
+      this.emit("reload", current);
     });
   }
 
@@ -115,38 +120,44 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
    * Append the button for open next to the DOM
    */
   private appendOpenNextButton() {
-    this.container.appendChild(parseHTML(
-      `<button type="button" class="${getButtonClassName()} open-next-invalid-btn">&nbsp;
+    this.container.appendChild(
+      parseHTML(
+        `<button type="button" class="${getButtonClassName()} open-next-invalid-btn">&nbsp;
         <span class="icon" style="font-family: monospace;">&gt;</span>&nbsp;
         <span class="number">
           <span class="invalid" title="nombre d'éléments invalides"></span>|
           <span class="waiting" title="nombre d'éléments temporairement ignorés"></span>|
           <span class="ignored" title="nombre d'éléments ignorés"></span>
         </span>
-      </button>`.trim().replace(/\n\s*/g, '')
-    ));
+      </button>`
+          .trim()
+          .replace(/\n\s*/g, "")
+      )
+    );
     const button = $<HTMLButtonElement>(`.open-next-invalid-btn`, this.container)!;
 
-    button.addEventListener('click', this.start.bind(this, true));
-    Tooltip.make({ target: button, text: 'Ouvrir le prochain élément invalide' });
+    button.addEventListener("click", this.start.bind(this, true));
+    Tooltip.make({ target: button, text: "Ouvrir le prochain élément invalide" });
     this.reloadNumber();
 
-    this.cache.on('change', () => this.reloadNumber());
+    this.cache.on("change", () => this.reloadNumber());
   }
 
   /**
    * Set the number display on openNextInvalid button
    */
   private reloadNumber() {
-    const count = this.cache.reduce((acc, status) => {
-      if (status.ignored) return { ...acc, ignored: acc.ignored + 1 };
-      if (status.wait && (new Date(status.wait).getTime() > Date.now()))
-        return { ...acc, waiting: acc.waiting + 1 };
-      if (!status.valid) return { ...acc, invalid: acc.invalid + 1 };
-      return acc;
-    }, { invalid: 0, waiting: 0, ignored: 0 });
+    const count = this.cache.reduce(
+      (acc, status) => {
+        if (status.ignored) return { ...acc, ignored: acc.ignored + 1 };
+        if (status.wait && new Date(status.wait).getTime() > Date.now()) return { ...acc, waiting: acc.waiting + 1 };
+        if (!status.valid) return { ...acc, invalid: acc.invalid + 1 };
+        return acc;
+      },
+      { invalid: 0, waiting: 0, ignored: 0 }
+    );
     const button = $<HTMLButtonElement>(`.open-next-invalid-btn`, this.container);
-    const number = $<HTMLSpanElement>('.number', button);
+    const number = $<HTMLSpanElement>(".number", button);
     Object.entries(count).forEach(([key, value]) => {
       const span = $<HTMLSpanElement>(`.${key}`, number);
       if (!span) {
@@ -165,7 +176,7 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
     let cached = this.cache.filter({ valid: false }).sort((a, b) => a.date - b.date);
     for (const cachedItem of cached) {
       if (this.isSkipped(cachedItem)) {
-        if (!cachedItem?.valid) this.log('skip', cachedItem);
+        if (!cachedItem?.valid) this.log("skip", cachedItem);
         continue;
       }
       /**
@@ -178,7 +189,7 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
       /*/
       const status = await this.updateStatus(cachedItem.id);
       if (this.isSkipped(status)) {
-        if (!status?.valid) this.log('skip', status);
+        if (!status?.valid) this.log("skip", status);
         continue;
       }
       /**/
@@ -189,23 +200,23 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
     for await (const item of this.walk()) {
       const status = await this.updateStatus(item);
       if (this.isSkipped(status)) {
-        if (!status?.valid) this.log('skip', status);
+        if (!status?.valid) this.log("skip", status);
         continue;
       }
       yield status!;
     }
 
     // verifier les plus anciennes entrées
-    const dateRef = Date.now() - (3 * 86_400_000);
-    let item = this.cache.find(cachedItem => cachedItem.fetchedAt < dateRef);
+    const dateRef = Date.now() - 3 * 86_400_000;
+    let item = this.cache.find((cachedItem) => cachedItem.fetchedAt < dateRef);
     while (item) {
       const status = await this.updateStatus(item);
       if (this.isSkipped(status)) {
-        if (!status?.valid) this.log('skip', status);
+        if (!status?.valid) this.log("skip", status);
       } else {
         yield status!;
       }
-      item = this.cache.find(cachedItem => cachedItem.fetchedAt < dateRef);
+      item = this.cache.find((cachedItem) => cachedItem.fetchedAt < dateRef);
     }
   }
 
@@ -213,16 +224,18 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
     if (!status) return true;
     if (status.valid) return true;
     if (status.ignored) return true;
-    if (status.wait && (new Date(status.wait).getTime() > Date.now())) return true;
+    if (status.wait && new Date(status.wait).getTime() > Date.now()) return true;
     return false;
   }
 
   /**
    * Update status of an item given by its ID
    */
-  private async updateStatus(id: number | RawStatus, value?: RawStatus | null): Promise<Status | null> {
-    if ('number' !== typeof id) { id = id.id; }
-    if (!value) value = await this.getStatus(id);
+  private async updateStatus(id: number | RawStatus, value?: RawStatus | null, force = false): Promise<Status | null> {
+    if ("number" !== typeof id) {
+      id = id.id;
+    }
+    if (!value) value = await this.getStatus(id, force);
     if (!value) {
       this.cache.delete({ id });
       return null;
@@ -232,7 +245,7 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
 
     if (isNaN(status.createdAt)) {
       this.log({ value, id, oldStatus, status });
-      throw new Error('status.createdAt must be number');
+      throw new Error("status.createdAt must be number");
     }
 
     this.cache.updateItem({ id }, status);
@@ -242,7 +255,7 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
   /**
    * Get the status of an item
    */
-  protected abstract getStatus(id: number): Promise<RawStatus | null>;
+  protected abstract getStatus(id: number, force?: boolean): Promise<RawStatus | null>;
 
   /**
    * Walk through all items matching given search params
@@ -250,7 +263,7 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
   protected abstract walk(): AsyncGenerator<RawStatus, undefined, void>;
 
   async openNext(interactionAllowed = false) {
-    this.log('openNext');
+    this.log("openNext");
 
     let status = (await this.invalidGenerator.next()).value;
     while (status?.id === this.current) {
@@ -259,7 +272,7 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
     }
 
     if (!status && interactionAllowed) {
-      if (!this.skippedElems) this.skippedElems = this.cache.filter(item => this.isSkipped(item));
+      if (!this.skippedElems) this.skippedElems = this.cache.filter((item) => this.isSkipped(item));
       while (!status && this.skippedElems.length) {
         const id = this.skippedElems.shift()!.id;
         status = await this.updateStatus(id);
@@ -268,7 +281,7 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
     }
 
     if (status) {
-      this.log('next found :', { current: this.current, status, class: this });
+      this.log("next found :", { current: this.current, status, class: this });
       this.open(status.id);
       this.running = false;
       return;
@@ -276,7 +289,10 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
 
     if (
       interactionAllowed &&
-      confirm(this.constructor.name + ': tous les éléments sont valides selon les paramétres actuels. Revérifier tout depuis le début ?')
+      confirm(
+        this.constructor.name +
+          ": tous les éléments sont valides selon les paramétres actuels. Revérifier tout depuis le début ?"
+      )
     ) {
       this.reloadAll();
       return this.openNext(interactionAllowed);
@@ -287,6 +303,9 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
 
   protected open(id: number): void {
     openDocument(id);
+    this.updateStatus(id, null, true).then((status) => {
+      if (status?.valid) this.start();
+    });
   }
 
   private async reloadAll() {
@@ -298,7 +317,7 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
   private async firstLoading() {
     const storageKey = `${this.storageKey}-state`;
     const currentVersion = window.GM_Pennylane_Version;
-    const state = JSON.parse(localStorage.getItem(storageKey) ?? '{}');
+    const state = JSON.parse(localStorage.getItem(storageKey) ?? "{}");
 
     if (state.version !== currentVersion) {
       // clear cache
@@ -308,11 +327,11 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
       localStorage.setItem(storageKey, JSON.stringify(state));
     }
 
-    const dateRef = Date.now() - (3 * 86_400_000);
-    let status = this.cache.find(item => item.fetchedAt < dateRef);
+    const dateRef = Date.now() - 3 * 86_400_000;
+    let status = this.cache.find((item) => item.fetchedAt < dateRef);
     while (status) {
       await this.updateStatus(status);
-      status = this.cache.find(item => item.fetchedAt < dateRef);
+      status = this.cache.find((item) => item.fetchedAt < dateRef);
     }
 
     if (state.loaded) return;
@@ -329,73 +348,88 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
   private allowIgnoring() {
     const ignored = Boolean(this.cache.find({ id: this.current })?.ignored);
 
-    this.container.appendChild(parseHTML(`<button
+    this.container.appendChild(
+      parseHTML(`<button
       type="button"
       class="${getButtonClassName()} ignore-item"
-      ${ignored ? 'style="background-color: var(--red);"' : ''}
-    >x</button>`));
+      ${ignored ? 'style="background-color: var(--red);"' : ""}
+    >x</button>`)
+    );
     const button = $<HTMLButtonElement>(`.ignore-item`, this.container)!;
-    Tooltip.make({ target: button, text: 'Ignorer cet élément, ne plus afficher' });
+    Tooltip.make({ target: button, text: "Ignorer cet élément, ne plus afficher" });
 
     const refresh = () => {
       const ignored = Boolean(this.cache.find({ id: this.current })?.ignored);
-      const background = ignored ? 'var(--red)' : '';
+      const background = ignored ? "var(--red)" : "";
       if (button.style.backgroundColor !== background) button.style.backgroundColor = background;
-    }
+    };
 
-    button.addEventListener('click', () => {
+    button.addEventListener("click", () => {
       const status = this.cache.find({ id: this.current });
       if (!status) return;
       this.cache.updateItem({ id: this.current }, Object.assign(status, { ignored: !status.ignored }));
     });
 
-    this.cache.on('change', () => { refresh(); });
-    this.on('reload', () => { refresh(); });
+    this.cache.on("change", () => {
+      refresh();
+    });
+    this.on("reload", () => {
+      refresh();
+    });
   }
 
   private allowWaiting() {
-    this.container.appendChild(parseHTML(
-      `<button type="button" class="${getButtonClassName()} wait-item">\ud83d\udd52</button>`
-    ));
+    this.container.appendChild(
+      parseHTML(`<button type="button" class="${getButtonClassName()} wait-item">\ud83d\udd52</button>`)
+    );
 
     const waitButton = $<HTMLButtonElement>(`.wait-item`, this.container)!;
-    const tooltip = Tooltip.make({ target: waitButton, text: '' });
+    const tooltip = Tooltip.make({ target: waitButton, text: "" });
     const updateWaitDisplay = () => {
       const status = this.cache.find({ id: this.current });
 
-      if (!status?.wait || (new Date(status.wait).getTime() < Date.now())) {
-        waitButton.style.backgroundColor = '';
-        tooltip.setText('Ne plus afficher pendant 3 jours');
+      if (!status?.wait || new Date(status.wait).getTime() < Date.now()) {
+        waitButton.style.backgroundColor = "";
+        tooltip.setText("Ne plus afficher pendant 3 jours");
         return;
       }
 
-      waitButton.style.backgroundColor = 'var(--blue)';
-      const date = new Date(status.wait).toISOString().replace('T', ' ').slice(0, 16)
-        .split(' ').map(block => block.split('-').reverse().join('/')).join(' ');
+      waitButton.style.backgroundColor = "var(--blue)";
+      const date = new Date(status.wait)
+        .toISOString()
+        .replace("T", " ")
+        .slice(0, 16)
+        .split(" ")
+        .map((block) => block.split("-").reverse().join("/"))
+        .join(" ");
       tooltip.setText(`Ignoré jusqu'à ${date}.`);
-    }
+    };
 
     updateWaitDisplay();
 
-    setInterval(() => { updateWaitDisplay(); }, 60_000);
+    setInterval(() => {
+      updateWaitDisplay();
+    }, 60_000);
 
-    waitButton.addEventListener('click', () => {
-      this.log('waiting button clicked');
+    waitButton.addEventListener("click", () => {
+      this.log("waiting button clicked");
       const status = this.cache.find({ id: this.current });
       if (!status) return this.log({ cachedStatus: status, id: this.current });
-      const wait = (status.wait && (new Date(status.wait).getTime() > Date.now())) ? ''
-        : new Date(Date.now() + 3 * 86_400_000).toISOString();
+      const wait =
+        status.wait && new Date(status.wait).getTime() > Date.now()
+          ? ""
+          : new Date(Date.now() + 3 * 86_400_000).toISOString();
       this.cache.updateItem({ id: this.current }, Object.assign(status, { wait }));
       updateWaitDisplay();
     });
 
-    waitButton.addEventListener('contextmenu', event => {
+    waitButton.addEventListener("contextmenu", (event) => {
       event.preventDefault();
-      const date = prompt('Date de fin de timeout ? (jj/mm/aaaa)', '');
+      const date = prompt("Date de fin de timeout ? (jj/mm/aaaa)", "");
       if (!date) return;
-      const d = date.split('/');
+      const d = date.split("/");
       if (d.length !== 3) {
-        alert(' Format attendu : jj/mm/aaaa');
+        alert(" Format attendu : jj/mm/aaaa");
         return;
       }
       try {
@@ -405,19 +439,23 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
         this.cache.updateItem({ id: this.current }, Object.assign(status, { wait }));
         updateWaitDisplay();
       } catch {
-        alert(' Format attendu : jj/mm/aaaa');
+        alert(" Format attendu : jj/mm/aaaa");
       }
     });
 
-    this.cache.on('change', () => { updateWaitDisplay(); });
-    this.on('reload', () => { updateWaitDisplay(); });
+    this.cache.on("change", () => {
+      updateWaitDisplay();
+    });
+    this.on("reload", () => {
+      updateWaitDisplay();
+    });
   }
 
   setSpinner() {
-    const span = $<HTMLSpanElement>('.open-next-invalid-btn .icon', this.container);
+    const span = $<HTMLSpanElement>(".open-next-invalid-btn .icon", this.container);
     if (!span) return;
     if (!this.running) {
-      if (span.innerText !== '>') span.innerText = '>';
+      if (span.innerText !== ">") span.innerText = ">";
       return;
     }
     this.spinner.index = ((this.spinner.index ?? 0) + 1) % this.spinner.frames.length;
