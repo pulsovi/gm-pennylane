@@ -5,7 +5,6 @@ interface Status {
   id: number;
   valid: boolean;
   message: string;
-  createdAt: number;
   /** Document.date */
   date: number;
 }
@@ -41,13 +40,12 @@ export default abstract class ValidableDocument extends Document {
     const message = await this.getValidMessage(refresh);
     let doc = await this.getFullDocument();
     if (!doc) return null;
-    if (!doc.created_at || !doc.date) {
+    if (!("date" in doc)) {
       this.error(`Document incomplet ${this.id}`, { Document: this, doc });
       throw new Error("Document incomplet");
     }
-    const createdAt = new Date(doc.created_at).getTime();
     const date = new Date(doc.date).getTime();
-    return { id, valid, message, createdAt, date };
+    return { id, valid, message, date };
   }
 
   async reloadLedgerEvents(): Promise<APIDocument> {

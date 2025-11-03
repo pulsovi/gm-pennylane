@@ -109,3 +109,8 @@ export async function moveToDms(
   const response = await apiRequest(url, null, "PUT");
   return APIInvoiceToDMS.Create({ response });
 }
+
+export async function getInvoiceCreationDate(id: number, maxAge?: number) {
+  const invoice = await getInvoice(id, maxAge);
+  return invoice?.created_at;
+}

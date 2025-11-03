@@ -8,25 +8,20 @@ import type { Spinner } from '../_/spinners.js';
 import { getButtonClassName } from '../_/getButtonClassName.js';
 import styles from './openNextInvalid.css';
 import { injectStyles } from '../_/styles.js';
+import IDBCache from "./IDBCache.js";
 
 injectStyles(styles);
 
-export interface RawStatus {
+export interface OpenNextInvalid_ItemStatus {
   id: number;
-  /** timestamp de création du document */
-  date: number;
-  valid: boolean;
-  message: string;
-  createdAt: number;
-};
-
-interface Status extends RawStatus {
   /** timestamp de dernière verification */
   fetchedAt?: number;
   ignored?: boolean;
   wait?: string;
   /** timestamp de création du document */
   date: number;
+  message: string;
+  valid: boolean;
 }
 
 export default abstract class OpenNextInvalid extends Service implements AutostarterParent {
@@ -35,7 +30,7 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
 
   private autostart: Autostarter;
   private current: number;
-  private invalidGenerator: AsyncGenerator<Status>;
+  private invalidGenerator: AsyncGenerator<OpenNextInvalid_ItemStatus>;
   private running = false;
   private spinner: Spinner & { index?: number } = {
     //frames: '🕛 🕧 🕐 🕜 🕑 🕝 🕒 🕞 🕓 🕟 🕔 🕠 🕕 🕡 🕖 🕢 🕗 🕣 🕘 🕤 🕙 🕥 🕚 🕦'.split(' '),
@@ -43,11 +38,11 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
     frames: "⢎⡰ ⢎⡡ ⢎⡑ ⢎⠱ ⠎⡱ ⢊⡱ ⢌⡱ ⢆⡱".split(" "),
     interval: 200,
   };
-  private skippedElems: Status[];
+  private skippedElems: OpenNextInvalid_ItemStatus[];
 
   protected abstract readonly idParamName: string;
   protected abstract readonly storageKey: string;
-  protected abstract cache: CacheList<Status>;
+  protected abstract cache: IDBCache<OpenNextInvalid_ItemStatus, "id", number>;
 
   async init() {
     this.log("init");
@@ -171,10 +166,9 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
   /**
    * Create next invalid generator
    */
-  private async *loadInvalid(): AsyncGenerator<Status, undefined, void> {
-    // verifier le cache
-    let cached = this.cache.filter({ valid: false }).sort((a, b) => a.date - b.date);
-    for (const cachedItem of cached) {
+  private async *loadInvalid(): AsyncGenerator<OpenNextInvalid_ItemStatus, undefined, void> {
+    for await (const cachedItem of this.cache.walk({ column: "date", sortDirection: "asc" })) {
+      if (!cachedItem) continue;
       if (this.isSkipped(cachedItem)) {
         if (!cachedItem?.valid) this.log("skip", cachedItem);
         continue;
@@ -208,7 +202,7 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
 
     // verifier les plus anciennes entrées
     const dateRef = Date.now() - 3 * 86_400_000;
-    let item = this.cache.find((cachedItem) => cachedItem.fetchedAt < dateRef);
+    let item = await this.cache.find((cachedItem) => cachedItem.fetchedAt < dateRef);
     while (item) {
       const status = await this.updateStatus(item);
       if (this.isSkipped(status)) {
@@ -216,11 +210,11 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
       } else {
         yield status!;
       }
-      item = this.cache.find((cachedItem) => cachedItem.fetchedAt < dateRef);
+      item = await this.cache.find((cachedItem) => cachedItem.fetchedAt < dateRef);
     }
   }
 
-  private isSkipped(status: Status | null) {
+  private isSkipped(status: OpenNextInvalid_ItemStatus | null) {
     if (!status) return true;
     if (status.valid) return true;
     if (status.ignored) return true;
@@ -231,7 +225,11 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
   /**
    * Update status of an item given by its ID
    */
-  private async updateStatus(id: number | RawStatus, value?: RawStatus | null, force = false): Promise<Status | null> {
+  protected async updateStatus(
+    id: number | { id: number },
+    value?: OpenNextInvalid_ItemStatus | null,
+    force = false
+  ): Promise<OpenNextInvalid_ItemStatus | null> {
     if ("number" !== typeof id) {
       id = id.id;
     }
@@ -243,24 +241,19 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
     const oldStatus = this.cache.find({ id }) ?? {};
     const status = Object.assign({}, oldStatus, value, { fetchedAt: Date.now() });
 
-    if (isNaN(status.createdAt)) {
-      this.log({ value, id, oldStatus, status });
-      throw new Error("status.createdAt must be number");
-    }
-
-    this.cache.updateItem({ id }, status);
+    this.cache.update(status);
     return status;
   }
 
   /**
    * Get the status of an item
    */
-  protected abstract getStatus(id: number, force?: boolean): Promise<RawStatus | null>;
+  protected abstract getStatus(id: number, force?: boolean): Promise<OpenNextInvalid_ItemStatus | null>;
 
   /**
    * Walk through all items matching given search params
    */
-  protected abstract walk(): AsyncGenerator<RawStatus, undefined, void>;
+  protected abstract walk(): AsyncGenerator<OpenNextInvalid_ItemStatus, undefined, void>;
 
   async openNext(interactionAllowed = false) {
     this.log("openNext");
@@ -272,7 +265,7 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
     }
 
     if (!status && interactionAllowed) {
-      if (!this.skippedElems) this.skippedElems = this.cache.filter((item) => this.isSkipped(item));
+      if (!this.skippedElems) this.skippedElems = await this.cache.filter((item) => this.isSkipped(item));
       while (!status && this.skippedElems.length) {
         const id = this.skippedElems.shift()!.id;
         status = await this.updateStatus(id);
@@ -328,16 +321,15 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
     }
 
     const dateRef = Date.now() - 3 * 86_400_000;
-    let status = this.cache.find((item) => item.fetchedAt < dateRef);
+    let status = await this.cache.find((item) => item.fetchedAt < dateRef);
     while (status) {
       await this.updateStatus(status);
-      status = this.cache.find((item) => item.fetchedAt < dateRef);
+      status = await this.cache.find((item) => item.fetchedAt < dateRef);
     }
 
     if (state.loaded) return;
 
     // load all
-    const news = this.walk();
     for await (const item of this.walk()) await this.updateStatus(item);
 
     // save loaded status
@@ -385,8 +377,8 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
 
     const waitButton = $<HTMLButtonElement>(`.wait-item`, this.container)!;
     const tooltip = Tooltip.make({ target: waitButton, text: "" });
-    const updateWaitDisplay = () => {
-      const status = this.cache.find({ id: this.current });
+    const updateWaitDisplay = async () => {
+      const status = await this.cache.find({ id: this.current });
 
       if (!status?.wait || new Date(status.wait).getTime() < Date.now()) {
         waitButton.style.backgroundColor = "";
@@ -411,19 +403,19 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
       updateWaitDisplay();
     }, 60_000);
 
-    waitButton.addEventListener("click", () => {
+    waitButton.addEventListener("click", async () => {
       this.log("waiting button clicked");
-      const status = this.cache.find({ id: this.current });
+      const status = await this.cache.find({ id: this.current });
       if (!status) return this.log({ cachedStatus: status, id: this.current });
       const wait =
         status.wait && new Date(status.wait).getTime() > Date.now()
           ? ""
           : new Date(Date.now() + 3 * 86_400_000).toISOString();
-      this.cache.updateItem({ id: this.current }, Object.assign(status, { wait }));
+      this.cache.update(Object.assign(status, { wait }));
       updateWaitDisplay();
     });
 
-    waitButton.addEventListener("contextmenu", (event) => {
+    waitButton.addEventListener("contextmenu", async (event) => {
       event.preventDefault();
       const date = prompt("Date de fin de timeout ? (jj/mm/aaaa)", "");
       if (!date) return;
@@ -434,9 +426,9 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
       }
       try {
         const wait = new Date(Number(d[2]), Number(d[1]) - 1, Number(d[0])).toISOString();
-        const status = this.cache.find({ id: this.current });
+        const status = await this.cache.find({ id: this.current });
         if (!status) return this.log({ cachedStatus: status, id: this.current });
-        this.cache.updateItem({ id: this.current }, Object.assign(status, { wait }));
+        this.cache.update(Object.assign(status, { wait }));
         updateWaitDisplay();
       } catch {
         alert(" Format attendu : jj/mm/aaaa");

@@ -42,8 +42,8 @@ export class APIDocumentFull {
   public readonly current_account_plan_item?: null;
   public readonly current_account_plan_item_id?: null;
   public readonly customer_validation_needed?: boolean;
-  public readonly date?: string;
-  public readonly deadline?: string;
+  public readonly date?: string | null;
+  public readonly deadline?: string | null;
   public readonly defacto_loan_eligible?: boolean;
   public readonly direction: string | null;
   public readonly discount?: string;
@@ -52,7 +52,7 @@ export class APIDocumentFull {
   public readonly display_revoke_button?: boolean;
   public readonly document_tags?: DocumentTagsEntity[];
   public readonly draft?: boolean;
-  public readonly duplicates?: never[];
+  public readonly duplicates?: DuplicatesEntity[];
   public readonly email_from?: null;
   public readonly embeddable_in_browser?: boolean;
   public readonly external_id?: string;
@@ -66,7 +66,7 @@ export class APIDocumentFull {
   public readonly gdrive_path?: null;
   public readonly gocardless_billing_subscription?: boolean;
   public readonly group_uuid?: string;
-  public readonly grouped_at?: string;
+  public readonly grouped_at?: string | null;
   public readonly grouped_documents?: GroupedDocumentsEntity[];
   public readonly has_already_sent_an_email?: boolean;
   public readonly has_credit_note?: boolean;
@@ -108,10 +108,10 @@ export class APIDocumentFull {
   public readonly not_duplicate?: boolean;
   public readonly ocr_iban?: null | string;
   public readonly ocr_thirdparty_id?: null;
-  public readonly opened_at?: null;
+  public readonly opened_at?: null | string;
   public readonly outstanding_balance?: string;
   public readonly owner?: null;
-  public readonly pages_count?: null;
+  public readonly pages_count?: null | number;
   public readonly paid?: boolean;
   public readonly paid_by?: null;
   public readonly paid_personally?: boolean;
@@ -169,15 +169,15 @@ export class APIDocumentFull {
   public readonly source?: string;
   public readonly source_document_id?: null;
   public readonly source_document_label?: null;
-  public readonly source_metadata?: null;
+  public readonly source_metadata?: null | SourceMetadata;
   public readonly special_mention?: null;
   public readonly status?: string;
   public readonly subcomplete?: boolean;
   public readonly tagged_at_ledger_events_level?: boolean;
   public readonly tax?: string;
   public readonly team?: null;
-  public readonly thirdparty?: Thirdparty;
-  public readonly thirdparty_id?: number;
+  public readonly thirdparty?: Thirdparty | null;
+  public readonly thirdparty_id?: number | null;
   public readonly type: string;
   public readonly updated_at?: string;
   public readonly url: string;
@@ -333,10 +333,26 @@ export class APIDocumentFull {
       checkBoolean(d.customer_validation_needed, field + ".customer_validation_needed");
     }
     if ("date" in d) {
-      checkString(d.date, field + ".date");
+      // This will be refactored in the next release.
+      try {
+        checkString(d.date, field + ".date", "string | null");
+      } catch (e) {
+        try {
+          checkNull(d.date, field + ".date", "string | null");
+        } catch (e) {
+        }
+      }
     }
     if ("deadline" in d) {
-      checkString(d.deadline, field + ".deadline");
+      // This will be refactored in the next release.
+      try {
+        checkString(d.deadline, field + ".deadline", "string | null");
+      } catch (e) {
+        try {
+          checkNull(d.deadline, field + ".deadline", "string | null");
+        } catch (e) {
+        }
+      }
     }
     if ("defacto_loan_eligible" in d) {
       checkBoolean(d.defacto_loan_eligible, field + ".defacto_loan_eligible");
@@ -377,7 +393,7 @@ export class APIDocumentFull {
       checkArray(d.duplicates, field + ".duplicates");
       if (d.duplicates) {
         for (let i = 0; i < d.duplicates.length; i++) {
-          checkNever(d.duplicates[i], field + ".duplicates" + "[" + i + "]");
+          d.duplicates[i] = DuplicatesEntity.Create(d.duplicates[i], field + ".duplicates" + "[" + i + "]");
         }
       }
     }
@@ -421,7 +437,15 @@ export class APIDocumentFull {
       checkString(d.group_uuid, field + ".group_uuid");
     }
     if ("grouped_at" in d) {
-      checkString(d.grouped_at, field + ".grouped_at");
+      // This will be refactored in the next release.
+      try {
+        checkString(d.grouped_at, field + ".grouped_at", "string | null");
+      } catch (e) {
+        try {
+          checkNull(d.grouped_at, field + ".grouped_at", "string | null");
+        } catch (e) {
+        }
+      }
     }
     if ("grouped_documents" in d) {
       checkArray(d.grouped_documents, field + ".grouped_documents");
@@ -574,7 +598,15 @@ export class APIDocumentFull {
       checkNull(d.ocr_thirdparty_id, field + ".ocr_thirdparty_id");
     }
     if ("opened_at" in d) {
-      checkNull(d.opened_at, field + ".opened_at");
+      // This will be refactored in the next release.
+      try {
+        checkNull(d.opened_at, field + ".opened_at", "null | string");
+      } catch (e) {
+        try {
+          checkString(d.opened_at, field + ".opened_at", "null | string");
+        } catch (e) {
+        }
+      }
     }
     if ("outstanding_balance" in d) {
       checkString(d.outstanding_balance, field + ".outstanding_balance");
@@ -583,7 +615,15 @@ export class APIDocumentFull {
       checkNull(d.owner, field + ".owner");
     }
     if ("pages_count" in d) {
-      checkNull(d.pages_count, field + ".pages_count");
+      // This will be refactored in the next release.
+      try {
+        checkNull(d.pages_count, field + ".pages_count", "null | number");
+      } catch (e) {
+        try {
+          checkNumber(d.pages_count, field + ".pages_count", "null | number");
+        } catch (e) {
+        }
+      }
     }
     if ("paid" in d) {
       checkBoolean(d.paid, field + ".paid");
@@ -807,7 +847,15 @@ export class APIDocumentFull {
       checkNull(d.source_document_label, field + ".source_document_label");
     }
     if ("source_metadata" in d) {
-      checkNull(d.source_metadata, field + ".source_metadata");
+      // This will be refactored in the next release.
+      try {
+        checkNull(d.source_metadata, field + ".source_metadata", "null | SourceMetadata");
+      } catch (e) {
+        try {
+          d.source_metadata = SourceMetadata.Create(d.source_metadata, field + ".source_metadata", "null | SourceMetadata");
+        } catch (e) {
+        }
+      }
     }
     if ("special_mention" in d) {
       checkNull(d.special_mention, field + ".special_mention");
@@ -828,10 +876,26 @@ export class APIDocumentFull {
       checkNull(d.team, field + ".team");
     }
     if ("thirdparty" in d) {
-      d.thirdparty = Thirdparty.Create(d.thirdparty, field + ".thirdparty");
+      // This will be refactored in the next release.
+      try {
+        d.thirdparty = Thirdparty.Create(d.thirdparty, field + ".thirdparty", "Thirdparty | null");
+      } catch (e) {
+        try {
+          checkNull(d.thirdparty, field + ".thirdparty", "Thirdparty | null");
+        } catch (e) {
+        }
+      }
     }
     if ("thirdparty_id" in d) {
-      checkNumber(d.thirdparty_id, field + ".thirdparty_id");
+      // This will be refactored in the next release.
+      try {
+        checkNumber(d.thirdparty_id, field + ".thirdparty_id", "number | null");
+      } catch (e) {
+        try {
+          checkNull(d.thirdparty_id, field + ".thirdparty_id", "number | null");
+        } catch (e) {
+        }
+      }
     }
     checkString(d.type, field + ".type");
     if ("updated_at" in d) {
@@ -1278,17 +1342,155 @@ export class Group {
   }
 }
 
+export class DuplicatesEntity {
+  public readonly amount: string;
+  public readonly currency: string;
+  public readonly currency_amount: string;
+  public readonly date: string;
+  public readonly direction: string;
+  public readonly has_grouped_documents: boolean;
+  public readonly id: number;
+  public readonly invoice_number: string;
+  public readonly not_duplicate: boolean;
+  public readonly source: string;
+  public readonly thirdparty: Thirdparty1;
+  public static Parse(d: string): DuplicatesEntity {
+    return DuplicatesEntity.Create(JSON.parse(d));
+  }
+  public static Create(d: any, field?: string, multiple ?: string): DuplicatesEntity {
+    if (!field) {
+      obj = d;
+      field = "root";
+    }
+    if (!d) {
+      throwNull2NonNull(field, d, multiple ?? this.name);
+    } else if (typeof(d) !== 'object') {
+      throwNotObject(field, d);
+    } else if (Array.isArray(d)) {
+      throwIsArray(field, d);
+    }
+    checkString(d.amount, field + ".amount");
+    checkString(d.currency, field + ".currency");
+    checkString(d.currency_amount, field + ".currency_amount");
+    checkString(d.date, field + ".date");
+    checkString(d.direction, field + ".direction");
+    checkBoolean(d.has_grouped_documents, field + ".has_grouped_documents");
+    checkNumber(d.id, field + ".id");
+    checkString(d.invoice_number, field + ".invoice_number");
+    checkBoolean(d.not_duplicate, field + ".not_duplicate");
+    checkString(d.source, field + ".source");
+    d.thirdparty = Thirdparty1.Create(d.thirdparty, field + ".thirdparty");
+    const knownProperties = ["amount","currency","currency_amount","date","direction","has_grouped_documents","id","invoice_number","not_duplicate","source","thirdparty"];
+    const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
+    return new DuplicatesEntity(d);
+  }
+  private constructor(d: any) {
+    this.amount = d.amount;
+    this.currency = d.currency;
+    this.currency_amount = d.currency_amount;
+    this.date = d.date;
+    this.direction = d.direction;
+    this.has_grouped_documents = d.has_grouped_documents;
+    this.id = d.id;
+    this.invoice_number = d.invoice_number;
+    this.not_duplicate = d.not_duplicate;
+    this.source = d.source;
+    this.thirdparty = d.thirdparty;
+  }
+}
+
+export class Thirdparty1 {
+  public readonly company_id: number;
+  public readonly "country_alpha2": string;
+  public readonly emails: never[];
+  public readonly iban: string;
+  public readonly id: number;
+  public readonly name: string;
+  public readonly notes: string;
+  public readonly notes_last_updated_at: null;
+  public readonly notes_last_updated_by_name: null;
+  public readonly supplier_due_date_delay: null;
+  public readonly supplier_due_date_rule: string;
+  public readonly supplier_payment_method: null;
+  public readonly supplier_payment_method_last_updated_at: string | null;
+  public readonly validation_status: string;
+  public static Parse(d: string): Thirdparty1 {
+    return Thirdparty1.Create(JSON.parse(d));
+  }
+  public static Create(d: any, field?: string, multiple ?: string): Thirdparty1 {
+    if (!field) {
+      obj = d;
+      field = "root";
+    }
+    if (!d) {
+      throwNull2NonNull(field, d, multiple ?? this.name);
+    } else if (typeof(d) !== 'object') {
+      throwNotObject(field, d);
+    } else if (Array.isArray(d)) {
+      throwIsArray(field, d);
+    }
+    checkNumber(d.company_id, field + ".company_id");
+    checkString(d["country_alpha2"], field + ".country_alpha2");
+    checkArray(d.emails, field + ".emails");
+    if (d.emails) {
+      for (let i = 0; i < d.emails.length; i++) {
+        checkNever(d.emails[i], field + ".emails" + "[" + i + "]");
+      }
+    }
+    checkString(d.iban, field + ".iban");
+    checkNumber(d.id, field + ".id");
+    checkString(d.name, field + ".name");
+    checkString(d.notes, field + ".notes");
+    checkNull(d.notes_last_updated_at, field + ".notes_last_updated_at");
+    checkNull(d.notes_last_updated_by_name, field + ".notes_last_updated_by_name");
+    checkNull(d.supplier_due_date_delay, field + ".supplier_due_date_delay");
+    checkString(d.supplier_due_date_rule, field + ".supplier_due_date_rule");
+    checkNull(d.supplier_payment_method, field + ".supplier_payment_method");
+    // This will be refactored in the next release.
+    try {
+      checkString(d.supplier_payment_method_last_updated_at, field + ".supplier_payment_method_last_updated_at", "string | null");
+    } catch (e) {
+      try {
+        checkNull(d.supplier_payment_method_last_updated_at, field + ".supplier_payment_method_last_updated_at", "string | null");
+      } catch (e) {
+      }
+    }
+    checkString(d.validation_status, field + ".validation_status");
+    const knownProperties = ["company_id","country_alpha2","emails","iban","id","name","notes","notes_last_updated_at","notes_last_updated_by_name","supplier_due_date_delay","supplier_due_date_rule","supplier_payment_method","supplier_payment_method_last_updated_at","validation_status"];
+    const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
+    return new Thirdparty1(d);
+  }
+  private constructor(d: any) {
+    this.company_id = d.company_id;
+    this["country_alpha2"] = d["country_alpha2"];
+    this.emails = d.emails;
+    this.iban = d.iban;
+    this.id = d.id;
+    this.name = d.name;
+    this.notes = d.notes;
+    this.notes_last_updated_at = d.notes_last_updated_at;
+    this.notes_last_updated_by_name = d.notes_last_updated_by_name;
+    this.supplier_due_date_delay = d.supplier_due_date_delay;
+    this.supplier_due_date_rule = d.supplier_due_date_rule;
+    this.supplier_payment_method = d.supplier_payment_method;
+    this.supplier_payment_method_last_updated_at = d.supplier_payment_method_last_updated_at;
+    this.validation_status = d.validation_status;
+  }
+}
+
 export class GroupedDocumentsEntity {
   public readonly company_id: number;
-  public readonly direction: null;
+  public readonly direction: string | null;
   public readonly embeddable_in_browser: boolean;
-  public readonly filename: null;
+  public readonly filename: string | null;
   public readonly has_file: boolean;
   public readonly id: number;
-  public readonly preview_status: null;
+  public readonly preview_status: string | null;
   public readonly preview_urls: never[];
   public readonly pusher_channel: string;
-  public readonly size: null;
+  public readonly size: string | null;
   public readonly type: string;
   public readonly url: string;
   public static Parse(d: string): GroupedDocumentsEntity {
@@ -1307,12 +1509,36 @@ export class GroupedDocumentsEntity {
       throwIsArray(field, d);
     }
     checkNumber(d.company_id, field + ".company_id");
-    checkNull(d.direction, field + ".direction");
+    // This will be refactored in the next release.
+    try {
+      checkString(d.direction, field + ".direction", "string | null");
+    } catch (e) {
+      try {
+        checkNull(d.direction, field + ".direction", "string | null");
+      } catch (e) {
+      }
+    }
     checkBoolean(d.embeddable_in_browser, field + ".embeddable_in_browser");
-    checkNull(d.filename, field + ".filename");
+    // This will be refactored in the next release.
+    try {
+      checkString(d.filename, field + ".filename", "string | null");
+    } catch (e) {
+      try {
+        checkNull(d.filename, field + ".filename", "string | null");
+      } catch (e) {
+      }
+    }
     checkBoolean(d.has_file, field + ".has_file");
     checkNumber(d.id, field + ".id");
-    checkNull(d.preview_status, field + ".preview_status");
+    // This will be refactored in the next release.
+    try {
+      checkString(d.preview_status, field + ".preview_status", "string | null");
+    } catch (e) {
+      try {
+        checkNull(d.preview_status, field + ".preview_status", "string | null");
+      } catch (e) {
+      }
+    }
     checkArray(d.preview_urls, field + ".preview_urls");
     if (d.preview_urls) {
       for (let i = 0; i < d.preview_urls.length; i++) {
@@ -1320,7 +1546,15 @@ export class GroupedDocumentsEntity {
       }
     }
     checkString(d.pusher_channel, field + ".pusher_channel");
-    checkNull(d.size, field + ".size");
+    // This will be refactored in the next release.
+    try {
+      checkString(d.size, field + ".size", "string | null");
+    } catch (e) {
+      try {
+        checkNull(d.size, field + ".size", "string | null");
+      } catch (e) {
+      }
+    }
     checkString(d.type, field + ".type");
     checkString(d.url, field + ".url");
     const knownProperties = ["company_id","direction","embeddable_in_browser","filename","has_file","id","preview_status","preview_urls","pusher_channel","size","type","url"];
@@ -1362,7 +1596,7 @@ export class InvoiceLinesEntity {
   public readonly global_vat: boolean;
   public readonly id: number;
   public readonly invoice_line_period: null;
-  public readonly invoice_line_section_id?: null;
+  public readonly invoice_line_section_id?: null | number;
   public readonly label?: string;
   public readonly manual_vat_mode?: boolean;
   public readonly ocr_vat_rate?: null;
@@ -1371,11 +1605,11 @@ export class InvoiceLinesEntity {
   public readonly price_before_tax: string;
   public readonly product_id: null;
   public readonly quantity: string;
-  public readonly rank?: null;
+  public readonly rank?: null | number;
   public readonly raw_currency_unit_price?: string;
   public readonly tax: string;
   public readonly undiscounted_currency_price_before_tax?: string;
-  public readonly unit?: null;
+  public readonly unit?: null | string;
   public readonly vat_rate: string;
   public static Parse(d: string): InvoiceLinesEntity {
     return InvoiceLinesEntity.Create(JSON.parse(d));
@@ -1424,7 +1658,15 @@ export class InvoiceLinesEntity {
     checkNumber(d.id, field + ".id");
     checkNull(d.invoice_line_period, field + ".invoice_line_period");
     if ("invoice_line_section_id" in d) {
-      checkNull(d.invoice_line_section_id, field + ".invoice_line_section_id");
+      // This will be refactored in the next release.
+      try {
+        checkNull(d.invoice_line_section_id, field + ".invoice_line_section_id", "null | number");
+      } catch (e) {
+        try {
+          checkNumber(d.invoice_line_section_id, field + ".invoice_line_section_id", "null | number");
+        } catch (e) {
+        }
+      }
     }
     if ("label" in d) {
       checkString(d.label, field + ".label");
@@ -1443,7 +1685,15 @@ export class InvoiceLinesEntity {
     checkNull(d.product_id, field + ".product_id");
     checkString(d.quantity, field + ".quantity");
     if ("rank" in d) {
-      checkNull(d.rank, field + ".rank");
+      // This will be refactored in the next release.
+      try {
+        checkNull(d.rank, field + ".rank", "null | number");
+      } catch (e) {
+        try {
+          checkNumber(d.rank, field + ".rank", "null | number");
+        } catch (e) {
+        }
+      }
     }
     if ("raw_currency_unit_price" in d) {
       checkString(d.raw_currency_unit_price, field + ".raw_currency_unit_price");
@@ -1453,7 +1703,15 @@ export class InvoiceLinesEntity {
       checkString(d.undiscounted_currency_price_before_tax, field + ".undiscounted_currency_price_before_tax");
     }
     if ("unit" in d) {
-      checkNull(d.unit, field + ".unit");
+      // This will be refactored in the next release.
+      try {
+        checkNull(d.unit, field + ".unit", "null | string");
+      } catch (e) {
+        try {
+          checkString(d.unit, field + ".unit", "null | string");
+        } catch (e) {
+        }
+      }
     }
     checkString(d.vat_rate, field + ".vat_rate");
     const knownProperties = ["advance_id","amount","asset_id","company_id","created_at","currency_amount","currency_price_before_tax","currency_tax","deferral","deferral_id","description","discount","discount_type","document_id","global_vat","id","invoice_line_period","invoice_line_section_id","label","manual_vat_mode","ocr_vat_rate","pnl_plan_item_id","prepaid_pnl","price_before_tax","product_id","quantity","rank","raw_currency_unit_price","tax","undiscounted_currency_price_before_tax","unit","vat_rate"];
@@ -1628,6 +1886,37 @@ export class PlanItem {
   }
 }
 
+export class SourceMetadata {
+  public readonly from: null;
+  public readonly path: string;
+  public static Parse(d: string): SourceMetadata {
+    return SourceMetadata.Create(JSON.parse(d));
+  }
+  public static Create(d: any, field?: string, multiple ?: string): SourceMetadata {
+    if (!field) {
+      obj = d;
+      field = "root";
+    }
+    if (!d) {
+      throwNull2NonNull(field, d, multiple ?? this.name);
+    } else if (typeof(d) !== 'object') {
+      throwNotObject(field, d);
+    } else if (Array.isArray(d)) {
+      throwIsArray(field, d);
+    }
+    checkNull(d.from, field + ".from");
+    checkString(d.path, field + ".path");
+    const knownProperties = ["from","path"];
+    const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
+    return new SourceMetadata(d);
+  }
+  private constructor(d: any) {
+    this.from = d.from;
+    this.path = d.path;
+  }
+}
+
 export class Thirdparty {
   public readonly activity_code?: string;
   public readonly activity_nomenclature?: string;
@@ -1659,7 +1948,7 @@ export class Thirdparty {
   public readonly gender?: null;
   public readonly gocardless_id?: null;
   public readonly iban: string;
-  public readonly iban_last_update?: null;
+  public readonly iban_last_update?: null | IbanLastUpdate;
   public readonly id: number;
   public readonly invoice_count?: null;
   public readonly invoice_dump_id?: null;
@@ -1802,7 +2091,15 @@ export class Thirdparty {
     }
     checkString(d.iban, field + ".iban");
     if ("iban_last_update" in d) {
-      checkNull(d.iban_last_update, field + ".iban_last_update");
+      // This will be refactored in the next release.
+      try {
+        checkNull(d.iban_last_update, field + ".iban_last_update", "null | IbanLastUpdate");
+      } catch (e) {
+        try {
+          d.iban_last_update = IbanLastUpdate.Create(d.iban_last_update, field + ".iban_last_update", "null | IbanLastUpdate");
+        } catch (e) {
+        }
+      }
     }
     checkNumber(d.id, field + ".id");
     if ("invoice_count" in d) {
@@ -2005,6 +2302,40 @@ export class Thirdparty {
     if ("validation_status" in d) this.validation_status = d.validation_status;
     if ("vat_number" in d) this.vat_number = d.vat_number;
     if ("vat_rate" in d) this.vat_rate = d.vat_rate;
+  }
+}
+
+export class IbanLastUpdate {
+  public readonly at: string;
+  public readonly from_pennylane: boolean;
+  public readonly name: string;
+  public static Parse(d: string): IbanLastUpdate {
+    return IbanLastUpdate.Create(JSON.parse(d));
+  }
+  public static Create(d: any, field?: string, multiple ?: string): IbanLastUpdate {
+    if (!field) {
+      obj = d;
+      field = "root";
+    }
+    if (!d) {
+      throwNull2NonNull(field, d, multiple ?? this.name);
+    } else if (typeof(d) !== 'object') {
+      throwNotObject(field, d);
+    } else if (Array.isArray(d)) {
+      throwIsArray(field, d);
+    }
+    checkString(d.at, field + ".at");
+    checkBoolean(d.from_pennylane, field + ".from_pennylane");
+    checkString(d.name, field + ".name");
+    const knownProperties = ["at","from_pennylane","name"];
+    const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
+    return new IbanLastUpdate(d);
+  }
+  private constructor(d: any) {
+    this.at = d.at;
+    this.from_pennylane = d.from_pennylane;
+    this.name = d.name;
   }
 }
 

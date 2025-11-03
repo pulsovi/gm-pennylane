@@ -2,27 +2,28 @@ import { findElem, waitFunc } from '../../_/index.js';
 import { getTransactionGenerator } from '../../api/transaction.js';
 import { APITransactionListParams } from '../../api/Transaction/ListParams.js';
 import CacheStatus from '../../framework/CacheStatus.js';
-import OpenNextInvalid, { RawStatus as Status } from '../../framework/OpenNextInvalid.js';
-import Transaction from '../../models/Transaction.js';
+import IDBCache from "../../framework/IDBCache.js";
+import OpenNextInvalid, { OpenNextInvalid_ItemStatus as Status } from "../../framework/OpenNextInvalid.js";
+import Transaction from "../../models/Transaction.js";
 
 export default class NextInvalidTransaction extends OpenNextInvalid {
   protected static instance: NextInvalidTransaction;
   public readonly id = "next-invalid-transaction";
   protected readonly storageKey = "transactionValidation";
   protected readonly idParamName = "transaction_id";
-  protected cache: CacheStatus;
+  protected cache: IDBCache<Status, "id", number>;
 
   async init() {
     // Wait for appending button in the matching page before init auto open service
     await this.appendContainer();
 
-    this.cache = CacheStatus.getInstance<Status>(this.storageKey);
+    this.cache = IDBCache.getInstance<Status, "id", number>(this.storageKey, "id");
     await super.init();
   }
 
   protected async *walk(): AsyncGenerator<Status, undefined, void> {
     // Load new added transactions
-    const max = this.cache.reduce((acc, status) => Math.max(status.createdAt, acc), 0);
+    const max = await this.cache.reduce((acc, status) => Math.max(status.date, acc), 0);
     if (max) {
       const params: APITransactionListParams = {
         filter: JSON.stringify([{ field: "created_at", operator: "gteq", value: new Date(max).toISOString() }]),
@@ -34,7 +35,7 @@ export default class NextInvalidTransaction extends OpenNextInvalid {
     }
 
     // Load old unloaded transactions
-    const min = this.cache.reduce((acc, status) => Math.min(status.createdAt, acc), Date.now());
+    const min = await this.cache.reduce((acc, status) => Math.min(status.date, acc), Date.now());
     const params: APITransactionListParams = {
       filter: JSON.stringify([{ field: "created_at", operator: "lteq", value: new Date(min).toISOString() }]),
       sort: "-created_at",

@@ -2,8 +2,9 @@ import { getParam } from "../_/url.js";
 import { getDMSDestId, getDMSItemList, updateDMSItem } from "../api/dms.js";
 import { APIDMSItem } from "../api/DMS/Item.js";
 import { getDocument } from "../api/document.js";
-import { getInvoice, moveToDms, updateInvoice } from "../api/invoice.js";
+import { getInvoice, getInvoiceCreationDate, moveToDms, updateInvoice } from "../api/invoice.js";
 import { APIInvoice } from "../api/Invoice/index.js";
+import { Status } from "../framework/CacheStatus.js";
 import Logger from "../framework/Logger.js";
 
 import DMSItem from "./DMSItem.js";
@@ -14,8 +15,14 @@ import ValidableDocument from "./ValidableDocument.js";
 
 const staticLogger = new Logger("Invoice");
 
+export interface InvoiceStatus extends Status {
+  direction: "customer" | "supplier";
+  createdAt: number;
+}
+
 export default abstract class Invoice extends ValidableDocument {
   public readonly type = "invoice";
+  public readonly direction: "customer" | "supplier" | "unknown";
   private invoice: APIInvoice | Promise<APIInvoice>;
 
   public static get(raw: { id: number }) {
@@ -60,6 +67,17 @@ export default abstract class Invoice extends ValidableDocument {
       });
     }
     return this.invoice;
+  }
+
+  async getStatus(refresh = false): Promise<InvoiceStatus | null> {
+    const status = await super.getStatus(refresh);
+    if (!status) return null;
+    return { ...status, direction: this.direction, createdAt: await this.getCreatedAt(refresh ? 0 : void 0) };
+  }
+
+  public async getCreatedAt(maxAge?: number) {
+    const iso = await getInvoiceCreationDate(this.id, maxAge);
+    return new Date(iso).getTime();
   }
 
   async getGroupedDocuments(maxAge?: number): Promise<Document[]> {

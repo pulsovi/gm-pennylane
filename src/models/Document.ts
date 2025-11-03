@@ -42,7 +42,7 @@ export default class Document extends Logger {
   public type: DocumentType;
   public readonly id: number;
   protected document?: APIDocument | Promise<APIDocument>;
-  protected fullDocument?: APIFullDocument | Promise<APIFullDocument>;
+  protected fullDocument?: APIDocumentFull | Promise<APIDocumentFull>;
   protected operation?: SyncOrPromise<APIOperation>;
   protected gDocument?: SyncOrPromise<APIGroupedDocument>;
   protected journal?: SyncOrPromise<APIGroupedDocument["journal"]>;
@@ -109,8 +109,7 @@ export default class Document extends Logger {
       this.journal = new Promise(async (resolve) => {
         const operation = await this.getOperation();
         if (!operation) return;
-        if ("journal" in operation) return operation.journal;
-        return await getJournal(operation.journal_id);
+        return operation.journal ?? (await getJournal(operation.journal_id));
       });
     }
     return await this.journal;
@@ -149,7 +148,7 @@ export default class Document extends Logger {
   }
 
   public async isFrozen() {
-    const doc = await this.getDocument();
+    const doc = await this.getFullDocument();
     const exercise = await getExercise(parseInt(doc.date.slice(0, 4)));
     return ["frozen", "closed"].includes(exercise.status);
   }
@@ -189,7 +188,7 @@ export default class Document extends Logger {
   private async _getThirdparty() {
     let doc = await this.getFullDocument();
     if (!doc?.thirdparty_id) {
-      doc = await this.getDocument(1000);
+      doc = await this.getFullDocument(1000);
       if (!doc?.thirdparty_id) {
         this.error(`Thirdparty introuvable ${this.id}`, this);
         return null;
