@@ -1,19 +1,17 @@
-import ValidableDocument from "./ValidableDocument.js";
-import Document, { DocumentCache, isTypedDocument } from "./Document.js";
-import { getTransactionFull, getTransactionReconciliationId } from "../api/transaction.js";
-import { getParam } from "../_/url.js";
-import { APIDMSLink } from "../api/DMS/Link.js";
-import DMSItem from "./DMSItem.js";
-import { createDMSLink } from "../api/dms.js";
 import { jsonClone } from "../_/json.js";
-import Balance from "./Balance.js";
-import { APITransactionLite } from "../api/Transaction/Lite.js";
-import CacheStatus, { Status } from "../framework/CacheStatus.js";
+import { getParam } from "../_/url.js";
+import { createDMSLink } from "../api/dms.js";
+import { APIDMSLink } from "../api/DMS/Link.js";
+import { getDocumentGuuid, matchDocuments } from "../api/document.js";
 import { APILedgerEvent } from "../api/LedgerEvent/index.js";
-import { APITransaction } from "../api/Transaction/index.js";
-import type ModelFactory from "./Factory.js";
 import { getTransactionClientsComments } from "../api/records.js";
-import { documentMatching, getDocumentGuuid, matchDocuments } from "../api/document.js";
+import { getTransactionFull, getTransactionReconciliationId } from "../api/transaction.js";
+import { APITransaction } from "../api/Transaction/index.js";
+import CacheStatus, { Status } from "../framework/CacheStatus.js";
+import Balance from "./Balance.js";
+import Document from "./Document.js";
+import type ModelFactory from "./Factory.js";
+import ValidableDocument from "./ValidableDocument.js";
 
 const user = localStorage.getItem("user") ?? "assistant";
 
@@ -30,14 +28,6 @@ export default class Transaction extends ValidableDocument {
     super(raw, factory);
     this._raw = raw;
     this.cacheStatus = CacheStatus.getInstance<Status>("transactionValidation");
-  }
-
-  public static get(raw: { id: number }, factory: typeof ModelFactory): Transaction {
-    if (!isTypedDocument(raw) || raw.type.toLowerCase() !== "transaction")
-      throw new Error("`raw.type` MUST be 'transaction'");
-    const old = DocumentCache.get(raw.id);
-    if (old instanceof Transaction) return old;
-    return factory.getTransaction(raw.id);
   }
 
   public async hasComments(maxAge?: number): Promise<boolean> {
@@ -845,11 +835,13 @@ export default class Transaction extends ValidableDocument {
   /** Add item to this transaction's group */
   async groupAdd(id: number) {
     this.debug("groupAdd");
-    const response = await matchDocuments(this.id, id);
+    const doc = await this.factory.get(id);
 
-    // If the provided id is an invoice, the request should succeed.
-    if (response && "grouped_transactions" in response && response.grouped_transactions.some((tr) => tr.id === this.id))
+    if (doc instanceof Document) {
+      const response = await matchDocuments(this.id, id);
+
       return;
+    }
 
     // If the provided id is a DMS file, we need use the DMS link instead of relying on document matching.
     this.error('todo: réparer la méthode "groupAdd()"', this);

@@ -235,9 +235,9 @@ export default class DMSItem extends Logger {
         if (!item) return null;
         if (item.name.startsWith("RECU") || item.name.startsWith("§")) return null;
 
-        const links = await this.getLinks();
-        if (await this.hasClosedLink(links)) return null;
+        if (await this.hasClosedLink()) return null;
 
+        const links = await this.getLinks();
         const transactions = links.filter((link) => link.record_type === "BankTransaction");
         const isCheckRemmitance = transactions.some((transaction) =>
           transaction.record_name.startsWith("REMISE CHEQUE ")
@@ -375,10 +375,14 @@ export default class DMSItem extends Logger {
     );
   }
 
-  public async hasClosedLink(links: APIDMSItemLink[]) {
+  public async hasClosedLink() {
+    const links = await this.getLinks();
     this.debug("hasClosedLink", { links, id: this.id });
-    const closed = await Promise.all(links.map((link) => Document.isClosed(link.record_id)));
-    return closed.some((closed) => closed);
+    const documents = await Promise.all(links.map((link) => this.factory.get(link.record_id)));
+    for (const document of documents) {
+      if (document && "isClosed" in document && document.isClosed()) return true;
+    }
+    return false;
   }
 
   /** Determine the acceptable maxAge of API data */

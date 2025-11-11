@@ -11,7 +11,7 @@ import { APITransaction } from "./Transaction/index.js";
 
 const logger = new Logger("API:document");
 
-export async function getDocument(id: number, maxAge?: number): Promise<APIDocument> {
+export async function getDocument(id: number, maxAge?: number): Promise<APIDocument | null> {
   if (typeof id !== "number") throw new Error("id must be a number");
   const data = await cachedRequest(
     "document:getDocument",
@@ -23,7 +23,7 @@ export async function getDocument(id: number, maxAge?: number): Promise<APIDocum
     },
     maxAge
   );
-  if (!data) return data;
+  if (!data) return null;
   return APIDocument.Create(data);
 }
 
@@ -118,7 +118,7 @@ export async function getDocumentGuuid(id: number, maxAge?: number): Promise<str
   return doc.group_uuid;
 }
 
-export async function matchDocuments(id1: number, id2: number): Promise<APIInvoiceMatching | null> {
+export async function matchDocuments(id1: number, id2: number): Promise<APIDocumentMatching | null> {
   const doc1 = await getDocument(id1);
   const doc2 = await getDocument(id2);
   if (doc1.type !== "Invoice" && doc2.type !== "Invoice") return null;
@@ -131,7 +131,7 @@ export async function matchDocuments(id1: number, id2: number): Promise<APIInvoi
     const args = { unmatch_ids: [], group_uuids: [guuid] };
     const response = await apiRequest(`documents/${transaction.id}/matching`, args, "PUT");
     if (!response) return null;
-    return APIInvoiceMatching.Create(await response.json());
+    return APIDocumentMatching.Create(await response.json());
   }
 
   logger.error("No document found", { id1, id2, doc1, doc2, transaction, document, guuid });

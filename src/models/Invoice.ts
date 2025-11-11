@@ -114,7 +114,7 @@ export default abstract class Invoice extends ValidableDocument {
       invoice.invoice_number,
       invoice.thirdparty?.name ?? "",
       invoice.date ? new Date(invoice.date).toLocaleDateString().replace(/\//g, "-") : "",
-      `${invoice.amount.replace(/.0+$/, "")}€`,
+      `${String(invoice.amount).replace(/.0+$/, "")}€`,
     ]
       .join(" - ")
       .replace(" - Donateurs - Dons Manuels", "");
@@ -131,12 +131,12 @@ export default abstract class Invoice extends ValidableDocument {
       let missing = groupedDocuments.find((doc) => doc.id !== this.id && !newGroup.some((gdoc) => gdoc.id === doc.id));
       while (missing) {
         this.log("moveToDms: some grouped documents were degrouped", { missing, groupedDocuments, newGroup });
-        await Transaction.get({ id: transaction.id }).groupAdd(missing.id);
+        await this.factory.getTransaction(transaction.id).groupAdd(missing.id);
         newGroup = await transaction.getGroupedDocuments(0);
       }
     }
 
-    return new DMSItem({ id: item.id });
+    return this.factory.getDMSItem(item.id);
   }
 
   public async getDMSDestId(): Promise<{ parent_id: number; direction: string } | null> {

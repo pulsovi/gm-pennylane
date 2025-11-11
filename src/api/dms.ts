@@ -11,8 +11,9 @@ import { APIDMSLink } from './DMS/Link.js';
 import { APIDMSLinkList } from './DMS/LinkList.js';
 import { APIDMSToInvoice } from './DMS/ToInvoice.js';
 import { APIDMSUpdateItem } from './DMS/UpdateItem.js';
-import { getDocument } from './document.js';
-import { APIDocument } from './Document/index.js';
+import { getDocument, getFullDocument } from "./document.js";
+import { APIDocument } from "./Document/index.js";
+import { getInvoiceCreationDate } from "./invoice.js";
 import { APIInvoice } from './Invoice/index.js';
 import { GroupedDocument } from './types.js';
 
@@ -173,7 +174,6 @@ export async function createDMSLink(dmsFileId: number, recordId: number, recordT
   return APIDMSCreateLink.Create(await response?.json());
 }
 
-
 /**
  * Api request without X-... headers
  */
@@ -201,17 +201,15 @@ export async function dmsToInvoice(dmsId: string | string[], direction: 'custome
 export async function getDMSDestId(
   ref: APIInvoice | GroupedDocument | APIDocument
 ): Promise<{ parent_id: number; direction: string } | null> {
+  const full = await getFullDocument(ref.id, 0);
   let direction: string;
-  logger.error('todo: réparer cette fonction "getDMSDestId"');
-  debugger;
-  throw new Error('todo: réparer cette fonction "getDMSDestId"');
-  let year = ref.date.slice(0, 4);
-  if (ref.type === "Transaction") {
-    direction = parseFloat(ref.amount) > 0 ? "customer" : "supplier";
+  let year = full.date.slice(0, 4);
+  if (full.type === "Transaction") {
+    direction = parseFloat(full.amount) > 0 ? "customer" : "supplier";
   }
 
-  if (ref.type === "Invoice" && "direction" in ref) {
-    direction = ref.direction;
+  if (full.type === "Invoice" && "direction" in full) {
+    direction = full.direction;
   }
 
   logger.log("getDMSDestId", { ref, direction, year });
