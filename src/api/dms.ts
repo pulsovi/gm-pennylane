@@ -202,6 +202,9 @@ export async function getDMSDestId(
   ref: APIInvoice | GroupedDocument | APIDocument
 ): Promise<{ parent_id: number; direction: string } | null> {
   let direction: string;
+  logger.error('todo: réparer cette fonction "getDMSDestId"');
+  debugger;
+  throw new Error('todo: réparer cette fonction "getDMSDestId"');
   let year = ref.date.slice(0, 4);
   if (ref.type === "Transaction") {
     direction = parseFloat(ref.amount) > 0 ? "customer" : "supplier";

@@ -3,6 +3,7 @@ import { getReactPropValue } from "../../_/react.js";
 import { APITransaction } from "../../api/Transaction/index.js";
 import CacheStatus, { Status } from "../../framework/CacheStatus.js";
 import Service from "../../framework/Service.js";
+import ModelFactory from "../../models/Factory.js";
 import Transaction from "../../models/Transaction.js";
 
 const statusCache = CacheStatus.getInstance<Status>("transactionValidation");
@@ -34,7 +35,7 @@ export default class AddIsValidTransactionListIndicator extends Service {
   async getIsValid(transaction: APITransaction) {
     let status = statusCache.find({ id: transaction.id });
     if (status) return status.valid;
-    status = await Transaction.get(transaction).getStatus();
+    status = await ModelFactory.getTransaction(transaction.id).getStatus();
     statusCache.updateItem({
       id: transaction.id,
       valid: status.valid,

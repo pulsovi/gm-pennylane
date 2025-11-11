@@ -24,13 +24,16 @@ export interface OpenNextInvalid_ItemStatus {
   valid: boolean;
 }
 
-export default abstract class OpenNextInvalid extends Service implements AutostarterParent {
+export default abstract class OpenNextInvalid<TItem extends OpenNextInvalid_ItemStatus = OpenNextInvalid_ItemStatus>
+  extends Service
+  implements AutostarterParent
+{
   public abstract readonly id: string;
   public readonly container = document.createElement("div");
 
   private autostart: Autostarter;
   private current: number;
-  private invalidGenerator: AsyncGenerator<OpenNextInvalid_ItemStatus>;
+  private invalidGenerator: AsyncGenerator<TItem>;
   private running = false;
   private spinner: Spinner & { index?: number } = {
     //frames: '🕛 🕧 🕐 🕜 🕑 🕝 🕒 🕞 🕓 🕟 🕔 🕠 🕕 🕡 🕖 🕢 🕗 🕣 🕘 🕤 🕙 🕥 🕚 🕦'.split(' '),
@@ -38,14 +41,15 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
     frames: "⢎⡰ ⢎⡡ ⢎⡑ ⢎⠱ ⠎⡱ ⢊⡱ ⢌⡱ ⢆⡱".split(" "),
     interval: 200,
   };
-  private skippedElems: OpenNextInvalid_ItemStatus[];
+  private skippedElems: TItem[];
 
   protected abstract readonly idParamName: string;
   protected abstract readonly storageKey: string;
-  protected abstract cache: IDBCache<OpenNextInvalid_ItemStatus, "id", number>;
+  protected abstract cache: IDBCache<TItem, "id", number>;
 
   async init() {
     this.log("init");
+    await this.cache.loading;
 
     this.start = this.start.bind(this);
     this.loadCurrent();
@@ -141,8 +145,8 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
   /**
    * Set the number display on openNextInvalid button
    */
-  private reloadNumber() {
-    const count = this.cache.reduce(
+  private async reloadNumber() {
+    const count: { invalid: number; waiting: number; ignored: number } = await this.cache.reduce(
       (acc, status) => {
         if (status.ignored) return { ...acc, ignored: acc.ignored + 1 };
         if (status.wait && new Date(status.wait).getTime() > Date.now()) return { ...acc, waiting: acc.waiting + 1 };
@@ -166,7 +170,7 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
   /**
    * Create next invalid generator
    */
-  private async *loadInvalid(): AsyncGenerator<OpenNextInvalid_ItemStatus, undefined, void> {
+  private async *loadInvalid(): AsyncGenerator<TItem, undefined, void> {
     for await (const cachedItem of this.cache.walk({ column: "date", sortDirection: "asc" })) {
       if (!cachedItem) continue;
       if (this.isSkipped(cachedItem)) {
@@ -214,7 +218,7 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
     }
   }
 
-  private isSkipped(status: OpenNextInvalid_ItemStatus | null) {
+  private isSkipped(status: TItem | null) {
     if (!status) return true;
     if (status.valid) return true;
     if (status.ignored) return true;
@@ -227,9 +231,9 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
    */
   protected async updateStatus(
     id: number | { id: number },
-    value?: OpenNextInvalid_ItemStatus | null,
+    value?: TItem | null,
     force = false
-  ): Promise<OpenNextInvalid_ItemStatus | null> {
+  ): Promise<TItem | null> {
     if ("number" !== typeof id) {
       id = id.id;
     }
@@ -248,12 +252,12 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
   /**
    * Get the status of an item
    */
-  protected abstract getStatus(id: number, force?: boolean): Promise<OpenNextInvalid_ItemStatus | null>;
+  protected abstract getStatus(id: number, force?: boolean): Promise<TItem | null>;
 
   /**
    * Walk through all items matching given search params
    */
-  protected abstract walk(): AsyncGenerator<OpenNextInvalid_ItemStatus, undefined, void>;
+  protected abstract walk(): AsyncGenerator<TItem, undefined, void>;
 
   async openNext(interactionAllowed = false) {
     this.log("openNext");
@@ -337,8 +341,9 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
     localStorage.setItem(storageKey, JSON.stringify(state));
   }
 
-  private allowIgnoring() {
-    const ignored = Boolean(this.cache.find({ id: this.current })?.ignored);
+  private async allowIgnoring() {
+    const currentStatus = await this.cache.find({ id: this.current } as Partial<TItem>);
+    const ignored = Boolean(currentStatus?.ignored);
 
     this.container.appendChild(
       parseHTML(`<button
@@ -350,16 +355,17 @@ export default abstract class OpenNextInvalid extends Service implements Autosta
     const button = $<HTMLButtonElement>(`.ignore-item`, this.container)!;
     Tooltip.make({ target: button, text: "Ignorer cet élément, ne plus afficher" });
 
-    const refresh = () => {
-      const ignored = Boolean(this.cache.find({ id: this.current })?.ignored);
+    const refresh = async () => {
+      const status = await this.cache.find({ id: this.current } as Partial<TItem>);
+      const ignored = Boolean(status?.ignored);
       const background = ignored ? "var(--red)" : "";
       if (button.style.backgroundColor !== background) button.style.backgroundColor = background;
     };
 
-    button.addEventListener("click", () => {
-      const status = this.cache.find({ id: this.current });
+    button.addEventListener("click", async () => {
+      const status = await this.cache.find({ id: this.current } as Partial<TItem>);
       if (!status) return;
-      this.cache.updateItem({ id: this.current }, Object.assign(status, { ignored: !status.ignored }));
+      this.cache.update(Object.assign(status, { ignored: !status.ignored }));
     });
 
     this.cache.on("change", () => {

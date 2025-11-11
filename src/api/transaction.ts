@@ -13,6 +13,7 @@ const logger = new Logger("API:transaction");
 /**
  * @return {Promise<RawTransactionMin>}    Type vérifié
  */
+/** Endpoint supprimé *
 export async function getTransaction(id: number): Promise<APITransactionLite> {
   const response = await apiRequest(`accountants/wip/transactions/${id}`, null, "GET");
   const data = await response?.json();
@@ -22,6 +23,7 @@ export async function getTransaction(id: number): Promise<APITransactionLite> {
   }
   return APITransactionLite.Create(data);
 }
+/**/
 
 export async function getTransactionFull(id: number, maxAge?: number): Promise<APITransaction> {
   const data = await cachedRequest(
@@ -100,7 +102,7 @@ export async function findTransaction (
 }
 
 export async function getTransactionReconciliationId(id: number, maxAge?: number) {
-  const data = cachedRequest(
+  const data: APITransactionReconciliation = await cachedRequest(
     "transaction:getTransactionIsReconciled",
     { id },
     async ({ id }: { id: number }) => {
@@ -113,6 +115,7 @@ export async function getTransactionReconciliationId(id: number, maxAge?: number
     },
     maxAge
   );
+  if (!data) return null;
   const transactions = APITransactionReconciliation.Create(data);
   return transactions.transactions.find((t) => t.id === id)?.reconciliation_id;
 }

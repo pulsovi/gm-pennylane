@@ -1,5 +1,6 @@
 import { $, findReactProp, getReactProps } from '../../_/index.js';
 import Service from '../../framework/Service.js';
+import ModelFactory from "../../models/Factory.js";
 import Invoice from '../../models/Invoice.js';
 import { waitPage } from '../../navigation/waitPage.js';
 import InvoiceDisplayInfos from './DisplayInfos.js';
@@ -37,7 +38,7 @@ export default class AllowChangeArchivedInvoiceNumber extends Service {
         return;
       }
 
-      const invoice = Invoice.from(rawInvoice);
+      const invoice = await ModelFactory.getInvoice(rawInvoice.id);
       await invoice.unarchive();
       await invoice.update({ invoice_number: invoiceNumberField.value });
       await invoice.archive();

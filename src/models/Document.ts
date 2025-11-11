@@ -13,6 +13,7 @@ import { APIOperation } from "../api/Operation/index.js";
 import { getThirdparty, type Thirdparty } from "../api/thirdparties.js";
 import CacheList from "../framework/CacheList.js";
 import { Logger } from "../framework/Logger.js";
+import ModelFactory from "./Factory.js";
 
 interface ClosedStatus {
   id: number;
@@ -51,9 +52,11 @@ export default class Document extends Logger {
   protected thirdparty?: Promise<Thirdparty>;
   protected _dmslinks: SyncOrPromise<APIDMSLink[]>;
   private static closedCache = new CacheList<ClosedStatus>("closedDocumentsCache", []);
+  protected readonly factory: typeof ModelFactory;
 
-  constructor({ id, ...raw }: { id: number }) {
+  constructor({ id, ...raw }: { id: number }, factory: typeof ModelFactory) {
     super();
+    this.factory = factory;
     if (!Number.isSafeInteger(id)) {
       this.log("constructor", { id, args: arguments });
       throw new Error("`id` MUST be an integer");
@@ -66,9 +69,9 @@ export default class Document extends Logger {
   /**
    * Get a document by id, all documents are cached for performance
    */
-  public static get(raw: { id: number }): Document {
+  public static get(raw: { id: number }, factory: typeof ModelFactory): Document {
     if (!DocumentCache.has(raw.id)) {
-      return new Document(raw);
+      return new Document(raw, factory);
     }
     return DocumentCache.get(raw.id)!;
   }
@@ -76,8 +79,8 @@ export default class Document extends Logger {
   /**
    * Update a document from an APIGroupedDocument
    */
-  public static fromAPIGroupedDocument(apigdoc: APIGroupedDocument): Document {
-    const doc = Document.get({ id: apigdoc.id });
+  public static fromAPIGroupedDocument(apigdoc: APIGroupedDocument, factory: typeof ModelFactory): Document {
+    const doc = Document.get({ id: apigdoc.id }, factory);
     doc.gDocument = apigdoc;
     doc.type = apigdoc.type === "Invoice" ? "invoice" : "transaction";
     return doc;
@@ -171,7 +174,7 @@ export default class Document extends Logger {
           return;
         }
         const otherDocuments = (await getGroupedDocuments(this.id, maxAge)).map((doc) =>
-          Document.fromAPIGroupedDocument(doc)
+          Document.fromAPIGroupedDocument(doc, this.factory)
         );
         this.groupedDocuments = [...otherDocuments, this];
         resolve(this.groupedDocuments);
@@ -202,18 +205,5 @@ export default class Document extends Logger {
       this._dmslinks = getDMSLinks(this.id, recordType, maxAge);
     }
     return await this._dmslinks;
-  }
-
-  public static async isClosed(id: number): Promise<boolean> {
-    const cached = this.closedCache.find({ id });
-    if (cached && new Date(cached.updatedAt) > new Date(Date.now() - WEEK_IN_MS)) return cached.closed;
-    const doc = new Document({ id });
-    const closed = await doc.isClosed();
-    this.closedCache.updateItem({
-      id,
-      closed,
-      updatedAt: new Date().toISOString(),
-    });
-    return closed;
   }
 }

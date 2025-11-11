@@ -112,6 +112,7 @@ export class Company {
   public readonly dms_activated: string;
   public readonly enable_accepted_email: boolean;
   public readonly enable_submitted_email: boolean;
+  public readonly fees_default_plan_item_id?: null;
   public readonly firm: Firm1;
   public readonly firm_group: FirmGroup;
   public readonly firm_id: number;
@@ -119,7 +120,7 @@ export class Company {
   public readonly fiscal_category: null;
   public readonly fiscal_regime: null;
   public readonly fiscal_rof_vat: number;
-  public readonly fiscalYears: FiscalYearsEntity[];
+  public readonly fiscalYears: FiscalYearsEntityOrTodayFiscalYear[];
   public readonly formatted_reg_no: string;
   public readonly freeze_complete_invoices_enabled: boolean;
   public readonly frozen_since: null;
@@ -159,6 +160,7 @@ export class Company {
   public readonly onboarding_form_completed_at: string;
   public readonly one_stop_shop: boolean;
   public readonly payroll_solution: null;
+  public readonly plan_item_number_length?: null;
   public readonly postal_code: string;
   public readonly primary_color: string;
   public readonly pusher_channel: string;
@@ -249,6 +251,9 @@ export class Company {
     checkString(d.dms_activated, field + ".dms_activated");
     checkBoolean(d.enable_accepted_email, field + ".enable_accepted_email");
     checkBoolean(d.enable_submitted_email, field + ".enable_submitted_email");
+    if ("fees_default_plan_item_id" in d) {
+      checkNull(d.fees_default_plan_item_id, field + ".fees_default_plan_item_id");
+    }
     d.firm = Firm1.Create(d.firm, field + ".firm");
     d.firm_group = FirmGroup.Create(d.firm_group, field + ".firm_group");
     checkNumber(d.firm_id, field + ".firm_id");
@@ -259,7 +264,7 @@ export class Company {
     checkArray(d.fiscalYears, field + ".fiscalYears");
     if (d.fiscalYears) {
       for (let i = 0; i < d.fiscalYears.length; i++) {
-        d.fiscalYears[i] = FiscalYearsEntity.Create(d.fiscalYears[i], field + ".fiscalYears" + "[" + i + "]");
+        d.fiscalYears[i] = FiscalYearsEntityOrTodayFiscalYear.Create(d.fiscalYears[i], field + ".fiscalYears" + "[" + i + "]");
       }
     }
     checkString(d.formatted_reg_no, field + ".formatted_reg_no");
@@ -301,6 +306,9 @@ export class Company {
     checkString(d.onboarding_form_completed_at, field + ".onboarding_form_completed_at");
     checkBoolean(d.one_stop_shop, field + ".one_stop_shop");
     checkNull(d.payroll_solution, field + ".payroll_solution");
+    if ("plan_item_number_length" in d) {
+      checkNull(d.plan_item_number_length, field + ".plan_item_number_length");
+    }
     checkString(d.postal_code, field + ".postal_code");
     checkString(d.primary_color, field + ".primary_color");
     checkString(d.pusher_channel, field + ".pusher_channel");
@@ -335,7 +343,7 @@ export class Company {
     checkNull(d.vat_day_of_month, field + ".vat_day_of_month");
     checkString(d.vat_frequency, field + ".vat_frequency");
     checkString(d.vat_number, field + ".vat_number");
-    const knownProperties = ["accountant","accountant_editable","accountants_can_bypass_freezing","accounting_logic","accounting_manager_id","address","all_onboarding_steps_completed_at","auto_match_invoices","auto_process_factur_x","auto_process_invoices","billing_bank","billing_bic","billing_company_name","billing_email","billing_iban","billing_payment_conditions","billing_payment_options","billing_telephone","billing_user_approved_at","business_description","cash_based_accounting","churns_on","city","closing","country_alpha2","created_at","creation_date","customer_since","default_payment_reminder_id","default_substance","default_vat_rate","disable_pending_vat_for_customers","display_name","dms_activated","enable_accepted_email","enable_submitted_email","firm","firm_group","firm_id","firm_related_settings","fiscal_category","fiscal_regime","fiscal_rof_vat","fiscalYears","formatted_reg_no","freeze_complete_invoices_enabled","frozen_since","frozen_until","gocardless_mandates_sync_at","gocardless_onboarding_status","gocardless_organization_id","handelsregisternummer","has_budgetinsight","has_pro_account","hasAccountant","hasCards","hasChequeDeposits","id","instructions","invoices_generation_from_migrations_and_ledger_events_dumps","invoicing_software","is_onboarding_ongoing","is_revision_only","isConstruction","isDemo","isFake","isMasterDemo","isPLSubsidiary","isRestaurant","isRev","isTraining","ledger_event_control_enabled","legal_form_code","logo","logo_url","maxDate","minDate","name","number_of_employees","nUsedTagGroups","onboarding_form_completed_at","one_stop_shop","payroll_solution","postal_code","primary_color","pusher_channel","pusher_channel_access_token","reg_no","reseller","resumption_start","resumption_status","saas_plan","salesforce_business_segmentation","salesforce_id","sepa_creditor_identifier","sepa_mandates","share_capital","share_capital_currency","show_bank_info_on_estimates","show_pro_account","show_quotes_branding","source_id","steuernummer","stripe_checkout_enabled","submitted_to_vat_from","subscription_plan","swan_account_holder_verification_status","swan_id","swan_onboarding_email","swan_onboarding_id","trade_name","url","use_factor","use_pl_as_white_label","vat_day_of_month","vat_frequency","vat_number"];
+    const knownProperties = ["accountant","accountant_editable","accountants_can_bypass_freezing","accounting_logic","accounting_manager_id","address","all_onboarding_steps_completed_at","auto_match_invoices","auto_process_factur_x","auto_process_invoices","billing_bank","billing_bic","billing_company_name","billing_email","billing_iban","billing_payment_conditions","billing_payment_options","billing_telephone","billing_user_approved_at","business_description","cash_based_accounting","churns_on","city","closing","country_alpha2","created_at","creation_date","customer_since","default_payment_reminder_id","default_substance","default_vat_rate","disable_pending_vat_for_customers","display_name","dms_activated","enable_accepted_email","enable_submitted_email","fees_default_plan_item_id","firm","firm_group","firm_id","firm_related_settings","fiscal_category","fiscal_regime","fiscal_rof_vat","fiscalYears","formatted_reg_no","freeze_complete_invoices_enabled","frozen_since","frozen_until","gocardless_mandates_sync_at","gocardless_onboarding_status","gocardless_organization_id","handelsregisternummer","has_budgetinsight","has_pro_account","hasAccountant","hasCards","hasChequeDeposits","id","instructions","invoices_generation_from_migrations_and_ledger_events_dumps","invoicing_software","is_onboarding_ongoing","is_revision_only","isConstruction","isDemo","isFake","isMasterDemo","isPLSubsidiary","isRestaurant","isRev","isTraining","ledger_event_control_enabled","legal_form_code","logo","logo_url","maxDate","minDate","name","number_of_employees","nUsedTagGroups","onboarding_form_completed_at","one_stop_shop","payroll_solution","plan_item_number_length","postal_code","primary_color","pusher_channel","pusher_channel_access_token","reg_no","reseller","resumption_start","resumption_status","saas_plan","salesforce_business_segmentation","salesforce_id","sepa_creditor_identifier","sepa_mandates","share_capital","share_capital_currency","show_bank_info_on_estimates","show_pro_account","show_quotes_branding","source_id","steuernummer","stripe_checkout_enabled","submitted_to_vat_from","subscription_plan","swan_account_holder_verification_status","swan_id","swan_onboarding_email","swan_onboarding_id","trade_name","url","use_factor","use_pl_as_white_label","vat_day_of_month","vat_frequency","vat_number"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
     if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new Company(d);
@@ -377,6 +385,7 @@ export class Company {
     this.dms_activated = d.dms_activated;
     this.enable_accepted_email = d.enable_accepted_email;
     this.enable_submitted_email = d.enable_submitted_email;
+    if ("fees_default_plan_item_id" in d) this.fees_default_plan_item_id = d.fees_default_plan_item_id;
     this.firm = d.firm;
     this.firm_group = d.firm_group;
     this.firm_id = d.firm_id;
@@ -424,6 +433,7 @@ export class Company {
     this.onboarding_form_completed_at = d.onboarding_form_completed_at;
     this.one_stop_shop = d.one_stop_shop;
     this.payroll_solution = d.payroll_solution;
+    if ("plan_item_number_length" in d) this.plan_item_number_length = d.plan_item_number_length;
     this.postal_code = d.postal_code;
     this.primary_color = d.primary_color;
     this.pusher_channel = d.pusher_channel;
@@ -579,6 +589,7 @@ export class FirmRelatedSettings {
   public readonly ai_comptassistant_enabled: boolean;
   public readonly ai_enabled: boolean;
   public readonly ai_report_analysis_enabled: boolean;
+  public readonly ai_smart_dms_enabled?: boolean;
   public readonly block_accountant_user_creation: boolean;
   public readonly block_company_creation: boolean;
   public readonly block_sme_user_creation: boolean;
@@ -607,6 +618,9 @@ export class FirmRelatedSettings {
     checkBoolean(d.ai_comptassistant_enabled, field + ".ai_comptassistant_enabled");
     checkBoolean(d.ai_enabled, field + ".ai_enabled");
     checkBoolean(d.ai_report_analysis_enabled, field + ".ai_report_analysis_enabled");
+    if ("ai_smart_dms_enabled" in d) {
+      checkBoolean(d.ai_smart_dms_enabled, field + ".ai_smart_dms_enabled");
+    }
     checkBoolean(d.block_accountant_user_creation, field + ".block_accountant_user_creation");
     checkBoolean(d.block_company_creation, field + ".block_company_creation");
     checkBoolean(d.block_sme_user_creation, field + ".block_sme_user_creation");
@@ -617,7 +631,7 @@ export class FirmRelatedSettings {
     checkBoolean(d.hide_pro_account, field + ".hide_pro_account");
     checkBoolean(d.show_accountant_tab, field + ".show_accountant_tab");
     checkBoolean(d.show_onboarding_video, field + ".show_onboarding_video");
-    const knownProperties = ["ai_comptassistant_enabled","ai_enabled","ai_report_analysis_enabled","block_accountant_user_creation","block_company_creation","block_sme_user_creation","cabinet_text_override","company_saas_plan","comptable_text_override","customized_first_steps_enabled","hide_pro_account","show_accountant_tab","show_onboarding_video"];
+    const knownProperties = ["ai_comptassistant_enabled","ai_enabled","ai_report_analysis_enabled","ai_smart_dms_enabled","block_accountant_user_creation","block_company_creation","block_sme_user_creation","cabinet_text_override","company_saas_plan","comptable_text_override","customized_first_steps_enabled","hide_pro_account","show_accountant_tab","show_onboarding_video"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
     if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new FirmRelatedSettings(d);
@@ -626,6 +640,7 @@ export class FirmRelatedSettings {
     this.ai_comptassistant_enabled = d.ai_comptassistant_enabled;
     this.ai_enabled = d.ai_enabled;
     this.ai_report_analysis_enabled = d.ai_report_analysis_enabled;
+    if ("ai_smart_dms_enabled" in d) this.ai_smart_dms_enabled = d.ai_smart_dms_enabled;
     this.block_accountant_user_creation = d.block_accountant_user_creation;
     this.block_company_creation = d.block_company_creation;
     this.block_sme_user_creation = d.block_sme_user_creation;
@@ -639,7 +654,7 @@ export class FirmRelatedSettings {
   }
 }
 
-export class FiscalYearsEntity {
+export class FiscalYearsEntityOrTodayFiscalYear {
   public readonly carryover_generation_status: string;
   public readonly carryover_id: null | number;
   public readonly closed_at: string | null;
@@ -649,10 +664,10 @@ export class FiscalYearsEntity {
   public readonly start: string;
   public readonly status: string;
   public readonly validation_status: string;
-  public static Parse(d: string): FiscalYearsEntity {
-    return FiscalYearsEntity.Create(JSON.parse(d));
+  public static Parse(d: string): FiscalYearsEntityOrTodayFiscalYear {
+    return FiscalYearsEntityOrTodayFiscalYear.Create(JSON.parse(d));
   }
-  public static Create(d: any, field?: string, multiple ?: string): FiscalYearsEntity {
+  public static Create(d: any, field?: string, multiple ?: string): FiscalYearsEntityOrTodayFiscalYear {
     if (!field) {
       obj = d;
       field = "root";
@@ -692,7 +707,7 @@ export class FiscalYearsEntity {
     const knownProperties = ["carryover_generation_status","carryover_id","closed_at","finish","id","pusher_channel","start","status","validation_status"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
     if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
-    return new FiscalYearsEntity(d);
+    return new FiscalYearsEntityOrTodayFiscalYear(d);
   }
   private constructor(d: any) {
     this.carryover_generation_status = d.carryover_generation_status;

@@ -1,10 +1,9 @@
 import { findElem, waitFunc } from '../../_/index.js';
 import { getTransactionGenerator } from '../../api/transaction.js';
-import { APITransactionListParams } from '../../api/Transaction/ListParams.js';
-import CacheStatus from '../../framework/CacheStatus.js';
+import { APITransactionListParams } from "../../api/Transaction/ListParams.js";
 import IDBCache from "../../framework/IDBCache.js";
 import OpenNextInvalid, { OpenNextInvalid_ItemStatus as Status } from "../../framework/OpenNextInvalid.js";
-import Transaction from "../../models/Transaction.js";
+import ModelFactory from "../../models/Factory.js";
 
 export default class NextInvalidTransaction extends OpenNextInvalid {
   protected static instance: NextInvalidTransaction;
@@ -30,7 +29,7 @@ export default class NextInvalidTransaction extends OpenNextInvalid {
         sort: "+created_at",
       };
       for await (const transaction of getTransactionGenerator(params)) {
-        yield new Transaction(transaction).getStatus();
+        yield ModelFactory.getTransaction(transaction.id).getStatus();
       }
     }
 
@@ -41,12 +40,12 @@ export default class NextInvalidTransaction extends OpenNextInvalid {
       sort: "-created_at",
     };
     for await (const transaction of getTransactionGenerator(params)) {
-      yield new Transaction(transaction).getStatus();
+      yield ModelFactory.getTransaction(transaction.id).getStatus();
     }
   }
 
   async getStatus(id: number, force?: boolean): Promise<Status | null> {
-    const transaction = new Transaction({ id });
+    const transaction = ModelFactory.getTransaction(id);
 
     return await transaction.getStatus(force);
   }

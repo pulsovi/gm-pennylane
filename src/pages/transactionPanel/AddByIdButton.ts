@@ -1,6 +1,7 @@
 import { $, getParam, parseHTML, waitElem, waitFunc } from '../../_/index.js';
 import Service from '../../framework/Service.js';
 import Tooltip from "../../framework/Tooltip.js";
+import ModelFactory from "../../models/Factory.js";
 import Transaction from '../../models/Transaction.js';
 import { isPage } from '../../navigation/waitPage.js';
 import ValidMessage from './ValidMessage.js';
@@ -105,7 +106,7 @@ export default class TransactionAddByIdButton extends Service {
      */
     const transactionId = Number(getParam(location.href, "transaction_id"));
     const id = Number(prompt("ID du justificatif ?"));
-    const transaction = new Transaction({ id: transactionId });
+    const transaction = ModelFactory.getTransaction(transactionId);
     this.running = true;
     await transaction.groupAdd(id).catch((error) => {
       this.error("addById>Transaction.groupAdd Error:", error);

@@ -8,6 +8,7 @@ import IDBCache from "../../framework/IDBCache.js";
 import OpenNextInvalid, { OpenNextInvalid_ItemStatus } from "../../framework/OpenNextInvalid.js";
 import { openInTab } from "../../GM/openInTab.js";
 import DMSItem, { DMSItemStatus } from "../../models/DMSItem.js";
+import ModelFactory from "../../models/Factory.js";
 import Invoice, { NotFoundInvoice } from "../../models/Invoice.js";
 import { isPage, waitPage } from "../../navigation/waitPage.js";
 
@@ -15,7 +16,7 @@ interface Status extends OpenNextInvalid_ItemStatus {
   createdAt: number;
 }
 
-export default class NextInvalidDMS extends OpenNextInvalid {
+export default class NextInvalidDMS extends OpenNextInvalid<Status> {
   public id = "next-invalid-dms";
   protected storageKey = "DMSValidation";
   /** The location search param name of the currently showed item id. */
@@ -56,14 +57,14 @@ export default class NextInvalidDMS extends OpenNextInvalid {
         sort: `${sort}created_at`,
       };
       for await (const dmsItem of getDMSItemGenerator(params)) {
-        const status = await new DMSItem(dmsItem).getStatus();
+        const status = await ModelFactory.getDMSItem(dmsItem.id).getStatus();
         yield { ...status };
       }
     }
   }
 
   async getStatus(id: number): Promise<Status | null> {
-    const item = new DMSItem({ id });
+    const item = await ModelFactory.getDMSItem(id);
 
     if (!item) {
       this.error("getStatus", "item not found", { id });

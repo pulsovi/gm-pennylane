@@ -1,4 +1,8 @@
-import { sleep } from "../_/time.js";
+import T_IDBCursor, { T_IDBCursorOptions } from "./IDB/Cursor.js";
+import T_IDBStore from "./IDB/Store.js";
+import P_IDBStore from "./IDB/Store.js";
+import T_IDBTransaction from "./IDB/Transaction.js";
+import P_IDBTransaction from "./IDB/Transaction.js";
 import Logger from "./Logger.js";
 
 const logger = new Logger("IDBCache:global");
@@ -23,32 +27,33 @@ const structure: { version: number; tables: Table[] } = JSON.parse(
 function registerTable(table: Table) {
   const oldStructure = JSON.parse(JSON.stringify(structure));
   const registering = { ...tableDefaults, ...table };
-  if (structure.tables.some((tableItem) => tableItem.name === registering.name)) {
-    const tableItem = structure.tables.find((tableItem) => tableItem.name === registering.name)!;
-
-    if (tableItem.primary !== registering.primary) {
-      logger.error(`Table ${registering.name} primary conflict`, { registered: tableItem, registering });
-      throw new Error(`Table ${registering.name} already registered with primary key "${tableItem.primary}"`);
+  const registered = structure.tables.find((tableItem) => tableItem.name === registering.name);
+  if (registered) {
+    if (registered.primary !== registering.primary) {
+      logger.error(`Table ${registering.name} primary conflict`, { registered, registering });
+      throw new Error(`Table ${registering.name} already registered with primary key "${registered.primary}"`);
     }
 
-    if (Boolean(tableItem.autoIncrement) !== Boolean(registering.autoIncrement)) {
-      logger.error(`Table ${registering.name} autoIncrement conflict`, { registered: tableItem, registering });
-      throw new Error(`Table ${registering.name} already registered with autoIncrement "${tableItem.autoIncrement}"`);
+    if (Boolean(registered.autoIncrement) !== Boolean(registering.autoIncrement)) {
+      logger.error(`Table ${registering.name} autoIncrement conflict`, { registered, registering });
+      throw new Error(`Table ${registering.name} already registered with autoIncrement "${registered.autoIncrement}"`);
     }
 
     let versionChange = false;
     registering.indexedColumns?.forEach((column) => {
-      if (!tableItem.indexedColumns?.includes(column)) {
-        tableItem.indexedColumns = [...(tableItem.indexedColumns || []), column];
+      if (!registered.indexedColumns?.includes(column)) {
+        registered.indexedColumns = [...(registered.indexedColumns || []), column];
         versionChange = true;
       }
     });
-    if (!versionChange) return;
+    if (!versionChange) return registered;
   } else structure.tables.push(registering);
 
   structure.version++;
   logger.log("Structure updated", { oldStructure, structure });
   localStorage.setItem(`${DB_NAME}_IDB_structure`, JSON.stringify(structure));
+  location.reload();
+  return registering;
 }
 
 async function getDB(): Promise<IDBDatabase | null> {
@@ -63,6 +68,15 @@ async function getDB(): Promise<IDBDatabase | null> {
       structure.tables.forEach((table) => {
         if (!db.objectStoreNames.contains(table.name))
           db.createObjectStore(table.name, { keyPath: table.primary, autoIncrement: table.autoIncrement });
+
+        const upgradeTx = openRequest.transaction;
+        if (!upgradeTx) return;
+        const store = upgradeTx.objectStore(table.name);
+        (table.indexedColumns || []).forEach((column) => {
+          if (!store.indexNames.contains(column)) {
+            store.createIndex(column, column, { unique: false });
+          }
+        });
       });
     };
 
@@ -100,6 +114,40 @@ async function getDB(): Promise<IDBDatabase | null> {
     };
   }
 
+  // Compare structure with db
+  let error = false;
+  structure.tables.forEach((table) => {
+    if (!db.objectStoreNames.contains(table.name)) {
+      logger.error(`Table "${table.name}" not found in DB`, { structure, db: db.objectStoreNames });
+      error = true;
+    } else {
+      const store = db.transaction(table.name, "readonly").objectStore(table.name);
+
+      // compare primary key
+      if (store.keyPath !== table.primary) {
+        logger.error(`Primary key mismatch for table "${table.name}"`, { structure: table, db: store });
+        error = true;
+      }
+
+      // compare indexed columns
+      table.indexedColumns?.forEach((column) => {
+        if (!store.indexNames.contains(column)) {
+          logger.error(`Indexed column "${column}" not found in table "${table.name}"`, {
+            structure: table,
+            db: store,
+          });
+          error = true;
+        }
+      });
+    }
+  });
+
+  if (error) {
+    structure.version++;
+    localStorage.setItem(`${DB_NAME}_IDB_structure`, JSON.stringify(structure));
+    location.reload();
+  }
+
   return db;
 }
 
@@ -112,17 +160,17 @@ export default class IDBCache<
   public readonly tableName: string;
   public readonly primary: PrimaryKey;
   public readonly indexedColumns: string[];
+  public readonly loading: Promise<void>;
 
-  protected db: IDBDatabase | null;
-  private readonly loading: Promise<IDBDatabase | null>;
+  protected _db: IDBDatabase | null;
 
   public constructor(tableName: string, primary: PrimaryKey, indexedColumns?: string[]) {
     super();
     this.tableName = tableName;
     this.primary = primary;
-    this.indexedColumns = indexedColumns ?? [];
-    registerTable({ name: tableName, primary, indexedColumns });
-    this.loading = this.load();
+    const structure = registerTable({ name: tableName, primary, indexedColumns });
+    this.indexedColumns = structure.indexedColumns;
+    this.loading = this.load().then(() => {});
     this.debug("new Cache", this);
   }
 
@@ -137,32 +185,43 @@ export default class IDBCache<
     return this.instances[tableName] as IDBCache<ItemType, PrimaryKey, PrimaryType>;
   }
 
+  public get db() {
+    if (!this._db) {
+      const message = `Database not loaded, please wait for ${this.constructor.name}.loading before using this method.`;
+      this.error(message);
+      throw new Error(message);
+    }
+    return this._db;
+  }
+
   /**
    * Load database
    */
   public async load() {
     this.log("Loading database", this.tableName);
-    this.db = await getDB();
-    this.log("Database loaded", this.db);
-    return this.db;
+    this._db = await getDB();
+    this.log("Database loaded", this._db);
+    return this._db;
   }
 
   public async find(paradigm: (item: ItemType) => boolean): Promise<ItemType | null>;
   public async find(match: Partial<ItemType>): Promise<ItemType | null>;
   public async find(matchOrParadigm: Partial<ItemType> | ((item: ItemType) => boolean)): Promise<ItemType | null> {
     if (typeof matchOrParadigm === "function") {
+      const paradigm = matchOrParadigm;
       for await (const item of this.walk()) {
         if (!item) return null;
-        if (matchOrParadigm(item)) return item;
+        if (paradigm(item)) return item;
       }
       return null;
     }
 
-    if (this.primary in matchOrParadigm) return this.get(matchOrParadigm[this.primary] as IDBValidKey);
+    const match = matchOrParadigm;
+    if (this.primary in match) return this.get(match[this.primary] as IDBValidKey);
 
     for await (const item of this.walk()) {
       if (!item) return null;
-      if (Object.entries(matchOrParadigm).every(([key, value]) => item[key] === value)) return item;
+      if (Object.entries(match).every(([key, value]) => item[key] === value)) return item;
     }
     return null;
   }
@@ -198,35 +257,17 @@ export default class IDBCache<
     const oldValue = await this.get(match[this.primary]);
     const newValue = oldValue ? { ...oldValue, ...match } : match;
     const store = await this.getStore("readwrite");
-    store.put(newValue);
+    return await store?.put(newValue);
   }
 
   public async delete(match: Partial<ItemType> & { [C in PrimaryKey]: PrimaryType }) {
     const store = await this.getStore("readwrite");
-    store.delete(match[this.primary]);
+    return await store?.delete(match[this.primary]);
   }
 
   public async get(id: IDBValidKey): Promise<ItemType | null> {
     const store = await this.getStore("readonly");
-    const getRequest = store?.get(id);
-    return await this.consumeRequest(Object.assign(getRequest, { request: `get(${id})` }));
-  }
-
-  protected async getStore(mode: "readonly" | "readwrite"): Promise<IDBObjectStore | null> {
-    const db = await this.loading;
-    if (!db) return null;
-    const transaction = Object.assign(db.transaction(this.tableName, mode), { state: ["pending", null] as State });
-    transaction.oncomplete = (event) => {
-      transaction.state = ["completed", event];
-    };
-    transaction.onerror = (event) => {
-      transaction.state = ["error", event];
-    };
-    transaction.onabort = (event) => {
-      transaction.state = ["aborted", event];
-    };
-    const store = transaction.objectStore(this.tableName);
-    return store;
+    return await store?.get(id);
   }
 
   /**
@@ -235,46 +276,52 @@ export default class IDBCache<
    * @param mode - "readonly" or "readwrite"
    * @returns an async generator of items, if the store is not found, returns null
    */
-  public async *walk({
-    mode = "readonly",
-    sortDirection = "asc",
-    column = void 0,
-    value = void 0,
-    operator = "=",
-  }: {
-    mode?: "readonly" | "readwrite";
-    column?: string;
-    sortDirection?: "asc" | "desc";
-    value?: ItemType[keyof ItemType];
-    operator?: "=" | "<" | ">" | "<=" | ">=" | "!=";
-  } = {}): AsyncGenerator<ItemType | null> {
-    if (column && !this.indexedColumns?.includes(column)) {
-      registerTable({ name: this.tableName, primary: this.primary, indexedColumns: [...this.indexedColumns, column] });
-      location.reload();
-      return null;
-    }
-    const store = await this.getStore(mode);
-    const index = column ? store?.index(column) : store;
-    const request = getRequest(value, operator);
-    const cursorRequest = index?.openCursor(request, sortDirection === "asc" ? "next" : "prev");
-    if (!cursorRequest) return null;
-    while (true) {
-      const cursor = await this.consumeRequest(Object.assign(cursorRequest, { request: "openCursor" }));
-      if (!cursor) return null;
+  public async *walk(
+    options: {
+      mode?: "readonly" | "readwrite";
+      column?: string;
+      sortDirection?: "asc" | "desc";
+      value?: ItemType[keyof ItemType];
+      operator?: "=" | "<" | ">" | "<=" | ">=" | "!=";
+    } = {}
+  ): AsyncGenerator<ItemType | null> {
+    const cursor = await this.getCursor(options);
+    while (cursor.value) {
       yield cursor.value;
-      cursor.continue();
+      await cursor.continue();
     }
   }
 
-  protected consumeRequest<T>(request: IDBRequest<T> & { request: string }): Promise<T | null> {
-    if (!request) return null;
-    if (!request.request) console.error("IDBRequest has no request property", request);
-    window.getIDBRequests = window.getIDBRequests ?? [];
-    if (!window.getIDBRequests.includes(request)) window.getIDBRequests.push(request);
-    return new Promise((rs, rj) => {
-      request.onsuccess = () => rs(request.result);
-      request.onerror = () => rj(request.error);
+  protected async getStore(mode: "readonly" | "readwrite") {
+    const transaction = new T_IDBTransaction<ItemType>({
+      database: this.db,
+      table: this.tableName,
+      mode,
     });
+    return transaction.getStore();
+  }
+
+  /**
+   * Open a cursor on the store
+   * @param options - cursor options
+   * @param callback - callback function to handle the cursor. The callback function will be called after the first item is found, and after each cursor.continue() call
+   * @param onError - error callback function
+   */
+  protected async getCursor(
+    options: T_IDBCursorOptions<ItemType>,
+    callback?: (cursor: T_IDBCursor<ItemType> | null) => void,
+    onError?: (error: Event) => void
+  ) {
+    if (options.column && !this.indexedColumns?.includes(options.column)) {
+      // This action will trigger a page reload
+      registerTable({
+        name: this.tableName,
+        primary: this.primary,
+        indexedColumns: [...this.indexedColumns, options.column],
+      });
+    }
+    const store = await this.getStore(options.mode);
+    return await store.openCursor(options);
   }
 
   /**
@@ -282,23 +329,13 @@ export default class IDBCache<
    */
   public async clear() {
     const store = await this.getStore("readwrite");
-    store?.clear();
+    return await store?.clear();
   }
 }
 
-declare global {
-  interface Window {
-    getIDBRequests: IDBRequest[];
-  }
-}
-
-function getRequest(value, operator) {
-  if (typeof value === "undefined") return;
-  if (typeof operator === "undefined") operator = "=";
-  switch (operator) {
-    case "=":
-      return IDBKeyRange.only(value);
-    default:
-      throw new Error(`Invalid operator: "${operator}"`);
-  }
+function promisify<T>(request: IDBRequest<T>) {
+  return new Promise((rs, rj) => {
+    request.onsuccess = () => rs(request.result);
+    request.onerror = () => rj(request.error);
+  });
 }

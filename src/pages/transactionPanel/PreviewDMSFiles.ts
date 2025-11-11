@@ -4,6 +4,7 @@ import { sleep, waitFunc } from "../../_/time.js";
 import { APIDMSLink } from "../../api/DMS/Link.js";
 import Service from "../../framework/Service.js";
 import DMSItem from "../../models/DMSItem.js";
+import ModelFactory from "../../models/Factory.js";
 import { waitPage } from "../../navigation/waitPage.js";
 
 /**
@@ -11,15 +12,15 @@ import { waitPage } from "../../navigation/waitPage.js";
  */
 export default class PreviewDMSFiles extends Service {
   async init() {
-    await waitPage('transactionDetail');
+    await waitPage("transactionDetail");
     this.watch();
   }
 
   private async watch() {
-    while (await waitPage('transactionDetail')) {
-      const unmanagedDMSItems = $$('.ui-card:not(.GM-preview-dms) span.tiny-caption').filter(span => (
-        span.innerText.startsWith('ajouté dans la GED le ')
-      ));
+    while (await waitPage("transactionDetail")) {
+      const unmanagedDMSItems = $$(".ui-card:not(.GM-preview-dms) span.tiny-caption").filter((span) =>
+        span.innerText.startsWith("ajouté dans la GED le ")
+      );
       if (!unmanagedDMSItems.length) {
         await sleep(2000);
         continue;
@@ -33,23 +34,23 @@ export default class PreviewDMSFiles extends Service {
   }
 
   private async manageFile(file: APIDMSLink) {
-    this.log('manageFile', { file })
-    const dmsItem = new DMSItem({id:file.item_id});
-    const card = $(`a[href$="${file.item_id}"]`)?.closest('.ui-card') as HTMLDivElement;
-    const img = $('img', card);
-    if (card.classList.contains('GM-preview-dms')) return;
+    this.log("manageFile", { file });
+    const dmsItem = ModelFactory.getDMSItem(file.item_id);
+    const card = $(`a[href$="${file.item_id}"]`)?.closest(".ui-card") as HTMLDivElement;
+    const img = $("img", card);
+    if (card.classList.contains("GM-preview-dms")) return;
     if (!card || !img) {
-      this.log('unable to find this file card', { file, dmsItem, card, img });
+      this.log("unable to find this file card", { file, dmsItem, card, img });
       return;
     }
-    card.classList.add('GM-preview-dms');
-    this.debug({file, dmsItem, card, img});
-    img.addEventListener('click', () => this.showDMS(dmsItem));
+    card.classList.add("GM-preview-dms");
+    this.debug({ file, dmsItem, card, img });
+    img.addEventListener("click", () => this.showDMS(dmsItem));
   }
 
   private async showDMS(dmsItem: DMSItem) {
     const item = await dmsItem.getItem();
-    const finalUrl = await followRedirections(item.file_url)
+    const finalUrl = await followRedirections(item.file_url);
     const modal = parseHTML(`
       <div data-state="open" class="ui-modal-overlay" style="pointer-events: auto;">
         <div role="dialog" id="radix-:rqs:" aria-labelledby="radix-:rqt:"
@@ -84,7 +85,7 @@ export default class PreviewDMSFiles extends Service {
         </div>
       </div>
     `).firstElementChild as HTMLDivElement;
-    modal.querySelector('.ui-modal-header-close-button')?.addEventListener('click', () => modal.remove());
+    modal.querySelector(".ui-modal-header-close-button")?.addEventListener("click", () => modal.remove());
     document.body.appendChild(modal);
   }
 }

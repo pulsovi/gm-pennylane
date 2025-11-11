@@ -8,6 +8,7 @@ export class APIDocumentFull {
   public readonly annexes?: never[];
   public readonly appendices?: never[];
   public readonly approvable_record_id?: null;
+  public readonly approval_flow?: null;
   public readonly archived?: boolean;
   public readonly archived_at?: null;
   public readonly attachment_required?: boolean;
@@ -54,12 +55,12 @@ export class APIDocumentFull {
   public readonly draft?: boolean;
   public readonly duplicates?: DuplicatesEntity[];
   public readonly email_from?: null;
-  public readonly embeddable_in_browser?: boolean;
+  public readonly embeddable_in_browser?: boolean | null;
   public readonly external_id?: string;
   public readonly factor_status?: string;
   public readonly fec_pieceref?: string;
   public readonly file_signed_id?: string;
-  public readonly filename?: string;
+  public readonly filename?: string | null;
   public readonly finalized_at?: null;
   public readonly flow_approved?: null;
   public readonly from_estimate_id?: null;
@@ -143,7 +144,7 @@ export class APIDocumentFull {
   public readonly pdp_refusal_reason?: null;
   public readonly pdp_status?: null;
   public readonly pending?: boolean;
-  public readonly preview_status?: string;
+  public readonly preview_status?: string | null;
   public readonly preview_urls?: string[];
   public readonly price_before_tax?: string;
   public readonly primary_badge?: string;
@@ -158,7 +159,7 @@ export class APIDocumentFull {
   public readonly readonly?: boolean;
   public readonly recipients?: never[];
   public readonly reconciled?: boolean;
-  public readonly remaining_amount?: string;
+  public readonly remaining_amount?: string | null;
   public readonly requires_validation?: boolean;
   public readonly reviewed_by?: null;
   public readonly scored_transactions?: null;
@@ -226,6 +227,9 @@ export class APIDocumentFull {
     }
     if ("approvable_record_id" in d) {
       checkNull(d.approvable_record_id, field + ".approvable_record_id");
+    }
+    if ("approval_flow" in d) {
+      checkNull(d.approval_flow, field + ".approval_flow");
     }
     if ("archived" in d) {
       checkBoolean(d.archived, field + ".archived");
@@ -401,7 +405,15 @@ export class APIDocumentFull {
       checkNull(d.email_from, field + ".email_from");
     }
     if ("embeddable_in_browser" in d) {
-      checkBoolean(d.embeddable_in_browser, field + ".embeddable_in_browser");
+      // This will be refactored in the next release.
+      try {
+        checkBoolean(d.embeddable_in_browser, field + ".embeddable_in_browser", "boolean | null");
+      } catch (e) {
+        try {
+          checkNull(d.embeddable_in_browser, field + ".embeddable_in_browser", "boolean | null");
+        } catch (e) {
+        }
+      }
     }
     if ("external_id" in d) {
       checkString(d.external_id, field + ".external_id");
@@ -416,7 +428,15 @@ export class APIDocumentFull {
       checkString(d.file_signed_id, field + ".file_signed_id");
     }
     if ("filename" in d) {
-      checkString(d.filename, field + ".filename");
+      // This will be refactored in the next release.
+      try {
+        checkString(d.filename, field + ".filename", "string | null");
+      } catch (e) {
+        try {
+          checkNull(d.filename, field + ".filename", "string | null");
+        } catch (e) {
+        }
+      }
     }
     if ("finalized_at" in d) {
       checkNull(d.finalized_at, field + ".finalized_at");
@@ -744,7 +764,15 @@ export class APIDocumentFull {
       checkBoolean(d.pending, field + ".pending");
     }
     if ("preview_status" in d) {
-      checkString(d.preview_status, field + ".preview_status");
+      // This will be refactored in the next release.
+      try {
+        checkString(d.preview_status, field + ".preview_status", "string | null");
+      } catch (e) {
+        try {
+          checkNull(d.preview_status, field + ".preview_status", "string | null");
+        } catch (e) {
+        }
+      }
     }
     if ("preview_urls" in d) {
       checkArray(d.preview_urls, field + ".preview_urls");
@@ -809,7 +837,15 @@ export class APIDocumentFull {
       checkBoolean(d.reconciled, field + ".reconciled");
     }
     if ("remaining_amount" in d) {
-      checkString(d.remaining_amount, field + ".remaining_amount");
+      // This will be refactored in the next release.
+      try {
+        checkString(d.remaining_amount, field + ".remaining_amount", "string | null");
+      } catch (e) {
+        try {
+          checkNull(d.remaining_amount, field + ".remaining_amount", "string | null");
+        } catch (e) {
+        }
+      }
     }
     if ("requires_validation" in d) {
       checkBoolean(d.requires_validation, field + ".requires_validation");
@@ -911,7 +947,7 @@ export class APIDocumentFull {
     if ("validation_needed" in d) {
       checkBoolean(d.validation_needed, field + ".validation_needed");
     }
-    const knownProperties = ["accountants_status","active_payment_reminder_id","amount","annexes","appendices","approvable_record_id","archived","archived_at","attachment_required","bad_debt","been_manually_marked_as_paid","billing_subscription_id","can_be_attached_to_a_cheque_deposit","can_be_finalized","can_be_manually_marked_as_paid","can_be_manually_marked_as_sent","can_be_stamped_as_paid_in_pdf","can_be_unmarked_as_paid","can_be_unmarked_as_sent","can_request_a_fintecture_payment_url","cancellable","cancelled","checksum","client_comments_count","company_id","complete","completeness","created_at","credit_note","credit_notes","credit_notes_amount","credited_invoice_id","currency","currency_amount","currency_amount_before_tax","currency_price_before_tax","currency_tax","current_account_plan_item","current_account_plan_item_id","customer_validation_needed","date","deadline","defacto_loan_eligible","direction","discount","discount_type","display_reactivate_button","display_revoke_button","document_tags","draft","duplicates","email_from","embeddable_in_browser","external_id","factor_status","fec_pieceref","file_signed_id","filename","finalized_at","flow_approved","from_estimate_id","gdrive_path","gocardless_billing_subscription","group_uuid","grouped_at","grouped_documents","has_already_sent_an_email","has_credit_note","has_file","has_grouped_documents","has_linked_quotes","has_pending_payments","hasTooManyLedgerEvents","iban","id","incomplete","invoice_kind","invoice_lines","invoice_number","invoice_status","invoicing_detailed_source","is_credit_note","is_destroyable","is_estimate","is_factur_x","is_payment_emitted","is_payment_found","is_payment_in_process","is_reconciliation_delay_expired","is_sendable","is_waiting_for_ocr","journal_id","label","language","last_payment","ledgerEvents","ledgerEventsCount","manually_marked_as_paid_at","manually_marked_as_sent_at","match_badge_count","method","min_permitted_issue_date","multiplier","not_duplicate","ocr_iban","ocr_thirdparty_id","opened_at","outstanding_balance","owner","pages_count","paid","paid_by","paid_personally","partial_kind","partial_order","partial_percentage","partially_cancelled","past_payments","payment_emitted_at","payment_ids","payment_in_process_started_at","payment_method","payment_methods","payment_reference","payment_reminder_enabled","payment_reminder_recipients","payment_reminder_steps","payment_status","payments","pdf_description","pdf_generation_status","pdf_invoice_display_products_list","pdf_invoice_free_text","pdf_invoice_free_text_enabled","pdf_invoice_subject","pdf_invoice_subject_enabled","pdf_invoice_title","pdf_paid_stamp","pdp_refusal_reason","pdp_status","pending","preview_status","preview_urls","price_before_tax","primary_badge","pro_account_check_deposits","public_link","purchase_request_id","purchase_request_ids","pusher_channel","quote_group_uuid","quote_uid","quotes","readonly","recipients","reconciled","remaining_amount","requires_validation","reviewed_by","scored_transactions","sepa_xml_exports","show_duplicates_tab","signed_type","size","source","source_document_id","source_document_label","source_metadata","special_mention","status","subcomplete","tagged_at_ledger_events_level","tax","team","thirdparty","thirdparty_id","type","updated_at","url","use_manual_partial_invoices","validated_at","validation_needed"];
+    const knownProperties = ["accountants_status","active_payment_reminder_id","amount","annexes","appendices","approvable_record_id","approval_flow","archived","archived_at","attachment_required","bad_debt","been_manually_marked_as_paid","billing_subscription_id","can_be_attached_to_a_cheque_deposit","can_be_finalized","can_be_manually_marked_as_paid","can_be_manually_marked_as_sent","can_be_stamped_as_paid_in_pdf","can_be_unmarked_as_paid","can_be_unmarked_as_sent","can_request_a_fintecture_payment_url","cancellable","cancelled","checksum","client_comments_count","company_id","complete","completeness","created_at","credit_note","credit_notes","credit_notes_amount","credited_invoice_id","currency","currency_amount","currency_amount_before_tax","currency_price_before_tax","currency_tax","current_account_plan_item","current_account_plan_item_id","customer_validation_needed","date","deadline","defacto_loan_eligible","direction","discount","discount_type","display_reactivate_button","display_revoke_button","document_tags","draft","duplicates","email_from","embeddable_in_browser","external_id","factor_status","fec_pieceref","file_signed_id","filename","finalized_at","flow_approved","from_estimate_id","gdrive_path","gocardless_billing_subscription","group_uuid","grouped_at","grouped_documents","has_already_sent_an_email","has_credit_note","has_file","has_grouped_documents","has_linked_quotes","has_pending_payments","hasTooManyLedgerEvents","iban","id","incomplete","invoice_kind","invoice_lines","invoice_number","invoice_status","invoicing_detailed_source","is_credit_note","is_destroyable","is_estimate","is_factur_x","is_payment_emitted","is_payment_found","is_payment_in_process","is_reconciliation_delay_expired","is_sendable","is_waiting_for_ocr","journal_id","label","language","last_payment","ledgerEvents","ledgerEventsCount","manually_marked_as_paid_at","manually_marked_as_sent_at","match_badge_count","method","min_permitted_issue_date","multiplier","not_duplicate","ocr_iban","ocr_thirdparty_id","opened_at","outstanding_balance","owner","pages_count","paid","paid_by","paid_personally","partial_kind","partial_order","partial_percentage","partially_cancelled","past_payments","payment_emitted_at","payment_ids","payment_in_process_started_at","payment_method","payment_methods","payment_reference","payment_reminder_enabled","payment_reminder_recipients","payment_reminder_steps","payment_status","payments","pdf_description","pdf_generation_status","pdf_invoice_display_products_list","pdf_invoice_free_text","pdf_invoice_free_text_enabled","pdf_invoice_subject","pdf_invoice_subject_enabled","pdf_invoice_title","pdf_paid_stamp","pdp_refusal_reason","pdp_status","pending","preview_status","preview_urls","price_before_tax","primary_badge","pro_account_check_deposits","public_link","purchase_request_id","purchase_request_ids","pusher_channel","quote_group_uuid","quote_uid","quotes","readonly","recipients","reconciled","remaining_amount","requires_validation","reviewed_by","scored_transactions","sepa_xml_exports","show_duplicates_tab","signed_type","size","source","source_document_id","source_document_label","source_metadata","special_mention","status","subcomplete","tagged_at_ledger_events_level","tax","team","thirdparty","thirdparty_id","type","updated_at","url","use_manual_partial_invoices","validated_at","validation_needed"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
     if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new APIDocumentFull(d);
@@ -923,6 +959,7 @@ export class APIDocumentFull {
     if ("annexes" in d) this.annexes = d.annexes;
     if ("appendices" in d) this.appendices = d.appendices;
     if ("approvable_record_id" in d) this.approvable_record_id = d.approvable_record_id;
+    if ("approval_flow" in d) this.approval_flow = d.approval_flow;
     if ("archived" in d) this.archived = d.archived;
     if ("archived_at" in d) this.archived_at = d.archived_at;
     if ("attachment_required" in d) this.attachment_required = d.attachment_required;
@@ -1108,8 +1145,8 @@ export class CreditNotesEntity {
   public readonly currency: string;
   public readonly currency_amount: string;
   public readonly currency_tax: string;
-  public readonly date: string;
-  public readonly file: File;
+  public readonly date: string | null;
+  public readonly file: File | null;
   public readonly has_file: boolean;
   public readonly id: number;
   public readonly invoice_number: string;
@@ -1134,8 +1171,24 @@ export class CreditNotesEntity {
     checkString(d.currency, field + ".currency");
     checkString(d.currency_amount, field + ".currency_amount");
     checkString(d.currency_tax, field + ".currency_tax");
-    checkString(d.date, field + ".date");
-    d.file = File.Create(d.file, field + ".file");
+    // This will be refactored in the next release.
+    try {
+      checkString(d.date, field + ".date", "string | null");
+    } catch (e) {
+      try {
+        checkNull(d.date, field + ".date", "string | null");
+      } catch (e) {
+      }
+    }
+    // This will be refactored in the next release.
+    try {
+      d.file = File.Create(d.file, field + ".file", "File | null");
+    } catch (e) {
+      try {
+        checkNull(d.file, field + ".file", "File | null");
+      } catch (e) {
+      }
+    }
     checkBoolean(d.has_file, field + ".has_file");
     checkNumber(d.id, field + ".id");
     checkString(d.invoice_number, field + ".invoice_number");
@@ -1257,14 +1310,14 @@ export class DocumentTagsEntity {
 }
 
 export class Tag {
-  public readonly analytical_code: null;
+  public readonly analytical_code?: null;
   public readonly color: string;
   public readonly group: Group;
   public readonly group_id: number;
   public readonly icon: null;
   public readonly id: number;
   public readonly label: string;
-  public readonly restricted_from_user: boolean;
+  public readonly restricted_from_user?: boolean;
   public readonly variant: null;
   public static Parse(d: string): Tag {
     return Tag.Create(JSON.parse(d));
@@ -1281,14 +1334,18 @@ export class Tag {
     } else if (Array.isArray(d)) {
       throwIsArray(field, d);
     }
-    checkNull(d.analytical_code, field + ".analytical_code");
+    if ("analytical_code" in d) {
+      checkNull(d.analytical_code, field + ".analytical_code");
+    }
     checkString(d.color, field + ".color");
     d.group = Group.Create(d.group, field + ".group");
     checkNumber(d.group_id, field + ".group_id");
     checkNull(d.icon, field + ".icon");
     checkNumber(d.id, field + ".id");
     checkString(d.label, field + ".label");
-    checkBoolean(d.restricted_from_user, field + ".restricted_from_user");
+    if ("restricted_from_user" in d) {
+      checkBoolean(d.restricted_from_user, field + ".restricted_from_user");
+    }
     checkNull(d.variant, field + ".variant");
     const knownProperties = ["analytical_code","color","group","group_id","icon","id","label","restricted_from_user","variant"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
@@ -1296,14 +1353,14 @@ export class Tag {
     return new Tag(d);
   }
   private constructor(d: any) {
-    this.analytical_code = d.analytical_code;
+    if ("analytical_code" in d) this.analytical_code = d.analytical_code;
     this.color = d.color;
     this.group = d.group;
     this.group_id = d.group_id;
     this.icon = d.icon;
     this.id = d.id;
     this.label = d.label;
-    this.restricted_from_user = d.restricted_from_user;
+    if ("restricted_from_user" in d) this.restricted_from_user = d.restricted_from_user;
     this.variant = d.variant;
   }
 }
@@ -1765,8 +1822,8 @@ export class LedgerEventsEntity {
   public readonly document_id: number;
   public readonly id: number;
   public readonly label: null;
-  public readonly lettering: null;
-  public readonly lettering_id: null;
+  public readonly lettering: Lettering | null;
+  public readonly lettering_id: number | null;
   public readonly plan_item_id: number;
   public readonly planItem: PlanItem;
   public readonly readonly: boolean;
@@ -1798,8 +1855,24 @@ export class LedgerEventsEntity {
     checkNumber(d.document_id, field + ".document_id");
     checkNumber(d.id, field + ".id");
     checkNull(d.label, field + ".label");
-    checkNull(d.lettering, field + ".lettering");
-    checkNull(d.lettering_id, field + ".lettering_id");
+    // This will be refactored in the next release.
+    try {
+      d.lettering = Lettering.Create(d.lettering, field + ".lettering", "Lettering | null");
+    } catch (e) {
+      try {
+        checkNull(d.lettering, field + ".lettering", "Lettering | null");
+      } catch (e) {
+      }
+    }
+    // This will be refactored in the next release.
+    try {
+      checkNumber(d.lettering_id, field + ".lettering_id", "number | null");
+    } catch (e) {
+      try {
+        checkNull(d.lettering_id, field + ".lettering_id", "number | null");
+      } catch (e) {
+      }
+    }
     checkNumber(d.plan_item_id, field + ".plan_item_id");
     d.planItem = PlanItem.Create(d.planItem, field + ".planItem");
     checkBoolean(d.readonly, field + ".readonly");
@@ -1831,6 +1904,40 @@ export class LedgerEventsEntity {
     this.reallocation_id = d.reallocation_id;
     this.reconciliation_id = d.reconciliation_id;
     this.source = d.source;
+  }
+}
+
+export class Lettering {
+  public readonly balance: string;
+  public readonly id: number;
+  public readonly plan_item_number: string;
+  public static Parse(d: string): Lettering {
+    return Lettering.Create(JSON.parse(d));
+  }
+  public static Create(d: any, field?: string, multiple ?: string): Lettering {
+    if (!field) {
+      obj = d;
+      field = "root";
+    }
+    if (!d) {
+      throwNull2NonNull(field, d, multiple ?? this.name);
+    } else if (typeof(d) !== 'object') {
+      throwNotObject(field, d);
+    } else if (Array.isArray(d)) {
+      throwIsArray(field, d);
+    }
+    checkString(d.balance, field + ".balance");
+    checkNumber(d.id, field + ".id");
+    checkString(d.plan_item_number, field + ".plan_item_number");
+    const knownProperties = ["balance","id","plan_item_number"];
+    const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
+    if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
+    return new Lettering(d);
+  }
+  private constructor(d: any) {
+    this.balance = d.balance;
+    this.id = d.id;
+    this.plan_item_number = d.plan_item_number;
   }
 }
 

@@ -9,6 +9,7 @@ import Logger from "../framework/Logger.js";
 
 import DMSItem from "./DMSItem.js";
 import Document, { DocumentCache, isTypedDocument } from "./Document.js";
+import ModelFactory from "./Factory.js";
 import Transaction from "./Transaction.js";
 
 import ValidableDocument from "./ValidableDocument.js";
@@ -37,18 +38,18 @@ export default abstract class Invoice extends ValidableDocument {
     throw new Error("`raw.direction` MUST be 'supplier' or 'customer'");
   }
 
-  public static from(invoice: { direction: string; id: number }) {
-    if (invoice.direction === "supplier") return new SupplierInvoice(invoice);
-    return new CustomerInvoice(invoice);
+  public static from(invoice: { direction: string; id: number }, factory: typeof ModelFactory) {
+    if (invoice.direction === "supplier") return new SupplierInvoice(invoice, factory);
+    return new CustomerInvoice(invoice, factory);
   }
 
-  static async load(id: number) {
+  static async load(id: number, factory: typeof ModelFactory) {
     const invoice = await getInvoice(id);
     if (!invoice?.id) {
       staticLogger.log("Invoice.load: cannot load this invoice", { id, invoice, _this: this });
-      return new NotFoundInvoice({ id });
+      return new NotFoundInvoice({ id }, factory);
     }
-    return this.from(invoice);
+    return this.from(invoice, factory);
   }
 
   async update(data: Partial<APIInvoice>) {
@@ -78,6 +79,11 @@ export default abstract class Invoice extends ValidableDocument {
   public async getCreatedAt(maxAge?: number) {
     const iso = await getInvoiceCreationDate(this.id, maxAge);
     return new Date(iso).getTime();
+  }
+
+  public async getDate() {
+    const invoice = await this.getInvoice();
+    return invoice.date;
   }
 
   async getGroupedDocuments(maxAge?: number): Promise<Document[]> {
@@ -161,6 +167,10 @@ export class NotFoundInvoice extends Invoice {
 
   loadValidMessage() {
     return Promise.resolve("Facture introuvable");
+  }
+
+  getDate(): never {
+    throw new Error("Facture introuvable");
   }
 }
 

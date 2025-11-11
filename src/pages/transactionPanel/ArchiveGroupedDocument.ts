@@ -1,9 +1,10 @@
 import { $, $$, getReactProps, getReactPropValue, parseHTML, upElement, waitElem, waitFunc } from '../../_/index.js';
 import Service from '../../framework/Service.js';
 import Tooltip from '../../framework/Tooltip.js';
-import Invoice from '../../models/Invoice.js';
-import { waitPage } from '../../navigation/waitPage.js';
-import ValidMessage from './ValidMessage.js';
+import ModelFactory from "../../models/Factory.js";
+import Invoice from "../../models/Invoice.js";
+import { waitPage } from "../../navigation/waitPage.js";
+import ValidMessage from "./ValidMessage.js";
 
 /** Add "Archive" button on bonded invoice in transaction pannel */
 export default class ArchiveGroupedDocument extends Service {
@@ -11,10 +12,10 @@ export default class ArchiveGroupedDocument extends Service {
 
   async init() {
     this.state = [];
-    this.state.push('wait for transaction detail panel');
-    await waitPage('transactionDetail');
+    this.state.push("wait for transaction detail panel");
+    await waitPage("transactionDetail");
 
-    this.state.push('wait for items');
+    this.state.push("wait for items");
     let item = await this.getNext();
     while (true) {
       this.addGroupedActions(item);
@@ -23,30 +24,33 @@ export default class ArchiveGroupedDocument extends Service {
   }
 
   private async getNext() {
-    return await waitFunc(() =>
-      $('.ui-card:not(.GM-archive-grouped-document) a.ui-button.ui-button-secondary+button.ui-button-secondary-danger') ?? false
+    return await waitFunc(
+      () =>
+        $(
+          ".ui-card:not(.GM-archive-grouped-document) a.ui-button.ui-button-secondary+button.ui-button-secondary-danger"
+        ) ?? false
     );
   }
 
   addGroupedActions(item: Element) {
-    const card = item.closest('.ui-card');
-    card?.classList.add('GM-archive-grouped-document');
-    const id = getReactPropValue(card, 'invoice')?.id;
+    const card = item.closest(".ui-card");
+    card?.classList.add("GM-archive-grouped-document");
+    const id = getReactPropValue(card, "invoice")?.id;
     if (!card || !id) {
       if (card?.textContent?.includes("ajouté dans la GED le")) return;
-      this.error('addGroupedActions : no invoice found', {item, card, id});
+      this.error("addGroupedActions : no invoice found", { item, card, id });
       return;
     }
 
-    const buttonsBlock = $(`a[href$="${id}.html"]`, card)?.closest('div');
+    const buttonsBlock = $(`a[href$="${id}.html"]`, card)?.closest("div");
     if (!buttonsBlock) {
-      this.error('addGroupedActions : no buttons block found', card);
+      this.error("addGroupedActions : no buttons block found", card);
       return;
     }
 
-    const buttonClass = buttonsBlock.querySelector('button')?.className ?? '';
+    const buttonClass = buttonsBlock.querySelector("button")?.className ?? "";
     this.state.push(`addGroupedActions for #${id}`);
-    this.log('addGroupedActions', { card, buttonsBlock, id });
+    this.log("addGroupedActions", { card, buttonsBlock, id });
 
     buttonsBlock.insertBefore(
       parseHTML(`
@@ -59,29 +63,29 @@ export default class ArchiveGroupedDocument extends Service {
       buttonsBlock.firstElementChild
     );
 
-    const archiveButton = $<HTMLButtonElement>('.archive-button', buttonsBlock)!;
-    Tooltip.make({ target: archiveButton, text: 'Archiver ce justificatif' });
-    archiveButton.addEventListener('click', () => this.archive(card));
+    const archiveButton = $<HTMLButtonElement>(".archive-button", buttonsBlock)!;
+    Tooltip.make({ target: archiveButton, text: "Archiver ce justificatif" });
+    archiveButton.addEventListener("click", () => this.archive(card));
 
-    const dmsButton = $<HTMLButtonElement>('.dms-button', buttonsBlock)!;
-    Tooltip.make({ target: dmsButton, text: 'Envoyer la facture en GED' });
-    dmsButton.addEventListener('click', () => this.dms(card));
+    const dmsButton = $<HTMLButtonElement>(".dms-button", buttonsBlock)!;
+    Tooltip.make({ target: dmsButton, text: "Envoyer la facture en GED" });
+    dmsButton.addEventListener("click", () => this.dms(card));
   }
 
   private async archive(card: Element) {
     const id = getReactProps(card, 2).invoice.id;
-    const buttonsBlock = $(`a[href$="${id}.html"]`, card)!.closest('div');
+    const buttonsBlock = $(`a[href$="${id}.html"]`, card)!.closest("div");
     if (!buttonsBlock) {
-      this.error('archive : no buttons block found', card);
+      this.error("archive : no buttons block found", card);
       return;
     }
-    const archiveButton = $<HTMLButtonElement>('.archive-button', buttonsBlock)!;
-    this.log('archive invoice', { card, id });
+    const archiveButton = $<HTMLButtonElement>(".archive-button", buttonsBlock)!;
+    this.log("archive invoice", { card, id });
 
     archiveButton.disabled = true;
-    archiveButton.classList.add('disabled');
-    archiveButton.innerText = '⟳';
-    const invoice = await Invoice.load(id);
+    archiveButton.classList.add("disabled");
+    archiveButton.innerText = "⟳";
+    const invoice = await ModelFactory.getInvoice(id);
     if (!invoice) {
       archiveButton.innerText = "⚠";
       Tooltip.make({ target: archiveButton, text: "Impossible de trouver la facture #" + id });
@@ -91,32 +95,30 @@ export default class ArchiveGroupedDocument extends Service {
     const invoiceDoc = await invoice?.getInvoice();
     const docs = await invoice.getGroupedDocuments();
     const gdocs = await Promise.all(docs.map((doc) => doc.getGdoc()));
-    const transactions = gdocs
-      .filter((doc) => doc.type === "Transaction")
-      .map((doc) => `#${doc.id}`);
+    const transactions = gdocs.filter((doc) => doc.type === "Transaction").map((doc) => `#${doc.id}`);
     await invoice.update({
-      invoice_number: `§ ${transactions.join(' - ')} - ${invoiceDoc.invoice_number}`
+      invoice_number: `§ ${transactions.join(" - ")} - ${invoiceDoc.invoice_number}`,
     });
     await invoice.archive();
-    buttonsBlock.closest('.ui-card')?.remove();
+    buttonsBlock.closest(".ui-card")?.remove();
     this.log(`archive invoice #${id}`, { invoice });
     ValidMessage.getInstance().reload();
   }
 
   private async dms(card: Element) {
     const id = getReactProps(card, 2).invoice.id;
-    const buttonsBlock = $(`a[href$="${id}.html"]`, card)!.closest('div')!;
+    const buttonsBlock = $(`a[href$="${id}.html"]`, card)!.closest("div")!;
     if (!buttonsBlock) {
-      this.error('dms : no buttons block found', card);
+      this.error("dms : no buttons block found", card);
       return;
     }
-    const dmsButton = $<HTMLButtonElement>('.dms-button', buttonsBlock)!;
-    this.log('move to dms', { card, id });
+    const dmsButton = $<HTMLButtonElement>(".dms-button", buttonsBlock)!;
+    this.log("move to dms", { card, id });
 
     dmsButton.disabled = true;
-    dmsButton.classList.add('disabled');
-    dmsButton.innerText = '⟳';
-    const invoice = await Invoice.load(id);
+    dmsButton.classList.add("disabled");
+    dmsButton.innerText = "⟳";
+    const invoice = await ModelFactory.getInvoice(id);
     if (!invoice) {
       dmsButton.innerText = "⚠";
       Tooltip.make({ target: dmsButton, text: "Impossible de trouver la facture #" + id });
@@ -128,8 +130,8 @@ export default class ArchiveGroupedDocument extends Service {
       Tooltip.make({ target: dmsButton, text: "Impossible d'envoyer en GED (voir la console pour plus de détails)" });
       return;
     }
-    buttonsBlock.closest('.ui-card')?.remove();
-    this.log('moveToDms', { dmsItem });
+    buttonsBlock.closest(".ui-card")?.remove();
+    this.log("moveToDms", { dmsItem });
     ValidMessage.getInstance().reload();
   }
 }

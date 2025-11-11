@@ -101,8 +101,16 @@ export async function apiRequest(
     return null;
   }
 
+
+  response
+    .clone()
+    .text()
+    .then((text) => {
+      if (!text) logger.error("apiRequest: empty response", { endpoint, data, method, response: response.clone() });
+    });
+
   apiRequestQueue.MIN_DELAY = Math.max(apiRequestQueue.VERY_MIN_DELAY, delayBefore * 0.99);
-  return response;
+  return response.clone();
 }
 
 function getCookies(): URLSearchParams;

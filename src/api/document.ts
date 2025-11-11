@@ -1,9 +1,15 @@
+import Logger from "../framework/Logger.js";
 import { cachedRequest } from "./cache.js";
 import { apiRequest } from "./core.js";
 import { APIDocumentFull } from "./Document/Full.js";
 import { APIDocument } from "./Document/index.js";
 import { APIDocumentMatching } from "./Document/Matching.js";
 import { APIDocumentMatchingInvoice } from "./Document/MatchingInvoice.js";
+import { APIInvoiceMatching } from "./Invoice/Matching.js";
+import { getTransactionFull } from "./transaction.js";
+import { APITransaction } from "./Transaction/index.js";
+
+const logger = new Logger("API:document");
 
 export async function getDocument(id: number, maxAge?: number): Promise<APIDocument> {
   if (typeof id !== "number") throw new Error("id must be a number");
@@ -21,10 +27,23 @@ export async function getDocument(id: number, maxAge?: number): Promise<APIDocum
   return APIDocument.Create(data);
 }
 
-export async function getFullDocument(id: number, maxAge?: number): Promise<APIDocumentFull> {
+export async function getFullDocument(id: number, maxAge?: number): Promise<APIDocumentFull | APITransaction> {
   if (typeof id !== "number") throw new Error("id must be a number");
+  const liteDoc = await getDocument(id);
+  switch (liteDoc.type) {
+    case "Transaction":
+      return await getTransactionFull(id, maxAge);
+    case "Invoice":
+      return await getInvoiceFull(id, maxAge);
+    default:
+      this.error(`Unsupported document type: ${liteDoc.type}`, { id, liteDoc });
+      throw new Error(`Unsupported document type: ${liteDoc.type}`);
+  }
+}
+
+export async function getInvoiceFull(id: number, maxAge?: number): Promise<APIDocumentFull> {
   const data = await cachedRequest(
-    "document:getFullDocument",
+    "document:getInvoiceFull",
     { id },
     async ({ id }) => {
       const doc = await getDocument(id, maxAge);
@@ -89,4 +108,32 @@ export async function archiveDocument(id: number, unarchive = false): Promise<nu
  */
 export function getDocumentLink(id: number): string {
   return `${location.href.split("/").slice(0, 5).join("/")}/documents/${id}.html`;
+}
+
+/**
+ * Return document's group uuid
+ */
+export async function getDocumentGuuid(id: number, maxAge?: number): Promise<string> {
+  const doc = await getFullDocument(id, maxAge);
+  return doc.group_uuid;
+}
+
+export async function matchDocuments(id1: number, id2: number): Promise<APIInvoiceMatching | null> {
+  const doc1 = await getDocument(id1);
+  const doc2 = await getDocument(id2);
+  if (doc1.type !== "Invoice" && doc2.type !== "Invoice") return null;
+
+  const transaction = doc1.type === "Transaction" ? doc1 : doc2.type === "Transaction" ? doc2 : null;
+  const document = transaction === doc1 ? doc2 : transaction === doc2 ? doc1 : null;
+  const guuid = document && (await getDocumentGuuid(document.id, 0));
+
+  if (guuid) {
+    const args = { unmatch_ids: [], group_uuids: [guuid] };
+    const response = await apiRequest(`documents/${transaction.id}/matching`, args, "PUT");
+    if (!response) return null;
+    return APIInvoiceMatching.Create(await response.json());
+  }
+
+  logger.error("No document found", { id1, id2, doc1, doc2, transaction, document, guuid });
+  return null;
 }

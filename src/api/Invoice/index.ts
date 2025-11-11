@@ -2,7 +2,7 @@
 const proxyName = 'APIInvoice';
 let obj: any = null;
 export class APIInvoice {
-  public readonly amount: string;
+  public readonly amount: string | number;
   public readonly approval_status: null;
   public readonly archived: boolean;
   public readonly attachment_required: boolean;
@@ -12,11 +12,12 @@ export class APIInvoice {
   public readonly company_id: number;
   public readonly created_at: string;
   public readonly currency: string;
-  public readonly currency_amount: string;
-  public readonly currency_price_before_tax: string;
-  public readonly currency_tax: string;
+  public readonly currency_amount: string | number;
+  public readonly currency_price_before_tax: string | number;
+  public readonly currency_tax: string | number;
   public readonly current_account_plan_item: null | PnlPlanItemOrCurrentAccountPlanItem;
   public readonly current_account_plan_item_id: null | number;
+  public readonly current_account_visible?: boolean;
   public readonly date: null | string;
   public readonly deadline: null | string;
   public readonly direction: string;
@@ -48,13 +49,17 @@ export class APIInvoice {
   public readonly pages_count: number | null;
   public readonly paid: boolean;
   public readonly payment_status: string;
+  public readonly pdf_invoice_free_text?: string;
+  public readonly pdf_invoice_subject?: string;
   public readonly preview_status: string | null;
   public readonly preview_urls: string[];
+  public readonly price_before_tax?: number;
   public readonly pusher_channel: string;
   public readonly source: string;
   public readonly status: string;
   public readonly subcomplete: boolean;
   public readonly tagged_at_ledger_events_level: boolean;
+  public readonly tax?: number;
   public readonly thirdparty: Thirdparty | null;
   public readonly thirdparty_id: number | null;
   public readonly type: string;
@@ -75,7 +80,15 @@ export class APIInvoice {
     } else if (Array.isArray(d)) {
       throwIsArray(field, d);
     }
-    checkString(d.amount, field + ".amount");
+    // This will be refactored in the next release.
+    try {
+      checkString(d.amount, field + ".amount", "string | number");
+    } catch (e) {
+      try {
+        checkNumber(d.amount, field + ".amount", "string | number");
+      } catch (e) {
+      }
+    }
     checkNull(d.approval_status, field + ".approval_status");
     checkBoolean(d.archived, field + ".archived");
     checkBoolean(d.attachment_required, field + ".attachment_required");
@@ -101,9 +114,33 @@ export class APIInvoice {
     checkNumber(d.company_id, field + ".company_id");
     checkString(d.created_at, field + ".created_at");
     checkString(d.currency, field + ".currency");
-    checkString(d.currency_amount, field + ".currency_amount");
-    checkString(d.currency_price_before_tax, field + ".currency_price_before_tax");
-    checkString(d.currency_tax, field + ".currency_tax");
+    // This will be refactored in the next release.
+    try {
+      checkString(d.currency_amount, field + ".currency_amount", "string | number");
+    } catch (e) {
+      try {
+        checkNumber(d.currency_amount, field + ".currency_amount", "string | number");
+      } catch (e) {
+      }
+    }
+    // This will be refactored in the next release.
+    try {
+      checkString(d.currency_price_before_tax, field + ".currency_price_before_tax", "string | number");
+    } catch (e) {
+      try {
+        checkNumber(d.currency_price_before_tax, field + ".currency_price_before_tax", "string | number");
+      } catch (e) {
+      }
+    }
+    // This will be refactored in the next release.
+    try {
+      checkString(d.currency_tax, field + ".currency_tax", "string | number");
+    } catch (e) {
+      try {
+        checkNumber(d.currency_tax, field + ".currency_tax", "string | number");
+      } catch (e) {
+      }
+    }
     // This will be refactored in the next release.
     try {
       checkNull(d.current_account_plan_item, field + ".current_account_plan_item", "null | PnlPlanItemOrCurrentAccountPlanItem");
@@ -121,6 +158,9 @@ export class APIInvoice {
         checkNumber(d.current_account_plan_item_id, field + ".current_account_plan_item_id", "null | number");
       } catch (e) {
       }
+    }
+    if ("current_account_visible" in d) {
+      checkBoolean(d.current_account_visible, field + ".current_account_visible");
     }
     // This will be refactored in the next release.
     try {
@@ -211,6 +251,12 @@ export class APIInvoice {
     }
     checkBoolean(d.paid, field + ".paid");
     checkString(d.payment_status, field + ".payment_status");
+    if ("pdf_invoice_free_text" in d) {
+      checkString(d.pdf_invoice_free_text, field + ".pdf_invoice_free_text");
+    }
+    if ("pdf_invoice_subject" in d) {
+      checkString(d.pdf_invoice_subject, field + ".pdf_invoice_subject");
+    }
     // This will be refactored in the next release.
     try {
       checkString(d.preview_status, field + ".preview_status", "string | null");
@@ -226,11 +272,17 @@ export class APIInvoice {
         checkString(d.preview_urls[i], field + ".preview_urls" + "[" + i + "]");
       }
     }
+    if ("price_before_tax" in d) {
+      checkNumber(d.price_before_tax, field + ".price_before_tax");
+    }
     checkString(d.pusher_channel, field + ".pusher_channel");
     checkString(d.source, field + ".source");
     checkString(d.status, field + ".status");
     checkBoolean(d.subcomplete, field + ".subcomplete");
     checkBoolean(d.tagged_at_ledger_events_level, field + ".tagged_at_ledger_events_level");
+    if ("tax" in d) {
+      checkNumber(d.tax, field + ".tax");
+    }
     // This will be refactored in the next release.
     try {
       d.thirdparty = Thirdparty.Create(d.thirdparty, field + ".thirdparty", "Thirdparty | null");
@@ -252,7 +304,7 @@ export class APIInvoice {
     checkString(d.type, field + ".type");
     checkString(d.url, field + ".url");
     checkBoolean(d.validation_needed, field + ".validation_needed");
-    const knownProperties = ["amount","approval_status","archived","attachment_required","blob_id","checksum","client_comments_count","company_id","created_at","currency","currency_amount","currency_price_before_tax","currency_tax","current_account_plan_item","current_account_plan_item_id","date","deadline","direction","document_tags","duplicates_count","email_from","embeddable_in_browser","file_signed_id","filename","gdrive_path","group_uuid","has_closed_ledger_events","has_duplicates","has_file","id","incomplete","invoice_lines","invoice_lines_count","invoice_number","is_employee_expense","is_estimate","is_factur_x","is_waiting_for_ocr","journal_id","label","method","mileage_allowance","outstanding_balance","pages_count","paid","payment_status","preview_status","preview_urls","pusher_channel","source","status","subcomplete","tagged_at_ledger_events_level","thirdparty","thirdparty_id","type","url","validation_needed"];
+    const knownProperties = ["amount","approval_status","archived","attachment_required","blob_id","checksum","client_comments_count","company_id","created_at","currency","currency_amount","currency_price_before_tax","currency_tax","current_account_plan_item","current_account_plan_item_id","current_account_visible","date","deadline","direction","document_tags","duplicates_count","email_from","embeddable_in_browser","file_signed_id","filename","gdrive_path","group_uuid","has_closed_ledger_events","has_duplicates","has_file","id","incomplete","invoice_lines","invoice_lines_count","invoice_number","is_employee_expense","is_estimate","is_factur_x","is_waiting_for_ocr","journal_id","label","method","mileage_allowance","outstanding_balance","pages_count","paid","payment_status","pdf_invoice_free_text","pdf_invoice_subject","preview_status","preview_urls","price_before_tax","pusher_channel","source","status","subcomplete","tagged_at_ledger_events_level","tax","thirdparty","thirdparty_id","type","url","validation_needed"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
     if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new APIInvoice(d);
@@ -273,6 +325,7 @@ export class APIInvoice {
     this.currency_tax = d.currency_tax;
     this.current_account_plan_item = d.current_account_plan_item;
     this.current_account_plan_item_id = d.current_account_plan_item_id;
+    if ("current_account_visible" in d) this.current_account_visible = d.current_account_visible;
     this.date = d.date;
     this.deadline = d.deadline;
     this.direction = d.direction;
@@ -304,13 +357,17 @@ export class APIInvoice {
     this.pages_count = d.pages_count;
     this.paid = d.paid;
     this.payment_status = d.payment_status;
+    if ("pdf_invoice_free_text" in d) this.pdf_invoice_free_text = d.pdf_invoice_free_text;
+    if ("pdf_invoice_subject" in d) this.pdf_invoice_subject = d.pdf_invoice_subject;
     this.preview_status = d.preview_status;
     this.preview_urls = d.preview_urls;
+    if ("price_before_tax" in d) this.price_before_tax = d.price_before_tax;
     this.pusher_channel = d.pusher_channel;
     this.source = d.source;
     this.status = d.status;
     this.subcomplete = d.subcomplete;
     this.tagged_at_ledger_events_level = d.tagged_at_ledger_events_level;
+    if ("tax" in d) this.tax = d.tax;
     this.thirdparty = d.thirdparty;
     this.thirdparty_id = d.thirdparty_id;
     this.type = d.type;
@@ -497,18 +554,20 @@ export class Group {
 }
 
 export class InvoiceLinesEntity {
+  public readonly _destroy?: boolean;
   public readonly advance: null | Advance;
   public readonly advance_id: null | number;
   public readonly advance_pnl: boolean;
-  public readonly amount: string;
+  public readonly amount: string | number;
   public readonly asset: null | Asset;
   public readonly asset_id: null | number;
-  public readonly currency_amount: string;
-  public readonly currency_price_before_tax: string;
-  public readonly currency_tax: string;
+  public readonly currency_amount: string | number;
+  public readonly currency_price_before_tax: string | number;
+  public readonly currency_tax: string | number;
   public readonly deferral: null;
   public readonly deferral_id: null;
   public readonly global_vat: boolean;
+  public readonly has_asset?: boolean;
   public readonly id: number;
   public readonly invoice_line_period?: null;
   public readonly label: string;
@@ -534,6 +593,9 @@ export class InvoiceLinesEntity {
     } else if (Array.isArray(d)) {
       throwIsArray(field, d);
     }
+    if ("_destroy" in d) {
+      checkBoolean(d._destroy, field + "._destroy");
+    }
     // This will be refactored in the next release.
     try {
       checkNull(d.advance, field + ".advance", "null | Advance");
@@ -553,7 +615,15 @@ export class InvoiceLinesEntity {
       }
     }
     checkBoolean(d.advance_pnl, field + ".advance_pnl");
-    checkString(d.amount, field + ".amount");
+    // This will be refactored in the next release.
+    try {
+      checkString(d.amount, field + ".amount", "string | number");
+    } catch (e) {
+      try {
+        checkNumber(d.amount, field + ".amount", "string | number");
+      } catch (e) {
+      }
+    }
     // This will be refactored in the next release.
     try {
       checkNull(d.asset, field + ".asset", "null | Asset");
@@ -572,12 +642,39 @@ export class InvoiceLinesEntity {
       } catch (e) {
       }
     }
-    checkString(d.currency_amount, field + ".currency_amount");
-    checkString(d.currency_price_before_tax, field + ".currency_price_before_tax");
-    checkString(d.currency_tax, field + ".currency_tax");
+    // This will be refactored in the next release.
+    try {
+      checkString(d.currency_amount, field + ".currency_amount", "string | number");
+    } catch (e) {
+      try {
+        checkNumber(d.currency_amount, field + ".currency_amount", "string | number");
+      } catch (e) {
+      }
+    }
+    // This will be refactored in the next release.
+    try {
+      checkString(d.currency_price_before_tax, field + ".currency_price_before_tax", "string | number");
+    } catch (e) {
+      try {
+        checkNumber(d.currency_price_before_tax, field + ".currency_price_before_tax", "string | number");
+      } catch (e) {
+      }
+    }
+    // This will be refactored in the next release.
+    try {
+      checkString(d.currency_tax, field + ".currency_tax", "string | number");
+    } catch (e) {
+      try {
+        checkNumber(d.currency_tax, field + ".currency_tax", "string | number");
+      } catch (e) {
+      }
+    }
     checkNull(d.deferral, field + ".deferral");
     checkNull(d.deferral_id, field + ".deferral_id");
     checkBoolean(d.global_vat, field + ".global_vat");
+    if ("has_asset" in d) {
+      checkBoolean(d.has_asset, field + ".has_asset");
+    }
     checkNumber(d.id, field + ".id");
     if ("invoice_line_period" in d) {
       checkNull(d.invoice_line_period, field + ".invoice_line_period");
@@ -606,12 +703,13 @@ export class InvoiceLinesEntity {
     checkBoolean(d.prepaid_pnl, field + ".prepaid_pnl");
     checkString(d.tax, field + ".tax");
     checkString(d.vat_rate, field + ".vat_rate");
-    const knownProperties = ["advance","advance_id","advance_pnl","amount","asset","asset_id","currency_amount","currency_price_before_tax","currency_tax","deferral","deferral_id","global_vat","id","invoice_line_period","label","ledger_event_label","ocr_vat_rate","pnl_plan_item","pnl_plan_item_id","prepaid_pnl","tax","vat_rate"];
+    const knownProperties = ["_destroy","advance","advance_id","advance_pnl","amount","asset","asset_id","currency_amount","currency_price_before_tax","currency_tax","deferral","deferral_id","global_vat","has_asset","id","invoice_line_period","label","ledger_event_label","ocr_vat_rate","pnl_plan_item","pnl_plan_item_id","prepaid_pnl","tax","vat_rate"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
     if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new InvoiceLinesEntity(d);
   }
   private constructor(d: any) {
+    if ("_destroy" in d) this._destroy = d._destroy;
     this.advance = d.advance;
     this.advance_id = d.advance_id;
     this.advance_pnl = d.advance_pnl;
@@ -624,6 +722,7 @@ export class InvoiceLinesEntity {
     this.deferral = d.deferral;
     this.deferral_id = d.deferral_id;
     this.global_vat = d.global_vat;
+    if ("has_asset" in d) this.has_asset = d.has_asset;
     this.id = d.id;
     if ("invoice_line_period" in d) this.invoice_line_period = d.invoice_line_period;
     this.label = d.label;

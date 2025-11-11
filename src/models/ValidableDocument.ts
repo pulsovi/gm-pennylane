@@ -38,15 +38,14 @@ export default abstract class ValidableDocument extends Document {
     const id = this.id;
     const valid = await this.isValid(refresh);
     const message = await this.getValidMessage(refresh);
-    let doc = await this.getFullDocument();
-    if (!doc) return null;
-    if (!("date" in doc)) {
-      this.error(`Document incomplet ${this.id}`, { Document: this, doc });
-      throw new Error("Document incomplet");
-    }
-    const date = new Date(doc.date).getTime();
+    const date = new Date(await this.getDate()).getTime();
     return { id, valid, message, date };
   }
+
+  /**
+   * Get the date of the document. ISO format.
+   */
+  abstract getDate(): Promise<string>;
 
   async reloadLedgerEvents(): Promise<APIDocument> {
     this.valid = null;

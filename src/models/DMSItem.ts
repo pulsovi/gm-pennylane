@@ -13,7 +13,7 @@ import { APIInvoice } from "../api/Invoice/index.js";
 import { getThirdparty } from "../api/thirdparties.js";
 import { Status } from "../framework/CacheStatus.js";
 import Logger from "../framework/Logger.js";
-import Document from "./Document.js";
+import ModelFactory from "./Factory.js";
 
 const cache = DataCache.getInstance("dmsItem");
 
@@ -33,15 +33,17 @@ export default class DMSItem extends Logger {
   private validMessage: string | null;
   /** Timestamp of start of refresh */
   private refreshing: number;
+  protected factory: typeof ModelFactory;
 
-  public constructor({ id }: { id: number }) {
+  public constructor({ id }: { id: number }, factory: typeof ModelFactory) {
     super();
     this.id = id;
     this.valid = null;
     this.validMessage = null;
+    this.factory = factory;
   }
 
-  public async getLinks() {
+  public async getLinks(): Promise<APIDMSItemLink[]> {
     return await this.getCached(
       "getLinks",
       async ({ id }: { id: number }) => {
@@ -50,7 +52,7 @@ export default class DMSItem extends Logger {
         return await getDMSItemLinks(fileId, this.maxAge());
       },
       {
-        Create(data) {
+        Create(data: unknown[]) {
           return data.map((item) => APIDMSItemLink.Create(item));
         },
       }
@@ -74,8 +76,8 @@ export default class DMSItem extends Logger {
     const date = match.date && new Date(match.date.split("-").reverse().join("-"));
     const groupedDocs = await this.getLinks();
     const transactionRecord = groupedDocs.find((gdoc) => gdoc.record_type === "BankTransaction");
-    const transactionDocument = transactionRecord && (await getDocument(transactionRecord.record_id));
-    const direction = Number(transactionDocument?.amount) > 0 ? "customer" : "supplier";
+    const transactionDocument = transactionRecord && this.factory.getTransaction(transactionRecord.record_id);
+    const direction = Number(await transactionDocument?.getAmount()) > 0 ? "customer" : "supplier";
 
     this.debug(
       jsonClone({
@@ -119,11 +121,15 @@ export default class DMSItem extends Logger {
         currency_tax: 0,
         vat_rate: "exempt",
       });
+    this.error("todo: réparer cette fonction");
+    debugger;
+    /*
     if (transactionDocument?.thirdparty_id) {
       const thirdparty = (await getThirdparty(transactionDocument.thirdparty_id)).thirdparty;
       Object.assign(data, { thirdparty_id: transactionDocument.thirdparty_id });
       Object.assign(line, { pnl_plan_item_id: thirdparty.thirdparty_invoice_line_rules[0]?.pnl_plan_item });
     }
+    */
     Object.assign(data, { invoice_lines_attributes: [line] });
     const updateInvoiceResponse = await updateInvoice(invoice.id, data);
     this.log({ dmsToInvoiceResponse, updateInvoiceResponse, invoice, data });

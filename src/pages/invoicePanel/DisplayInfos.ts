@@ -5,6 +5,7 @@ import { APILedgerEvent } from '../../api/LedgerEvent/index.js';
 import CacheStatus, { Status } from '../../framework/CacheStatus.js';
 import Service from '../../framework/Service.js';
 import Tooltip from '../../framework/Tooltip.js';
+import ModelFactory from "../../models/Factory.js";
 import Invoice from '../../models/Invoice.js';
 import { isPage, waitPage } from '../../navigation/waitPage.js';
 
@@ -95,7 +96,7 @@ export default class InvoiceDisplayInfos extends Service {
 
     if (this.state.reactInvoice !== invoice || this.state.invoice?.id !== invoice.id) {
       this.state.reactInvoice = invoice;
-      this.state.invoice = await Invoice.load(invoice.id);
+      this.state.invoice = await ModelFactory.getInvoice(invoice.id);
       reload = true;
     }
 

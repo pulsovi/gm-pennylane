@@ -3,6 +3,7 @@ import { APILedgerEvent } from '../../api/LedgerEvent/index.js';
 import { APITransaction } from "../../api/Transaction/index.js";
 import CacheStatus, { Status } from "../../framework/CacheStatus.js";
 import Service from "../../framework/Service.js";
+import ModelFactory from '../../models/Factory.js';
 import Transaction from "../../models/Transaction.js";
 import NextInvalidTransaction from "./NextInvalidTransaction.js";
 
@@ -76,7 +77,7 @@ export default class TransactionValidMessage extends Service {
     const rawTransaction = APITransaction.Create(
       getReactProps($(".paragraph-body-m+.heading-page.mt-1"), 9).transaction
     );
-    this.state.transaction = Transaction.get(rawTransaction);
+    this.state.transaction = ModelFactory.getTransaction(rawTransaction.id);
 
     const cachedStatus = cache.find({ id: rawTransaction.id });
     if (cachedStatus) this.message = `<aside style="background: lightgray;">⟳ ${cachedStatus.message}</aside>`;
@@ -140,11 +141,9 @@ export default class TransactionValidMessage extends Service {
 
   private async reloadCommentState() {
     if (!this.state.transaction) return;
-    const transactionId = this.state.transaction.id;
-    const transaction = await this.state.transaction.getTransaction();
     this.state.comments = {
-      transactionId,
-      hasComment: Boolean(transaction?.comments_count > 0),
+      transactionId: this.state.transaction.id,
+      hasComment: await this.state.transaction.hasComments(),
     };
     this.displayMessage();
   }

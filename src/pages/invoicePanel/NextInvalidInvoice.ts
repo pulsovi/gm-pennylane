@@ -7,13 +7,14 @@ import OpenNextInvalid, { OpenNextInvalid_ItemStatus } from "../../framework/Ope
 import Invoice, { NotFoundInvoice } from "../../models/Invoice.js";
 import { isPage, waitPage } from "../../navigation/waitPage.js";
 import IDBCache from "../../framework/IDBCache.js";
+import ModelFactory from "../../models/Factory.js";
 
 interface InvoiceStatus extends OpenNextInvalid_ItemStatus {
   direction: "customer" | "supplier";
   createdAt: number;
 }
 
-export default class NextInvalidInvoice extends OpenNextInvalid {
+export default class NextInvalidInvoice extends OpenNextInvalid<InvoiceStatus> {
   public id = "next-invalid-invoice";
   protected storageKey = "InvoiceValidation";
   protected readonly idParamName = "id";
@@ -27,7 +28,7 @@ export default class NextInvalidInvoice extends OpenNextInvalid {
     await super.init();
   }
 
-  protected async *walk(): AsyncGenerator<Status, undefined, void> {
+  protected async *walk(): AsyncGenerator<InvoiceStatus, undefined, void> {
     // Load new added invoices
     for await (const status of this.walkInvoices("supplier", "+")) yield status;
     for await (const status of this.walkInvoices("customer", "+")) yield status;
@@ -55,14 +56,14 @@ export default class NextInvalidInvoice extends OpenNextInvalid {
         sort: `${sort}created_at`,
       };
       for await (const invoice of getInvoiceGenerator(params)) {
-        const status = await Invoice.from(invoice).getStatus();
+        const status = await(await ModelFactory.getInvoice(invoice.id)).getStatus();
         yield { ...status, direction };
       }
     }
   }
 
-  async getStatus(id: number, force = false): Promise<Status | null> {
-    const invoice = await Invoice.load(id);
+  async getStatus(id: number, force = false): Promise<InvoiceStatus | null> {
+    const invoice = await ModelFactory.getInvoice(id);
 
     if (!invoice || invoice instanceof NotFoundInvoice) return null; // probablement une facture supprimée
 
