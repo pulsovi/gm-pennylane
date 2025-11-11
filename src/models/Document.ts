@@ -1,12 +1,10 @@
-import { WEEK_IN_MS } from '../_/time.js';
-import { getDMSLinks } from '../api/dms.js';
-import { APIDMSLink } from '../api/DMS/Link.js';
+import { getDMSLinks } from "../api/dms.js";
+import { APIDMSLink } from "../api/DMS/Link.js";
 import { archiveDocument, getDocument, getFullDocument, reloadLedgerEvents } from "../api/document.js";
-import { APIDocumentFull } from "../api/Document/Full.js";
 import { APIDocument } from "../api/Document/index.js";
 import { getExercise } from "../api/global.js";
 import { APIGroupedDocument } from "../api/GroupedDocument/index.js";
-import { getJournal } from "../api/journal.js";
+import { getDocumentJournal } from "../api/journal.js";
 import { APILedgerEvent } from "../api/LedgerEvent/index.js";
 import { getGroupedDocuments, getLedgerEvents, getOperation } from "../api/operation.js";
 import { APIOperation } from "../api/Operation/index.js";
@@ -43,10 +41,8 @@ export default class Document extends Logger {
   public type: DocumentType;
   public readonly id: number;
   protected document?: APIDocument | Promise<APIDocument>;
-  protected fullDocument?: APIDocumentFull | Promise<APIDocumentFull>;
   protected operation?: SyncOrPromise<APIOperation>;
   protected gDocument?: SyncOrPromise<APIGroupedDocument>;
-  protected journal?: SyncOrPromise<APIGroupedDocument["journal"]>;
   protected groupedDocuments: SyncOrPromise<Document[]>;
   protected ledgerEvents?: APILedgerEvent[] | Promise<APILedgerEvent[]>;
   protected thirdparty?: Promise<Thirdparty>;
@@ -94,12 +90,12 @@ export default class Document extends Logger {
     return await this.document;
   }
 
-  async getFullDocument(maxAge?: number): Promise<APIDocumentFull> {
-    if (!this.fullDocument || typeof maxAge === "number") {
-      this.fullDocument = getFullDocument(this.id, maxAge);
-      this.fullDocument = await this.fullDocument;
-    }
-    return await this.fullDocument;
+  async getFullDocument(maxAge?: number) {
+    return getFullDocument(this.id, maxAge);
+  }
+
+  async getLabel(maxAge?: number): Promise<string> {
+    return (await this.getFullDocument(maxAge)).label;
   }
 
   async getGdoc(): Promise<APIGroupedDocument | APIDocument> {
@@ -107,15 +103,8 @@ export default class Document extends Logger {
     return this.getDocument();
   }
 
-  async getJournal(): Promise<APIGroupedDocument["journal"]> {
-    if (!this.journal) {
-      this.journal = new Promise(async (resolve) => {
-        const operation = await this.getOperation();
-        if (!operation) return;
-        return operation.journal ?? (await getJournal(operation.journal_id));
-      });
-    }
-    return await this.journal;
+  async getJournal(maxAge?: number): Promise<APIGroupedDocument["journal"]> {
+    return getDocumentJournal(this.id, maxAge);
   }
 
   async getOperation(): Promise<APIOperation | null> {

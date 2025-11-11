@@ -202,8 +202,8 @@ export default class Transaction extends ValidableDocument {
   private async isArchived() {
     this.debug("isArchived");
     // Transaction archivée
-    const doc = await this.getDocument();
-    if (doc.archived) {
+    const doc = await this.getFullDocument();
+    if (doc.archived_at) {
       if (this.isCurrent()) this.log("transaction archivée");
       return "OK";
     }
@@ -214,7 +214,7 @@ export default class Transaction extends ValidableDocument {
     // Fichiers DMS mal nommés
     const dmsLinks = await this.getDMSLinks();
     for (const dmsLink of dmsLinks) {
-      const dmsItem = new DMSItem({ id: dmsLink.item_id });
+      const dmsItem = this.factory.getDMSItem(dmsLink.item_id);
       const dmsStatus = await dmsItem.getValidMessage(true);
       if (dmsStatus !== "OK")
         return `Corriger les noms des fichiers attachés dans l'onglet "Réconciliation" (surlignés en orange)`;
@@ -302,7 +302,7 @@ export default class Transaction extends ValidableDocument {
 
   private async isCheckRemittance(balance: Balance) {
     this.debug("isCheckRemittance");
-    const doc = await this.getDocument();
+    const doc = await this.getFullDocument();
     const ledgerEvents = await this.getLedgerEvents();
     const aidLedgerEvent = ledgerEvents.find((line) => line.planItem.number.startsWith("6571"));
 
@@ -317,9 +317,7 @@ export default class Transaction extends ValidableDocument {
       }
       // On a parfois des calculs qui ne tombent pas très juste en JS
       if (Math.abs(balance.transaction - balance.CHQ) > 0.001) {
-        const lost = doc.grouped_documents
-          .find((gdoc) => gdoc.id === this.id)
-          ?.client_comments?.find((comment) => comment.content === "PHOTO CHEQUE PERDUE");
+        const lost = (await this.getComments()).find((comment) => comment.content === "PHOTO CHEQUE PERDUE");
         if (!lost) {
           balance.addCHQ(null);
           if (this.isCurrent()) this.log("isCheckRemittance(): somme des chèques incorrecte");
@@ -369,7 +367,7 @@ export default class Transaction extends ValidableDocument {
 
   private async isOtherUnbalanced(balance: Balance) {
     this.debug("isOtherUnbalanced");
-    const doc = await this.getDocument();
+    const doc = await this.getFullDocument();
     const ledgerEvents = await this.getLedgerEvents();
 
     const optionalProof = [
@@ -446,7 +444,7 @@ export default class Transaction extends ValidableDocument {
   private async isWrongDonationCounterpart() {
     this.debug("isWrongDonationCounterpart");
     const ledgerEvents = await this.getLedgerEvents();
-    const groupedDocuments = await Promise.all((await this.getGroupedDocuments()).map((doc) => doc.getGdoc()));
+    const groupedDocuments = await Promise.all((await this.getGroupedDocuments()).map((doc) => doc.getFullDocument()));
     const dmsLinks = await this.getDMSLinks();
 
     const isDonation =
@@ -782,21 +780,17 @@ export default class Transaction extends ValidableDocument {
 
   private async isMissingCounterpartLabel() {
     this.debug("isMissingCounterpartLabel");
-    const doc = await this.getDocument();
+    const doc = await this.getFullDocument();
     const ledgerEvents = await this.getLedgerEvents();
     const groupedDocuments = await this.getGroupedDocuments();
-    const gdocs = await Promise.all(groupedDocuments.map((doc) => doc.getGdoc()));
     const aidLedgerEvent = ledgerEvents.find((line) => line.planItem.number.startsWith("6571"));
 
-    this.error("todo: réparer cette fonction");
-    debugger;
-    /*
     if (!aidLedgerEvent && parseFloat(doc.amount) < 0) {
-      for (const gdoc of gdocs) {
-        if (gdoc.type !== "Invoice") continue;
-        const { thirdparty_id } = await new Document(gdoc).getDocument();
+      for (const gdoc of groupedDocuments) {
+        if (gdoc.type !== "invoice") continue;
+        const thirdparty = await gdoc.getThirdparty();
         // Aides octroyées à une asso ou un particulier
-        if ([106438171, 114270419].includes(thirdparty_id)) {
+        if ([106438171, 114270419].includes(thirdparty.id)) {
           // Aides octroyées sans compte d'aide
           return `<a
             title="Cliquer ici pour plus d'informations."
@@ -805,7 +799,6 @@ export default class Transaction extends ValidableDocument {
         }
       }
     }
-    */
   }
 
   private async hasToSendToDMS() {
@@ -817,18 +810,15 @@ export default class Transaction extends ValidableDocument {
       (balance.autre === balance.transaction || balance.reçu === balance.transaction)
     ) {
       const groupedDocuments = await this.getGroupedDocuments();
-      const gdocs = await Promise.all(groupedDocuments.map((doc) => doc.getGdoc()));
-      this.error("todo: réparer cette fonction");
-      debugger;
-      /*
-      const chqs = gdocs.filter((gdoc) => gdoc.label.includes(" - CHQ"));
-      if (this.isCurrent()) this.log("hasToSendToDMS", { groupedDocuments, chqs, balance });
-      if (!chqs.length) {
-        if (this.isCurrent()) this.log("hasToSendToDMS", "tous les chq sont en GED", { groupedDocuments, balance });
-        return;
+      for (const gdoc of groupedDocuments) {
+        const label = await gdoc.getLabel();
+        if (label.includes(" - CHQ")) {
+          if (this.isCurrent()) this.log("hasToSendToDMS", { groupedDocuments, balance });
+          return "envoyer les CHQs en GED";
+        }
       }
-      return "envoyer les CHQs en GED";
-      */
+      if (this.isCurrent()) this.log("hasToSendToDMS", "tous les chq sont en GED", { groupedDocuments, balance });
+      return;
     }
   }
 

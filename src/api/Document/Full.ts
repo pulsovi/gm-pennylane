@@ -103,6 +103,7 @@ export class APIDocumentFull {
   public readonly manually_marked_as_paid_at?: null;
   public readonly manually_marked_as_sent_at?: null;
   public readonly match_badge_count?: number;
+  public readonly means_of_payment?: null;
   public readonly method?: string;
   public readonly min_permitted_issue_date?: null;
   public readonly multiplier?: number;
@@ -591,6 +592,9 @@ export class APIDocumentFull {
     if ("match_badge_count" in d) {
       checkNumber(d.match_badge_count, field + ".match_badge_count");
     }
+    if ("means_of_payment" in d) {
+      checkNull(d.means_of_payment, field + ".means_of_payment");
+    }
     if ("method" in d) {
       checkString(d.method, field + ".method");
     }
@@ -947,7 +951,7 @@ export class APIDocumentFull {
     if ("validation_needed" in d) {
       checkBoolean(d.validation_needed, field + ".validation_needed");
     }
-    const knownProperties = ["accountants_status","active_payment_reminder_id","amount","annexes","appendices","approvable_record_id","approval_flow","archived","archived_at","attachment_required","bad_debt","been_manually_marked_as_paid","billing_subscription_id","can_be_attached_to_a_cheque_deposit","can_be_finalized","can_be_manually_marked_as_paid","can_be_manually_marked_as_sent","can_be_stamped_as_paid_in_pdf","can_be_unmarked_as_paid","can_be_unmarked_as_sent","can_request_a_fintecture_payment_url","cancellable","cancelled","checksum","client_comments_count","company_id","complete","completeness","created_at","credit_note","credit_notes","credit_notes_amount","credited_invoice_id","currency","currency_amount","currency_amount_before_tax","currency_price_before_tax","currency_tax","current_account_plan_item","current_account_plan_item_id","customer_validation_needed","date","deadline","defacto_loan_eligible","direction","discount","discount_type","display_reactivate_button","display_revoke_button","document_tags","draft","duplicates","email_from","embeddable_in_browser","external_id","factor_status","fec_pieceref","file_signed_id","filename","finalized_at","flow_approved","from_estimate_id","gdrive_path","gocardless_billing_subscription","group_uuid","grouped_at","grouped_documents","has_already_sent_an_email","has_credit_note","has_file","has_grouped_documents","has_linked_quotes","has_pending_payments","hasTooManyLedgerEvents","iban","id","incomplete","invoice_kind","invoice_lines","invoice_number","invoice_status","invoicing_detailed_source","is_credit_note","is_destroyable","is_estimate","is_factur_x","is_payment_emitted","is_payment_found","is_payment_in_process","is_reconciliation_delay_expired","is_sendable","is_waiting_for_ocr","journal_id","label","language","last_payment","ledgerEvents","ledgerEventsCount","manually_marked_as_paid_at","manually_marked_as_sent_at","match_badge_count","method","min_permitted_issue_date","multiplier","not_duplicate","ocr_iban","ocr_thirdparty_id","opened_at","outstanding_balance","owner","pages_count","paid","paid_by","paid_personally","partial_kind","partial_order","partial_percentage","partially_cancelled","past_payments","payment_emitted_at","payment_ids","payment_in_process_started_at","payment_method","payment_methods","payment_reference","payment_reminder_enabled","payment_reminder_recipients","payment_reminder_steps","payment_status","payments","pdf_description","pdf_generation_status","pdf_invoice_display_products_list","pdf_invoice_free_text","pdf_invoice_free_text_enabled","pdf_invoice_subject","pdf_invoice_subject_enabled","pdf_invoice_title","pdf_paid_stamp","pdp_refusal_reason","pdp_status","pending","preview_status","preview_urls","price_before_tax","primary_badge","pro_account_check_deposits","public_link","purchase_request_id","purchase_request_ids","pusher_channel","quote_group_uuid","quote_uid","quotes","readonly","recipients","reconciled","remaining_amount","requires_validation","reviewed_by","scored_transactions","sepa_xml_exports","show_duplicates_tab","signed_type","size","source","source_document_id","source_document_label","source_metadata","special_mention","status","subcomplete","tagged_at_ledger_events_level","tax","team","thirdparty","thirdparty_id","type","updated_at","url","use_manual_partial_invoices","validated_at","validation_needed"];
+    const knownProperties = ["accountants_status","active_payment_reminder_id","amount","annexes","appendices","approvable_record_id","approval_flow","archived","archived_at","attachment_required","bad_debt","been_manually_marked_as_paid","billing_subscription_id","can_be_attached_to_a_cheque_deposit","can_be_finalized","can_be_manually_marked_as_paid","can_be_manually_marked_as_sent","can_be_stamped_as_paid_in_pdf","can_be_unmarked_as_paid","can_be_unmarked_as_sent","can_request_a_fintecture_payment_url","cancellable","cancelled","checksum","client_comments_count","company_id","complete","completeness","created_at","credit_note","credit_notes","credit_notes_amount","credited_invoice_id","currency","currency_amount","currency_amount_before_tax","currency_price_before_tax","currency_tax","current_account_plan_item","current_account_plan_item_id","customer_validation_needed","date","deadline","defacto_loan_eligible","direction","discount","discount_type","display_reactivate_button","display_revoke_button","document_tags","draft","duplicates","email_from","embeddable_in_browser","external_id","factor_status","fec_pieceref","file_signed_id","filename","finalized_at","flow_approved","from_estimate_id","gdrive_path","gocardless_billing_subscription","group_uuid","grouped_at","grouped_documents","has_already_sent_an_email","has_credit_note","has_file","has_grouped_documents","has_linked_quotes","has_pending_payments","hasTooManyLedgerEvents","iban","id","incomplete","invoice_kind","invoice_lines","invoice_number","invoice_status","invoicing_detailed_source","is_credit_note","is_destroyable","is_estimate","is_factur_x","is_payment_emitted","is_payment_found","is_payment_in_process","is_reconciliation_delay_expired","is_sendable","is_waiting_for_ocr","journal_id","label","language","last_payment","ledgerEvents","ledgerEventsCount","manually_marked_as_paid_at","manually_marked_as_sent_at","match_badge_count","means_of_payment","method","min_permitted_issue_date","multiplier","not_duplicate","ocr_iban","ocr_thirdparty_id","opened_at","outstanding_balance","owner","pages_count","paid","paid_by","paid_personally","partial_kind","partial_order","partial_percentage","partially_cancelled","past_payments","payment_emitted_at","payment_ids","payment_in_process_started_at","payment_method","payment_methods","payment_reference","payment_reminder_enabled","payment_reminder_recipients","payment_reminder_steps","payment_status","payments","pdf_description","pdf_generation_status","pdf_invoice_display_products_list","pdf_invoice_free_text","pdf_invoice_free_text_enabled","pdf_invoice_subject","pdf_invoice_subject_enabled","pdf_invoice_title","pdf_paid_stamp","pdp_refusal_reason","pdp_status","pending","preview_status","preview_urls","price_before_tax","primary_badge","pro_account_check_deposits","public_link","purchase_request_id","purchase_request_ids","pusher_channel","quote_group_uuid","quote_uid","quotes","readonly","recipients","reconciled","remaining_amount","requires_validation","reviewed_by","scored_transactions","sepa_xml_exports","show_duplicates_tab","signed_type","size","source","source_document_id","source_document_label","source_metadata","special_mention","status","subcomplete","tagged_at_ledger_events_level","tax","team","thirdparty","thirdparty_id","type","updated_at","url","use_manual_partial_invoices","validated_at","validation_needed"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
     if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new APIDocumentFull(d);
@@ -1054,6 +1058,7 @@ export class APIDocumentFull {
     if ("manually_marked_as_paid_at" in d) this.manually_marked_as_paid_at = d.manually_marked_as_paid_at;
     if ("manually_marked_as_sent_at" in d) this.manually_marked_as_sent_at = d.manually_marked_as_sent_at;
     if ("match_badge_count" in d) this.match_badge_count = d.match_badge_count;
+    if ("means_of_payment" in d) this.means_of_payment = d.means_of_payment;
     if ("method" in d) this.method = d.method;
     if ("min_permitted_issue_date" in d) this.min_permitted_issue_date = d.min_permitted_issue_date;
     if ("multiplier" in d) this.multiplier = d.multiplier;
@@ -1312,12 +1317,17 @@ export class DocumentTagsEntity {
 export class Tag {
   public readonly analytical_code?: null;
   public readonly color: string;
+  public readonly direction?: string;
   public readonly group: Group;
   public readonly group_id: number;
   public readonly icon: null;
   public readonly id: number;
+  public readonly is_editable?: boolean;
   public readonly label: string;
+  public readonly method?: string;
+  public readonly rank?: number;
   public readonly restricted_from_user?: boolean;
+  public readonly url?: string;
   public readonly variant: null;
   public static Parse(d: string): Tag {
     return Tag.Create(JSON.parse(d));
@@ -1338,16 +1348,31 @@ export class Tag {
       checkNull(d.analytical_code, field + ".analytical_code");
     }
     checkString(d.color, field + ".color");
+    if ("direction" in d) {
+      checkString(d.direction, field + ".direction");
+    }
     d.group = Group.Create(d.group, field + ".group");
     checkNumber(d.group_id, field + ".group_id");
     checkNull(d.icon, field + ".icon");
     checkNumber(d.id, field + ".id");
+    if ("is_editable" in d) {
+      checkBoolean(d.is_editable, field + ".is_editable");
+    }
     checkString(d.label, field + ".label");
+    if ("method" in d) {
+      checkString(d.method, field + ".method");
+    }
+    if ("rank" in d) {
+      checkNumber(d.rank, field + ".rank");
+    }
     if ("restricted_from_user" in d) {
       checkBoolean(d.restricted_from_user, field + ".restricted_from_user");
     }
+    if ("url" in d) {
+      checkString(d.url, field + ".url");
+    }
     checkNull(d.variant, field + ".variant");
-    const knownProperties = ["analytical_code","color","group","group_id","icon","id","label","restricted_from_user","variant"];
+    const knownProperties = ["analytical_code","color","direction","group","group_id","icon","id","is_editable","label","method","rank","restricted_from_user","url","variant"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
     if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new Tag(d);
@@ -1355,20 +1380,30 @@ export class Tag {
   private constructor(d: any) {
     if ("analytical_code" in d) this.analytical_code = d.analytical_code;
     this.color = d.color;
+    if ("direction" in d) this.direction = d.direction;
     this.group = d.group;
     this.group_id = d.group_id;
     this.icon = d.icon;
     this.id = d.id;
+    if ("is_editable" in d) this.is_editable = d.is_editable;
     this.label = d.label;
+    if ("method" in d) this.method = d.method;
+    if ("rank" in d) this.rank = d.rank;
     if ("restricted_from_user" in d) this.restricted_from_user = d.restricted_from_user;
+    if ("url" in d) this.url = d.url;
     this.variant = d.variant;
   }
 }
 
 export class Group {
   public readonly icon: string;
+  public readonly id?: number;
+  public readonly kind?: string;
   public readonly label: string;
+  public readonly method?: string;
+  public readonly qonto_id?: null;
   public readonly self_service_accounting: boolean;
+  public readonly url?: string;
   public static Parse(d: string): Group {
     return Group.Create(JSON.parse(d));
   }
@@ -1385,17 +1420,37 @@ export class Group {
       throwIsArray(field, d);
     }
     checkString(d.icon, field + ".icon");
+    if ("id" in d) {
+      checkNumber(d.id, field + ".id");
+    }
+    if ("kind" in d) {
+      checkString(d.kind, field + ".kind");
+    }
     checkString(d.label, field + ".label");
+    if ("method" in d) {
+      checkString(d.method, field + ".method");
+    }
+    if ("qonto_id" in d) {
+      checkNull(d.qonto_id, field + ".qonto_id");
+    }
     checkBoolean(d.self_service_accounting, field + ".self_service_accounting");
-    const knownProperties = ["icon","label","self_service_accounting"];
+    if ("url" in d) {
+      checkString(d.url, field + ".url");
+    }
+    const knownProperties = ["icon","id","kind","label","method","qonto_id","self_service_accounting","url"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
     if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new Group(d);
   }
   private constructor(d: any) {
     this.icon = d.icon;
+    if ("id" in d) this.id = d.id;
+    if ("kind" in d) this.kind = d.kind;
     this.label = d.label;
+    if ("method" in d) this.method = d.method;
+    if ("qonto_id" in d) this.qonto_id = d.qonto_id;
     this.self_service_accounting = d.self_service_accounting;
+    if ("url" in d) this.url = d.url;
   }
 }
 

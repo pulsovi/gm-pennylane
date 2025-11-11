@@ -4508,6 +4508,9 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"match_badge_count\" in d) {\n" +
 "            checkNumber$h(d.match_badge_count, field + \".match_badge_count\");\n" +
 "        }\n" +
+"        if (\"means_of_payment\" in d) {\n" +
+"            checkNull$e(d.means_of_payment, field + \".means_of_payment\");\n" +
+"        }\n" +
 "        if (\"method\" in d) {\n" +
 "            checkString$h(d.method, field + \".method\");\n" +
 "        }\n" +
@@ -4880,7 +4883,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"validation_needed\" in d) {\n" +
 "            checkBoolean$d(d.validation_needed, field + \".validation_needed\");\n" +
 "        }\n" +
-"        const knownProperties = [\"accountants_status\", \"active_payment_reminder_id\", \"amount\", \"annexes\", \"appendices\", \"approvable_record_id\", \"approval_flow\", \"archived\", \"archived_at\", \"attachment_required\", \"bad_debt\", \"been_manually_marked_as_paid\", \"billing_subscription_id\", \"can_be_attached_to_a_cheque_deposit\", \"can_be_finalized\", \"can_be_manually_marked_as_paid\", \"can_be_manually_marked_as_sent\", \"can_be_stamped_as_paid_in_pdf\", \"can_be_unmarked_as_paid\", \"can_be_unmarked_as_sent\", \"can_request_a_fintecture_payment_url\", \"cancellable\", \"cancelled\", \"checksum\", \"client_comments_count\", \"company_id\", \"complete\", \"completeness\", \"created_at\", \"credit_note\", \"credit_notes\", \"credit_notes_amount\", \"credited_invoice_id\", \"currency\", \"currency_amount\", \"currency_amount_before_tax\", \"currency_price_before_tax\", \"currency_tax\", \"current_account_plan_item\", \"current_account_plan_item_id\", \"customer_validation_needed\", \"date\", \"deadline\", \"defacto_loan_eligible\", \"direction\", \"discount\", \"discount_type\", \"display_reactivate_button\", \"display_revoke_button\", \"document_tags\", \"draft\", \"duplicates\", \"email_from\", \"embeddable_in_browser\", \"external_id\", \"factor_status\", \"fec_pieceref\", \"file_signed_id\", \"filename\", \"finalized_at\", \"flow_approved\", \"from_estimate_id\", \"gdrive_path\", \"gocardless_billing_subscription\", \"group_uuid\", \"grouped_at\", \"grouped_documents\", \"has_already_sent_an_email\", \"has_credit_note\", \"has_file\", \"has_grouped_documents\", \"has_linked_quotes\", \"has_pending_payments\", \"hasTooManyLedgerEvents\", \"iban\", \"id\", \"incomplete\", \"invoice_kind\", \"invoice_lines\", \"invoice_number\", \"invoice_status\", \"invoicing_detailed_source\", \"is_credit_note\", \"is_destroyable\", \"is_estimate\", \"is_factur_x\", \"is_payment_emitted\", \"is_payment_found\", \"is_payment_in_process\", \"is_reconciliation_delay_expired\", \"is_sendable\", \"is_waiting_for_ocr\", \"journal_id\", \"label\", \"language\", \"last_payment\", \"ledgerEvents\", \"ledgerEventsCount\", \"manually_marked_as_paid_at\", \"manually_marked_as_sent_at\", \"match_badge_count\", \"method\", \"min_permitted_issue_date\", \"multiplier\", \"not_duplicate\", \"ocr_iban\", \"ocr_thirdparty_id\", \"opened_at\", \"outstanding_balance\", \"owner\", \"pages_count\", \"paid\", \"paid_by\", \"paid_personally\", \"partial_kind\", \"partial_order\", \"partial_percentage\", \"partially_cancelled\", \"past_payments\", \"payment_emitted_at\", \"payment_ids\", \"payment_in_process_started_at\", \"payment_method\", \"payment_methods\", \"payment_reference\", \"payment_reminder_enabled\", \"payment_reminder_recipients\", \"payment_reminder_steps\", \"payment_status\", \"payments\", \"pdf_description\", \"pdf_generation_status\", \"pdf_invoice_display_products_list\", \"pdf_invoice_free_text\", \"pdf_invoice_free_text_enabled\", \"pdf_invoice_subject\", \"pdf_invoice_subject_enabled\", \"pdf_invoice_title\", \"pdf_paid_stamp\", \"pdp_refusal_reason\", \"pdp_status\", \"pending\", \"preview_status\", \"preview_urls\", \"price_before_tax\", \"primary_badge\", \"pro_account_check_deposits\", \"public_link\", \"purchase_request_id\", \"purchase_request_ids\", \"pusher_channel\", \"quote_group_uuid\", \"quote_uid\", \"quotes\", \"readonly\", \"recipients\", \"reconciled\", \"remaining_amount\", \"requires_validation\", \"reviewed_by\", \"scored_transactions\", \"sepa_xml_exports\", \"show_duplicates_tab\", \"signed_type\", \"size\", \"source\", \"source_document_id\", \"source_document_label\", \"source_metadata\", \"special_mention\", \"status\", \"subcomplete\", \"tagged_at_ledger_events_level\", \"tax\", \"team\", \"thirdparty\", \"thirdparty_id\", \"type\", \"updated_at\", \"url\", \"use_manual_partial_invoices\", \"validated_at\", \"validation_needed\"];\n" +
+"        const knownProperties = [\"accountants_status\", \"active_payment_reminder_id\", \"amount\", \"annexes\", \"appendices\", \"approvable_record_id\", \"approval_flow\", \"archived\", \"archived_at\", \"attachment_required\", \"bad_debt\", \"been_manually_marked_as_paid\", \"billing_subscription_id\", \"can_be_attached_to_a_cheque_deposit\", \"can_be_finalized\", \"can_be_manually_marked_as_paid\", \"can_be_manually_marked_as_sent\", \"can_be_stamped_as_paid_in_pdf\", \"can_be_unmarked_as_paid\", \"can_be_unmarked_as_sent\", \"can_request_a_fintecture_payment_url\", \"cancellable\", \"cancelled\", \"checksum\", \"client_comments_count\", \"company_id\", \"complete\", \"completeness\", \"created_at\", \"credit_note\", \"credit_notes\", \"credit_notes_amount\", \"credited_invoice_id\", \"currency\", \"currency_amount\", \"currency_amount_before_tax\", \"currency_price_before_tax\", \"currency_tax\", \"current_account_plan_item\", \"current_account_plan_item_id\", \"customer_validation_needed\", \"date\", \"deadline\", \"defacto_loan_eligible\", \"direction\", \"discount\", \"discount_type\", \"display_reactivate_button\", \"display_revoke_button\", \"document_tags\", \"draft\", \"duplicates\", \"email_from\", \"embeddable_in_browser\", \"external_id\", \"factor_status\", \"fec_pieceref\", \"file_signed_id\", \"filename\", \"finalized_at\", \"flow_approved\", \"from_estimate_id\", \"gdrive_path\", \"gocardless_billing_subscription\", \"group_uuid\", \"grouped_at\", \"grouped_documents\", \"has_already_sent_an_email\", \"has_credit_note\", \"has_file\", \"has_grouped_documents\", \"has_linked_quotes\", \"has_pending_payments\", \"hasTooManyLedgerEvents\", \"iban\", \"id\", \"incomplete\", \"invoice_kind\", \"invoice_lines\", \"invoice_number\", \"invoice_status\", \"invoicing_detailed_source\", \"is_credit_note\", \"is_destroyable\", \"is_estimate\", \"is_factur_x\", \"is_payment_emitted\", \"is_payment_found\", \"is_payment_in_process\", \"is_reconciliation_delay_expired\", \"is_sendable\", \"is_waiting_for_ocr\", \"journal_id\", \"label\", \"language\", \"last_payment\", \"ledgerEvents\", \"ledgerEventsCount\", \"manually_marked_as_paid_at\", \"manually_marked_as_sent_at\", \"match_badge_count\", \"means_of_payment\", \"method\", \"min_permitted_issue_date\", \"multiplier\", \"not_duplicate\", \"ocr_iban\", \"ocr_thirdparty_id\", \"opened_at\", \"outstanding_balance\", \"owner\", \"pages_count\", \"paid\", \"paid_by\", \"paid_personally\", \"partial_kind\", \"partial_order\", \"partial_percentage\", \"partially_cancelled\", \"past_payments\", \"payment_emitted_at\", \"payment_ids\", \"payment_in_process_started_at\", \"payment_method\", \"payment_methods\", \"payment_reference\", \"payment_reminder_enabled\", \"payment_reminder_recipients\", \"payment_reminder_steps\", \"payment_status\", \"payments\", \"pdf_description\", \"pdf_generation_status\", \"pdf_invoice_display_products_list\", \"pdf_invoice_free_text\", \"pdf_invoice_free_text_enabled\", \"pdf_invoice_subject\", \"pdf_invoice_subject_enabled\", \"pdf_invoice_title\", \"pdf_paid_stamp\", \"pdp_refusal_reason\", \"pdp_status\", \"pending\", \"preview_status\", \"preview_urls\", \"price_before_tax\", \"primary_badge\", \"pro_account_check_deposits\", \"public_link\", \"purchase_request_id\", \"purchase_request_ids\", \"pusher_channel\", \"quote_group_uuid\", \"quote_uid\", \"quotes\", \"readonly\", \"recipients\", \"reconciled\", \"remaining_amount\", \"requires_validation\", \"reviewed_by\", \"scored_transactions\", \"sepa_xml_exports\", \"show_duplicates_tab\", \"signed_type\", \"size\", \"source\", \"source_document_id\", \"source_document_label\", \"source_metadata\", \"special_mention\", \"status\", \"subcomplete\", \"tagged_at_ledger_events_level\", \"tax\", \"team\", \"thirdparty\", \"thirdparty_id\", \"type\", \"updated_at\", \"url\", \"use_manual_partial_invoices\", \"validated_at\", \"validation_needed\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
 "            errorHelper$j(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
@@ -5085,6 +5088,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            this.manually_marked_as_sent_at = d.manually_marked_as_sent_at;\n" +
 "        if (\"match_badge_count\" in d)\n" +
 "            this.match_badge_count = d.match_badge_count;\n" +
+"        if (\"means_of_payment\" in d)\n" +
+"            this.means_of_payment = d.means_of_payment;\n" +
 "        if (\"method\" in d)\n" +
 "            this.method = d.method;\n" +
 "        if (\"min_permitted_issue_date\" in d)\n" +
@@ -5428,16 +5433,31 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            checkNull$e(d.analytical_code, field + \".analytical_code\");\n" +
 "        }\n" +
 "        checkString$h(d.color, field + \".color\");\n" +
+"        if (\"direction\" in d) {\n" +
+"            checkString$h(d.direction, field + \".direction\");\n" +
+"        }\n" +
 "        d.group = Group$2.Create(d.group, field + \".group\");\n" +
 "        checkNumber$h(d.group_id, field + \".group_id\");\n" +
 "        checkNull$e(d.icon, field + \".icon\");\n" +
 "        checkNumber$h(d.id, field + \".id\");\n" +
+"        if (\"is_editable\" in d) {\n" +
+"            checkBoolean$d(d.is_editable, field + \".is_editable\");\n" +
+"        }\n" +
 "        checkString$h(d.label, field + \".label\");\n" +
+"        if (\"method\" in d) {\n" +
+"            checkString$h(d.method, field + \".method\");\n" +
+"        }\n" +
+"        if (\"rank\" in d) {\n" +
+"            checkNumber$h(d.rank, field + \".rank\");\n" +
+"        }\n" +
 "        if (\"restricted_from_user\" in d) {\n" +
 "            checkBoolean$d(d.restricted_from_user, field + \".restricted_from_user\");\n" +
 "        }\n" +
+"        if (\"url\" in d) {\n" +
+"            checkString$h(d.url, field + \".url\");\n" +
+"        }\n" +
 "        checkNull$e(d.variant, field + \".variant\");\n" +
-"        const knownProperties = [\"analytical_code\", \"color\", \"group\", \"group_id\", \"icon\", \"id\", \"label\", \"restricted_from_user\", \"variant\"];\n" +
+"        const knownProperties = [\"analytical_code\", \"color\", \"direction\", \"group\", \"group_id\", \"icon\", \"id\", \"is_editable\", \"label\", \"method\", \"rank\", \"restricted_from_user\", \"url\", \"variant\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
 "            errorHelper$j(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
@@ -5447,13 +5467,23 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (\"analytical_code\" in d)\n" +
 "            this.analytical_code = d.analytical_code;\n" +
 "        this.color = d.color;\n" +
+"        if (\"direction\" in d)\n" +
+"            this.direction = d.direction;\n" +
 "        this.group = d.group;\n" +
 "        this.group_id = d.group_id;\n" +
 "        this.icon = d.icon;\n" +
 "        this.id = d.id;\n" +
+"        if (\"is_editable\" in d)\n" +
+"            this.is_editable = d.is_editable;\n" +
 "        this.label = d.label;\n" +
+"        if (\"method\" in d)\n" +
+"            this.method = d.method;\n" +
+"        if (\"rank\" in d)\n" +
+"            this.rank = d.rank;\n" +
 "        if (\"restricted_from_user\" in d)\n" +
 "            this.restricted_from_user = d.restricted_from_user;\n" +
+"        if (\"url\" in d)\n" +
+"            this.url = d.url;\n" +
 "        this.variant = d.variant;\n" +
 "    }\n" +
 "};\n" +
@@ -5476,9 +5506,24 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            throwIsArray$j(field, d);\n" +
 "        }\n" +
 "        checkString$h(d.icon, field + \".icon\");\n" +
+"        if (\"id\" in d) {\n" +
+"            checkNumber$h(d.id, field + \".id\");\n" +
+"        }\n" +
+"        if (\"kind\" in d) {\n" +
+"            checkString$h(d.kind, field + \".kind\");\n" +
+"        }\n" +
 "        checkString$h(d.label, field + \".label\");\n" +
+"        if (\"method\" in d) {\n" +
+"            checkString$h(d.method, field + \".method\");\n" +
+"        }\n" +
+"        if (\"qonto_id\" in d) {\n" +
+"            checkNull$e(d.qonto_id, field + \".qonto_id\");\n" +
+"        }\n" +
 "        checkBoolean$d(d.self_service_accounting, field + \".self_service_accounting\");\n" +
-"        const knownProperties = [\"icon\", \"label\", \"self_service_accounting\"];\n" +
+"        if (\"url\" in d) {\n" +
+"            checkString$h(d.url, field + \".url\");\n" +
+"        }\n" +
+"        const knownProperties = [\"icon\", \"id\", \"kind\", \"label\", \"method\", \"qonto_id\", \"self_service_accounting\", \"url\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
 "            errorHelper$j(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
@@ -5486,8 +5531,18 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    constructor(d) {\n" +
 "        this.icon = d.icon;\n" +
+"        if (\"id\" in d)\n" +
+"            this.id = d.id;\n" +
+"        if (\"kind\" in d)\n" +
+"            this.kind = d.kind;\n" +
 "        this.label = d.label;\n" +
+"        if (\"method\" in d)\n" +
+"            this.method = d.method;\n" +
+"        if (\"qonto_id\" in d)\n" +
+"            this.qonto_id = d.qonto_id;\n" +
 "        this.self_service_accounting = d.self_service_accounting;\n" +
+"        if (\"url\" in d)\n" +
+"            this.url = d.url;\n" +
 "    }\n" +
 "};\n" +
 "class DuplicatesEntity {\n" +
@@ -11554,14 +11609,6 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "}\n" +
 "\n" +
-"async function getJournal(id) {\n" +
-"    const response = await apiRequest(`journals/${id}`, null, \"GET\");\n" +
-"    const data = await response?.json();\n" +
-"    if (!data)\n" +
-"        return null;\n" +
-"    return APIJournal.Create(data);\n" +
-"}\n" +
-"\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
 "let obj$4 = null;\n" +
 "class APIGroupedDocument {\n" +
@@ -12122,6 +12169,22 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        return await response.json();\n" +
 "    }, maxAge);\n" +
 "    return APIOperation.Create(data);\n" +
+"}\n" +
+"\n" +
+"async function getJournal(id, maxAge) {\n" +
+"    const data = await cachedRequest(\"journal:getJournal\", { id }, async ({ id }) => {\n" +
+"        const response = await apiRequest(`journals/${id}`, null, \"GET\");\n" +
+"        return await response?.json();\n" +
+"    }, maxAge);\n" +
+"    if (!data)\n" +
+"        return null;\n" +
+"    return APIJournal.Create(data);\n" +
+"}\n" +
+"async function getDocumentJournal(id, maxAge) {\n" +
+"    const operation = await getOperation(id, maxAge);\n" +
+"    if (!operation)\n" +
+"        return null;\n" +
+"    return operation.journal ?? (await getJournal(operation.journal_id, maxAge));\n" +
 "}\n" +
 "\n" +
 "// Stores the currently-being-typechecked object for error messages.\n" +
@@ -13020,27 +13083,18 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        return await this.document;\n" +
 "    }\n" +
 "    async getFullDocument(maxAge) {\n" +
-"        if (!this.fullDocument || typeof maxAge === \"number\") {\n" +
-"            this.fullDocument = getFullDocument(this.id, maxAge);\n" +
-"            this.fullDocument = await this.fullDocument;\n" +
-"        }\n" +
-"        return await this.fullDocument;\n" +
+"        return getFullDocument(this.id, maxAge);\n" +
+"    }\n" +
+"    async getLabel(maxAge) {\n" +
+"        return (await this.getFullDocument(maxAge)).label;\n" +
 "    }\n" +
 "    async getGdoc() {\n" +
 "        if (this.gDocument)\n" +
 "            return this.gDocument;\n" +
 "        return this.getDocument();\n" +
 "    }\n" +
-"    async getJournal() {\n" +
-"        if (!this.journal) {\n" +
-"            this.journal = new Promise(async (resolve) => {\n" +
-"                const operation = await this.getOperation();\n" +
-"                if (!operation)\n" +
-"                    return;\n" +
-"                return operation.journal ?? (await getJournal(operation.journal_id));\n" +
-"            });\n" +
-"        }\n" +
-"        return await this.journal;\n" +
+"    async getJournal(maxAge) {\n" +
+"        return getDocumentJournal(this.id, maxAge);\n" +
 "    }\n" +
 "    async getOperation() {\n" +
 "        if (!this.operation) {\n" +
@@ -13104,6 +13158,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    async _getThirdparty() {\n" +
 "        let doc = await this.getFullDocument();\n" +
+"        debugger;\n" +
 "        if (!doc?.thirdparty_id) {\n" +
 "            doc = await this.getFullDocument(1000);\n" +
 "            if (!doc?.thirdparty_id) {\n" +
@@ -13522,6 +13577,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    async getStatus(refresh = false) {\n" +
 "        const status = await super.getStatus(refresh);\n" +
+"        debugger;\n" +
 "        this.cacheStatus.updateItem(status, false);\n" +
 "        return status;\n" +
 "    }\n" +
@@ -13576,8 +13632,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    async isArchived() {\n" +
 "        this.debug(\"isArchived\");\n" +
 "        // Transaction archivée\n" +
-"        const doc = await this.getDocument();\n" +
-"        if (doc.archived) {\n" +
+"        const doc = await this.getFullDocument();\n" +
+"        if (doc.archived_at) {\n" +
 "            if (this.isCurrent())\n" +
 "                this.log(\"transaction archivée\");\n" +
 "            return \"OK\";\n" +
@@ -13588,7 +13644,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        // Fichiers DMS mal nommés\n" +
 "        const dmsLinks = await this.getDMSLinks();\n" +
 "        for (const dmsLink of dmsLinks) {\n" +
-"            const dmsItem = new DMSItem({ id: dmsLink.item_id });\n" +
+"            const dmsItem = this.factory.getDMSItem(dmsLink.item_id);\n" +
 "            const dmsStatus = await dmsItem.getValidMessage(true);\n" +
 "            if (dmsStatus !== \"OK\")\n" +
 "                return `Corriger les noms des fichiers attachés dans l'onglet \"Réconciliation\" (surlignés en orange)`;\n" +
@@ -13665,7 +13721,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    async isCheckRemittance(balance) {\n" +
 "        this.debug(\"isCheckRemittance\");\n" +
-"        const doc = await this.getDocument();\n" +
+"        const doc = await this.getFullDocument();\n" +
 "        const ledgerEvents = await this.getLedgerEvents();\n" +
 "        const aidLedgerEvent = ledgerEvents.find((line) => line.planItem.number.startsWith(\"6571\"));\n" +
 "        // Pour les remises de chèques, on a deux pièces justificatives necessaires : le chèque et le cerfa\n" +
@@ -13680,9 +13736,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            // On a parfois des calculs qui ne tombent pas très juste en JS\n" +
 "            if (Math.abs(balance.transaction - balance.CHQ) > 0.001) {\n" +
-"                const lost = doc.grouped_documents\n" +
-"                    .find((gdoc) => gdoc.id === this.id)\n" +
-"                    ?.client_comments?.find((comment) => comment.content === \"PHOTO CHEQUE PERDUE\");\n" +
+"                const lost = (await this.getComments()).find((comment) => comment.content === \"PHOTO CHEQUE PERDUE\");\n" +
 "                if (!lost) {\n" +
 "                    balance.addCHQ(null);\n" +
 "                    if (this.isCurrent())\n" +
@@ -13736,7 +13790,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    async isOtherUnbalanced(balance) {\n" +
 "        this.debug(\"isOtherUnbalanced\");\n" +
-"        const doc = await this.getDocument();\n" +
+"        const doc = await this.getFullDocument();\n" +
 "        const ledgerEvents = await this.getLedgerEvents();\n" +
 "        const optionalProof = [\n" +
 "            \"58000004\", // Virements internes société générale\n" +
@@ -13803,7 +13857,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    async isWrongDonationCounterpart() {\n" +
 "        this.debug(\"isWrongDonationCounterpart\");\n" +
 "        const ledgerEvents = await this.getLedgerEvents();\n" +
-"        const groupedDocuments = await Promise.all((await this.getGroupedDocuments()).map((doc) => doc.getGdoc()));\n" +
+"        const groupedDocuments = await Promise.all((await this.getGroupedDocuments()).map((doc) => doc.getFullDocument()));\n" +
 "        const dmsLinks = await this.getDMSLinks();\n" +
 "        const isDonation = groupedDocuments.some((gdoc) => / CERFA | AIDES - /u.test(gdoc.label)) ||\n" +
 "            dmsLinks.some((dmsLink) => /^(?:CERFA|AIDES) /u.test(dmsLink.name));\n" +
@@ -13849,6 +13903,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        (!this.isCurrent() && Math.abs(parseFloat(doc.currency_amount)) < 100) ||\n" +
 "            [\" DE: STRIPE MOTIF: ALLODONS REF: \", \"Payout: STRIPE PAYOUT \"].some((label) => doc.label.includes(label)) ||\n" +
 "            [\"REMISE CHEQUE \", \"VIR RECU \", \"VIR INST RE \", \"VIR INSTANTANE RECU DE: \"].some((label) => doc.label.startsWith(label));\n" +
+"        debugger;\n" +
 "        const attachmentRequired = doc.attachment_required && !doc.attachment_lost && (!attachmentOptional || this.isCurrent());\n" +
 "        const hasAttachment = groupedDocuments.length + dmsLinks.length > 1;\n" +
 "        if (this.isCurrent())\n" +
@@ -14043,29 +14098,25 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    async isMissingCounterpartLabel() {\n" +
 "        this.debug(\"isMissingCounterpartLabel\");\n" +
-"        await this.getDocument();\n" +
+"        const doc = await this.getFullDocument();\n" +
 "        const ledgerEvents = await this.getLedgerEvents();\n" +
 "        const groupedDocuments = await this.getGroupedDocuments();\n" +
-"        await Promise.all(groupedDocuments.map((doc) => doc.getGdoc()));\n" +
-"        ledgerEvents.find((line) => line.planItem.number.startsWith(\"6571\"));\n" +
-"        this.error(\"todo: réparer cette fonction\");\n" +
-"        debugger;\n" +
-"        /*\n" +
+"        const aidLedgerEvent = ledgerEvents.find((line) => line.planItem.number.startsWith(\"6571\"));\n" +
 "        if (!aidLedgerEvent && parseFloat(doc.amount) < 0) {\n" +
-"          for (const gdoc of gdocs) {\n" +
-"            if (gdoc.type !== \"Invoice\") continue;\n" +
-"            const { thirdparty_id } = await new Document(gdoc).getDocument();\n" +
-"            // Aides octroyées à une asso ou un particulier\n" +
-"            if ([106438171, 114270419].includes(thirdparty_id)) {\n" +
-"              // Aides octroyées sans compte d'aide\n" +
-"              return `<a\n" +
-"                title=\"Cliquer ici pour plus d'informations.\"\n" +
-"                href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FProcessus%20-%20Traitement%20des%20re%C3%A7us%20d'aides%20octroy%C3%A9es#contrepartie%20%226571%22%20manquante\"\n" +
-"              >contrepartie \"6571\" manquante ⓘ</a>`;\n" +
+"            for (const gdoc of groupedDocuments) {\n" +
+"                if (gdoc.type !== \"invoice\")\n" +
+"                    continue;\n" +
+"                const thirdparty = await gdoc.getThirdparty();\n" +
+"                // Aides octroyées à une asso ou un particulier\n" +
+"                if ([106438171, 114270419].includes(thirdparty.id)) {\n" +
+"                    // Aides octroyées sans compte d'aide\n" +
+"                    return `<a\n" +
+"            title=\"Cliquer ici pour plus d'informations.\"\n" +
+"            href=\"obsidian://open?vault=MichkanAvraham%20Compta&file=doc%2FProcessus%20-%20Traitement%20des%20re%C3%A7us%20d'aides%20octroy%C3%A9es#contrepartie%20%226571%22%20manquante\"\n" +
+"          >contrepartie \"6571\" manquante ⓘ</a>`;\n" +
+"                }\n" +
 "            }\n" +
-"          }\n" +
 "        }\n" +
-"        */\n" +
 "    }\n" +
 "    async hasToSendToDMS() {\n" +
 "        this.debug(\"hasToSendToDMS\");\n" +
@@ -14074,18 +14125,17 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            balance.CHQ === balance.transaction &&\n" +
 "            (balance.autre === balance.transaction || balance.reçu === balance.transaction)) {\n" +
 "            const groupedDocuments = await this.getGroupedDocuments();\n" +
-"            await Promise.all(groupedDocuments.map((doc) => doc.getGdoc()));\n" +
-"            this.error(\"todo: réparer cette fonction\");\n" +
-"            debugger;\n" +
-"            /*\n" +
-"            const chqs = gdocs.filter((gdoc) => gdoc.label.includes(\" - CHQ\"));\n" +
-"            if (this.isCurrent()) this.log(\"hasToSendToDMS\", { groupedDocuments, chqs, balance });\n" +
-"            if (!chqs.length) {\n" +
-"              if (this.isCurrent()) this.log(\"hasToSendToDMS\", \"tous les chq sont en GED\", { groupedDocuments, balance });\n" +
-"              return;\n" +
+"            for (const gdoc of groupedDocuments) {\n" +
+"                const label = await gdoc.getLabel();\n" +
+"                if (label.includes(\" - CHQ\")) {\n" +
+"                    if (this.isCurrent())\n" +
+"                        this.log(\"hasToSendToDMS\", { groupedDocuments, balance });\n" +
+"                    return \"envoyer les CHQs en GED\";\n" +
+"                }\n" +
 "            }\n" +
-"            return \"envoyer les CHQs en GED\";\n" +
-"            */\n" +
+"            if (this.isCurrent())\n" +
+"                this.log(\"hasToSendToDMS\", \"tous les chq sont en GED\", { groupedDocuments, balance });\n" +
+"            return;\n" +
 "        }\n" +
 "    }\n" +
 "    async hasToSendToInvoice() {\n" +
