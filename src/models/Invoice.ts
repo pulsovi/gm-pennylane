@@ -72,12 +72,14 @@ export default abstract class Invoice extends ValidableDocument {
 
   async getStatus(refresh = false): Promise<InvoiceStatus | null> {
     const status = await super.getStatus(refresh);
-    if (!status) return null;
-    return { ...status, direction: this.direction, createdAt: await this.getCreatedAt(refresh ? 0 : void 0) };
+    const createdAt = await this.getCreatedAt(refresh ? 0 : void 0);
+    if (!status || !createdAt) return null;
+    return { ...status, direction: this.direction, createdAt };
   }
 
   public async getCreatedAt(maxAge?: number) {
     const iso = await getInvoiceCreationDate(this.id, maxAge);
+    if (!iso) return null;
     return new Date(iso).getTime();
   }
 
