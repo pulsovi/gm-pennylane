@@ -157,6 +157,7 @@ export default class IDBCache<
   PrimaryType extends string | number = string
 > extends Logger {
   private static instances: Record<string, IDBCache<any, any, any>> = {};
+  private readonly broadcastEventManager: BroadcastChannel;
   public readonly tableName: string;
   public readonly primary: PrimaryKey;
   public readonly indexedColumns: string[];
@@ -171,6 +172,7 @@ export default class IDBCache<
     const structure = registerTable({ name: tableName, primary, indexedColumns });
     this.indexedColumns = structure.indexedColumns;
     this.loading = this.load().then(() => {});
+    this.broadcastEventManager = new BroadcastChannel(`IDBCache:${tableName}`);
     this.debug("new Cache", this);
   }
 
@@ -256,13 +258,23 @@ export default class IDBCache<
   public async update(match: Partial<ItemType> & { [C in PrimaryKey]: PrimaryType }) {
     const oldValue = await this.get(match[this.primary]);
     const newValue = oldValue ? { ...oldValue, ...match } : match;
+    if (JSON.stringify(oldValue) === JSON.stringify(newValue)) return match[this.primary];
     const store = await this.getStore("readwrite");
-    return await store?.put(newValue);
+    const key = await store?.put(newValue);
+    this.bemit("update", { key, oldValue, newValue });
+    return key;
   }
 
-  public async delete(match: Partial<ItemType> & { [C in PrimaryKey]: PrimaryType }) {
+  public async delete(match: Partial<ItemType> & { [C in PrimaryKey]: PrimaryType });
+  public async delete(id: IDBValidKey);
+  public async delete(matchOrId: (Partial<ItemType> & { [C in PrimaryKey]: PrimaryType }) | IDBValidKey) {
+    const id =
+      typeof matchOrId === "string" || typeof matchOrId === "number"
+        ? matchOrId
+        : (matchOrId as Partial<ItemType> & { [C in PrimaryKey]: PrimaryType })[this.primary];
     const store = await this.getStore("readwrite");
-    return await store?.delete(match[this.primary]);
+    await store?.delete(id);
+    this.bemit("delete", { key: id });
   }
 
   public async get(id: IDBValidKey): Promise<ItemType | null> {
@@ -317,7 +329,7 @@ export default class IDBCache<
       registerTable({
         name: this.tableName,
         primary: this.primary,
-        indexedColumns: [...this.indexedColumns, options.column],
+        indexedColumns: [...(this.indexedColumns ?? []), options.column],
       });
     }
     const store = await this.getStore(options.mode);
@@ -330,6 +342,22 @@ export default class IDBCache<
   public async clear() {
     const store = await this.getStore("readwrite");
     return await store?.clear();
+  }
+
+  /**
+   * Emit broadcast event
+   */
+  public bemit(event: string, data?: unknown) {
+    this.broadcastEventManager.postMessage({ event, data });
+  }
+
+  /**
+   * Listen to broadcast events
+   */
+  public bon(event: string, callback: (data?: unknown) => void) {
+    this.broadcastEventManager.addEventListener("message", (event) => {
+      if (event.data.event === event) callback(event.data.data);
+    });
   }
 }
 
