@@ -174,6 +174,9 @@ export default class IDBCache<
     this.loading = this.load().then(() => {});
     this.broadcastEventManager = new BroadcastChannel(`IDBCache:${tableName}`);
     this.debug("new Cache", this);
+    this.broadcastOn("all", (event, data) => {
+      this.emit(event, data);
+    });
   }
 
   public static getInstance<
@@ -261,7 +264,7 @@ export default class IDBCache<
     if (JSON.stringify(oldValue) === JSON.stringify(newValue)) return match[this.primary];
     const store = await this.getStore("readwrite");
     const key = await store?.put(newValue);
-    this.bemit("update", { key, oldValue, newValue });
+    this.broadcastEmit("update", { key, oldValue, newValue });
     return key;
   }
 
@@ -274,7 +277,7 @@ export default class IDBCache<
         : (matchOrId as Partial<ItemType> & { [C in PrimaryKey]: PrimaryType })[this.primary];
     const store = await this.getStore("readwrite");
     await store?.delete(id);
-    this.bemit("delete", { key: id });
+    this.broadcastEmit("delete", { key: id });
   }
 
   public async get(id: IDBValidKey): Promise<ItemType | null> {
@@ -347,16 +350,23 @@ export default class IDBCache<
   /**
    * Emit broadcast event
    */
-  public bemit(event: string, data?: unknown) {
+  public broadcastEmit(event: string, data?: unknown) {
     this.broadcastEventManager.postMessage({ event, data });
+    this.emit(event, data);
   }
 
   /**
    * Listen to broadcast events
    */
-  public bon(event: string, callback: (data?: unknown) => void) {
-    this.broadcastEventManager.addEventListener("message", (event) => {
-      if (event.data.event === event) callback(event.data.data);
+  public broadcastOn(event: "all", callback: (incommingEvent: string, data?: unknown) => void): void;
+  public broadcastOn(event: string, callback: (data?: unknown) => void): void;
+  public broadcastOn(
+    event: string,
+    callback: ((incommingEvent: string, data?: unknown) => void) | ((data?: unknown) => void)
+  ): void {
+    this.broadcastEventManager.addEventListener("message", (messageEvent: MessageEvent) => {
+      if (messageEvent.data.event === event) callback(messageEvent.data.data);
+      else if (event === "all") callback(messageEvent.data.event, messageEvent.data.data);
     });
   }
 }

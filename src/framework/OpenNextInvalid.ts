@@ -9,6 +9,7 @@ import { getButtonClassName } from '../_/getButtonClassName.js';
 import styles from './openNextInvalid.css';
 import { injectStyles } from '../_/styles.js';
 import IDBCache from "./IDBCache.js";
+import { Status } from "./CacheStatus.js";
 
 injectStyles(styles);
 
@@ -139,7 +140,7 @@ export default abstract class OpenNextInvalid<TItem extends OpenNextInvalid_Item
     Tooltip.make({ target: button, text: "Ouvrir le prochain élément invalide" });
     this.reloadNumber();
 
-    this.cache.on("change", () => this.reloadNumber());
+    this.cache.on("update", () => this.reloadNumber());
   }
 
   /**
@@ -242,7 +243,7 @@ export default abstract class OpenNextInvalid<TItem extends OpenNextInvalid_Item
       this.cache.delete(id);
       return null;
     }
-    const oldStatus = this.cache.get(id) ?? {};
+    const oldStatus = (await this.cache.get(id)) ?? {};
     const status = Object.assign({}, oldStatus, value, { fetchedAt: Date.now() });
 
     this.cache.update(status);
@@ -264,11 +265,12 @@ export default abstract class OpenNextInvalid<TItem extends OpenNextInvalid_Item
 
     let status = (await this.invalidGenerator.next()).value;
     while (status?.id === this.current) {
-      this.log({ status, current: this.current, class: this });
+      this.log("openNext: found current, skip it", { status, current: this.current, class: this });
       status = (await this.invalidGenerator.next()).value;
     }
 
     if (!status && interactionAllowed) {
+      this.log("openNext no invalid item found in the cache, opening the skipped ones");
       if (!this.skippedElems) this.skippedElems = await this.cache.filter((item) => this.isSkipped(item));
       while (!status && this.skippedElems.length) {
         const id = this.skippedElems.shift()!.id;
@@ -278,8 +280,8 @@ export default abstract class OpenNextInvalid<TItem extends OpenNextInvalid_Item
     }
 
     if (status) {
-      this.log("next found :", { current: this.current, status, class: this });
-      this.open(status.id);
+      this.log("next found :", { current: this.current, status, me: this, stack: new Error() });
+      this.open(status.id, status);
       this.running = false;
       return;
     }
@@ -298,10 +300,15 @@ export default abstract class OpenNextInvalid<TItem extends OpenNextInvalid_Item
     this.running = false;
   }
 
-  protected open(id: number): void {
+  protected open(id: number, before?: Status): void {
     openDocument(id);
     this.updateStatus(id, null, true).then((status) => {
-      if (!status || status?.valid) this.start();
+      if (this.isSkipped(status)) {
+        this.log("open invalid error: the opened item is skippable", { status, before });
+        this.start();
+      } else {
+        this.log("open invalid success: the opened item was really invalid", { status, before });
+      }
     });
   }
 
@@ -356,22 +363,19 @@ export default abstract class OpenNextInvalid<TItem extends OpenNextInvalid_Item
     Tooltip.make({ target: button, text: "Ignorer cet élément, ne plus afficher" });
 
     const refresh = async () => {
-      const status = await this.cache.find({ id: this.current } as Partial<TItem>);
+      const status = await this.cache.get(this.current);
       const ignored = Boolean(status?.ignored);
       const background = ignored ? "var(--red)" : "";
       if (button.style.backgroundColor !== background) button.style.backgroundColor = background;
     };
 
     button.addEventListener("click", async () => {
-      const status = await this.cache.find({ id: this.current } as Partial<TItem>);
+      const status = await this.cache.get(this.current);
       if (!status) return;
       this.cache.update(Object.assign(status, { ignored: !status.ignored }));
     });
 
-    this.cache.on("change", () => {
-      refresh();
-    });
-    this.on("reload", () => {
+    this.cache.on("update", () => {
       refresh();
     });
   }
@@ -412,12 +416,16 @@ export default abstract class OpenNextInvalid<TItem extends OpenNextInvalid_Item
     waitButton.addEventListener("click", async () => {
       this.log("waiting button clicked");
       const status = await this.cache.get(this.current);
-      if (!status) return this.log({ cachedStatus: status, id: this.current });
+      if (!status)
+        return this.log("waiting button click: cannot find status in the cache", {
+          cachedStatus: status,
+          id: this.current,
+        });
       const wait =
         status.wait && new Date(status.wait).getTime() > Date.now()
           ? ""
           : new Date(Date.now() + 3 * 86_400_000).toISOString();
-      this.cache.update(Object.assign(status, { wait }));
+      await this.cache.update(Object.assign(status, { wait }));
       updateWaitDisplay();
     });
 
@@ -441,10 +449,7 @@ export default abstract class OpenNextInvalid<TItem extends OpenNextInvalid_Item
       }
     });
 
-    this.cache.on("change", () => {
-      updateWaitDisplay();
-    });
-    this.on("reload", () => {
+    this.cache.on("update", () => {
       updateWaitDisplay();
     });
   }
