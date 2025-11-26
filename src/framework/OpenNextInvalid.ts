@@ -239,10 +239,10 @@ export default abstract class OpenNextInvalid<TItem extends OpenNextInvalid_Item
     }
     if (!value) value = await this.getStatus(id, force);
     if (!value) {
-      this.cache.delete({ id });
+      this.cache.delete(id);
       return null;
     }
-    const oldStatus = this.cache.find({ id }) ?? {};
+    const oldStatus = this.cache.get(id) ?? {};
     const status = Object.assign({}, oldStatus, value, { fetchedAt: Date.now() });
 
     this.cache.update(status);
@@ -301,7 +301,7 @@ export default abstract class OpenNextInvalid<TItem extends OpenNextInvalid_Item
   protected open(id: number): void {
     openDocument(id);
     this.updateStatus(id, null, true).then((status) => {
-      if (status?.valid) this.start();
+      if (!status || status?.valid) this.start();
     });
   }
 
@@ -384,7 +384,7 @@ export default abstract class OpenNextInvalid<TItem extends OpenNextInvalid_Item
     const waitButton = $<HTMLButtonElement>(`.wait-item`, this.container)!;
     const tooltip = Tooltip.make({ target: waitButton, text: "" });
     const updateWaitDisplay = async () => {
-      const status = await this.cache.find({ id: this.current });
+      const status = await this.cache.get(this.current);
 
       if (!status?.wait || new Date(status.wait).getTime() < Date.now()) {
         waitButton.style.backgroundColor = "";
@@ -411,7 +411,7 @@ export default abstract class OpenNextInvalid<TItem extends OpenNextInvalid_Item
 
     waitButton.addEventListener("click", async () => {
       this.log("waiting button clicked");
-      const status = await this.cache.find({ id: this.current });
+      const status = await this.cache.get(this.current);
       if (!status) return this.log({ cachedStatus: status, id: this.current });
       const wait =
         status.wait && new Date(status.wait).getTime() > Date.now()
@@ -432,7 +432,7 @@ export default abstract class OpenNextInvalid<TItem extends OpenNextInvalid_Item
       }
       try {
         const wait = new Date(Number(d[2]), Number(d[1]) - 1, Number(d[0])).toISOString();
-        const status = await this.cache.find({ id: this.current });
+        const status = await this.cache.get(this.current);
         if (!status) return this.log({ cachedStatus: status, id: this.current });
         this.cache.update(Object.assign(status, { wait }));
         updateWaitDisplay();
