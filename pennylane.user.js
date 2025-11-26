@@ -1496,7 +1496,11 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const structure = registerTable({ name: tableName, primary, indexedColumns });\n" +
 "        this.indexedColumns = structure.indexedColumns;\n" +
 "        this.loading = this.load().then(() => { });\n" +
+"        this.broadcastEventManager = new BroadcastChannel(`IDBCache:${tableName}`);\n" +
 "        this.debug(\"new Cache\", this);\n" +
+"        this.broadcastOn(\"all\", (event, data) => {\n" +
+"            this.emit(event, data);\n" +
+"        });\n" +
 "    }\n" +
 "    static getInstance(tableName, primary, indexedColumns) {\n" +
 "        if (!this.instances[tableName]) {\n" +
@@ -1568,12 +1572,20 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    async update(match) {\n" +
 "        const oldValue = await this.get(match[this.primary]);\n" +
 "        const newValue = oldValue ? { ...oldValue, ...match } : match;\n" +
+"        if (JSON.stringify(oldValue) === JSON.stringify(newValue))\n" +
+"            return match[this.primary];\n" +
 "        const store = await this.getStore(\"readwrite\");\n" +
-"        return await store?.put(newValue);\n" +
+"        const key = await store?.put(newValue);\n" +
+"        this.broadcastEmit(\"update\", { key, oldValue, newValue });\n" +
+"        return key;\n" +
 "    }\n" +
-"    async delete(match) {\n" +
+"    async delete(matchOrId) {\n" +
+"        const id = typeof matchOrId === \"string\" || typeof matchOrId === \"number\"\n" +
+"            ? matchOrId\n" +
+"            : matchOrId[this.primary];\n" +
 "        const store = await this.getStore(\"readwrite\");\n" +
-"        return await store?.delete(match[this.primary]);\n" +
+"        await store?.delete(id);\n" +
+"        this.broadcastEmit(\"delete\", { key: id });\n" +
 "    }\n" +
 "    async get(id) {\n" +
 "        const store = await this.getStore(\"readonly\");\n" +
@@ -1612,7 +1624,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            registerTable({\n" +
 "                name: this.tableName,\n" +
 "                primary: this.primary,\n" +
-"                indexedColumns: [...this.indexedColumns, options.column],\n" +
+"                indexedColumns: [...(this.indexedColumns ?? []), options.column],\n" +
 "            });\n" +
 "        }\n" +
 "        const store = await this.getStore(options.mode);\n" +
@@ -1624,6 +1636,21 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    async clear() {\n" +
 "        const store = await this.getStore(\"readwrite\");\n" +
 "        return await store?.clear();\n" +
+"    }\n" +
+"    /**\n" +
+"     * Emit broadcast event\n" +
+"     */\n" +
+"    broadcastEmit(event, data) {\n" +
+"        this.broadcastEventManager.postMessage({ event, data });\n" +
+"        this.emit(event, data);\n" +
+"    }\n" +
+"    broadcastOn(event, callback) {\n" +
+"        this.broadcastEventManager.addEventListener(\"message\", (messageEvent) => {\n" +
+"            if (messageEvent.data.event === event)\n" +
+"                callback(messageEvent.data.data);\n" +
+"            else if (event === \"all\")\n" +
+"                callback(messageEvent.data.event, messageEvent.data.data);\n" +
+"        });\n" +
 "    }\n" +
 "}\n" +
 "IDBCache.instances = {};\n" +
@@ -10560,9 +10587,9 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                return null;\n" +
 "            if (item.name.startsWith(\"RECU\") || item.name.startsWith(\"§\"))\n" +
 "                return null;\n" +
-"            const links = await this.getLinks();\n" +
-"            if (await this.hasClosedLink(links))\n" +
+"            if (await this.hasClosedLink())\n" +
 "                return null;\n" +
+"            const links = await this.getLinks();\n" +
 "            const transactions = links.filter((link) => link.record_type === \"BankTransaction\");\n" +
 "            const isCheckRemmitance = transactions.some((transaction) => transaction.record_name.startsWith(\"REMISE CHEQUE \"));\n" +
 "            if (isCheckRemmitance) {\n" +
@@ -11402,7 +11429,17 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            throwIsArray$6(field, d);\n" +
 "        }\n" +
 "        checkString$6(d.carryover_generation_status, field + \".carryover_generation_status\");\n" +
-"        checkNull$4(d.carryover_id, field + \".carryover_id\");\n" +
+"        // This will be refactored in the next release.\n" +
+"        try {\n" +
+"            checkNull$4(d.carryover_id, field + \".carryover_id\", \"null | number\");\n" +
+"        }\n" +
+"        catch (e) {\n" +
+"            try {\n" +
+"                checkNumber$6(d.carryover_id, field + \".carryover_id\", \"null | number\");\n" +
+"            }\n" +
+"            catch (e) {\n" +
+"            }\n" +
+"        }\n" +
 "        checkNull$4(d.closed_at, field + \".closed_at\");\n" +
 "        checkString$6(d.finish, field + \".finish\");\n" +
 "        checkNumber$6(d.id, field + \".id\");\n" +
@@ -11791,7 +11828,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "        }\n" +
 "        checkString$3(d.source, field + \".source\");\n" +
-"        const knownProperties = [\"amount\", \"balance\", \"closed\", \"credit\", \"debit\", \"id\", \"label\", \"lettering\", \"lettering_id\", \"plan_item_id\", \"planItem\", \"readonly\", \"readonlyAmounts\", \"reconciliation_id\", \"source\"];\n" +
+"        if (\"validated_at\" in d) {\n" +
+"            checkNull$2(d.validated_at, field + \".validated_at\");\n" +
+"        }\n" +
+"        const knownProperties = [\"amount\", \"balance\", \"closed\", \"credit\", \"debit\", \"id\", \"label\", \"lettering\", \"lettering_id\", \"plan_item_id\", \"planItem\", \"readonly\", \"readonlyAmounts\", \"reconciliation_id\", \"source\", \"validated_at\"];\n" +
 "        const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));\n" +
 "        if (unknownProperty)\n" +
 "            errorHelper$3(field + '.' + unknownProperty, d[unknownProperty], \"never (unknown property)\");\n" +
@@ -11813,6 +11853,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        this.readonlyAmounts = d.readonlyAmounts;\n" +
 "        this.reconciliation_id = d.reconciliation_id;\n" +
 "        this.source = d.source;\n" +
+"        if (\"validated_at\" in d)\n" +
+"            this.validated_at = d.validated_at;\n" +
 "    }\n" +
 "}\n" +
 "class Lettering {\n" +
@@ -13219,12 +13261,15 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    }\n" +
 "    async getStatus(refresh = false) {\n" +
 "        const status = await super.getStatus(refresh);\n" +
-"        if (!status)\n" +
+"        const createdAt = await this.getCreatedAt(refresh ? 0 : void 0);\n" +
+"        if (!status || !createdAt)\n" +
 "            return null;\n" +
-"        return { ...status, direction: this.direction, createdAt: await this.getCreatedAt(refresh ? 0 : void 0) };\n" +
+"        return { ...status, direction: this.direction, createdAt };\n" +
 "    }\n" +
 "    async getCreatedAt(maxAge) {\n" +
 "        const iso = await getInvoiceCreationDate(this.id, maxAge);\n" +
+"        if (!iso)\n" +
+"            return null;\n" +
 "        return new Date(iso).getTime();\n" +
 "    }\n" +
 "    async getDate() {\n" +
@@ -13263,8 +13308,9 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        ]\n" +
 "            .join(\" - \")\n" +
 "            .replace(\" - Donateurs - Dons Manuels\", \"\");\n" +
-"        await moveToDms(this.id, destId);\n" +
-"        this.debug(\"moveToDms response\");\n" +
+"        this.log(\"moveToDms\", { invoiceName, invoice, filename, fileId, destId });\n" +
+"        const response = await moveToDms(this.id, destId);\n" +
+"        this.debug(\"moveToDms response\", response);\n" +
 "        const files = await getDMSItemList({\n" +
 "            filter: [{ field: \"name\", operator: \"search_all\", value: filename }],\n" +
 "        });\n" +
@@ -13996,8 +14042,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "    isCurrent() {\n" +
 "        return String(this.id) === getParam(location.href, \"transaction_id\");\n" +
 "    }\n" +
-"    async isReconciled() {\n" +
-"        return Boolean(await getTransactionReconciliationId(this.id));\n" +
+"    async isReconciled(maxAge) {\n" +
+"        return Boolean(await getTransactionReconciliationId(this.id, this.maxAge(maxAge)));\n" +
 "    }\n" +
 "    async getLedgerEvents(maxAge) {\n" +
 "        return await super.getLedgerEvents(this.maxAge(maxAge));\n" +
@@ -14711,6 +14757,9 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const dms = await getDMSItem(id);\n" +
 "        if (dms)\n" +
 "            return this.getDMSItem(id);\n" +
+"        logger.error(`The given id is not a transaction, invoice or DMS item.`, { id });\n" +
+"        debugger;\n" +
+"        throw new Error(`The given id is not a transaction, invoice or DMS item.`);\n" +
 "    }\n" +
 "    static getTransaction(id) {\n" +
 "        const existing = this.store.get(id)?.deref();\n" +
@@ -15357,7 +15406,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        button.addEventListener(\"click\", this.start.bind(this, true));\n" +
 "        Tooltip.make({ target: button, text: \"Ouvrir le prochain élément invalide\" });\n" +
 "        this.reloadNumber();\n" +
-"        this.cache.on(\"change\", () => this.reloadNumber());\n" +
+"        this.cache.on(\"update\", () => this.reloadNumber());\n" +
 "    }\n" +
 "    /**\n" +
 "     * Set the number display on openNextInvalid button\n" +
@@ -15458,10 +15507,10 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        if (!value)\n" +
 "            value = await this.getStatus(id, force);\n" +
 "        if (!value) {\n" +
-"            this.cache.delete({ id });\n" +
+"            this.cache.delete(id);\n" +
 "            return null;\n" +
 "        }\n" +
-"        const oldStatus = this.cache.find({ id }) ?? {};\n" +
+"        const oldStatus = (await this.cache.get(id)) ?? {};\n" +
 "        const status = Object.assign({}, oldStatus, value, { fetchedAt: Date.now() });\n" +
 "        this.cache.update(status);\n" +
 "        return status;\n" +
@@ -15470,10 +15519,11 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        this.log(\"openNext\");\n" +
 "        let status = (await this.invalidGenerator.next()).value;\n" +
 "        while (status?.id === this.current) {\n" +
-"            this.log({ status, current: this.current, class: this });\n" +
+"            this.log(\"openNext: found current, skip it\", { status, current: this.current, class: this });\n" +
 "            status = (await this.invalidGenerator.next()).value;\n" +
 "        }\n" +
 "        if (!status && interactionAllowed) {\n" +
+"            this.log(\"openNext no invalid item found in the cache, opening the skipped ones\");\n" +
 "            if (!this.skippedElems)\n" +
 "                this.skippedElems = await this.cache.filter((item) => this.isSkipped(item));\n" +
 "            while (!status && this.skippedElems.length) {\n" +
@@ -15484,8 +15534,8 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "        }\n" +
 "        if (status) {\n" +
-"            this.log(\"next found :\", { current: this.current, status, class: this });\n" +
-"            this.open(status.id);\n" +
+"            this.log(\"next found :\", { current: this.current, status, me: this, stack: new Error() });\n" +
+"            this.open(status.id, status);\n" +
 "            this.running = false;\n" +
 "            return;\n" +
 "        }\n" +
@@ -15497,11 +15547,16 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }\n" +
 "        this.running = false;\n" +
 "    }\n" +
-"    open(id) {\n" +
+"    open(id, before) {\n" +
 "        openDocument(id);\n" +
 "        this.updateStatus(id, null, true).then((status) => {\n" +
-"            if (status?.valid)\n" +
+"            if (this.isSkipped(status)) {\n" +
+"                this.log(\"open invalid error: the opened item is skippable\", { status, before });\n" +
 "                this.start();\n" +
+"            }\n" +
+"            else {\n" +
+"                this.log(\"open invalid success: the opened item was really invalid\", { status, before });\n" +
+"            }\n" +
 "        });\n" +
 "    }\n" +
 "    async reloadAll() {\n" +
@@ -15546,22 +15601,19 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const button = $(`.ignore-item`, this.container);\n" +
 "        Tooltip.make({ target: button, text: \"Ignorer cet élément, ne plus afficher\" });\n" +
 "        const refresh = async () => {\n" +
-"            const status = await this.cache.find({ id: this.current });\n" +
+"            const status = await this.cache.get(this.current);\n" +
 "            const ignored = Boolean(status?.ignored);\n" +
 "            const background = ignored ? \"var(--red)\" : \"\";\n" +
 "            if (button.style.backgroundColor !== background)\n" +
 "                button.style.backgroundColor = background;\n" +
 "        };\n" +
 "        button.addEventListener(\"click\", async () => {\n" +
-"            const status = await this.cache.find({ id: this.current });\n" +
+"            const status = await this.cache.get(this.current);\n" +
 "            if (!status)\n" +
 "                return;\n" +
 "            this.cache.update(Object.assign(status, { ignored: !status.ignored }));\n" +
 "        });\n" +
-"        this.cache.on(\"change\", () => {\n" +
-"            refresh();\n" +
-"        });\n" +
-"        this.on(\"reload\", () => {\n" +
+"        this.cache.on(\"update\", () => {\n" +
 "            refresh();\n" +
 "        });\n" +
 "    }\n" +
@@ -15570,7 +15622,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        const waitButton = $(`.wait-item`, this.container);\n" +
 "        const tooltip = Tooltip.make({ target: waitButton, text: \"\" });\n" +
 "        const updateWaitDisplay = async () => {\n" +
-"            const status = await this.cache.find({ id: this.current });\n" +
+"            const status = await this.cache.get(this.current);\n" +
 "            if (!status?.wait || new Date(status.wait).getTime() < Date.now()) {\n" +
 "                waitButton.style.backgroundColor = \"\";\n" +
 "                tooltip.setText(\"Ne plus afficher pendant 3 jours\");\n" +
@@ -15592,13 +15644,16 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "        }, 60000);\n" +
 "        waitButton.addEventListener(\"click\", async () => {\n" +
 "            this.log(\"waiting button clicked\");\n" +
-"            const status = await this.cache.find({ id: this.current });\n" +
+"            const status = await this.cache.get(this.current);\n" +
 "            if (!status)\n" +
-"                return this.log({ cachedStatus: status, id: this.current });\n" +
+"                return this.log(\"waiting button click: cannot find status in the cache\", {\n" +
+"                    cachedStatus: status,\n" +
+"                    id: this.current,\n" +
+"                });\n" +
 "            const wait = status.wait && new Date(status.wait).getTime() > Date.now()\n" +
 "                ? \"\"\n" +
 "                : new Date(Date.now() + 3 * 86400000).toISOString();\n" +
-"            this.cache.update(Object.assign(status, { wait }));\n" +
+"            await this.cache.update(Object.assign(status, { wait }));\n" +
 "            updateWaitDisplay();\n" +
 "        });\n" +
 "        waitButton.addEventListener(\"contextmenu\", async (event) => {\n" +
@@ -15613,7 +15668,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "            }\n" +
 "            try {\n" +
 "                const wait = new Date(Number(d[2]), Number(d[1]) - 1, Number(d[0])).toISOString();\n" +
-"                const status = await this.cache.find({ id: this.current });\n" +
+"                const status = await this.cache.get(this.current);\n" +
 "                if (!status)\n" +
 "                    return this.log({ cachedStatus: status, id: this.current });\n" +
 "                this.cache.update(Object.assign(status, { wait }));\n" +
@@ -15623,10 +15678,7 @@ const code = ';(function IIFE() {' + "'use strict';\n" +
 "                alert(\" Format attendu : jj/mm/aaaa\");\n" +
 "            }\n" +
 "        });\n" +
-"        this.cache.on(\"change\", () => {\n" +
-"            updateWaitDisplay();\n" +
-"        });\n" +
-"        this.on(\"reload\", () => {\n" +
+"        this.cache.on(\"update\", () => {\n" +
 "            updateWaitDisplay();\n" +
 "        });\n" +
 "    }\n" +
