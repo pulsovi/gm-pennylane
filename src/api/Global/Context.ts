@@ -806,7 +806,7 @@ export class Firm {
 
 export class TodayFiscalYear {
   public readonly carryover_generation_status: string;
-  public readonly carryover_id: null;
+  public readonly carryover_id: null | number;
   public readonly closed_at: null;
   public readonly finish: string;
   public readonly id: number;
@@ -830,7 +830,15 @@ export class TodayFiscalYear {
       throwIsArray(field, d);
     }
     checkString(d.carryover_generation_status, field + ".carryover_generation_status");
-    checkNull(d.carryover_id, field + ".carryover_id");
+    // This will be refactored in the next release.
+    try {
+      checkNull(d.carryover_id, field + ".carryover_id", "null | number");
+    } catch (e) {
+      try {
+        checkNumber(d.carryover_id, field + ".carryover_id", "null | number");
+      } catch (e) {
+      }
+    }
     checkNull(d.closed_at, field + ".closed_at");
     checkString(d.finish, field + ".finish");
     checkNumber(d.id, field + ".id");

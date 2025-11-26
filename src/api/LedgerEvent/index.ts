@@ -17,6 +17,7 @@ export class APILedgerEvent {
   public readonly readonlyAmounts: boolean;
   public readonly reconciliation_id: null | number;
   public readonly source: string;
+  public readonly validated_at?: null;
   public static Parse(d: string): APILedgerEvent {
     return APILedgerEvent.Create(JSON.parse(d));
   }
@@ -79,7 +80,10 @@ export class APILedgerEvent {
       }
     }
     checkString(d.source, field + ".source");
-    const knownProperties = ["amount","balance","closed","credit","debit","id","label","lettering","lettering_id","plan_item_id","planItem","readonly","readonlyAmounts","reconciliation_id","source"];
+    if ("validated_at" in d) {
+      checkNull(d.validated_at, field + ".validated_at");
+    }
+    const knownProperties = ["amount","balance","closed","credit","debit","id","label","lettering","lettering_id","plan_item_id","planItem","readonly","readonlyAmounts","reconciliation_id","source","validated_at"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
     if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new APILedgerEvent(d);
@@ -100,6 +104,7 @@ export class APILedgerEvent {
     this.readonlyAmounts = d.readonlyAmounts;
     this.reconciliation_id = d.reconciliation_id;
     this.source = d.source;
+    if ("validated_at" in d) this.validated_at = d.validated_at;
   }
 }
 
