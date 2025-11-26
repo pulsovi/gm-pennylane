@@ -66,8 +66,8 @@ export default class Transaction extends ValidableDocument {
     return String(this.id) === getParam(location.href, "transaction_id");
   }
 
-  public async isReconciled() {
-    return Boolean(await getTransactionReconciliationId(this.id));
+  public async isReconciled(maxAge?: number) {
+    return Boolean(await getTransactionReconciliationId(this.id, this.maxAge(maxAge)));
   }
 
   public async getLedgerEvents(maxAge?: number): Promise<APILedgerEvent[]> {
