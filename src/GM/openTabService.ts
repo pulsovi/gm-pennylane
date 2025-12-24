@@ -1,3 +1,5 @@
+import { sleep } from "../_/time.js";
+
 export interface GM_openInTabOptions {
   /**
    * if true, the new tab take immediate focus when it opens,
@@ -13,18 +15,27 @@ export interface GM_openInTabOptions {
   insert?: boolean;
 }
 
-export function openTabService () {
+export function openTabService() {
   setInterval(() => {
-    const elem = document.querySelector<HTMLDivElement>('div.open_tab');
+    const elem = document.querySelector<HTMLDivElement>("div.open_tab:not(.parsed)");
     if (!elem) return;
 
-    const url = unescape(elem.dataset.url ?? '');
-    if (!url) return;
+    elem.classList.add("parsed");
+    const url = unescape(elem.dataset.url ?? "");
+    if (!url) {
+      elem.dispatchEvent(new CustomEvent("error", { detail: { message: "No URL" } }));
+      return;
+    }
 
-    const options = JSON.parse(unescape(elem.dataset.options ?? '{}')) as GM_openInTabOptions;
+    const options = JSON.parse(unescape(elem.dataset.options ?? "{}")) as GM_openInTabOptions;
 
-    console.log('GM_openInTab', {elem, url});
-    GM.openInTab(url, { active: false, insert: true, ...options });
-    elem.remove();
+    const response = GM.openInTab(url, { active: false, insert: true, ...options });
+    Promise.resolve(response).then((control) => {
+      elem.dispatchEvent(new CustomEvent("success", { detail: { message: "Tab opened" } }));
+      elem.addEventListener("close", () => {
+        control.close();
+        elem.remove();
+      });
+    });
   }, 200);
 }
