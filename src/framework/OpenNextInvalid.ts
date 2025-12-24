@@ -301,13 +301,15 @@ export default abstract class OpenNextInvalid<TItem extends OpenNextInvalid_Item
   }
 
   protected open(id: number, before?: Status): void {
-    openDocument(id);
+    const tab = openDocument(id);
     this.updateStatus(id, null, true).then((status) => {
       if (this.isSkipped(status)) {
         this.log("open invalid error: the opened item is skippable", { status, before });
+        tab.close();
         this.start();
       } else {
         this.log("open invalid success: the opened item was really invalid", { status, before });
+        tab.destroy();
       }
     });
   }

@@ -15,6 +15,7 @@ import { getDocument, getFullDocument } from "./document.js";
 import { APIDocument } from "./Document/index.js";
 import { getInvoiceCreationDate } from "./invoice.js";
 import { APIInvoice } from './Invoice/index.js';
+import { getTransactionFull } from "./transaction.js";
 import { GroupedDocument } from './types.js';
 
 const logger = new Logger('API_DMS');
@@ -201,8 +202,9 @@ export async function dmsToInvoice(dmsId: string | string[], direction: 'custome
 export async function getDMSDestId(
   ref: APIInvoice | GroupedDocument | APIDocument
 ): Promise<{ parent_id: number; direction: string } | null> {
-  const full = await getFullDocument(ref.id, 0);
+  const maxAge = 0;
   let direction: string;
+  const full = await getFullDocument(ref.id, maxAge);
   let year = full.date.slice(0, 4);
   if (full.type === "Transaction") {
     direction = parseFloat(full.amount) > 0 ? "customer" : "supplier";

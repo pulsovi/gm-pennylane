@@ -150,7 +150,7 @@ export default class TransactionValidMessage extends Service {
 
   private handleCacheUpdate({ newValue: status }: { newValue: Status }) {
     if (status.id !== this.state.transaction?.id) return;
-    this.error("handleCacheUpdate", { status, _this: this });
+    this.triggerWarning("handleCacheUpdate", { status, _this: this });
     this.message = `${status.valid ? "✓" : "✗"} ${status.message}`;
   }
 }

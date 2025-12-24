@@ -1,6 +1,6 @@
-import { openInTab } from '../GM/openInTab.js';
+import { openInTab, OpenInTabControl } from "../GM/openInTab.js";
 
-export function openDocument (documentId: number) {
+export function openDocument(documentId: number): OpenInTabControl {
   const url = new URL(location.href.replace(/accountants.*$/, `documents/${documentId}.html`));
-  openInTab(url.toString(), { insert: false });
+  return openInTab(url.toString(), { insert: false });
 }

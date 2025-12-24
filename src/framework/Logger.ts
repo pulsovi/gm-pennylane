@@ -1,12 +1,10 @@
 import { beep } from "../_/beep.js";
 import { contrastScore, textToColor } from "../_/color.js";
+import { uniquid } from "../_/uniquid.js";
 import EventEmitter from "./EventEmitter.js";
 
 declare const GM_Pennylane_debug: boolean;
-const csl = Object.entries(window.console).reduce((acc, [key, value]) => {
-  acc[key] = value;
-  return acc;
-}, {}) as typeof console;
+const csl = getOrigConsole();
 
 Object.assign(window, {
   GM_Pennylane_debug: window["GM_Pennylane_debug"] ?? localStorage.getItem("GM_Pennylane_debug") === "true",
@@ -63,5 +61,38 @@ export default class Logger extends EventEmitter {
       ...messages
     );
   }
+
+  public triggerWarning(...messages: unknown[]): void {
+    this.error(...messages);
+    debugger;
+  }
+
+  public triggerError(message: string, ...otherArgs: any[]): never {
+    this.error(message, ...otherArgs);
+    debugger;
+    throw new Error(message);
+  }
 }
 export { Logger };
+
+function getOrigConsole() {
+  return Object.fromEntries(
+    Object.entries(window.console).map(([key, value]) => {
+      if (!["debug", "info", "warn", "error", "log", "assert", "trace"].includes(key)) return [key, value];
+      const id = uniquid();
+      let origFunc = null;
+      const origApply = Function.prototype.apply;
+      Function.prototype.apply = function (this: unknown, thisArg: unknown, args: unknown[]) {
+        if (args.includes(id)) {
+          origFunc = this;
+          return;
+        }
+        return origApply.call(this, thisArg, args);
+      };
+      console[key](id);
+      Function.prototype.apply = origApply;
+      if (origFunc) return [key, origFunc];
+      return [key, value];
+    })
+  );
+}

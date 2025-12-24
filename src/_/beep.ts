@@ -24,7 +24,7 @@ export const beep = (() => {
   };
 
   async function _beep(duration = 200, frequency = 1000, volume = 0.5) {
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
 

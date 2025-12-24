@@ -8,7 +8,7 @@ import { Status } from "../framework/CacheStatus.js";
 import Logger from "../framework/Logger.js";
 
 import DMSItem from "./DMSItem.js";
-import Document, { DocumentCache, isTypedDocument } from "./Document.js";
+import Document, { isTypedDocument } from "./Document.js";
 import ModelFactory from "./Factory.js";
 import Transaction from "./Transaction.js";
 
@@ -56,8 +56,8 @@ export default abstract class Invoice extends ValidableDocument {
     return await updateInvoice(this.id, data);
   }
 
-  async getInvoice() {
-    const maxAge = this.isCurrent() ? 0 : void 0;
+  async getInvoice(maxAge?: number) {
+    maxAge = this.maxAge(maxAge);
     if (!this.invoice) {
       this.invoice = getInvoice(this.id, maxAge).then((response) => {
         if (!response) {
@@ -74,7 +74,7 @@ export default abstract class Invoice extends ValidableDocument {
     const status = await super.getStatus(refresh);
     const createdAt = await this.getCreatedAt(refresh ? 0 : void 0);
     if (!status || !createdAt) return null;
-    return { ...status, direction: this.direction, createdAt };
+    return { ...status, direction: this.direction as "customer" | "supplier", createdAt };
   }
 
   public async getCreatedAt(maxAge?: number) {
@@ -120,8 +120,9 @@ export default abstract class Invoice extends ValidableDocument {
     ]
       .join(" - ")
       .replace(" - Donateurs - Dons Manuels", "");
+    this.log("moveToDms", { invoiceName, invoice, filename, fileId, destId });
     const response = await moveToDms(this.id, destId);
-    this.debug("moveToDms response");
+    this.debug("moveToDms response", response);
     const files = await getDMSItemList({
       filter: [{ field: "name", operator: "search_all", value: filename }],
     });
@@ -141,6 +142,10 @@ export default abstract class Invoice extends ValidableDocument {
     return this.factory.getDMSItem(item.id);
   }
 
+  public async getLabel(maxAge?: number): Promise<string> {
+    const invoice = await this.getInvoice(this.maxAge(maxAge));
+    return invoice.label;
+  }
   public async getDMSDestId(): Promise<{ parent_id: number; direction: string } | null> {
     const groupedDocuments = await this.getGroupedDocuments(0);
     const gdocs = await Promise.all(groupedDocuments.map((doc) => doc.getGdoc()));
@@ -161,6 +166,12 @@ export default abstract class Invoice extends ValidableDocument {
 
   isCurrent() {
     return getParam(location.href, "id") === String(this.id);
+  }
+
+  protected maxAge(defaults?: number): number {
+    if (typeof defaults !== "undefined") return defaults;
+    if (this.isCurrent()) return 1000;
+    return void 0;
   }
 }
 
@@ -461,20 +472,23 @@ class SupplierInvoice extends Invoice {
     const ledgerEvents = await this.getLedgerEvents();
     const groupedDocuments = await this.getGroupedDocuments();
     const gdocs = await Promise.all(groupedDocuments.map((doc) => doc.getGdoc()));
-    const transactions = gdocs.filter((gdoc) => gdoc.type === "Transaction");
 
     // Date manquante
     if (!invoice.date) {
       if (invoice.has_closed_ledger_events || ledgerEvents.some((levent) => levent.closed)) {
         this.log("exercice clos, on ne peut plus remplir la date");
-        if (transactions.find((transaction) => transaction.date.startsWith("2023"))) {
+        const transactionDates = await Promise.all(
+          (groupedDocuments.filter((doc) => doc.type === "transaction") as Transaction[]).map((t) => t.getDate())
+        );
+        if (transactionDates.some((date) => date.startsWith("2023"))) {
           const dmsItem = await this.moveToDms({
             parent_id: 57983091 /*2023 - Compta - Fournisseurs*/,
             direction: "supplier",
           });
           this.log({ dmsItem });
           if (this.isCurrent()) this.log("moved to DMS", { invoice: this });
-          return (await Invoice.load(this.id)).loadValidMessage();
+          // The invoice type can changed
+          return (await this.factory.reload(this.id)).getValidMessage();
         }
         return "envoyer en GED";
       } else {
@@ -564,7 +578,7 @@ class CustomerInvoice extends Invoice {
   private async hasToSendToDMS() {
     const groupedDocuments = await this.getGroupedDocuments();
     const gdocs = await Promise.all(groupedDocuments.map((doc) => doc.getGdoc()));
-    const transactions = gdocs.filter((gdoc) => gdoc.type === "Transaction");
+    const transactions = groupedDocuments.filter((gdoc) => gdoc.type === "transaction") as Transaction[];
     const invoice = await this.getInvoice();
 
     const archivedAllowed = ["§ #", "¤ TRANSACTION INTROUVABLE"];
@@ -604,7 +618,8 @@ class CustomerInvoice extends Invoice {
       }
     }
 
-    if (!transactions.find((transaction) => transaction.date.startsWith("2025"))) {
+    const transactionDates = await Promise.all(transactions.map((t) => t.getDate()));
+    if (!transactionDates.some((date) => date.startsWith("2025"))) {
       this.log("Envoyer en GED", transactions);
       return `<a
         title="Cliquer ici pour plus d'informations"

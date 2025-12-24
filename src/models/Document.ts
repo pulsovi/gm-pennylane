@@ -35,9 +35,7 @@ export function isTypedDocument(value: unknown): value is { type: DocumentType }
   );
 }
 
-export const DocumentCache: Map<number, Document> = new Map();
-
-export default class Document extends Logger {
+export default abstract class Document extends Logger {
   public type: DocumentType;
   public readonly id: number;
   protected document?: APIDocument | Promise<APIDocument>;
@@ -59,24 +57,25 @@ export default class Document extends Logger {
     }
     this.id = id;
     if (isTypedDocument(raw)) this.type = raw.type.toLowerCase() as DocumentType;
-    DocumentCache.set(id, this);
   }
 
   /**
    * Get a document by id, all documents are cached for performance
    */
-  public static get(raw: { id: number }, factory: typeof ModelFactory): Document {
-    if (!DocumentCache.has(raw.id)) {
-      return new Document(raw, factory);
-    }
-    return DocumentCache.get(raw.id)!;
+  public static async get(raw: { id: number }, factory: typeof ModelFactory): Promise<Document> {
+    const model = await factory.get(raw.id);
+    if (model instanceof Document) return model;
+    this.prototype.triggerError(`Expected Document instance for id ${raw.id}, got ${typeof model}`);
   }
 
   /**
    * Update a document from an APIGroupedDocument
    */
-  public static fromAPIGroupedDocument(apigdoc: APIGroupedDocument, factory: typeof ModelFactory): Document {
-    const doc = Document.get({ id: apigdoc.id }, factory);
+  public static async fromAPIGroupedDocument(
+    apigdoc: APIGroupedDocument,
+    factory: typeof ModelFactory
+  ): Promise<Document> {
+    const doc = await Document.get({ id: apigdoc.id }, factory);
     doc.gDocument = apigdoc;
     doc.type = apigdoc.type === "Invoice" ? "invoice" : "transaction";
     return doc;
@@ -94,9 +93,7 @@ export default class Document extends Logger {
     return getFullDocument(this.id, maxAge);
   }
 
-  async getLabel(maxAge?: number): Promise<string> {
-    return (await this.getFullDocument(maxAge)).label;
-  }
+  abstract getLabel(maxAge?: number): Promise<string>;
 
   async getGdoc(): Promise<APIGroupedDocument | APIDocument> {
     if (this.gDocument) return this.gDocument;
@@ -179,6 +176,7 @@ export default class Document extends Logger {
 
   private async _getThirdparty() {
     let doc = await this.getFullDocument();
+    debugger;
     if (!doc?.thirdparty_id) {
       doc = await this.getFullDocument(1000);
       if (!doc?.thirdparty_id) {

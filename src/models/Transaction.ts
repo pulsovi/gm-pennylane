@@ -58,6 +58,11 @@ export default class Transaction extends ValidableDocument {
     return (await this.getTransaction()).date;
   }
 
+  public async getCreatedAt(): Promise<Date> {
+    const apiDate = (await this.getTransaction()).dump?.created_at;
+    return new Date(apiDate ?? (await this.getDate()));
+  }
+
   public async getAmount(): Promise<`${number}`> {
     return (await this.getTransaction()).amount as `${number}`;
   }
@@ -68,6 +73,11 @@ export default class Transaction extends ValidableDocument {
 
   public async isReconciled(maxAge?: number) {
     return Boolean(await getTransactionReconciliationId(this.id, this.maxAge(maxAge)));
+  }
+
+  public async isAttachmentLost(maxAge?: number) {
+    const transaction = await this.getTransaction(this.maxAge(maxAge));
+    return transaction.attachment_lost;
   }
 
   public async getLedgerEvents(maxAge?: number): Promise<APILedgerEvent[]> {
@@ -136,8 +146,10 @@ export default class Transaction extends ValidableDocument {
 
   public async getStatus(refresh = false): Promise<Status> {
     const status = await super.getStatus(refresh);
-    this.cacheStatus.updateItem(status, false);
-    return status;
+    const createdAt = (await this.getCreatedAt()).getTime();
+    const fullStatus = { ...status, createdAt };
+    this.cacheStatus.updateItem(fullStatus, false);
+    return fullStatus;
   }
 
   protected async loadValidMessage(refresh: boolean | number = false): Promise<string> {
@@ -494,8 +506,9 @@ export default class Transaction extends ValidableDocument {
       ["REMISE CHEQUE ", "VIR RECU ", "VIR INST RE ", "VIR INSTANTANE RECU DE: "].some((label) =>
         doc.label.startsWith(label)
       );
-    const attachmentRequired =
-      doc.attachment_required && !doc.attachment_lost && (!attachmentOptional || this.isCurrent());
+    debugger;
+    const attachmentLost = await this.isAttachmentLost();
+    const attachmentRequired = doc.attachment_required && !attachmentLost && (!attachmentOptional || this.isCurrent());
     const hasAttachment = groupedDocuments.length + dmsLinks.length > 1;
     if (this.isCurrent()) this.log({ attachmentOptional, attachmentRequired, groupedDocuments, hasAttachment });
     if (attachmentRequired && !hasAttachment) return "Justificatif manquant";
@@ -838,20 +851,15 @@ export default class Transaction extends ValidableDocument {
     const doc = await this.factory.get(id);
 
     if (doc instanceof Document) {
-      const response = await matchDocuments(this.id, id);
-
+      await matchDocuments(this.id, id);
       return;
     }
 
     // If the provided id is a DMS file, we need use the DMS link instead of relying on document matching.
-    this.error('todo: réparer la méthode "groupAdd()"', this);
-    debugger;
-    /*
-    const doc = await this.getDocument(0);
-    const groups = doc.group_uuid;
-    this.error("groupAdd", { response });
     await createDMSLink(id, this.id, "Transaction");
-    /**/
+    this.error("groupAdd - todo: vérifier si la requête a réussi", { transaction: this, id });
+    debugger;
+    return;
   }
 
   async getGuuid(maxAge?: number) {

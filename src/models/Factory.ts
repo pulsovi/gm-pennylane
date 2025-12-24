@@ -73,4 +73,9 @@ export default class ModelFactory {
     this.store.set(id, new WeakRef(dmsItem));
     return dmsItem;
   }
+
+  static async reload(id: number): Promise<Transaction | Invoice | DMSItem> {
+    if (this.store.has(id)) this.store.delete(id);
+    return await this.get(id);
+  }
 }

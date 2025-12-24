@@ -847,10 +847,12 @@ export class Asset {
 }
 
 export class PnlPlanItemOrCurrentAccountPlanItem1 {
+  public readonly authorized_vat_rates?: string[];
   public readonly enabled: boolean;
   public readonly id: number;
   public readonly label: string;
   public readonly number: string;
+  public readonly plan_item_type?: string;
   public static Parse(d: string): PnlPlanItemOrCurrentAccountPlanItem1 {
     return PnlPlanItemOrCurrentAccountPlanItem1.Create(JSON.parse(d));
   }
@@ -866,20 +868,33 @@ export class PnlPlanItemOrCurrentAccountPlanItem1 {
     } else if (Array.isArray(d)) {
       throwIsArray(field, d);
     }
+    if ("authorized_vat_rates" in d) {
+      checkArray(d.authorized_vat_rates, field + ".authorized_vat_rates");
+      if (d.authorized_vat_rates) {
+        for (let i = 0; i < d.authorized_vat_rates.length; i++) {
+          checkString(d.authorized_vat_rates[i], field + ".authorized_vat_rates" + "[" + i + "]");
+        }
+      }
+    }
     checkBoolean(d.enabled, field + ".enabled");
     checkNumber(d.id, field + ".id");
     checkString(d.label, field + ".label");
     checkString(d.number, field + ".number");
-    const knownProperties = ["enabled","id","label","number"];
+    if ("plan_item_type" in d) {
+      checkString(d.plan_item_type, field + ".plan_item_type");
+    }
+    const knownProperties = ["authorized_vat_rates","enabled","id","label","number","plan_item_type"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
     if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new PnlPlanItemOrCurrentAccountPlanItem1(d);
   }
   private constructor(d: any) {
+    if ("authorized_vat_rates" in d) this.authorized_vat_rates = d.authorized_vat_rates;
     this.enabled = d.enabled;
     this.id = d.id;
     this.label = d.label;
     this.number = d.number;
+    if ("plan_item_type" in d) this.plan_item_type = d.plan_item_type;
   }
 }
 
@@ -1400,6 +1415,7 @@ export class PlanItemOrPnlPlanItem {
 }
 
 export class PlanItemOrPnlPlanItemOrCurrentAccountPlanItem {
+  public readonly authorized_vat_rates?: string[];
   public readonly company_id?: number;
   public readonly "country_alpha2"?: string;
   public readonly enabled: boolean;
@@ -1408,6 +1424,7 @@ export class PlanItemOrPnlPlanItemOrCurrentAccountPlanItem {
   public readonly label: string;
   public readonly label_is_editable?: boolean;
   public readonly number: string;
+  public readonly plan_item_type?: string;
   public readonly vat_rate?: string;
   public static Parse(d: string): PlanItemOrPnlPlanItemOrCurrentAccountPlanItem {
     return PlanItemOrPnlPlanItemOrCurrentAccountPlanItem.Create(JSON.parse(d));
@@ -1423,6 +1440,14 @@ export class PlanItemOrPnlPlanItemOrCurrentAccountPlanItem {
       throwNotObject(field, d);
     } else if (Array.isArray(d)) {
       throwIsArray(field, d);
+    }
+    if ("authorized_vat_rates" in d) {
+      checkArray(d.authorized_vat_rates, field + ".authorized_vat_rates");
+      if (d.authorized_vat_rates) {
+        for (let i = 0; i < d.authorized_vat_rates.length; i++) {
+          checkString(d.authorized_vat_rates[i], field + ".authorized_vat_rates" + "[" + i + "]");
+        }
+      }
     }
     if ("company_id" in d) {
       checkNumber(d.company_id, field + ".company_id");
@@ -1448,15 +1473,19 @@ export class PlanItemOrPnlPlanItemOrCurrentAccountPlanItem {
       checkBoolean(d.label_is_editable, field + ".label_is_editable");
     }
     checkString(d.number, field + ".number");
+    if ("plan_item_type" in d) {
+      checkString(d.plan_item_type, field + ".plan_item_type");
+    }
     if ("vat_rate" in d) {
       checkString(d.vat_rate, field + ".vat_rate");
     }
-    const knownProperties = ["company_id","country_alpha2","enabled","id","internal_identifier","label","label_is_editable","number","vat_rate"];
+    const knownProperties = ["authorized_vat_rates","company_id","country_alpha2","enabled","id","internal_identifier","label","label_is_editable","number","plan_item_type","vat_rate"];
     const unknownProperty = Object.keys(d).find(key => !knownProperties.includes(key));
     if (unknownProperty) errorHelper(field + '.' + unknownProperty, d[unknownProperty], "never (unknown property)");
     return new PlanItemOrPnlPlanItemOrCurrentAccountPlanItem(d);
   }
   private constructor(d: any) {
+    if ("authorized_vat_rates" in d) this.authorized_vat_rates = d.authorized_vat_rates;
     if ("company_id" in d) this.company_id = d.company_id;
     if ("country_alpha2" in d) this["country_alpha2"] = d["country_alpha2"];
     this.enabled = d.enabled;
@@ -1465,6 +1494,7 @@ export class PlanItemOrPnlPlanItemOrCurrentAccountPlanItem {
     this.label = d.label;
     if ("label_is_editable" in d) this.label_is_editable = d.label_is_editable;
     this.number = d.number;
+    if ("plan_item_type" in d) this.plan_item_type = d.plan_item_type;
     if ("vat_rate" in d) this.vat_rate = d.vat_rate;
   }
 }

@@ -1,10 +1,11 @@
 import Logger from "../framework/Logger.js";
 import { cachedRequest } from "./cache.js";
 import { apiRequest } from "./core.js";
-import { APIDocumentFull } from "./Document/Full.js";
 import { APIDocument } from "./Document/index.js";
 import { APIDocumentMatching } from "./Document/Matching.js";
 import { APIDocumentMatchingInvoice } from "./Document/MatchingInvoice.js";
+import { getInvoice } from "./invoice.js";
+import { APIInvoiceFull } from "./Invoice/Full.js";
 import { APIInvoiceMatching } from "./Invoice/Matching.js";
 import { getTransactionFull } from "./transaction.js";
 import { APITransaction } from "./Transaction/index.js";
@@ -27,26 +28,14 @@ export async function getDocument(id: number, maxAge?: number): Promise<APIDocum
   return APIDocument.Create(data);
 }
 
-export async function getFullDocument(id: number, maxAge?: number): Promise<APIDocumentFull | APITransaction> {
-  if (typeof id !== "number") throw new Error("id must be a number");
-  const liteDoc = await getDocument(id);
-  switch (liteDoc.type) {
-    case "Transaction":
-      return await getTransactionFull(id, maxAge);
-    case "Invoice":
-      return await getInvoiceFull(id, maxAge);
-    default:
-      this.error(`Unsupported document type: ${liteDoc.type}`, { id, liteDoc });
-      throw new Error(`Unsupported document type: ${liteDoc.type}`);
-  }
-}
-
-export async function getInvoiceFull(id: number, maxAge?: number): Promise<APIDocumentFull> {
+export async function getInvoiceFull(id: number, maxAge?: number): Promise<APIInvoiceFull> {
   const data = await cachedRequest(
     "document:getInvoiceFull",
     { id },
     async ({ id }) => {
       const doc = await getDocument(id, maxAge);
+      if (!doc) return logger.triggerError(`Unable to load this document #${id}`);
+      if (doc.type !== "Invoice") return logger.triggerError(`Expected Invoice document, got ${doc.type}`);
       if (!doc) return doc;
       const response = await apiRequest(
         doc.url
@@ -63,7 +52,7 @@ export async function getInvoiceFull(id: number, maxAge?: number): Promise<APIDo
     maxAge
   );
   if (!data) return data;
-  return APIDocumentFull.Create(data);
+  return APIInvoiceFull.Create(data);
 }
 
 interface MatchingOptions {
@@ -71,6 +60,8 @@ interface MatchingOptions {
   groups: string | string[];
 }
 export async function documentMatching(options: MatchingOptions) {
+  this.error("deprecated, use matchDocuments() instead", { options });
+  debugger;
   const group_uuids = Array.isArray(options.groups) ? options.groups : [options.groups];
   const matching = { unmatch_ids: [], group_uuids };
   const document = await getDocument(options.id);
@@ -114,8 +105,12 @@ export function getDocumentLink(id: number): string {
  * Return document's group uuid
  */
 export async function getDocumentGuuid(id: number, maxAge?: number): Promise<string> {
-  const doc = await getFullDocument(id, maxAge);
-  return doc.group_uuid;
+  const doc = await getDocument(id, maxAge);
+  if (doc.type === "Invoice") return (await getInvoice(id, maxAge)).group_uuid;
+  if (doc.type === "Transaction") return (await getTransactionFull(id, maxAge)).group_uuid;
+  debugger;
+  logger.error(`Unmanaged document type "${doc.type}".`);
+  throw new Error(`Unmanaged document type "${doc.type}".`);
 }
 
 export async function matchDocuments(id1: number, id2: number): Promise<APIDocumentMatching | null> {
@@ -135,5 +130,23 @@ export async function matchDocuments(id1: number, id2: number): Promise<APIDocum
   }
 
   logger.error("No document found", { id1, id2, doc1, doc2, transaction, document, guuid });
+  debugger;
   return null;
 }
+
+export async function getFullDocument(id: number, maxAge?: number): Promise<APIInvoiceFull | APITransaction> {
+  if (typeof id !== "number") throw new Error("id must be a number");
+  const liteDoc = await getDocument(id);
+  if (!liteDoc) return logger.triggerError(`Unable to load this document #${id}`);
+  switch (liteDoc.type) {
+    case "Transaction":
+      return await getTransactionFull(id, maxAge);
+    case "Invoice":
+      return await getInvoiceFull(id, maxAge);
+    default:
+      logger.error(`Unsupported document type: ${liteDoc.type}`, { id, liteDoc });
+      debugger;
+      throw new Error(`Unsupported document type: ${liteDoc.type}`);
+  }
+}
+
